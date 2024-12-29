@@ -1,0 +1,64 @@
+{
+  "name": "getdevflow/core",
+  "description": "Core component for Devflow.",
+  "type": "devflow-core",
+  "keywords": ["devflow","devflow-core","core"],
+  "license": "GPL-2.0-only",
+  "authors": [
+    {
+      "name": "Joshua Parker",
+      "email": "joshua@joshuaparker.dev"
+    }
+  ],
+  "require": {
+    "php": ">=8.3",
+    "barryvdh/elfinder-flysystem-driver": "^0.5.0",
+    "codefyphp/codefy": "^2",
+    "composer/semver": "^3.4",
+    "erusev/parsedown": "^1.7",
+    "forxer/gravatar": "^5.0",
+    "franzl/whoops-middleware": "^2.0",
+    "paragonie/csp-builder": "^2.9",
+    "qubus/form": "^1.0",
+    "qubus/hooks": "^1.0",
+    "qubus/nosql": "^3.0",
+    "spatie/image": "^3.7",
+    "spatie/image-optimizer": "^1.7",
+    "spatie/menu": "^3.2",
+    "studio-42/elfinder": "^2.1",
+    "oomphinc/composer-installers-extender": "^2.0"
+  },
+  "extra": {
+    "installer-types": ["devflow-core"]
+  },
+  "autoload": {
+    "psr-4": {
+      "App\\": ""
+    },
+    "files": [
+      "Infrastructure/Http/Middleware/Csrf/helpers.php",
+      "Shared/Helpers/db.php",
+      "Shared/Helpers/core.php",
+      "Shared/Helpers/hook.php",
+      "Shared/Helpers/plugin.php",
+      "Shared/Helpers/theme.php",
+      "Shared/Helpers/content.php",
+      "Shared/Helpers/product.php",
+      "Shared/Helpers/user.php",
+      "Shared/Helpers/auth.php",
+      "Shared/Helpers/url.php",
+      "Shared/Helpers/domain.php",
+      "Shared/Helpers/site.php",
+      "Shared/Helpers/content-type.php",
+      "Shared/Helpers/menu.php"
+    ]
+  },
+  "minimum-stability": "stable",
+  "prefer-stable": true,
+  "config": {
+    "allow-plugins": {
+      "composer/installers": true,
+      "oomphinc/composer-installers-extender": true
+    }
+  }
+}
