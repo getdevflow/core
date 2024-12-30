@@ -28,9 +28,6 @@
     "studio-42/elfinder": "^2.1",
     "oomphinc/composer-installers-extender": "^2.0"
   },
-  "extra": {
-    "installer-types": ["devflow-core"]
-  },
   "autoload": {
     "psr-4": {
       "App\\": ""
