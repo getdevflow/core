@@ -948,7 +948,7 @@ function get_domain_name(): string
  * @param bool|string $minify Enable css assets pipeline (concatenation and minification).
  *                            Use a string that evaluates to `true` to provide the salt of the pipeline hash.
  *                            Use 'auto' to automatically calculate the salt from your assets last modification time.
- * @param string|null $pluginSlug Plugin slug to set plugin's asset location
+ * @param string|null $slug   Slug to set asset location
  * @return void
  * @throws Exception
  * @throws ReflectionException
@@ -957,7 +957,7 @@ function cms_enqueue_css(
     string $config,
     string|array $asset,
     bool|string $minify = false,
-    ?string $pluginSlug = null
+    ?string $slug = null
 ): void {
     if ($config === 'default') {
         $options = [
@@ -980,7 +980,7 @@ function cms_enqueue_css(
     } elseif ($config === 'plugin') {
         $options = [
             'public_dir' => remove_trailing_slash(public_path()),
-            'css_dir' => 'plugins' . Codefy::$PHP::DS  . $pluginSlug . Codefy::$PHP::DS  . 'assets' . Codefy::$PHP::DS  . 'css',
+            'css_dir' => 'plugins' . Codefy::$PHP::DS  . $slug . Codefy::$PHP::DS  . 'assets' . Codefy::$PHP::DS  . 'css',
             'pipeline' => Filter::getInstance()->applyFilter('plugin_css_pipeline', $minify),
             'pipeline_dir' => 'minify'
         ];
@@ -988,10 +988,10 @@ function cms_enqueue_css(
         $default->reset()->add($asset);
     } elseif ($config === 'theme') {
         $options = [
-                'public_dir' => remove_trailing_slash(public_path()),
-                'css_dir' => 'themes',
-                'pipeline' => Filter::getInstance()->applyFilter('theme_css_pipeline', $minify),
-                'pipeline_dir' => 'minify'
+            'public_dir' => remove_trailing_slash(public_path()),
+            'css_dir' => 'themes' . Codefy::$PHP::DS  . $slug . Codefy::$PHP::DS  . 'assets' . Codefy::$PHP::DS  . 'css',
+            'pipeline' => Filter::getInstance()->applyFilter('theme_css_pipeline', $minify),
+            'pipeline_dir' => 'minify'
         ];
         $default = new Assets($options);
         $default->reset()->add($asset);
@@ -1017,7 +1017,7 @@ function cms_enqueue_css(
  * @param bool|string $minify Enable js assets pipeline (concatenation and minification).
  *                            Use a string that evaluates to `true` to provide the salt of the pipeline hash.
  *                            Use 'auto' to automatically calculate the salt from your assets last modification time.
- * @param string|null $pluginSlug Plugin slug to set plugin's asset location.
+ * @param string|null $slug   Slug to set asset location.
  * @return void
  * @throws Exception
  * @throws ReflectionException
@@ -1026,7 +1026,7 @@ function cms_enqueue_js(
     string $config,
     array|string $asset,
     bool|string $minify = false,
-    ?string $pluginSlug = null
+    ?string $slug = null
 ): void {
     if ($config === 'default') {
         $options = [
@@ -1062,7 +1062,7 @@ function cms_enqueue_js(
     } elseif ($config === 'plugin') {
         $options = [
             'public_dir' => remove_trailing_slash(public_path()),
-            'js_dir' => 'plugins' . Codefy::$PHP::DS  . $pluginSlug . Codefy::$PHP::DS  . 'assets' . Codefy::$PHP::DS  . 'js',
+            'js_dir' => 'plugins' . Codefy::$PHP::DS  . $slug . Codefy::$PHP::DS  . 'assets' . Codefy::$PHP::DS  . 'js',
             'pipeline' => Filter::getInstance()->applyFilter('plugin_js_pipeline', $minify),
             'pipeline_dir' => 'minify'
         ];
@@ -1071,7 +1071,7 @@ function cms_enqueue_js(
     } elseif ($config === 'theme') {
         $options = [
             'public_dir' => remove_trailing_slash(public_path()),
-            'js_dir' => 'themes',
+            'js_dir' => 'themes' . Codefy::$PHP::DS  . $slug . Codefy::$PHP::DS  . 'assets' . Codefy::$PHP::DS  . 'js',
             'pipeline' => Filter::getInstance()->applyFilter('theme_js_pipeline', $minify),
             'pipeline_dir' => 'minify'
         ];
