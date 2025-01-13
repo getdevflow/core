@@ -143,12 +143,12 @@ final class AdminAuthController extends BaseController
             isset($request->getServerParams()['HTTP_REFERER']) &&
                 !str_contains($request->getServerParams()['HTTP_REFERER'], 'admin')
         ) {
-            $logoutLink = Filter::getInstance()->applyFilter(
+            $redirectLink = Filter::getInstance()->applyFilter(
                 'user_logout_redirect',
                 login_url()
             );
         } else {
-            $logoutLink = Filter::getInstance()->applyFilter(
+            $redirectLink = Filter::getInstance()->applyFilter(
                 'admin_logout_redirect',
                 admin_url()
             );
@@ -158,7 +158,7 @@ final class AdminAuthController extends BaseController
             Devflow::inst()::$APP->flash->error(
                 message: t__(msgid: 'You are already logged out.', domain: 'devflow')
             );
-            return $this->redirect($logoutLink);
+            return $this->redirect($redirectLink);
         }
 
         /**
