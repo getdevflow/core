@@ -264,7 +264,7 @@ function cms_encode_email(string $string): string
     }
 
     // override encoding function with the 'encode_email_method' filter
-    $method = Filter::getInstance()->applyFilter('encode_email_method', 'cms_encode_email_str');
+    $method = Filter::getInstance()->applyFilter('encode_email_method', '\App\Shared\Helpers\cms_encode_email_str');
 
     // override regex pattern with the 'encode_email_regexp' filter
     $regexp = Filter::getInstance()->applyFilter('encode_email_regexp', '{
