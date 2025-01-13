@@ -10,6 +10,7 @@ use Qubus\Exception\Exception;
 use Qubus\Http\Request;
 use ReflectionException;
 
+use function Codefy\Framework\Helpers\config;
 use function filter_var;
 use function http_build_query;
 use function in_array;
@@ -20,6 +21,7 @@ use function parse_url;
 use function preg_replace;
 use function Qubus\Security\Helpers\esc_url;
 use function Qubus\Support\Helpers\concat_ws;
+use function sprintf;
 use function str_starts_with;
 use function trim;
 
@@ -437,4 +439,110 @@ function login_url(string $redirect = '', string $path = '', ?string $scheme = '
 function logout_url(string $redirect = '', string $path = '', ?string $scheme = 'logout'): string
 {
     return cms_logout_url($redirect, $path, $scheme);
+}
+
+/**
+ * Returns the admin login url for a given site.
+ *
+ * @file App/Shared/Helpers/url.php
+ * @param string $redirect Path to redirect to on log in.
+ * @param string $path Optional. Path relative to the login url. Default empty.
+ * @param string|null $scheme Optional. Scheme to give the home URL context. Accepts
+ *                             'http', 'https', 'relative', or null. Default 'login'.
+ * @return string Returns the login url.
+ * @throws Exception
+ * @throws ReflectionException
+ */
+function admin_login_url(string $redirect = '', string $path = '', ?string $scheme = 'login'): string
+{
+    $url = cms_site_url(sprintf('admin%s', config(key: 'auth.login_route')), $scheme);
+
+    if ($path && is_string($path)) {
+        $url .= ltrim($path, '/');
+    }
+
+    if (!empty($redirect)) {
+        $loginUrl = add_query_arg('redirect_to', $redirect, $url);
+    }
+
+    /**
+     * Validates the redirect url.
+     */
+    if (!empty($redirect) && !filter_var($redirect, FILTER_VALIDATE_URL)) {
+        $loginUrl = $url;
+    }
+
+    /**
+     * Last check and escape again just in case.
+     */
+    if (!empty($redirect)) {
+        $loginUrl = esc_url($loginUrl);
+    } else {
+        $loginUrl = esc_url($url);
+    }
+
+    /**
+     * Filters the login URL.
+     *
+     * @file App/Shared/Helpers/url.php
+     * @param string $loginUrl    The login URL. Not HTML-encoded.
+     * @param string $redirect    The path to redirect to on login, if supplied.
+     * @param string $path        Route relative to the login url. Blank string if no path is specified.
+     * @param string|null $scheme Scheme to give the login url context. Accepts 'http', 'https',
+     *                            'relative' or null.
+     */
+    return Filter::getInstance()->applyFilter('admin_login_url', $loginUrl, $redirect, $path, $scheme);
+}
+
+/**
+ * Returns the admin logout url for a given site.
+ *
+ * @file App/Shared/Helpers/url.php
+ * @param string $redirect Path to redirect to on logout.
+ * @param string $path Optional. Path relative to the logout url. Default empty.
+ * @param string|null $scheme Optional. Scheme to give the logout URL context. Accepts
+ *                             'http', 'https', 'relative', or null. Default 'logout'.
+ * @return string Returns the logout url.
+ * @throws Exception
+ * @throws ReflectionException
+ */
+function admin_logout_url(string $redirect = '', string $path = '', ?string $scheme = 'login'): string
+{
+    $url = cms_site_url('admin/logout/', $scheme);
+
+    if ($path && is_string($path)) {
+        $url .= ltrim($path, '/');
+    }
+
+    if (!empty($redirect)) {
+        $logoutUrl = add_query_arg('redirect_to', $redirect, $url);
+    }
+
+    /**
+     * Validates the redirect url.
+     */
+    if (!empty($redirect) && !filter_var($redirect, FILTER_VALIDATE_URL)) {
+        $logoutUrl = $url;
+    }
+
+    /**
+     * Last check and escape again just in case.
+     */
+    if (!empty($redirect)) {
+        $logoutUrl = esc_url($logoutUrl);
+    } else {
+        $logoutUrl = esc_url($url);
+    }
+
+    /**
+     * Filters the logout URL.
+     *
+     * @file App/Shared/Helpers/url.php
+     * @param string $logoutUrl   The logout URL. Not HTML-encoded.
+     * @param string $redirect    The path to redirect to on logout, if supplied.
+     * @param string $path        Route relative to the logout url. Blank string if no path is specified.
+     * @param string|null $scheme Scheme to give the logout url context. Accepts 'http', 'https',
+     *                            'relative' or null.
+     */
+    return Filter::getInstance()->applyFilter('admin_logout_url', $logoutUrl, $redirect, $path, $scheme);
 }
