@@ -155,6 +155,29 @@ function get_current_user_id(): string
  */
 function get_current_user(): false|object
 {
+    deprecation_notice(
+        functionName: __FUNCTION__,
+        deprecatedVersion: '1.3.0',
+        removedVersion: '2.0.0',
+        replacement: 'App\Shared\Helpers\cms_get_current_user()'
+    );
+
+    return cms_get_current_user();
+}
+
+/**
+ * Returns object of data for current user.
+ *
+ * @file App/Shared/Helpers/user.php
+ * @return object|false
+ * @throws ContainerExceptionInterface
+ * @throws Exception
+ * @throws InvalidArgumentException
+ * @throws NotFoundExceptionInterface
+ * @throws ReflectionException
+ */
+function cms_get_current_user(): false|object
+{
     return get_userdata(get_current_user_id());
 }
 
@@ -1349,7 +1372,7 @@ function cms_update_user(array|ServerRequestInterface|User $userdata): string|Us
      * Update the cookies if the username changed.
      * @var User $currentUser
      */
-    $currentUser = get_current_user();
+    $currentUser = cms_get_current_user();
     if (is_user_logged_in() && $currentUser->id === $id) {
         if (isset($userdata['login']) && $userdata['token'] !== $currentUser->token) {
             /**

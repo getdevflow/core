@@ -53,7 +53,7 @@ use function unlink;
 function get_roles(): array
 {
     /** @var User $user */
-    $user = get_current_user();
+    $user = cms_get_current_user();
 
     $result = [];
     foreach ((array) $user->role as $roleName) {
@@ -85,7 +85,7 @@ function get_roles(): array
  */
 function current_user_can(string $perm, array $ruleParams = []): bool
 {
-    $currentUser = get_current_user();
+    $currentUser = cms_get_current_user();
     if (empty($currentUser)) {
         return false;
     }
@@ -119,7 +119,7 @@ function is_user_logged_in(): bool
 
     $cookies = NativePhpCookies::factory();
 
-    $user = get_user_by('token', get_current_user()->token);
+    $user = get_user_by('token', cms_get_current_user()->token);
     return false !== $user && $cookies->verifySecureCookie(key: 'USERCOOKIEID');
 }
 
