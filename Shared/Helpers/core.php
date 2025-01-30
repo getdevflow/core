@@ -22,6 +22,7 @@ use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Psr\SimpleCache\InvalidArgumentException;
 use Qubus\Error\Error;
+use Qubus\EventDispatcher\ActionFilter\Action;
 use Qubus\EventDispatcher\ActionFilter\Filter;
 use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
@@ -50,6 +51,7 @@ use function curl_exec;
 use function curl_getinfo;
 use function curl_init;
 use function curl_setopt;
+use function debug_backtrace;
 use function dirname;
 use function file;
 use function file_exists;
@@ -68,12 +70,14 @@ use function ltrim;
 use function mb_detect_encoding;
 use function mb_strcut;
 use function mb_strtolower;
+use function next;
 use function pathinfo;
 use function preg_quote;
 use function preg_replace;
 use function preg_replace_callback;
 use function preg_split;
 use function Qubus\Security\Helpers\t__;
+use function Qubus\Support\Helpers\php_like;
 use function Qubus\Support\Helpers\remove_trailing_slash;
 use function realpath;
 use function rmdir;
@@ -1457,5 +1461,42 @@ function show_update_message(): void
                 echo Filter::getInstance()->applyFilter('update_message', $alert);
             }
         }
+    }
+}
+
+/**
+ * Used to trigger code deprecation warnings.
+ *
+ * @param string $functionName Name of function that is deprecated.
+ * @param string $deprecatedVersion Version for which code becomes deprecated.
+ * @param string $removedVersion Version for when deprecated code will be removed.
+ * @param string|null $replacement Replacement of deprecated code if any.
+ * @throws ReflectionException
+ */
+function deprecation_notice(
+    string $functionName,
+    string $deprecatedVersion,
+    string $removedVersion,
+    ?string $replacement = null
+): void {
+    $debug = debug_backtrace();
+    $caller = next($debug);
+
+    $message = sprintf(
+        '<strong>%1$s()</strong> is <strong>deprecated</strong> since version %2$s and will be removed in version %3$s. 
+                    Use <strong>%4$s</strong> instead. <br />',
+        $functionName,
+        $deprecatedVersion,
+        $removedVersion,
+        $replacement
+    );
+
+    if (php_like("%dev%", config(key: 'app.env'))) {
+        Action::getInstance()->addAction('admin_notices', function () use ($message, $caller) {
+            echo '<div class="alert dismissable alert-danger center sticky">' .
+                    $message . ' <strong>' . $caller['function'] . '()</strong> is called from <strong>'
+                    . $caller['file'] . '</strong> on line <strong>' . $caller['line'] . '</strong>' .
+                 '</div>';
+        });
     }
 }
