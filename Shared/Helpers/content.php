@@ -511,7 +511,7 @@ function get_permalink(string $contentId): string
  * @throws ReflectionException
  * @throws UnresolvableQueryHandlerException
  */
-function the_content(?string $contentType = null, int $limit = 0, int $offset = null, string $status = 'all'): array
+function get_all_content(?string $contentType = null, int $limit = 0, int $offset = null, string $status = 'all'): array
 {
     return get_all_content_with_filters($contentType, $limit, $offset, $status);
 }
