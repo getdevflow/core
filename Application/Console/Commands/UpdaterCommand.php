@@ -12,6 +12,8 @@ use Qubus\Exception\Exception;
 use Symfony\Component\Console\Input\InputArgument;
 use ZipArchive;
 
+use function App\Shared\Helpers\remote_file_exists;
+use function App\Shared\Helpers\update_server_url;
 use function Codefy\Framework\Helpers\base_path;
 use function curl_close;
 use function curl_exec;
@@ -62,7 +64,7 @@ EOT
     {
         $updater = new Updater();
         $updater->setCurrentVersion(Devflow::inst()->release());
-        $updater->setUpdateUrl(updateUrl: 'https://devflow-cmf.s3.amazonaws.com/api/1.1/update-check');
+        $updater->setUpdateUrl(updateUrl: update_server_url() . '/update-check');
 
         if ($updater->checkUpdate() !== false) {
             if ($updater->newVersionAvailable()) {
@@ -112,11 +114,12 @@ EOT
         }
 
         $zip = new ZipArchive();
-        $file = sprintf('https://devflow-cmf.s3.amazonaws.com/api/1.1/release/%s.zip', $releaseValue);
+        $file = sprintf(update_server_url() . '/release/%s.zip', $releaseValue);
 
         if (version_compare(Devflow::inst()->release(), $releaseValue, '<')) {
+            $remoteUpdateCheck = remote_file_exists(update_server_url() . '/update-check/update.json');
             $zipFile = sprintf('%s.zip', $releaseValue);
-            if ($this->checkExternalFile($file) === 200) {
+            if ($remoteUpdateCheck && $this->checkExternalFile($file) === 200) {
                 //Download file to the server
                 $this->terminalInfo('Downloading . . . . . . . . . . . . .');
                 $this->getDownload($zipFile, $file);
@@ -139,12 +142,20 @@ EOT
 
                 // Updates complete
                 $this->terminalComment('Updates complete!');
+            } elseif ($remoteUpdateCheck && $this->checkExternalFile($file) !== 200) {
+                // Check for composer updates
+                $this->terminalInfo('Checking for composer updates . . . . . . . . . .');
+                $this->terminalRaw(shell_exec(command: 'composer update'));
+
+                // Updates complete
+                $this->terminalComment('Updates complete!');
             } else {
                 $this->terminalError('Update server cannot be reached. Please try again later.');
             }
         } else {
             $this->terminalComment('No updates needed.');
         }
+
         return ConsoleCommand::SUCCESS;
     }
 }

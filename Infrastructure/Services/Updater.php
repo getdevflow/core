@@ -18,6 +18,7 @@ use ReflectionException;
 use RuntimeException;
 use ZipArchive;
 
+use function App\Shared\Helpers\remote_file_exists;
 use function array_map;
 use function base64_encode;
 use function clearstatcache;
@@ -386,6 +387,11 @@ final class Updater
 
         // Create absolute url to update file
         $updateFile = $this->updateUrl . '/' . $this->updateFile;
+        // Check if the file exists or if the server is available.
+        if (remote_file_exists($updateFile) === false) {
+            return false;
+        }
+
         if (!empty($this->branch)) {
             $updateFile .= '.' . $this->branch;
         }

@@ -10,6 +10,8 @@ use Codefy\Framework\Console\ConsoleCommand;
 use Psr\SimpleCache\InvalidArgumentException;
 use Qubus\Exception\Exception;
 
+use function App\Shared\Helpers\update_server_url;
+
 final class UpdaterCheckCommand extends ConsoleCommand
 {
     protected string $name = 'cms:update:check';
@@ -24,7 +26,7 @@ final class UpdaterCheckCommand extends ConsoleCommand
     {
         $updater = new Updater();
         $updater->setCurrentVersion(Devflow::inst()->release());
-        $updater->setUpdateUrl(updateUrl: 'https://devflow-cmf.s3.amazonaws.com/api/1.1/update-check');
+        $updater->setUpdateUrl(updateUrl: update_server_url() . '/update-check');
 
         if ($updater->checkUpdate() !== false) {
             if ($updater->newVersionAvailable()) {
