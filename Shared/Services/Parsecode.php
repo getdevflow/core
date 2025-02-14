@@ -37,6 +37,7 @@ use const PREG_SET_ORDER;
 final class Parsecode
 {
     use StaticProxyAware;
+
     /**
      * Container for storing parsecode tags and their hook to call for the parsecode
      *
@@ -270,39 +271,39 @@ final class Parsecode
 
         // WARNING! Do not change this regex without changing doTag() and strip_parsecode_tag()
         return
-                '\\['                              // Opening bracket
-                . '(\\[?)'                           // 1: Optional second opening bracket for escaping parsecodes: [[tag]]
-                . "($tagregexp)"                     // 2: parsecode name
-                . '\\b'                              // Word boundary
-                . '('                                // 3: Unroll the loop: Inside the opening parsecode tag
-                . '[^\\]\\/]*'                   // Not a closing bracket or forward slash
-                . '(?:'
-                . '\\/(?!\\])'               // A forward slash not followed by a closing bracket
-                . '[^\\]\\/]*'               // Not a closing bracket or forward slash
-                . ')*?'
-                . ')'
-                . '(?:'
-                . '(\\/)'                        // 4: Self closing tag ...
-                . '\\]'                          // ... and closing bracket
-                . '|'
-                . '\\]'                          // Closing bracket
-                . '(?:'
-                . '('                        // 5: Unroll the loop: Optionally, anything between the opening and closing parsecode tags
-                . '[^\\[]*+'             // Not an opening bracket
-                . '(?:'
-                . '\\[(?!\\/\\2\\])' // An opening bracket not followed by the closing parsecode tag
-                . '[^\\[]*+'         // Not an opening bracket
-                . ')*+'
-                . ')'
-                . '\\[\\/\\2\\]'             // Closing parsecode tag
-                . ')?'
-                . ')'
-                . '(\\]?)';                          // 6: Optional second closing brocket for escaping parsecodes: [[tag]]
+        '\\['                              // Opening bracket
+        . '(\\[?)'                           // 1: Optional second opening bracket for escaping parsecodes: [[tag]]
+        . "($tagregexp)"                     // 2: parsecode name
+        . '\\b'                              // Word boundary
+        . '('                                // 3: Unroll the loop: Inside the opening parsecode tag
+        . '[^\\]\\/]*'                   // Not a closing bracket or forward slash
+        . '(?:'
+        . '\\/(?!\\])'               // A forward slash not followed by a closing bracket
+        . '[^\\]\\/]*'               // Not a closing bracket or forward slash
+        . ')*?'
+        . ')'
+        . '(?:'
+        . '(\\/)'                        // 4: Self closing tag ...
+        . '\\]'                          // ... and closing bracket
+        . '|'
+        . '\\]'                          // Closing bracket
+        . '(?:'
+        . '('                        // 5: Unroll the loop: Optionally, anything between the opening and closing parsecode tags
+        . '[^\\[]*+'             // Not an opening bracket
+        . '(?:'
+        . '\\[(?!\\/\\2\\])' // An opening bracket not followed by the closing parsecode tag
+        . '[^\\[]*+'         // Not an opening bracket
+        . ')*+'
+        . ')'
+        . '\\[\\/\\2\\]'             // Closing parsecode tag
+        . ')?'
+        . ')'
+        . '(\\]?)';                          // 6: Optional second closing brocket for escaping parsecodes: [[tag]]
     }
 
     /**
      * Regular Expression callable for $this->doParsecode() for calling parsecode hook.
-     * 
+     *
      * @see $this->getRegex for details of the match array contents.
      * @access private
      * @param array $m Regular expression match array
@@ -423,12 +424,12 @@ final class Parsecode
         $pattern = $this->getRegex();
 
         return preg_replace_callback(
-                "/$pattern/s",
-                [
+            "/$pattern/s",
+            [
                         $this,
                         'stripParsecodeTag',
                 ],
-                $content
+            $content
         );
     }
 
@@ -507,35 +508,35 @@ final class Parsecode
         $tagregexp = join('|', array_map('preg_quote', array_keys(self::$parsecodeTags)));
 
         $pattern = '/'
-                . '<p>'                              // Opening paragraph
-                . '\\s*+'                            // Optional leading whitespace
-                . '('                                // 1: The parsecode
-                . '\\['                          // Opening bracket
-                . "($tagregexp)"                 // 2: parsecode name
-                . '\\b'                          // Word boundary
+        . '<p>'                              // Opening paragraph
+        . '\\s*+'                            // Optional leading whitespace
+        . '('                                // 1: The parsecode
+        . '\\['                          // Opening bracket
+        . "($tagregexp)"                 // 2: parsecode name
+        . '\\b'                          // Word boundary
                 // Unroll the loop: Inside the opening parsecode tag
-                . '[^\\]\\/]*'                   // Not a closing bracket or forward slash
-                . '(?:'
-                . '\\/(?!\\])'               // A forward slash not followed by a closing bracket
-                . '[^\\]\\/]*'               // Not a closing bracket or forward slash
-                . ')*?'
-                . '(?:'
-                . '\\/\\]'                   // Self closing tag and closing bracket
-                . '|'
-                . '\\]'                      // Closing bracket
-                . '(?:'                      // Unroll the loop: Optionally, anything between the opening and closing parsecode tags
-                . '[^\\[]*+'             // Not an opening bracket
-                . '(?:'
-                . '\\[(?!\\/\\2\\])' // An opening bracket not followed by the closing parsecode tag
-                . '[^\\[]*+'         // Not an opening bracket
-                . ')*+'
-                . '\\[\\/\\2\\]'         // Closing parsecode tag
-                . ')?'
-                . ')'
-                . ')'
-                . '\\s*+'                            // optional trailing whitespace
-                . '<\\/p>'                           // closing paragraph
-                . '/s';
+        . '[^\\]\\/]*'                   // Not a closing bracket or forward slash
+        . '(?:'
+        . '\\/(?!\\])'               // A forward slash not followed by a closing bracket
+        . '[^\\]\\/]*'               // Not a closing bracket or forward slash
+        . ')*?'
+        . '(?:'
+        . '\\/\\]'                   // Self closing tag and closing bracket
+        . '|'
+        . '\\]'                      // Closing bracket
+        . '(?:'                      // Unroll the loop: Optionally, anything between the opening and closing parsecode tags
+        . '[^\\[]*+'             // Not an opening bracket
+        . '(?:'
+        . '\\[(?!\\/\\2\\])' // An opening bracket not followed by the closing parsecode tag
+        . '[^\\[]*+'         // Not an opening bracket
+        . ')*+'
+        . '\\[\\/\\2\\]'         // Closing parsecode tag
+        . ')?'
+        . ')'
+        . ')'
+        . '\\s*+'                            // optional trailing whitespace
+        . '<\\/p>'                           // closing paragraph
+        . '/s';
 
         return preg_replace($pattern, '$1', $pee);
     }
