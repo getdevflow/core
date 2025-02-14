@@ -10,7 +10,7 @@ use Codefy\Framework\Console\ConsoleCommand;
 use Psr\SimpleCache\InvalidArgumentException;
 use Qubus\Exception\Exception;
 
-use function App\Shared\Helpers\update_server_url;
+use function App\Shared\Helpers\updater_server_url;
 
 final class UpdaterCheckCommand extends ConsoleCommand
 {
@@ -26,7 +26,7 @@ final class UpdaterCheckCommand extends ConsoleCommand
     {
         $updater = new Updater();
         $updater->setCurrentVersion(Devflow::inst()->release());
-        $updater->setUpdateUrl(updateUrl: update_server_url() . '/update-check');
+        $updater->setUpdateUrl(updateUrl: updater_server_url() . '/update-check');
 
         if ($updater->checkUpdate() !== false) {
             if ($updater->newVersionAvailable()) {

@@ -13,7 +13,7 @@ use Symfony\Component\Console\Input\InputArgument;
 use ZipArchive;
 
 use function App\Shared\Helpers\remote_file_exists;
-use function App\Shared\Helpers\update_server_url;
+use function App\Shared\Helpers\updater_server_url;
 use function Codefy\Framework\Helpers\base_path;
 use function curl_close;
 use function curl_exec;
@@ -64,7 +64,7 @@ EOT
     {
         $updater = new Updater();
         $updater->setCurrentVersion(Devflow::inst()->release());
-        $updater->setUpdateUrl(updateUrl: update_server_url() . '/update-check');
+        $updater->setUpdateUrl(updateUrl: updater_server_url() . '/update-check');
 
         if ($updater->checkUpdate() !== false) {
             if ($updater->newVersionAvailable()) {
@@ -114,10 +114,10 @@ EOT
         }
 
         $zip = new ZipArchive();
-        $file = sprintf(update_server_url() . '/release/%s.zip', $releaseValue);
+        $file = sprintf(updater_server_url() . '/release/%s.zip', $releaseValue);
 
         if (version_compare(Devflow::inst()->release(), $releaseValue, '<')) {
-            $remoteUpdateCheck = remote_file_exists(update_server_url() . '/update-check/update.json');
+            $remoteUpdateCheck = remote_file_exists(updater_server_url() . '/update-check/update.json');
             $zipFile = sprintf('%s.zip', $releaseValue);
             if ($remoteUpdateCheck && $this->checkExternalFile($file) === 200) {
                 //Download file to the server

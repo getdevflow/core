@@ -1427,23 +1427,23 @@ function time_ago(string $original): string
     return $print . ' ago';
 }
 
-function update_server_url(): string
+function updater_server_url(): string
 {
     /**
      * Filters the update api version.
      */
-    $apiVersion = Filter::getInstance()->applyFilter('update_api_version', 'api/1.1');
+    $apiVersion = Filter::getInstance()->applyFilter('updater_api_version', 'api/1.1');
     /**
      * Filters the update base server url.
      */
-    $updateBaseUrl = Filter::getInstance()->applyFilter('update_base_url', 'https://devflow-cmf.s3.amazonaws.com');
+    $updateBaseUrl = Filter::getInstance()->applyFilter('updater_base_url', 'https://devflow-cmf.s3.amazonaws.com');
     /**
-     * Filters the base url where update.json and
+     * Filters the updater url where update.json and
      * releases.json are located.
      */
     return Filter::getInstance()->applyFilter(
         'updater_url',
-        sprintf('%s/%s', $updateBaseUrl, $apiVersion),
+        sprintf('%s/%s', $updateBaseUrl, $apiVersion)
     );
 }
 
@@ -1464,7 +1464,7 @@ function show_update_message(): void
     ) {
         $update = new Updater();
         $update->setCurrentVersion(Devflow::inst()->release());
-        $update->setUpdateUrl(update_server_url() . '/update-check');
+        $update->setUpdateUrl(updater_server_url() . '/update-check');
 
         if ($update->checkUpdate() !== false) {
             if ($update->newVersionAvailable()) {
