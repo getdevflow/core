@@ -41,7 +41,7 @@ final class ApiRouteServiceProvider extends CodefyServiceProvider
                     ->where(['id' => '[0123456789ABCDEFGHJKMNPQRSTVWXYZ{26}$]+'])
                     ->name('v2.content.show');
             $group->post(uri: '/content/store/', callback: 'ContentRestController@store');
-            $group->put(uri: '/content/{id}/', callback: 'ContentRestController@update')
+            $group->map(verbs: ['PUT', 'PATCH'], uri: '/content/{id}/', callback: 'ContentRestController@update')
                     ->where(['id' => '[0123456789ABCDEFGHJKMNPQRSTVWXYZ{26}$]+'])
                     ->name('v2.content.update');
             $group->delete(uri: '/content/{id}/', callback: 'ContentRestController@destroy')
@@ -54,7 +54,7 @@ final class ApiRouteServiceProvider extends CodefyServiceProvider
                     ->where(['id' => '[0123456789ABCDEFGHJKMNPQRSTVWXYZ{26}$]+'])
                     ->name('v2.user.show');
             $group->post(uri: '/user/store/', callback: 'UserRestController@store');
-            $group->put(uri: '/user/{id}/', callback: 'UserRestController@update')
+            $group->map(verbs: ['PUT', 'PATCH'], uri: '/user/{id}/', callback: 'UserRestController@update')
                     ->where(['id' => '[0123456789ABCDEFGHJKMNPQRSTVWXYZ{26}$]+'])
                     ->name('v2.user.update');
             $group->delete(uri: '/user/{id}/', callback: 'UserRestController@destroy')
@@ -67,7 +67,7 @@ final class ApiRouteServiceProvider extends CodefyServiceProvider
                     ->where(['id' => '[0123456789ABCDEFGHJKMNPQRSTVWXYZ{26}$]+'])
                     ->name('v2.product.show');
             $group->post(uri: '/product/store/', callback: 'ProductRestController@store');
-            $group->put(uri: '/product/{id}/', callback: 'ProductRestController@update')
+            $group->map(verbs: ['PUT', 'PATCH'], uri: '/product/{id}/', callback: 'ProductRestController@update')
                     ->where(['id' => '[0123456789ABCDEFGHJKMNPQRSTVWXYZ{26}$]+'])
                     ->name('v2.product.update');
             $group->delete(uri: '/product/{id}/', callback: 'ProductRestController@destroy')
