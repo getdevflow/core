@@ -198,10 +198,6 @@ final class Site extends EventSourcedAggregate implements AggregateRoot
      */
     public function changeSiteMapping(StringLiteral $siteMapping): void
     {
-        if ($siteMapping->isEmpty()) {
-            return;
-        }
-
         if ($siteMapping->equals($this->siteMapping)) {
             return;
         }
