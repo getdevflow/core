@@ -54,7 +54,7 @@ abstract class Theme implements Extension
     }
 
     /**
-     * The plugin's directory path.
+     * The theme's directory path.
      *
      * @return string
      */

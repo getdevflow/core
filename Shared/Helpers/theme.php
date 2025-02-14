@@ -4,8 +4,12 @@ namespace App\Shared\Helpers;
 
 use App\Application\Devflow;
 use App\Infrastructure\Services\Options;
+use App\Shared\Services\Items;
 use App\Shared\Services\PhpFileParser;
+use App\Shared\Services\TemplateRegistry;
+use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
 use Codefy\Framework\Factory\FileLoggerFactory;
+use Codefy\QueryBus\UnresolvableQueryHandlerException;
 use PDOException;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
@@ -17,8 +21,8 @@ use Qubus\Exception\Exception;
 use ReflectionException;
 
 use function basename;
-use function Codefy\Framework\Helpers\config;
 use function Codefy\Framework\Helpers\public_path;
+use function count;
 use function dirname;
 use function glob;
 use function is_string;
@@ -235,6 +239,8 @@ function less_directory_uri(): string
 }
 
 /**
+ * Returns the base directory for theme stylesheet.
+ *
  * @return string
  * @throws ContainerExceptionInterface
  * @throws Exception
@@ -326,7 +332,7 @@ function theme_info(string $themesDir = ''): array
 }
 
 /**
- * Activates a specific theme that is called by $_GET['id'] variable.
+ * Activates a specific theme by namespace.
  *
  * @file App/Shared/Helpers/theme.php
  * @param string $theme ID of the theme to activate
@@ -352,7 +358,7 @@ function activate_theme(string $theme): void
 }
 
 /**
- * Deactivates a theme.
+ * Deactivates an active theme.
  *
  * @file App/Shared/Helpers/theme.php
  * @return void
@@ -403,6 +409,8 @@ function is_theme_active(string $theme = ''): bool
 }
 
 /**
+ * Executes the active theme.
+ *
  * @throws ContainerExceptionInterface
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
@@ -423,4 +431,443 @@ function load_active_theme(): void
          */
         Action::getInstance()->doAction('theme_active', $activeTheme);
     }
+}
+
+/**
+ * Checks whether there is content.
+ *
+ * @param string|null $type
+ * @param int $limit
+ * @param int|null $offset
+ * @param string $status
+ * @return bool
+ * @throws CommandPropertyNotFoundException
+ * @throws ReflectionException
+ * @throws UnresolvableQueryHandlerException
+ */
+function has_content(?string $type = null, int $limit = 0, ?int $offset = null, string $status = 'published'): bool
+{
+    $filteredContent = get_all_content_with_filters(
+        contentTypeSlug: $type,
+        limit: $limit,
+        offset: $offset,
+        status: $status
+    );
+
+    $sortedContent = sort_list($filteredContent, 'published', 'DESC');
+
+    $content = new Items(items: $sortedContent);
+    TemplateRegistry::set(key: 'all-content', value: $content);
+
+    return count($filteredContent) > 0;
+}
+
+/**
+ * Loops through all content.
+ *
+ * @return bool
+ */
+function the_content(): bool
+{
+    $content = TemplateRegistry::get(key: 'all-content');
+    if ($result = $content->valid()) {
+        // register single content
+        TemplateRegistry::set(key: 'content', value: $content->current());
+        // move to next
+        $content->next();
+    } else {
+        // back to the start
+        $content->rewind();
+    }
+    return $result;
+}
+
+/**
+ * The content's unique id.
+ *
+ * @return string
+ */
+function content_id(): string
+{
+    return TemplateRegistry::prop(object: 'content', key: 'id');
+}
+
+/**
+ * The content's title.
+ *
+ * @return string
+ * @throws ContainerExceptionInterface
+ * @throws Exception
+ * @throws InvalidArgumentException
+ * @throws NotFoundExceptionInterface
+ * @throws ReflectionException
+ */
+function content_title(): string
+{
+    if ($title = TemplateRegistry::prop(object: 'content', key: 'title')) {
+        return the_title(content_id());
+    }
+    return $title;
+}
+
+/**
+ * The content's slug.
+ *
+ * @return string
+ */
+function content_slug(): string
+{
+    return TemplateRegistry::prop(object: 'content', key: 'slug');
+}
+
+/**
+ * The content's body.
+ *
+ * @return string
+ * @throws ContainerExceptionInterface
+ * @throws Exception
+ * @throws InvalidArgumentException
+ * @throws NotFoundExceptionInterface
+ * @throws ReflectionException
+ */
+function content_body(): string
+{
+    if ($body = TemplateRegistry::prop(object: 'content', key: 'body')) {
+        return the_body(content_id());
+    }
+    return $body;
+}
+
+/**
+ * The content's author.
+ *
+ * @return string
+ * @throws ContainerExceptionInterface
+ * @throws Exception
+ * @throws InvalidArgumentException
+ * @throws NotFoundExceptionInterface
+ * @throws ReflectionException
+ */
+function content_author(): string
+{
+    if ($author = TemplateRegistry::prop(object: 'content', key: 'author')) {
+        return get_content_author(content_id());
+    }
+    return $author;
+}
+
+/**
+ * The content's featured image.
+ *
+ * @return string
+ */
+function content_featured_image(): string
+{
+    return TemplateRegistry::prop(object: 'content', key: 'featuredImage');
+}
+
+/**
+ * The content's permalink.
+ *
+ * @return string
+ * @throws ContainerExceptionInterface
+ * @throws Exception
+ * @throws InvalidArgumentException
+ * @throws NotFoundExceptionInterface
+ * @throws ReflectionException
+ */
+function content_permalink(): string
+{
+    if ($permalink = TemplateRegistry::prop(object: 'content', key: 'author')) {
+        return the_permalink(content_id());
+    }
+    return $permalink;
+}
+
+/**
+ * The content's published date.
+ *
+ * @return string
+ * @throws ContainerExceptionInterface
+ * @throws Exception
+ * @throws InvalidArgumentException
+ * @throws NotFoundExceptionInterface
+ * @throws ReflectionException
+ */
+function content_published_date(): string
+{
+    if ($publishedDate = TemplateRegistry::prop(object: 'content', key: 'published')) {
+        return the_published_date(content_id(), get_user_date_format());
+    }
+    return $publishedDate;
+}
+
+/**
+ * The content's published time.
+ *
+ * @return string
+ * @throws ContainerExceptionInterface
+ * @throws Exception
+ * @throws InvalidArgumentException
+ * @throws NotFoundExceptionInterface
+ * @throws ReflectionException
+ */
+function content_published_time(): string
+{
+    if ($publishedTime = TemplateRegistry::prop(object: 'content', key: 'published')) {
+        return the_published_time(content_id(), get_user_time_format());
+    }
+    return $publishedTime;
+}
+
+/**
+ * The content's published datetime.
+ *
+ * @return string
+ * @throws Exception
+ * @throws InvalidArgumentException
+ * @throws ReflectionException
+ */
+function content_published_datetime(): string
+{
+    if ($publishedDatetime = TemplateRegistry::prop(object: 'content', key: 'published')) {
+        return get_content_datetime(content_id());
+    }
+    return $publishedDatetime;
+}
+
+/**
+ * Checks whether there are products.
+ *
+ * @param int $limit
+ * @param int|null $offset
+ * @param string $status
+ * @return bool
+ * @throws CommandPropertyNotFoundException
+ * @throws ReflectionException
+ * @throws UnresolvableQueryHandlerException
+ */
+function has_products(int $limit = 0, ?int $offset = null, string $status = 'published'): bool
+{
+    $filteredProducts = get_all_products_with_filters(limit: $limit, offset: $offset, status: $status);
+
+    $products = new Items(items: $filteredProducts);
+    TemplateRegistry::set(key: 'products', value: $products);
+
+    return count($filteredProducts) > 0;
+}
+
+/**
+ * Loops through all products.
+ *
+ * @return bool
+ */
+function the_product(): bool
+{
+    $product = TemplateRegistry::get(key: 'products');
+    if ($result = $product->valid()) {
+        // register single product
+        TemplateRegistry::set(key: 'product', value: $product->current());
+        // move to next
+        $product->next();
+    } else {
+        // back to the start
+        $product->rewind();
+    }
+    return $result;
+}
+
+/**
+ * The product's unique id.
+ *
+ * @return string|null
+ */
+function product_id(): ?string
+{
+    return TemplateRegistry::prop(object: 'product', key: 'id');
+}
+
+/**
+ * The product's title.
+ *
+ * @return string|null
+ * @throws ContainerExceptionInterface
+ * @throws Exception
+ * @throws InvalidArgumentException
+ * @throws NotFoundExceptionInterface
+ * @throws ReflectionException
+ */
+function product_title(): ?string
+{
+    if ($title = TemplateRegistry::prop(object: 'product', key: 'title')) {
+        return get_product_title(product_id());
+    }
+    return $title;
+}
+
+/**
+ * The product's slug.
+ *
+ * @return string|null
+ */
+function product_slug(): ?string
+{
+    return TemplateRegistry::prop(object: 'product', key: 'slug');
+}
+
+/**
+ * The product's body.
+ *
+ * @return string
+ * @throws ContainerExceptionInterface
+ * @throws Exception
+ * @throws InvalidArgumentException
+ * @throws NotFoundExceptionInterface
+ * @throws ReflectionException
+ */
+function product_body(): string
+{
+    if ($body = TemplateRegistry::prop(object: 'product', key: 'body')) {
+        return get_product_body(product_id());
+    }
+    return $body;
+}
+
+/**
+ * The product's author.
+ *
+ * @return string|false
+ * @throws ContainerExceptionInterface
+ * @throws Exception
+ * @throws InvalidArgumentException
+ * @throws NotFoundExceptionInterface
+ * @throws ReflectionException
+ */
+function product_author(): string|false
+{
+    if ($author = TemplateRegistry::prop(object: 'product', key: 'author')) {
+        return get_product_author(product_id());
+    }
+    return $author;
+}
+
+/**
+ * The product's sku.
+ *
+ * @return string|false
+ * @throws ContainerExceptionInterface
+ * @throws Exception
+ * @throws InvalidArgumentException
+ * @throws NotFoundExceptionInterface
+ * @throws ReflectionException
+ */
+function product_sku(): string|false
+{
+    if ($sku = TemplateRegistry::prop(object: 'product', key: 'sku')) {
+        return get_product_sku(product_id());
+    }
+    return $sku;
+}
+
+/**
+ * The product's price.
+ *
+ * @return string|null
+ */
+function product_price(): ?string
+{
+    return TemplateRegistry::prop(object: 'product', key: 'price');
+}
+
+/**
+ * The product's currency.
+ *
+ * @return string|null
+ */
+function product_currency(): ?string
+{
+    return TemplateRegistry::prop(object: 'product', key: 'currency');
+}
+
+/**
+ * The product's purchase url.
+ *
+ * @return string|null
+ */
+function product_purchase_url(): ?string
+{
+    return TemplateRegistry::prop(object: 'product', key: 'purchaseUrl');
+}
+
+/**
+ * The product's featured image.
+ *
+ * @return string|null
+ */
+function product_featured_image(): ?string
+{
+    return TemplateRegistry::prop(object: 'product', key: 'featuredImage');
+}
+
+/**
+ * The product's permalink.
+ *
+ * @return string|null
+ * @throws Exception
+ * @throws ReflectionException
+ */
+function product_permalink(): ?string
+{
+    return home_url(TemplateRegistry::prop(object: 'product', key: 'relativeUrl'));
+}
+
+/**
+ * The product's published date.
+ *
+ * @return string|null
+ * @throws ContainerExceptionInterface
+ * @throws Exception
+ * @throws InvalidArgumentException
+ * @throws NotFoundExceptionInterface
+ * @throws ReflectionException
+ */
+function product_published_date(): ?string
+{
+    if ($publishedDate = TemplateRegistry::prop(object: 'product', key: 'published')) {
+        return get_product_published_date(product_id(), get_user_date_format());
+    }
+    return $publishedDate;
+}
+
+/**
+ * The product's published time.
+ *
+ * @return string|null
+ * @throws ContainerExceptionInterface
+ * @throws Exception
+ * @throws InvalidArgumentException
+ * @throws NotFoundExceptionInterface
+ * @throws ReflectionException
+ */
+function product_published_time(): ?string
+{
+    if ($publishedTime = TemplateRegistry::prop(object: 'product', key: 'published')) {
+        return get_product_published_time(product_id(), get_user_time_format());
+    }
+    return $publishedTime;
+}
+
+/**
+ * The product's published datetime.
+ *
+ * @return string|null
+ * @throws Exception
+ * @throws ReflectionException
+ */
+function product_published_datetime(): ?string
+{
+    if ($publishedDatetime = TemplateRegistry::prop(object: 'product', key: 'published')) {
+        return get_product_datetime(product_id());
+    }
+    return $publishedDatetime;
 }
