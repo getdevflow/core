@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Shared\Services;
 
+use Melbahja\Seo\Indexing;
 use Melbahja\Seo\Interfaces\SchemaInterface;
 use Melbahja\Seo\MetaTags;
 use Melbahja\Seo\Ping;
@@ -74,5 +75,17 @@ final class SeoFactory
     public static function ping(array $append = []): Ping
     {
         return new Ping($append);
+    }
+
+    /**
+     * Initialize indexer.
+     *
+     * @param string $host
+     * @param array $keys
+     * @return Indexing
+     */
+    public static function indexing(string $host, array $keys): Indexing
+    {
+        return new Indexing(host: $host, keys: $keys);
     }
 }
