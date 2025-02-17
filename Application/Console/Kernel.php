@@ -6,16 +6,9 @@ namespace App\Application\Console;
 
 use Codefy\Framework\Console\ConsoleKernel;
 use Codefy\Framework\Scheduler\Schedule;
-use Qubus\Exception\Data\TypeException;
-
-use function App\Shared\Helpers\home_url;
-use function App\Shared\Helpers\set_url_scheme;
-use function curl_close;
-use function curl_exec;
-use function curl_init;
-use function curl_setopt;
-
-use const CURLOPT_RETURNTRANSFER;
+use Qubus\EventDispatcher\ActionFilter\Action;
+use Qubus\Exception\Exception;
+use ReflectionException;
 
 class Kernel extends ConsoleKernel
 {
@@ -24,18 +17,12 @@ class Kernel extends ConsoleKernel
      *
      * @param Schedule $schedule
      * @return void
-     * @throws TypeException
+     * @throws Exception
+     * @throws ReflectionException
      */
     protected function schedule(Schedule $schedule): void
     {
-        $schedule->command(command: 'email:send')->everyMinute();
-        /*$schedule->command(command: function () {
-            $command = set_url_scheme(home_url('cron/'));
-            $ch = curl_init($command);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, false);
-            curl_exec($ch);
-            curl_close($ch);
-        })->everyMinute();*/
+        Action::getInstance()->doAction('scheduler', $schedule);
     }
 
     /**
