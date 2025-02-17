@@ -46,6 +46,8 @@ use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
 use Qubus\Http\Session\SessionException;
 use Qubus\NoSql\NodeQ;
+use Qubus\Support\Collection\ArrayCollection;
+use Qubus\Support\Collection\Collection;
 use Qubus\Support\DateTime\QubusDateTimeImmutable;
 use Qubus\Support\Inflector;
 use ReflectionException;
@@ -1112,4 +1114,27 @@ function cms_nodeq_reset_password(): void
             }
         }
     }
+}
+
+/**
+ * Creates a new collection.
+ *
+ * @param string|null $value
+ * @return Collection
+ * @throws CommandPropertyNotFoundException
+ * @throws ReflectionException
+ * @throws UnresolvableQueryHandlerException
+ */
+function cms_collection(?string $value = null): Collection
+{
+    $array = match ($value) {
+        'user','users' => get_all_users(),
+        'site','sites' => get_all_sites(),
+        'content' => get_all_content(),
+        'contentType','type','contenttype','contentype' => get_all_content_types(),
+        'product','products' => get_all_products_with_filters(),
+        default => [],
+    };
+
+    return new ArrayCollection($array);
 }
