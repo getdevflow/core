@@ -2188,6 +2188,15 @@ function cms_insert_content(array|ServerRequestInterface|Content $contentdata): 
         $contentModifiedGmt = (new DateTime(QubusDateTimeImmutable::now('GMT')->toDateTimeString()))->getDateTime();
     }
 
+    if (
+        $contentStatus === 'published' &&
+            ($contentPublished->format('Y-m-d H:i:s') >
+                    (new DateTime('now', get_user_timezone()))->format())
+    ) {
+        $contentStatus = 'scheduled';
+        $content->status = $contentStatus;
+    }
+
     $contentDataArray = [
         'id' => $contentId->toNative(),
         'slug' => $contentSlug,

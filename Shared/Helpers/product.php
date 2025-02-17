@@ -1897,6 +1897,15 @@ function cms_insert_product(array|ServerRequestInterface|Product $productdata): 
         $productModifiedGmt = (new DateTime(QubusDateTimeImmutable::now('GMT')->toDateTimeString()))->getDateTime();
     }
 
+    if (
+        $productStatus === 'published' &&
+            ($productPublished->format('Y-m-d H:i:s') >
+                    (new DateTime('now', get_user_timezone()))->format())
+    ) {
+        $productStatus = 'scheduled';
+        $product->status = $productStatus;
+    }
+
     $dataArray = [
         'id' => $productId->toNative(),
         'slug' => $productSlug,
