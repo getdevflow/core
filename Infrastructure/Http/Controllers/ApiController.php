@@ -83,13 +83,14 @@ final class ApiController extends BaseController
     }
 
     /**
+     * @param ServerRequest $request
      * @param string $table
      * @param string $field
      * @param mixed $value
      * @return ResponseInterface
      * @throws Exception
      */
-    public function column(string $table, string $field, mixed $value): ResponseInterface
+    public function column(ServerRequest $request, string $table, string $field, mixed $value): ResponseInterface
     {
         try {
             $this->dfdb
@@ -106,19 +107,36 @@ final class ApiController extends BaseController
 
         $query = $this->dfdb->qb()
                 ->table($this->dfdb->prefix . $table)
-                ->where($field, $value)
-                ->find(function ($data) {
-                    $results = [];
-                    foreach ($data as $d) {
-                        $results[] = $d;
-                    }
-                    return $results;
-                });
+                ->where($field, $value);
 
-        if (is_false__($query)) {
+        if (isset($request->getQueryParams()['by']) === true) {
+            if (isset($request->getQueryParams()['order']) !== true) {
+                $order = 'ASC';
+            } else {
+                $order = $request->getQueryParams()['order'];
+            }
+            $query->orderBy($request->getQueryParams()['by'], $order);
+        }
+
+        if (isset($request->getQueryParams()['limit']) === true) {
+            $query->limit((int) $request->getQueryParams()['limit']);
+            if (isset($request->getQueryParams()['offset']) === true) {
+                $query->offset($request->getQueryParams()['offset']);
+            }
+        }
+
+        $data = $query->find(function ($data) {
+            $results = [];
+            foreach ($data as $d) {
+                $results[] = $d;
+            }
+            return $results;
+        });
+
+        if (is_false__($data)) {
             return JsonResponseFactory::create(t__(msgid: 'No data.', domain: 'devflow'), 404);
         }
 
-        return JsonResponseFactory::create($query);
+        return JsonResponseFactory::create($data);
     }
 }
