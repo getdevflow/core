@@ -106,11 +106,11 @@ final class CmsHelperServiceProvider extends CodefyServiceProvider
         Action::getInstance()->addAction('flush_cache', 'App\Shared\Helpers\populate_options_cache', 5);
         Action::getInstance()->addAction('maintenance_mode', 'App\Shared\Helpers\cms_maintenance_mode', 1);
         Action::getInstance()->addAction('cms_logout', 'App\Shared\Helpers\renew_csrf_session', 5, 2);
-        Filter::getInstance()->addFilter('the_content', [Parsecode::getInstance(), 'autop']);
-        Filter::getInstance()->addFilter('the_content', [Parsecode::getInstance(), 'unAutop']);
-        Filter::getInstance()->addFilter('the_content', [Parsecode::getInstance(), 'doParsecode'], 5);
+        Filter::getInstance()->addFilter('the_body', [Parsecode::getInstance(), 'autop']);
+        Filter::getInstance()->addFilter('the_body', [Parsecode::getInstance(), 'unAutop']);
+        Filter::getInstance()->addFilter('the_body', [Parsecode::getInstance(), 'doParsecode'], 5);
         Filter::getInstance()->addFilter(
-            'the_content',
+            'the_body',
             'App\Shared\Helpers\cms_encode_email',
             $this->codefy->configContainer->getConfigKey(key: 'cms.eae_filter_priority')
         );
