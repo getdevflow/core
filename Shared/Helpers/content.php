@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Shared\Helpers;
 
+use App\Domain\Content\Command\UpdateProductStatusCommand;
 use App\Domain\Content\Model\Content;
 use App\Domain\Content\Command\CreateContentCommand;
 use App\Domain\Content\Command\DeleteContentCommand;
@@ -58,6 +59,7 @@ use function Qubus\Support\Helpers\concat_ws;
 use function Qubus\Support\Helpers\is_false__;
 use function Qubus\Support\Helpers\is_null__;
 use function Qubus\Support\Helpers\php_like;
+use function sprintf;
 use function str_replace;
 
 /**
@@ -527,6 +529,7 @@ function content_status_label(string $status): string
 {
     $label = [
         'published' => 'label-success',
+        'scheduled' => 'label-primary',
         'draft' => 'label-warning',
         'pending' => 'label-default',
         'archived' => 'label-danger'
@@ -2189,7 +2192,7 @@ function cms_insert_content(array|ServerRequestInterface|Content $contentdata): 
     }
 
     if (
-        $contentStatus === 'published' &&
+        $contentStatus !== 'scheduled' &&
             ($contentPublished->format('Y-m-d H:i:s') >
                     (new DateTime('now', get_user_timezone()))->format())
     ) {
@@ -2863,4 +2866,56 @@ function the_title(string|Content|ContentId $content): string
      * @param mixed  $theTitle Content title.
      */
     return Filter::getInstance()->applyFilter('the_title', $theTitle);
+}
+
+/**
+ * @throws CommandCouldNotBeHandledException
+ * @throws CommandPropertyNotFoundException
+ * @throws ContainerExceptionInterface
+ * @throws Exception
+ * @throws InvalidArgumentException
+ * @throws NotFoundExceptionInterface
+ * @throws ReflectionException
+ * @throws TypeException
+ * @throws UnresolvableCommandHandlerException
+ * @throws UnresolvableQueryHandlerException
+ */
+function publish_scheduled_content(): void
+{
+    $resolver = new NativeCommandHandlerResolver(
+        container: ContainerFactory::make(config: config(key: 'commandbus.container'))
+    );
+    $odin = new Odin(bus: new SynchronousCommandBus($resolver));
+
+    $contents = get_all_content();
+    $now = (new DateTime('now', get_user_timezone()))->getDateTime();
+
+    try {
+        foreach ($contents as $content) {
+            if (
+                $content['status'] === 'scheduled' &&
+                ($now->format('Y-m-d H:i:s') >= (new DateTime($content['published'], get_user_timezone()))->format())
+            ) {
+                $command = new UpdateProductStatusCommand([
+                    'contentId' => ContentId::fromString($content['id']),
+                    'contentStatus' => new StringLiteral('published'),
+                    'contentModified' => $now,
+                    'contentModifiedGmt' => (new DateTime('now', 'GMT'))->getDateTime(),
+                ]);
+
+                $odin->execute($command);
+            }
+        }
+    } catch (PDOException $ex) {
+        FileLoggerFactory::getLogger()->error(
+            sprintf(
+                'SQLSTATE[%s]: %s',
+                $ex->getCode(),
+                $ex->getMessage()
+            ),
+            [
+                'Content Function' => 'publish_scheduled_content'
+            ]
+        );
+    }
 }

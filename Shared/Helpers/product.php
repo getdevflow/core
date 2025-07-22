@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Shared\Helpers;
 
 use App\Domain\Product\Command\DeleteProductCommand;
+use App\Domain\Product\Command\UpdateProductStatusCommand;
 use App\Domain\Product\Query\FindProductsQuery;
 use App\Domain\Product\Command\CreateProductCommand;
 use App\Domain\Product\Command\UpdateProductCommand;
@@ -370,6 +371,7 @@ function product_status_label(string $status): string
 {
     $label = [
         'published' => 'label-success',
+        'scheduled' => 'label-primary',
         'draft' => 'label-warning',
         'pending' => 'label-default',
         'archived' => 'label-danger'
@@ -1898,7 +1900,7 @@ function cms_insert_product(array|ServerRequestInterface|Product $productdata): 
     }
 
     if (
-        $productStatus === 'published' &&
+        $productStatus !== 'scheduled' &&
             ($productPublished->format('Y-m-d H:i:s') >
                     (new DateTime('now', get_user_timezone()))->format())
     ) {
@@ -2377,5 +2379,57 @@ function currency_option(?string $active = null): void
 {
     foreach (config(key: 'currency') as $code => $currency) {
         echo '<option value="' . $code . '"' . selected($code, $active, false) . '>' . $code . '</option>' . "\r\n";
+    }
+}
+
+/**
+ * @throws CommandCouldNotBeHandledException
+ * @throws CommandPropertyNotFoundException
+ * @throws ContainerExceptionInterface
+ * @throws Exception
+ * @throws InvalidArgumentException
+ * @throws NotFoundExceptionInterface
+ * @throws ReflectionException
+ * @throws TypeException
+ * @throws UnresolvableCommandHandlerException
+ * @throws UnresolvableQueryHandlerException
+ */
+function publish_scheduled_product(): void
+{
+    $resolver = new NativeCommandHandlerResolver(
+        container: ContainerFactory::make(config: config(key: 'commandbus.container'))
+    );
+    $odin = new Odin(bus: new SynchronousCommandBus($resolver));
+
+    $products = get_all_products_with_filters();
+    $now = (new DateTime('now', get_user_timezone()))->getDateTime();
+
+    try {
+        foreach ($products as $product) {
+            if (
+                $product['status'] === 'scheduled' &&
+                ($now->format('Y-m-d H:i:s') >= (new DateTime($product['published'], get_user_timezone()))->format())
+            ) {
+                $command = new UpdateProductStatusCommand([
+                    'productId' => ProductId::fromString($product['id']),
+                    'productStatus' => new StringLiteral('published'),
+                    'productModified' => $now,
+                    'productModifiedGmt' => (new DateTime('now', 'GMT'))->getDateTime(),
+                ]);
+
+                $odin->execute($command);
+            }
+        }
+    } catch (PDOException $ex) {
+        FileLoggerFactory::getLogger()->error(
+            sprintf(
+                'SQLSTATE[%s]: %s',
+                $ex->getCode(),
+                $ex->getMessage()
+            ),
+            [
+                'Product Function' => 'publish_scheduled_product'
+            ]
+        );
     }
 }

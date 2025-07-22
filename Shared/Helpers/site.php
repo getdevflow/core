@@ -1782,3 +1782,98 @@ function siteinfo(string $show = ''): string
 {
     return get_siteinfo($show, 'display');
 }
+
+/**
+ * Switches the current site.
+ *
+ * @param string|null $siteKey
+ * @return bool
+ * @throws ContainerExceptionInterface
+ * @throws Exception
+ * @throws NotFoundExceptionInterface
+ * @throws ReflectionException
+ */
+function switch_to_site(?string $siteKey = null): bool
+{
+    $stacked = [];
+
+    $prevSiteKey = get_current_site_key();
+
+    if (is_null__($siteKey)) {
+        $siteKey = $prevSiteKey;
+    }
+
+    $stacked[] = $prevSiteKey;
+
+    Registry::getInstance()->set('switched_stack', $stacked);
+
+    if ($siteKey === $prevSiteKey) {
+        Action::getInstance()->doAction('switch_site', $siteKey, $prevSiteKey, 'switch');
+
+        Registry::getInstance()->set('switched', true);
+
+        return true;
+    }
+
+    dfdb()->setSiteKey($siteKey);
+    Registry::getInstance()->set('tblPrefix', dfdb()->getSitePrefix());
+    Registry::getInstance()->set('siteKey', $siteKey);
+
+    Action::getInstance()->doAction('switch_site', $siteKey, $prevSiteKey, 'switch');
+
+    Registry::getInstance()->set('switched', true);
+
+    return true;
+}
+
+/**
+ * Restores the current site, after calling switch_to_site().
+ *
+ * @throws ContainerExceptionInterface
+ * @throws NotFoundExceptionInterface
+ * @throws Exception
+ * @throws ReflectionException
+ * @return bool True on success or if we're already on the current site.
+ */
+function restore_current_site(): bool
+{
+    if (empty(Registry::getInstance()->get('switched_stack'))) {
+        return false;
+    }
+
+    $arrayStack = Registry::getInstance()->get('switched_stack');
+    $siteKey = array_pop($arrayStack);
+    $prevSiteKey = get_current_site_key();
+
+    if ($siteKey === $prevSiteKey) {
+        Action::getInstance()->doAction('switch_site', $siteKey, $prevSiteKey, 'restore');
+
+        // If we still have items in the switched stack, consider ourselves still 'switched'.
+        Registry::getInstance()->set('switched', !empty($arrayStack));
+
+        return true;
+    }
+
+    dfdb()->setSiteKey($siteKey);
+    Registry::getInstance()->set('siteKey', $siteKey);
+    Registry::getInstance()->set('tblPrefix', dfdb()->getSitePrefix());
+
+    Action::getInstance()->doAction('switch_site', $siteKey, $prevSiteKey, 'restore');
+
+    // If we still have items in the switched stack, consider ourselves still 'switched'.
+    Registry::getInstance()->set('switched', !empty($arrayStack));
+
+    return true;
+}
+
+/**
+ * Determines if site switching is in effect.
+ *
+ * @throws ReflectionException
+ * @throws ContainerExceptionInterface
+ * @throws NotFoundExceptionInterface
+ */
+function site_switching_in_effect(): bool
+{
+    return Registry::getInstance()->has('switched_stack') && !empty(Registry::getInstance()->get('switched_stack'));
+}
