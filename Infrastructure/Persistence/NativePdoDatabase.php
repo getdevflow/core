@@ -37,7 +37,6 @@ use function md5;
 use function preg_match;
 use function preg_match_all;
 use function preg_split;
-use function Qubus\Config\Helpers\env;
 use function Qubus\Security\Helpers\t__;
 use function Qubus\Support\Helpers\is_null__;
 use function sprintf;
@@ -304,7 +303,7 @@ final class NativePdoDatabase implements Database
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException|Exception
      */
-    public function getResults(string $query = null, string $output = Database::OBJECT): false|string|array
+    public function getResults(?string $query = null, string $output = Database::OBJECT): false|string|array
     {
         if ($query) {
             $this->queryPrepared($query);
@@ -346,7 +345,7 @@ final class NativePdoDatabase implements Database
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
      */
-    public function getVar(string $query = null, int $x = 0, int $y = 0): string|int|null
+    public function getVar(?string $query = null, int $x = 0, int $y = 0): string|int|null
     {
         if ($query) {
             $this->queryPrepared($query);
@@ -374,7 +373,7 @@ final class NativePdoDatabase implements Database
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
      */
-    public function getCol(string $query = null, int $x = 0): ?array
+    public function getCol(?string $query = null, int $x = 0): ?array
     {
         $newArray = [];
         if ($query) {
@@ -406,7 +405,7 @@ final class NativePdoDatabase implements Database
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
      */
-    public function getRow(string $query = null, string $output = Database::OBJECT, int $y = 0): object|array|null
+    public function getRow(?string $query = null, string $output = Database::OBJECT, int $y = 0): object|array|null
     {
         if ($query) {
             $this->queryPrepared($query);
@@ -437,11 +436,11 @@ final class NativePdoDatabase implements Database
     }
 
     /**
-     * @param null $log
+     * @param string|null $log
      * @throws Exception
      * @throws ReflectionException
      */
-    private function logPreparedStmt($log = null): void
+    private function logPreparedStmt(?string $log = null): void
     {
         if ($this->configContainer->getConfigKey(key: 'app.debug') === true) {
             FileLoggerFactory::getLogger()->error(
