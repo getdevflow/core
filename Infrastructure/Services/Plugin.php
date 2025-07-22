@@ -29,7 +29,7 @@ abstract class Plugin implements Extension
      * @throws ReflectionException
      * @throws NotFoundExceptionInterface|Exception
      */
-    public function __construct(?Options $option = null, Database $dfdb = null, ?Renderer $view = null)
+    public function __construct(?Options $option = null, ?Database $dfdb = null, ?Renderer $view = null)
     {
         $this->option = $option ?? Options::factory();
         $this->dfdb = $dfdb ?? dfdb();

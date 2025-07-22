@@ -62,7 +62,7 @@ interface Database
      *                       Duplicate keys are discarded.
      * @return false|string|array Database query results.
      */
-    public function getResults(string $query = null, string $output = self::OBJECT): false|string|array;
+    public function getResults(?string $query = null, string $output = self::OBJECT): false|string|array;
 
     /**
      * Retrieve one variable from the database.
@@ -78,7 +78,7 @@ interface Database
      * @param int $y Optional. Row of value to return. Indexed from 0.
      * @return string|int|null Database query result (as string), or null on failure.
      */
-    public function getVar(string $query = null, int $x = 0, int $y = 0): string|null|int;
+    public function getVar(?string $query = null, int $x = 0, int $y = 0): string|null|int;
 
     /**
      * Retrieve one column from the database.
@@ -91,7 +91,7 @@ interface Database
      * @param int         $x     Optional. Column to return. Indexed from 0.
      * @return array|null Database query result. Array indexed from 0 by SQL result row number.
      */
-    public function getCol(string $query = null, int $x = 0): ?array;
+    public function getCol(?string $query = null, int $x = 0): ?array;
 
     /**
      * Retrieve one row from the database.
@@ -106,7 +106,7 @@ interface Database
      * @return array|object|null Database query result in format specified by $output or null on failure.
      * @throws PDOException
      */
-    public function getRow(string $query = null, string $output = self::OBJECT, int $y = 0): object|array|null;
+    public function getRow(?string $query = null, string $output = self::OBJECT, int $y = 0): object|array|null;
 
     /**
      * The associated schema instance.

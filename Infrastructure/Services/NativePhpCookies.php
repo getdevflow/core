@@ -39,7 +39,7 @@ final class NativePhpCookies
      * @param int|null $expires
      * @return bool
      */
-    public function set(mixed $key, mixed $value, int $expires = null): bool
+    public function set(mixed $key, mixed $value, ?int $expires = null): bool
     {
         return setcookie(
             name: $key,
