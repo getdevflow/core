@@ -8,13 +8,13 @@ use Qubus\Exception\Data\TypeException;
 use Qubus\ValueObjects\Identity\Ulid;
 use Qubus\ValueObjects\ValueObject;
 
-class TransactionUlid extends Ulid implements ValueObject
+final class TransactionUlid extends Ulid implements ValueObject
 {
     /**
      * @throws TypeException
      */
-    public static function fromString(?string $ulid): static
+    public static function fromString(?string $ulid): self
     {
-        return new static($ulid);
+        return new self($ulid);
     }
 }

@@ -87,7 +87,7 @@ class ArrayLiteral implements ValueObject
      *
      * @throws JsonException
      */
-    public function __toString()
+    public function __toString(): string
     {
         return json_encode($this->value, JSON_THROW_ON_ERROR);
     }
