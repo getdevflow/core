@@ -116,27 +116,6 @@ function load_devflow_textdomain(): bool
 }
 
 /**
- * Loads the child theme's translated strings.
- *
- * @param string $domain
- * @param false|string $path
- * @return bool
- * @throws ContainerExceptionInterface
- * @throws Exception
- * @throws InvalidArgumentException
- * @throws NotFoundExceptionInterface
- * @throws ReflectionException
- */
-function load_child_theme_textdomain(string $domain, false|string $path = false): bool
-{
-    if (is_false__($path)) {
-        $path = css_directory();
-    }
-
-    return load_theme_textdomain($domain, $path);
-}
-
-/**
  * Loads the current or default locale.
  *
  * @file App/Shared/Helpers/domain.php
