@@ -17,6 +17,7 @@ use Qubus\Exception\Data\TypeException;
 use Qubus\ValueObjects\Identity\Ulid;
 use ReflectionException;
 
+use function class_exists;
 use function Codefy\Framework\Helpers\public_path;
 use function dirname;
 use function glob;
@@ -215,6 +216,12 @@ function load_active_plugins(): void
 
     if (!is_false__($activePlugins)) {
         foreach ($activePlugins as $plugin) {
+            // if the class does not exist,
+            // deactivate it and move on
+            if (!class_exists($plugin->plugin_classname)) {
+                deactivate_plugin($plugin->plugin_classname);
+                continue;
+            }
             Devflow::inst()::$APP->execute([$plugin->plugin_classname, 'handle']);
 
             /**
