@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Shared\Helpers;
 
-use App\Domain\Content\Command\UpdateProductStatusCommand;
+use App\Domain\Content\Command\UpdateContentStatusCommand;
 use App\Domain\Content\Model\Content;
 use App\Domain\Content\Command\CreateContentCommand;
 use App\Domain\Content\Command\DeleteContentCommand;
@@ -2896,7 +2896,7 @@ function publish_scheduled_content(): void
                 $content['status'] === 'scheduled' &&
                 ($now->format('Y-m-d H:i:s') >= (new DateTime($content['published'], get_user_timezone()))->format())
             ) {
-                $command = new UpdateProductStatusCommand([
+                $command = new UpdateContentStatusCommand([
                     'contentId' => ContentId::fromString($content['id']),
                     'contentStatus' => new StringLiteral('published'),
                     'contentModified' => $now,

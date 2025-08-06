@@ -22,7 +22,7 @@ class UpdateContentStatusCommandHandler implements CommandHandler
      * @throws AggregateNotFoundException
      * @throws Exception
      */
-    public function handle(UpdateProductStatusCommand|Command $command): void
+    public function handle(UpdateContentStatusCommand|Command $command): void
     {
         /** @var Content $content */
         $content = $this->aggregateRepository->loadAggregateRoot($command->contentId);
