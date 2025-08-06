@@ -9,14 +9,9 @@ use Qubus\EventDispatcher\ActionFilter\Filter;
 use Qubus\Exception\Exception;
 use ReflectionException;
 
-use function array_merge;
 use function basename;
 use function Codefy\Framework\Helpers\config;
 use function ctype_digit;
-use function get_object_vars;
-use function is_array;
-use function is_object;
-use function parse_str;
 use function strpos;
 
 class Utils
@@ -24,22 +19,22 @@ class Utils
     /**
      * Parses a string into variables to be stored in an array.
      *
-     * Uses {@link http://www.php.net/parse_str parse_str()}
-     *
      * @param string $string The string to be parsed.
-     * @param array $array Variables will be stored in this array.
+     * @param array  $array  Variables will be stored in this array.
+     * @param bool   $strict If true, skip malformed entries.
+     * @return array
      * @throws Exception
      * @throws ReflectionException
      */
-    public static function parseStr(string $string, array $array): void
+    public static function parseStr(string $string, array $array, bool $strict = false): array
     {
-        parse_str($string, $array);
+        $array = StringParser::parse($string, $array, $strict);
         /**
          * Filter the array of variables derived from a parsed string.
          *
          * @param array $array The array populated with variables.
          */
-        $array = Filter::getInstance()->applyFilter('parse_str', $array);
+        return Filter::getInstance()->applyFilter('parse_str', $array);
     }
 
     /**
@@ -57,27 +52,14 @@ class Utils
     /**
      * Merge user defined arguments into defaults array.
      *
-     * @param array|string|object $args Value to merge with $defaults.
-     * @param array|string $defaults Optional. Array that serves as the defaults. Default empty.
+     * @param array|string|object $args     Value to merge with $defaults.
+     * @param array|string        $defaults Optional. Array that serves as the defaults. Default empty.
+     * @param bool                $deep     Whether to deep merge nested arrays.
      * @return array Merged user defined values with defaults.
-     * @throws Exception
-     * @throws ReflectionException
      */
-    public static function parseArgs(array|string|object $args, array|string $defaults = ''): array
+    public static function parseArgs(array|string|object $args, array|string $defaults = '', bool $deep = false): array
     {
-        if (is_object($args)) {
-            $r = get_object_vars($args);
-        } elseif (is_array($args)) {
-            $r = $args;
-        } else {
-            self::parseStr($args, $r);
-        }
-
-        if (is_array($defaults) && $defaults) {
-            return array_merge($defaults, $r);
-        }
-
-        return $r;
+        return ArgsParser::parse($args, $defaults, $deep);
     }
 
     public static function getPathInfo(string $relative)
