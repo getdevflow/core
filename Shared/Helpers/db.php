@@ -8,6 +8,7 @@ use App\Application\Devflow;
 use App\Domain\Content\Model\Content;
 use App\Domain\Content\Query\FindContentQuery;
 use App\Domain\Product\Model\Product;
+use App\Domain\Product\Query\FindProductsQuery;
 use App\Domain\Site\Command\UpdateSiteOwnerCommand;
 use App\Domain\Site\Model\Site;
 use App\Domain\Site\Query\FindSitesByOwnerQuery;
@@ -247,9 +248,13 @@ function tinymce_link_list(): array
     );
     $enquirer = new Enquire(bus: new SynchronousQueryBus($resolver));
 
-    $query = new FindContentQuery();
+    $contentQuery = new FindContentQuery();
+    $contentResults = $enquirer->execute($contentQuery);
 
-    $results = $enquirer->execute($query);
+    $productsQuery = new FindProductsQuery();
+    $productsResults = $enquirer->execute($productsQuery);
+
+    $results = array_merge($contentResults, $productsResults);
 
     if (empty($results)) {
         return [];
@@ -1119,6 +1124,7 @@ function cms_nodeq_reset_password(): void
 /**
  * Creates a new collection.
  *
+ * @file App/Shared/Helpers/db.php
  * @param string|null $value
  * @return Collection
  * @throws CommandPropertyNotFoundException
