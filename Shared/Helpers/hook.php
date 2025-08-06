@@ -514,7 +514,7 @@ function cms_optimized_image_upload(string $image): ?string
     $siteKey = Registry::getInstance()->get('siteKey');
     $rawFilename = str_replace(site_url(), '', $image);
     $newFilename = str_replace(
-        get_private_site_upload_url(),
+        public_site_upload_url(),
         'sites/' . $siteKey . '/uploads/__optimized__/',
         $image
     );
