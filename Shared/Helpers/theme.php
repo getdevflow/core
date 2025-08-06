@@ -21,6 +21,7 @@ use Qubus\Exception\Exception;
 use ReflectionException;
 
 use function basename;
+use function class_exists;
 use function Codefy\Framework\Helpers\public_path;
 use function count;
 use function dirname;
@@ -422,6 +423,10 @@ function load_active_theme(): void
     $activeTheme = Options::factory()->read('site_theme');
 
     if ('' !== $activeTheme && !is_null__($activeTheme) && !is_false__($activeTheme)) {
+        if (!class_exists($activeTheme)) {
+            deactivate_theme();
+            return;
+        }
         Devflow::inst()::$APP->execute([$activeTheme, 'handle']);
 
         /**
