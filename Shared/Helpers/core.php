@@ -11,6 +11,7 @@ use App\Shared\Services\DateTime;
 use App\Shared\Services\ListUtil;
 use App\Shared\Services\Registry;
 use Codefy\Framework\Codefy;
+use Codefy\Framework\Factory\FileLoggerFactory;
 use DateInvalidTimeZoneException;
 use DateMalformedStringException;
 use Defuse\Crypto\Crypto;
@@ -1017,7 +1018,7 @@ function cms_enqueue_css(
  *
  * @file App/Shared/Helpers/core.php
  * @param string $config Set whether to use `default`, `plugin`  or `theme` config.
- * @param string|array $asset Relative path or URL to javascripts(s) to enqueue.
+ * @param string|array $asset Relative path or URL to javascript(s) to enqueue.
  * @param bool|string $minify Enable js assets pipeline (concatenation and minification).
  *                            Use a string that evaluates to `true` to provide the salt of the pipeline hash.
  *                            Use 'auto' to automatically calculate the salt from your assets last modification time.
@@ -1375,11 +1376,7 @@ function current_screen(string $key, string $value): string
  */
 function is_multisite(): bool
 {
-    if (config(key: 'cms.multisite') === true) {
-        return true;
-    }
-
-    return false;
+    return config(key: 'cms.multisite') === true;
 }
 
 /**
@@ -1466,20 +1463,25 @@ function show_update_message(): void
         $update->setCurrentVersion(Devflow::inst()->release());
         $update->setUpdateUrl(updater_server_url() . '/update-check');
 
-        if ($update->checkUpdate() !== false) {
-            if ($update->newVersionAvailable()) {
-                $alert = '<div class="alert alert-dismissible show alert-info center" role="alert">';
-                $alert .= sprintf(
-                    t__(
-                        msgid: 'Devflow release %s is available for download/upgrade. Before upgrading, make sure to backup your system.',
-                        domain: 'devflow'
-                    ),
-                    $update->getLatestVersion()
-                );
-                $alert .= '</div>';
+        try {
+            if ($update->checkUpdate() !== false) {
+                if ($update->newVersionAvailable()) {
+                    $alert = '<div class="alert alert-dismissible show alert-info center" role="alert">';
+                    $alert .= sprintf(
+                        t__(
+                            msgid: 'Devflow release %s is available for download/upgrade. Before upgrading, make sure to backup your system.',
+                            domain: 'devflow'
+                        ),
+                        $update->getLatestVersion()
+                    );
+                    $alert .= '</div>';
 
-                echo Filter::getInstance()->applyFilter('update_message', $alert);
+                    echo Filter::getInstance()->applyFilter('update_message', $alert);
+                }
             }
+        } catch (Exception $e) {
+            FileLoggerFactory::error($e->getMessage(), ['Core Functions' => 'show_update_message']);
+            return;
         }
     }
 }
