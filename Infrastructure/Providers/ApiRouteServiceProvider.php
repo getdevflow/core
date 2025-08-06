@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Providers;
 
-use Codefy\Framework\Support\CodefyServiceProvider;
-use Qubus\Routing\Exceptions\TooLateToAddNewRouteException;
 use Qubus\Routing\Router;
+use Qubus\Routing\Exceptions\TooLateToAddNewRouteException;
+use Codefy\Framework\Support\CodefyServiceProvider;
 
 final class ApiRouteServiceProvider extends CodefyServiceProvider
 {
@@ -20,7 +20,7 @@ final class ApiRouteServiceProvider extends CodefyServiceProvider
             return;
         }
 
-        /** @var $router Router */
+        /** @var Router $router */
         $router = $this->codefy->make(name: 'router');
 
         /**
