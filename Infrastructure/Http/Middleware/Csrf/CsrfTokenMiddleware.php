@@ -17,7 +17,7 @@ final class CsrfTokenMiddleware implements MiddlewareInterface
 {
     use CsrfTokenAware;
 
-    public const SESSION_ATTRIBUTE = 'CSRF_TOKEN';
+    public const string SESSION_ATTRIBUTE = 'CSRF_TOKEN';
 
     public static CsrfTokenMiddleware $current;
 

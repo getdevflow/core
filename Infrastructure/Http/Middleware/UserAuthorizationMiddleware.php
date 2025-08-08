@@ -18,7 +18,7 @@ use function Qubus\Support\Helpers\is_true__;
 
 final class UserAuthorizationMiddleware implements MiddlewareInterface
 {
-    public const HEADER_HTTP_STATUS_CODE = 'AUTH_STATUS_CODE';
+    public const string HEADER_HTTP_STATUS_CODE = 'AUTH_STATUS_CODE';
 
     public function __construct(
         protected SessionService $sessionService,

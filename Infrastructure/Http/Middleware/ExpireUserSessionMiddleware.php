@@ -16,7 +16,7 @@ use Qubus\Http\Session\SessionService;
 
 class ExpireUserSessionMiddleware implements MiddlewareInterface
 {
-    public const SESSION_ATTRIBUTE = 'EXPIRE_USERSESSION';
+    public const string SESSION_ATTRIBUTE = 'EXPIRE_USERSESSION';
 
     public function __construct(protected SessionService $sessionService)
     {
