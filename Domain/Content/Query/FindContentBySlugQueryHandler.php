@@ -9,6 +9,9 @@ use App\Infrastructure\Persistence\Database;
 use Codefy\QueryBus\Query;
 use Codefy\QueryBus\QueryHandler;
 use Exception;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
+use ReflectionException;
 
 use function App\Shared\Helpers\dfdb;
 use function is_array;
@@ -21,7 +24,12 @@ final class FindContentBySlugQueryHandler implements QueryHandler
 
     protected ?Database $dfdb = null;
 
-    public function __construct(Database $dfdb = null)
+    /**
+     * @throws ReflectionException
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
+     */
+    public function __construct(?Database $dfdb = null)
     {
         $this->dfdb = $dfdb ?? dfdb();
     }

@@ -8,6 +8,8 @@ use App\Domain\User\Query\Trait\PopulateUserQueryAware;
 use App\Infrastructure\Persistence\Database;
 use Codefy\QueryBus\Query;
 use Codefy\QueryBus\QueryHandler;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
 use Qubus\Exception\Exception;
 use ReflectionException;
 
@@ -22,7 +24,12 @@ final class FindUserByLoginQueryHandler implements QueryHandler
 
     protected ?Database $dfdb = null;
 
-    public function __construct(Database $dfdb = null)
+    /**
+     * @throws ReflectionException
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
+     */
+    public function __construct(?Database $dfdb = null)
     {
         $this->dfdb = $dfdb ?? dfdb();
     }

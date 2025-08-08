@@ -26,7 +26,7 @@ class FindSitesQueryHandler implements QueryHandler
      * @throws ContainerExceptionInterface
      * @throws NotFoundExceptionInterface
      */
-    public function __construct(Database $dfdb = null)
+    public function __construct(?Database $dfdb = null)
     {
         $this->dfdb = $dfdb ?? dfdb();
     }

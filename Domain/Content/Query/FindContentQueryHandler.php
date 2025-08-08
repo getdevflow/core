@@ -11,6 +11,8 @@ use Codefy\Framework\Factory\FileLoggerFactory;
 use Codefy\QueryBus\Query;
 use Codefy\QueryBus\QueryHandler;
 use PDOException;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
 use Qubus\Exception\Exception;
 use ReflectionException;
 
@@ -25,7 +27,12 @@ final class FindContentQueryHandler implements QueryHandler
 
     protected ?Database $dfdb = null;
 
-    public function __construct(Database $dfdb = null)
+    /**
+     * @throws ReflectionException
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
+     */
+    public function __construct(?Database $dfdb = null)
     {
         $this->dfdb = $dfdb ?? dfdb();
     }
