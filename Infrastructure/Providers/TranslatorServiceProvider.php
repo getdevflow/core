@@ -32,18 +32,15 @@ class DatabaseServiceProvider extends CodefyServiceProvider
      */
     public function register(): void
     {
-        $this->codefy->alias(original: Database::class, alias: NativePdoDatabase::class);
-        $this->codefy->share(nameOrInstance: Database::class);
-
         /** @var Database $database */
-        $database = $this->codefy->make(Database::class);
+        $database = $this->codefy->make(name: Database::class);
 
         if (!$this->codefy->isRunningInConsole()) {
-            Filter::getInstance()->removeFilter('core_locale', function ($locale) {
+            Filter::getInstance()->removeFilter(hook: 'core_locale', callback: function ($locale) {
                 return '';
             });
 
-            Filter::getInstance()->addFilter('core_locale', function ($locale) use ($database) {
+            Filter::getInstance()->addFilter(hook: 'core_locale', callback: function ($locale) use ($database) {
                 $sql = "SELECT option_value FROM {$database->prefix}option WHERE option_key = 'site_locale' LIMIT 1";
                 $locale = $database->getVar($sql);
                 return $locale;
@@ -54,7 +51,7 @@ class DatabaseServiceProvider extends CodefyServiceProvider
         TranslatorFunctions::register($translator);
 
         /** Do not touch. */
-        Registry::getInstance()->set('dfdb', $database);
+        //Registry::getInstance()->set(id: 'dfdb', value: $database);
 
         if (!$this->codefy->isRunningInConsole()) {
             load_devflow_textdomain();
