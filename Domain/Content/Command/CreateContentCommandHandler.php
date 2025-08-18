@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace App\Domain\Content\Command;
 
 use App\Domain\Content\Content;
-use App\Domain\Content\Repository\ContentRepository;
+use App\Domain\Content\Repository\ContentAggregateRepository;
 use Codefy\CommandBus\Command;
 use Codefy\CommandBus\CommandHandler;
 
 class CreateContentCommandHandler implements CommandHandler
 {
-    public function __construct(public ContentRepository $aggregateRepository)
+    public function __construct(public ContentAggregateRepository $aggregateRepository)
     {
     }
 

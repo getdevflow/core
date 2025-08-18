@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\User\Command;
 
-use App\Domain\User\Repository\UserRepository;
+use App\Domain\User\Repository\UserAggregateRepository;
 use App\Domain\User\User;
 use Codefy\CommandBus\Command;
 use Codefy\CommandBus\CommandHandler;
@@ -15,7 +15,7 @@ use Qubus\ValueObjects\StringLiteral\StringLiteral;
 
 final readonly class UpdateUserPasswordCommandHandler implements CommandHandler
 {
-    public function __construct(public UserRepository $aggregateRepository)
+    public function __construct(public UserAggregateRepository $aggregateRepository)
     {
     }
 

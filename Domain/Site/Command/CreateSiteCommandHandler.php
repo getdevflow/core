@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Site\Command;
 
-use App\Domain\Site\Repository\SiteRepository;
+use App\Domain\Site\Repository\SiteAggregateRepository;
 use App\Domain\Site\Site;
 use App\Domain\User\ValueObject\UserId;
 use Codefy\CommandBus\Command;
@@ -13,7 +13,7 @@ use Qubus\Exception\Data\TypeException;
 
 final class CreateSiteCommandHandler implements CommandHandler
 {
-    public function __construct(public SiteRepository $aggregateRepository)
+    public function __construct(public SiteAggregateRepository $aggregateRepository)
     {
     }
 

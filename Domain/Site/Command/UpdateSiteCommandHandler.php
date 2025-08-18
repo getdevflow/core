@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Site\Command;
 
-use App\Domain\Site\Repository\SiteRepository;
+use App\Domain\Site\Repository\SiteAggregateRepository;
 use App\Domain\Site\Site;
 use Codefy\CommandBus\Command;
 use Codefy\CommandBus\CommandHandler;
@@ -13,7 +13,7 @@ use Exception;
 
 final class UpdateSiteCommandHandler implements CommandHandler
 {
-    public function __construct(public SiteRepository $aggregateRepository)
+    public function __construct(public SiteAggregateRepository $aggregateRepository)
     {
     }
 
@@ -34,7 +34,9 @@ final class UpdateSiteCommandHandler implements CommandHandler
         $site->changeSitePath($command->sitePath);
         $site->changeSiteOwner($command->siteOwner);
         $site->changeSiteStatus($command->siteStatus);
-        $site->changeSiteModified($command->siteModified);
+        if ($site->hasRecordedEvents()) {
+            $site->changeSiteModified($command->siteModified);
+        }
 
         $this->aggregateRepository->saveAggregateRoot($site);
     }
