@@ -6,6 +6,6 @@ namespace App\Domain\User\Repository;
 
 use Codefy\Domain\Aggregate\AggregateRepository;
 
-interface UserRepository extends AggregateRepository
+interface UserAggregateRepository extends AggregateRepository
 {
 }

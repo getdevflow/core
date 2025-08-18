@@ -6,6 +6,6 @@ namespace App\Domain\ContentType\Repository;
 
 use Codefy\Domain\Aggregate\AggregateRepository;
 
-interface ContentTypeRepository extends AggregateRepository
+interface ContentTypeAggregateRepository extends AggregateRepository
 {
 }

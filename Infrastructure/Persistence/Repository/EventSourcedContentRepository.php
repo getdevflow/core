@@ -9,7 +9,7 @@ use App\Domain\Content\Services\ContentProjection;
 use App\Infrastructure\Persistence\Trait\EventSourcedRepositoryAware;
 use Codefy\Domain\EventSourcing\TransactionalEventStore;
 
-class EventSourcedContentAggregateRepository implements ContentAggregateRepository
+class EventSourcedContentRepository implements ContentAggregateRepository
 {
     use EventSourcedRepositoryAware;
 
