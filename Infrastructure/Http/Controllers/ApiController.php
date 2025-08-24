@@ -22,10 +22,10 @@ use function sprintf;
 final class ApiController extends BaseController
 {
     public function __construct(
-        SessionService $sessionService,
-        Router $router,
+        protected SessionService $sessionService,
+        protected Router $router,
         protected Database $dfdb,
-        ?Renderer $view = null
+        protected Renderer $view
     ) {
         parent::__construct($sessionService, $router, $view);
     }

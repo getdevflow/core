@@ -52,11 +52,11 @@ use function sprintf;
 final class AdminSiteController extends BaseController
 {
     public function __construct(
-        SessionService $sessionService,
-        Router $router,
-        protected Database $dfdb,
+        protected SessionService $sessionService,
+        protected Router $router,
         protected UserAuth $user,
-        ?Renderer $view = null
+        protected Database $dfdb,
+        protected Renderer $view
     ) {
         parent::__construct($sessionService, $router, $view);
     }
@@ -75,14 +75,14 @@ final class AdminSiteController extends BaseController
     public function siteCreate(ServerRequest $request): ?ResponseInterface
     {
         if (false === $this->user->can(permissionName: 'create:sites', request: $request)) {
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
             return $this->redirect(admin_url());
         }
 
         if (!is_multisite()) {
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
             return $this->redirect(admin_url());
@@ -91,19 +91,18 @@ final class AdminSiteController extends BaseController
         try {
             $id = cms_insert_site($request);
             if (is_error($id)) {
-                Devflow::inst()::$APP->flash->error(
+                Devflow::$PHP->flash->error(
                     message: t__(msgid: 'Insertion error occurred.', domain: 'devflow')
                 );
             }
 
-            Devflow::inst()::$APP->flash->success(Devflow::inst()::$APP->flash->notice(num: 201));
+            Devflow::$PHP->flash->success(Devflow::$PHP->flash->notice(num: 201));
         } catch (
             CommandCouldNotBeHandledException |
             CommandPropertyNotFoundException |
             ContainerExceptionInterface |
             DateInvalidTimeZoneException |
             InvalidArgumentException |
-            NotFoundExceptionInterface |
             UnresolvableCommandHandlerException |
             UnresolvableQueryHandlerException |
             TypeException |
@@ -111,7 +110,7 @@ final class AdminSiteController extends BaseController
             ReflectionException $e
         ) {
             FileLoggerFactory::getLogger()->error($e->getMessage());
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Insertion exception occurred and was logged.', domain: 'devflow')
             );
         }
@@ -134,14 +133,14 @@ final class AdminSiteController extends BaseController
     public function sites(ServerRequest $request): string|ResponseInterface
     {
         if (false === $this->user->can(permissionName: 'manage:sites', request: $request)) {
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
             return $this->redirect(admin_url());
         }
 
         if (!is_multisite()) {
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
             return $this->redirect(admin_url());
@@ -163,7 +162,7 @@ final class AdminSiteController extends BaseController
             );
         } catch (UnresolvableQueryHandlerException | ReflectionException $e) {
             FileLoggerFactory::getLogger()->error($e->getMessage());
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Exception occurred and was logged.', domain: 'devflow')
             );
         }
@@ -186,14 +185,14 @@ final class AdminSiteController extends BaseController
     public function siteChange(ServerRequest $request, string $siteId): ?ResponseInterface
     {
         if (false === $this->user->can(permissionName: 'update:sites', request: $request)) {
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
             return $this->redirect(admin_url());
         }
 
         if (!is_multisite()) {
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
             return $this->redirect(admin_url());
@@ -204,19 +203,18 @@ final class AdminSiteController extends BaseController
         try {
             $id = cms_update_site($dataArrayMerge);
             if (is_error($id)) {
-                Devflow::inst()::$APP->flash->error(
+                Devflow::$PHP->flash->error(
                     message: t__(msgid: 'Change error occurred.', domain: 'devflow')
                 );
             }
 
-            Devflow::inst()::$APP->flash->success(Devflow::inst()::$APP->flash->notice(num: 200));
+            Devflow::$PHP->flash->success(Devflow::$PHP->flash->notice(num: 200));
         } catch (
             CommandCouldNotBeHandledException |
             CommandPropertyNotFoundException |
             ContainerExceptionInterface |
             DateInvalidTimeZoneException |
             InvalidArgumentException |
-            NotFoundExceptionInterface |
             UnresolvableCommandHandlerException |
             UnresolvableQueryHandlerException |
             TypeException |
@@ -224,7 +222,7 @@ final class AdminSiteController extends BaseController
             ReflectionException $e
         ) {
             FileLoggerFactory::getLogger()->error($e->getMessage());
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Change exception occurred and was logged.', domain: 'devflow')
             );
         }
@@ -248,14 +246,14 @@ final class AdminSiteController extends BaseController
     public function siteView(ServerRequest $request, string $siteId): string|ResponseInterface
     {
         if (false === $this->user->can(permissionName: 'manage:sites', request: $request)) {
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
             return $this->redirect(admin_url());
         }
 
         if (!is_multisite()) {
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
             return $this->redirect(admin_url());
@@ -309,14 +307,14 @@ final class AdminSiteController extends BaseController
     public function siteUsers(ServerRequest $request): ResponseInterface|null|string
     {
         if (false === $this->user->can(permissionName: 'manage:sites', request: $request)) {
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
             return $this->redirect(admin_url());
         }
 
         if (!is_multisite()) {
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
             return $this->redirect(admin_url());
@@ -350,6 +348,7 @@ final class AdminSiteController extends BaseController
      * @throws ReflectionException
      * @throws SessionException
      * @throws TypeException
+     * @throws \Exception
      */
     public function siteUsersDelete(ServerRequest $request, string $userId): ResponseInterface
     {
@@ -357,14 +356,14 @@ final class AdminSiteController extends BaseController
             false === $this->user->can(permissionName: 'delete:users', request: $request) &&
             false === $this->user->can(permissionName: 'manage:sites', request: $request)
         ) {
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
             return $this->redirect(admin_url('site/users/'));
         }
 
         if (!is_multisite()) {
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
             return $this->redirect(admin_url());
@@ -384,7 +383,7 @@ final class AdminSiteController extends BaseController
             }
 
             if (is_error($siteUser)) {
-                Devflow::inst()::$APP->flash->error(
+                Devflow::$PHP->flash->error(
                     sprintf(
                         'ERROR[%s]: %s',
                         $siteUser->getCode(),
@@ -392,21 +391,19 @@ final class AdminSiteController extends BaseController
                     ),
                 );
             } else {
-                Devflow::inst()::$APP->flash->success(Devflow::inst()::$APP->flash->notice(num: 200));
+                Devflow::$PHP->flash->success(Devflow::$PHP->flash->notice(num: 200));
             }
         } catch (
             CommandPropertyNotFoundException |
             Exception |
             InvalidArgumentException |
-            SessionException |
             UnresolvableQueryHandlerException |
-            TypeException |
             NotFoundExceptionInterface |
             ContainerExceptionInterface |
             ReflectionException $e
         ) {
             FileLoggerFactory::getLogger()->error($e->getMessage());
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 t__(msgid: 'Delete exception occurred and was logged.', domain: 'devflow')
             );
         }
@@ -429,14 +426,14 @@ final class AdminSiteController extends BaseController
     public function siteDelete(ServerRequest $request, string $siteId): ResponseInterface
     {
         if (false === $this->user->can(permissionName: 'delete:sites', request: $request)) {
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
             return $this->redirect(admin_url());
         }
 
         if (!is_multisite()) {
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
             return $this->redirect(admin_url());
@@ -452,7 +449,7 @@ final class AdminSiteController extends BaseController
                     $checkSite->key === config(key: "database.connections.$connection.prefix") ||
                     $checkSite->domain === config(key: 'cms.main_site_url')
             ) {
-                Devflow::inst()::$APP->flash->error(
+                Devflow::$PHP->flash->error(
                     message: t__(msgid: 'This action is not allowed.', domain: 'devflow')
                 );
                 return $this->redirect(admin_url('site/'));
@@ -465,7 +462,7 @@ final class AdminSiteController extends BaseController
             Exception $e
         ) {
             FileLoggerFactory::getLogger()->error($e->getMessage());
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 t__(msgid: 'A site check exception occurred and was logged.', domain: 'devflow')
             );
         }
@@ -474,8 +471,8 @@ final class AdminSiteController extends BaseController
             $delete = cms_delete_site($siteId);
 
             if (is_error($delete) || is_false__($delete)) {
-                Devflow::inst()::$APP->flash->error(
-                    message: Devflow::inst()::$APP->flash->notice(num: 201)
+                Devflow::$PHP->flash->error(
+                    message: Devflow::$PHP->flash->notice(num: 201)
                 );
             }
         } catch (
@@ -488,7 +485,7 @@ final class AdminSiteController extends BaseController
             ReflectionException $e
         ) {
             FileLoggerFactory::getLogger()->error($e->getMessage());
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 message: t__(msgid: 'A site deletion exception occurred and was logged.', domain: 'devflow')
             );
         }

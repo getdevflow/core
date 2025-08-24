@@ -8,6 +8,7 @@ use Psr\Cache\CacheItemPoolInterface;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Qubus\Cache\Psr6\ItemPool;
+use Qubus\Exception\Data\TypeException;
 use ReflectionException;
 
 use function Codefy\Framework\Helpers\config;
@@ -15,9 +16,12 @@ use function Codefy\Framework\Helpers\config;
 final class ItemPoolObjectCacheFactory
 {
     /**
+     * @param string $namespace
+     * @return CacheItemPoolInterface
      * @throws ContainerExceptionInterface
-     * @throws ReflectionException
      * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
+     * @throws TypeException
      */
     public static function make(string $namespace = 'default'): CacheItemPoolInterface
     {

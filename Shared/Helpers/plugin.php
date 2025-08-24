@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace App\Shared\Helpers;
 
 use App\Application\Devflow;
+use App\Infrastructure\Persistence\Database;
+use App\Infrastructure\Services\Options;
 use App\Shared\Services\PhpFileParser;
+use Codefy\Framework\Application;
 use Codefy\Framework\Factory\FileLoggerFactory;
 use Exception;
 use PDOException;
@@ -15,9 +18,11 @@ use Qubus\EventDispatcher\ActionFilter\Action;
 use Qubus\EventDispatcher\ActionFilter\Filter;
 use Qubus\Exception\Data\TypeException;
 use Qubus\ValueObjects\Identity\Ulid;
+use Qubus\View\Renderer;
 use ReflectionException;
 
 use function class_exists;
+use function Codefy\Framework\Helpers\app;
 use function Codefy\Framework\Helpers\public_path;
 use function dirname;
 use function glob;
@@ -101,6 +106,7 @@ function plugin_dir_path(string $filename): string
  * @throws ReflectionException
  * @throws ContainerExceptionInterface
  * @throws NotFoundExceptionInterface
+ * @throws TypeException
  */
 function active_plugins(): array|false
 {
@@ -121,6 +127,7 @@ function active_plugins(): array|false
  * @throws ContainerExceptionInterface
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
+ * @throws TypeException
  */
 function activate_plugin(string $plugin): void
 {
@@ -153,6 +160,7 @@ function activate_plugin(string $plugin): void
  * @throws ContainerExceptionInterface
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
+ * @throws TypeException
  */
 function deactivate_plugin(string $plugin): void
 {
@@ -222,7 +230,7 @@ function load_active_plugins(): void
                 deactivate_plugin($plugin->plugin_classname);
                 continue;
             }
-            Devflow::inst()::$APP->execute([$plugin->plugin_classname, 'handle']);
+            Devflow::$PHP->execute([$plugin->plugin_classname, 'handle']);
 
             /**
              * Fires once a single activated plugin has loaded.
@@ -304,11 +312,19 @@ function plugin_dir_url(string $file): string
  */
 function plugin_info(string $pluginsDir = ''): array
 {
+    /** @var Application $app */
+    $app = app();
+
     $info = [];
     $dir = glob($pluginsDir . '*/*Plugin.php');
     foreach ($dir as $plugin) {
-        $class = PhpFileParser::classObjectFromFile($plugin);
-        $info[] = Devflow::inst()::$APP->execute([$class, 'meta']);
+        $class = PhpFileParser::classObjectFromFile(
+            $plugin,
+            $app->make(name: Options::class),
+            $app->make(name: Database::class),
+            $app->make(name: Renderer::class)
+        );
+        $info[] = Devflow::$PHP->execute([$class, 'meta']);
     }
 
     return $info;

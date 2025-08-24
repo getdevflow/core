@@ -45,9 +45,12 @@ final class MetaData
     }
 
     /**
+     * @param string $namespace
+     * @return MetaData
      * @throws ContainerExceptionInterface
-     * @throws ReflectionException
      * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
+     * @throws TypeException
      */
     public static function factory(string $namespace = 'metadata'): MetaData
     {
@@ -85,6 +88,7 @@ final class MetaData
      * @param bool $single Whether to return only the first value of the specified $metaKey.
      * @return mixed Array of values.
      * @throws Exception
+     * @throws InvalidArgumentException
      * @throws ReflectionException
      */
     public function read(string $metaType, string $metaTypeId, string $metaKey = '', bool $single = false): mixed
@@ -484,12 +488,14 @@ final class MetaData
      *                          meta_key. Pass `null, `false`, or an empty string to skip this check.
      *                          (For backward compatibility, it is not possible to pass an empty string to delete
      *                          those entries with an empty string for a value.)
-     * @param bool $deleteAll  Optional, default is false. If true, delete matching metadata entries for all arrays,
+     * @param bool  $deleteAll Optional, default is false. If true, delete matching metadata entries for all arrays,
      *                         ignoring the specified array_id. Otherwise, only delete matching metadata entries for
      *                         the specified array_id.
      * @return bool True on successful delete, false on failure.
      * @throws Exception
+     * @throws InvalidArgumentException
      * @throws ReflectionException
+     * @throws TypeException
      */
     public function delete(
         string $metaType,
@@ -508,9 +514,6 @@ final class MetaData
         }
 
         $typeColumn = Sanitizer::key(key: sprintf('%s_id', $metaType));
-        // expected_slashed ($metaKey)
-        //$metaKey = unslash(value: (string) $metaKey);
-        //$metaValue = unslash(value: (string) $metaValue);
 
         /**
          * Filters whether to delete metadata of a specific type.
@@ -664,6 +667,7 @@ final class MetaData
      * @param string $metaKey Metadata key.
      * @return bool True of the key is set, false if not.
      * @throws Exception
+     * @throws InvalidArgumentException
      * @throws ReflectionException
      */
     public function exists(string $metaType, string $metaTypeId, string $metaKey): bool
@@ -862,8 +866,9 @@ final class MetaData
      * @param string $metaId ID for a specific meta row
      * @return bool True on successful delete, false on failure.
      * @throws Exception
+     * @throws InvalidArgumentException
      * @throws ReflectionException
-     * @throws \Exception
+     * @throws TypeException
      */
     public function deleteByMid(string $metaType, string $metaId): bool
     {
@@ -944,6 +949,7 @@ final class MetaData
      * @param array|string $metaTypeIds Array or comma-delimited list of array IDs to update cache for.
      * @return array|false Metadata cache for the specified arrays, or false on failure.
      * @throws Exception
+     * @throws InvalidArgumentException
      * @throws ReflectionException
      */
     public function updateMetaDataCache(string $metaType, array|string $metaTypeIds): bool|array

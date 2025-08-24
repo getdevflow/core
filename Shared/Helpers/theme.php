@@ -3,11 +3,13 @@
 namespace App\Shared\Helpers;
 
 use App\Application\Devflow;
+use App\Infrastructure\Persistence\Database;
 use App\Infrastructure\Services\Options;
 use App\Shared\Services\Items;
 use App\Shared\Services\PhpFileParser;
 use App\Shared\Services\TemplateRegistry;
 use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
+use Codefy\Framework\Application;
 use Codefy\Framework\Factory\FileLoggerFactory;
 use Codefy\QueryBus\UnresolvableQueryHandlerException;
 use PDOException;
@@ -18,10 +20,12 @@ use Qubus\EventDispatcher\ActionFilter\Action;
 use Qubus\EventDispatcher\ActionFilter\Filter;
 use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
+use Qubus\View\Renderer;
 use ReflectionException;
 
 use function basename;
 use function class_exists;
+use function Codefy\Framework\Helpers\app;
 use function Codefy\Framework\Helpers\public_path;
 use function count;
 use function dirname;
@@ -79,7 +83,7 @@ function theme_name(): mixed
         return '';
     }
 
-    $meta = Devflow::inst()::$APP->execute([$activeTheme, 'meta']);
+    $meta = Devflow::$PHP->execute([$activeTheme, 'meta']);
     return $meta['basename'];
 }
 
@@ -322,11 +326,19 @@ function image_directory_uri(): string
  */
 function theme_info(string $themesDir = ''): array
 {
+    /** @var Application $app */
+    $app = app();
+
     $info = [];
     $dir = glob($themesDir . '*/*Theme.php');
     foreach ($dir as $theme) {
-        $class = PhpFileParser::classObjectFromFile($theme);
-        $info[] = Devflow::inst()::$APP->execute([$class, 'meta']);
+        $class = PhpFileParser::classObjectFromFile(
+            $theme,
+            $app->make(name: Options::class),
+            $app->make(name: Database::class),
+            $app->make(name: Renderer::class)
+        );
+        $info[] = Devflow::$PHP->execute([$class, 'meta']);
     }
 
     return $info;
@@ -338,8 +350,10 @@ function theme_info(string $themesDir = ''): array
  * @file App/Shared/Helpers/theme.php
  * @param string $theme ID of the theme to activate
  * @throws ContainerExceptionInterface
+ * @throws InvalidArgumentException
  * @throws NotFoundExceptionInterface
- * @throws ReflectionException|InvalidArgumentException
+ * @throws ReflectionException
+ * @throws TypeException
  */
 function activate_theme(string $theme): void
 {
@@ -366,6 +380,7 @@ function activate_theme(string $theme): void
  * @throws ContainerExceptionInterface
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
+ * @throws TypeException
  */
 function deactivate_theme(): void
 {
@@ -390,9 +405,10 @@ function deactivate_theme(): void
  * @param string $theme
  * @return bool
  * @throws ContainerExceptionInterface
+ * @throws Exception
+ * @throws InvalidArgumentException
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
- * @throws Exception
  */
 function is_theme_active(string $theme = ''): bool
 {
@@ -413,10 +429,11 @@ function is_theme_active(string $theme = ''): bool
  * Executes the active theme.
  *
  * @throws ContainerExceptionInterface
+ * @throws Exception
+ * @throws InvalidArgumentException
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  * @throws TypeException
- * @throws Exception
  */
 function load_active_theme(): void
 {
@@ -427,7 +444,7 @@ function load_active_theme(): void
             deactivate_theme();
             return;
         }
-        Devflow::inst()::$APP->execute([$activeTheme, 'handle']);
+        Devflow::$PHP->execute([$activeTheme, 'handle']);
 
         /**
          * Fires once the activated theme has loaded.
@@ -448,6 +465,7 @@ function load_active_theme(): void
  * @return bool
  * @throws CommandPropertyNotFoundException
  * @throws ReflectionException
+ * @throws TypeException
  * @throws UnresolvableQueryHandlerException
  */
 function has_content(?string $type = null, int $limit = 0, ?int $offset = null, string $status = 'published'): bool
@@ -650,6 +668,7 @@ function content_published_datetime(): string
  * @return bool
  * @throws CommandPropertyNotFoundException
  * @throws ReflectionException
+ * @throws TypeException
  * @throws UnresolvableQueryHandlerException
  */
 function has_products(int $limit = 0, ?int $offset = null, string $status = 'published'): bool

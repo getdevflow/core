@@ -34,11 +34,11 @@ use function Qubus\Security\Helpers\t__;
 final class AdminThemeController extends BaseController
 {
     public function __construct(
-        SessionService $sessionService,
-        Router $router,
+        protected SessionService $sessionService,
+        protected Router $router,
         protected UserAuth $user,
         protected Database $dfdb,
-        ?Renderer $view = null
+        protected Renderer $view
     ) {
         parent::__construct($sessionService, $router, $view);
     }
@@ -57,7 +57,7 @@ final class AdminThemeController extends BaseController
     public function themes(ServerRequest $request): ResponseInterface|string
     {
         if (false === $this->user->can(permissionName: 'manage:themes', request: $request)) {
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
 
@@ -105,7 +105,7 @@ final class AdminThemeController extends BaseController
     public function activate(ServerRequest $request): ResponseInterface
     {
         if (false === is_user_logged_in()) {
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
             return $this->redirect(admin_url());
@@ -114,10 +114,10 @@ final class AdminThemeController extends BaseController
         try {
             activate_theme($request->getQueryParams()['id']);
 
-            Devflow::inst()::$APP->flash->success(t__(msgid: 'Theme activated.', domain: 'devflow'));
+            Devflow::$PHP->flash->success(t__(msgid: 'Theme activated.', domain: 'devflow'));
         } catch (NotFoundExceptionInterface | ContainerExceptionInterface | ReflectionException $e) {
             FileLoggerFactory::getLogger()->error($e->getMessage());
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Theme activation exception occurred and was logged.', domain: 'devflow')
             );
         }
@@ -140,7 +140,7 @@ final class AdminThemeController extends BaseController
     public function deactivate(ServerRequest $request): ResponseInterface
     {
         if (false === is_user_logged_in()) {
-            Devflow::inst()::$APP->flash->error(message: t__(msgid: 'Access denied.', domain: 'devflow'));
+            Devflow::$PHP->flash->error(message: t__(msgid: 'Access denied.', domain: 'devflow'));
 
             return $this->redirect(admin_url());
         }
@@ -148,10 +148,10 @@ final class AdminThemeController extends BaseController
         try {
             deactivate_theme();
 
-            Devflow::inst()::$APP->flash->success(t__(msgid: 'Theme deactivated.', domain: 'devflow'));
+            Devflow::$PHP->flash->success(t__(msgid: 'Theme deactivated.', domain: 'devflow'));
         } catch (NotFoundExceptionInterface | ContainerExceptionInterface | ReflectionException $e) {
             FileLoggerFactory::getLogger()->error($e->getMessage());
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Theme deactivation exception occurred and was logged.', domain: 'devflow')
             );
         }

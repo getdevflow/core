@@ -67,7 +67,7 @@ use function str_replace;
  *
  * @return array
  * @throws ReflectionException
- * @throws UnresolvableQueryHandlerException
+ * @throws UnresolvableQueryHandlerException|TypeException
  */
 function get_content(): array
 {
@@ -90,12 +90,12 @@ function get_content(): array
  * @return array Array of published content or content by particular content type.
  * @throws CommandPropertyNotFoundException
  * @throws ReflectionException
- * @throws UnresolvableQueryHandlerException
+ * @throws UnresolvableQueryHandlerException|TypeException
  */
 function get_all_content_with_filters(
     ?string $contentTypeSlug = null,
     int $limit = 0,
-    int $offset = null,
+    ?int $offset = null,
     string $status = 'all'
 ): array {
     $resolver = new NativeQueryHandlerResolver(container: ContainerFactory::make(config: config('querybus.aliases')));
@@ -160,7 +160,7 @@ function get_content_by_type_and_id(string $contentTypeSlug, string $contentId):
  */
 function get_content_by(string $field, string $value): false|object
 {
-    $contentdata = (new Content(dfdb()))->findBy($field, $value);
+    $contentdata = new Content(dfdb())->findBy($field, $value);
 
     if (is_false__($contentdata)) {
         return false;
@@ -511,7 +511,7 @@ function get_permalink(string $contentId): string
  * @return array Content.
  * @throws CommandPropertyNotFoundException
  * @throws ReflectionException
- * @throws UnresolvableQueryHandlerException
+ * @throws UnresolvableQueryHandlerException|TypeException
  */
 function get_all_content(?string $contentType = null, int $limit = 0, int $offset = null, string $status = 'all'): array
 {
@@ -628,7 +628,7 @@ function update_contentmeta_by_mid(string $mid, string $metaKey, string $metaVal
     $_metaKey = unslash($metaKey);
     $_metaValue = unslash($metaValue);
 
-    return MetaData::factory(dfdb()->prefix . 'contentmeta')->updateByMid('content', $mid, $_metaKey, $_metaValue);
+    return MetaData::factory(dfdb()->prefix . 'contentmeta')->updateByMid('content', $mid, $_metaValue, $_metaKey);
 }
 
 /**
@@ -1652,7 +1652,10 @@ function get_content_parent_id(string $contentId): string
         return '';
     }
 
-    $parentId = \App\Domain\Content\Content::fromNative($content->parent)->contentId()->toNative();
+    /**
+     * Check that parent id is properly formatted.
+     */
+    $parentId = ContentId::fromString($content->parent)->toNative();
     /**
      * Filters the content parent id.
      *
@@ -2167,34 +2170,34 @@ function cms_insert_content(array|ServerRequestInterface|Content $contentdata): 
             $contentCreated = $contentPublished;
             $contentCreatedGmt = $contentPublishedGmt;
         } else {
-            $contentPublished = (new DateTime(
+            $contentPublished = new DateTime(
                 str_replace(['AM', 'PM'], '', $contentdata['published']),
                 get_user_timezone()
-            ))->getDateTime();
+            )->getDateTime();
             $contentPublishedGmt = (new DateTime($contentdata['publishedGmt'] ?? 'now', 'GMT'))->getDateTime();
             $contentCreated = $contentPublished;
             $contentCreatedGmt = $contentPublishedGmt;
         }
     } else {
-        $contentPublished = (new DateTime(
+        $contentPublished = new DateTime(
             str_replace(['AM', 'PM'], '', $contentdata['published']),
             get_user_timezone()
-        ))->getDateTime();
-        $contentPublishedGmt = (new DateTime(
+        )->getDateTime();
+        $contentPublishedGmt = new DateTime(
             $contentdata['publishedGmt'] ?? str_replace(['AM', 'PM'], '', $contentdata['published']),
             'GMT'
-        ))->getDateTime();
+        )->getDateTime();
         $contentCreated = $contentPublished;
         $contentCreatedGmt = $contentPublishedGmt;
-        $contentModified = (new DateTime(QubusDateTimeImmutable::now(get_user_timezone())->toDateTimeString()))
+        $contentModified = new DateTime(QubusDateTimeImmutable::now(get_user_timezone())->toDateTimeString())
                 ->getDateTime();
-        $contentModifiedGmt = (new DateTime(QubusDateTimeImmutable::now('GMT')->toDateTimeString()))->getDateTime();
+        $contentModifiedGmt = new DateTime(QubusDateTimeImmutable::now('GMT')->toDateTimeString())->getDateTime();
     }
 
     if (
         $contentStatus !== 'scheduled' &&
             ($contentPublished->format('Y-m-d H:i:s') >
-                    (new DateTime('now', get_user_timezone()))->format())
+                    new DateTime('now', get_user_timezone())->format())
     ) {
         $contentStatus = 'scheduled';
         $content->status = $contentStatus;
@@ -2651,7 +2654,7 @@ function number_content_by_type(string $slug): int
  * @param string $contentId Content id.
  * @return void
  * @throws ReflectionException
- * @throws UnresolvableQueryHandlerException
+ * @throws UnresolvableQueryHandlerException|TypeException
  */
 function get_content_parent_dropdown_list(string $parentId = null, string $contentId = ''): void
 {
@@ -2888,19 +2891,19 @@ function publish_scheduled_content(): void
     $odin = new Odin(bus: new SynchronousCommandBus($resolver));
 
     $contents = get_all_content();
-    $now = (new DateTime('now', get_user_timezone()))->getDateTime();
+    $now = new DateTime('now', get_user_timezone())->getDateTime();
 
     try {
         foreach ($contents as $content) {
             if (
                 $content['status'] === 'scheduled' &&
-                ($now->format('Y-m-d H:i:s') >= (new DateTime($content['published'], get_user_timezone()))->format())
+                ($now->format('Y-m-d H:i:s') >= new DateTime($content['published'], get_user_timezone())->format())
             ) {
                 $command = new UpdateContentStatusCommand([
                     'contentId' => ContentId::fromString($content['id']),
                     'contentStatus' => new StringLiteral('published'),
                     'contentModified' => $now,
-                    'contentModifiedGmt' => (new DateTime('now', 'GMT'))->getDateTime(),
+                    'contentModifiedGmt' => new DateTime('now', 'GMT')->getDateTime(),
                 ]);
 
                 $odin->execute($command);

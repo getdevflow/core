@@ -13,26 +13,13 @@ use App\Domain\ContentType\Services\ContentTypeProjection;
 use App\Infrastructure\Persistence\Database;
 use Codefy\Domain\EventSourcing\BaseProjection;
 use Exception as NativeException;
-use Psr\Container\ContainerExceptionInterface;
-use Psr\Container\NotFoundExceptionInterface;
 use Qubus\Exception\Data\TypeException;
-use Qubus\Expressive\OrmException;
-use ReflectionException;
-
-use function App\Shared\Helpers\dfdb;
+use Qubus\Expressive\QueryBuilderException;
 
 final class DatabaseContentTypeProjection extends BaseProjection implements ContentTypeProjection
 {
-    protected ?Database $dfdb = null;
-
-    /**
-     * @throws ContainerExceptionInterface
-     * @throws ReflectionException
-     * @throws NotFoundExceptionInterface
-     */
-    public function __construct(?Database $dfdb = null)
+    public function __construct(protected Database $dfdb)
     {
-        $this->dfdb = $dfdb ?? dfdb();
     }
 
     /**
@@ -55,7 +42,7 @@ final class DatabaseContentTypeProjection extends BaseProjection implements Cont
                     ])
                     ->save();
             });
-        } catch (OrmException $e) {
+        } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
         }
     }
@@ -78,7 +65,7 @@ final class DatabaseContentTypeProjection extends BaseProjection implements Cont
                     ->where('content_type_id = ?', $event->contentTypeId()->toNative())
                     ->update();
             });
-        } catch (OrmException $e) {
+        } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
         }
     }
@@ -101,7 +88,7 @@ final class DatabaseContentTypeProjection extends BaseProjection implements Cont
                     ->where('content_type_id = ?', $event->contentTypeId()->toNative())
                     ->update();
             });
-        } catch (OrmException $e) {
+        } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
         }
     }
@@ -124,7 +111,7 @@ final class DatabaseContentTypeProjection extends BaseProjection implements Cont
                     ->where('content_type_id = ?', $event->contentTypeId()->toNative())
                     ->update();
             });
-        } catch (OrmException $e) {
+        } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
         }
     }
@@ -145,7 +132,7 @@ final class DatabaseContentTypeProjection extends BaseProjection implements Cont
                     ->where('content_type_id = ?', $event->contentTypeId()->toNative())
                     ->delete();
             });
-        } catch (OrmException $e) {
+        } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
         }
     }

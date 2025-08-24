@@ -4,34 +4,15 @@ declare(strict_types=1);
 
 namespace App\Domain\Content\Query;
 
-use App\Domain\Content\Query\Trait\PopulateContentQueryAware;
-use App\Infrastructure\Persistence\Database;
+use App\Domain\Content\Repository\ContentQueryRepository;
 use Codefy\QueryBus\Query;
 use Codefy\QueryBus\QueryHandler;
 use Exception;
-use Psr\Container\ContainerExceptionInterface;
-use Psr\Container\NotFoundExceptionInterface;
-use ReflectionException;
-
-use function App\Shared\Helpers\dfdb;
-use function is_array;
-use function Qubus\Support\Helpers\convert_array_to_object;
-use function Qubus\Support\Helpers\is_null__;
 
 final class FindContentByTypeAndIdQueryHandler implements QueryHandler
 {
-    use PopulateContentQueryAware;
-
-    protected ?Database $dfdb = null;
-
-    /**
-     * @throws ContainerExceptionInterface
-     * @throws ReflectionException
-     * @throws NotFoundExceptionInterface
-     */
-    public function __construct(?Database $dfdb = null)
+    public function __construct(protected ContentQueryRepository $repository)
     {
-        $this->dfdb = $dfdb ?? dfdb();
     }
 
     /**
@@ -40,29 +21,6 @@ final class FindContentByTypeAndIdQueryHandler implements QueryHandler
      */
     public function handle(FindContentByTypeAndIdQuery|Query $query): array|object
     {
-        $sql = "SELECT * FROM {$this->dfdb->prefix}content WHERE content_type = ? AND content_id = ?";
-
-        $data = $this->dfdb->getRow(
-            $this->dfdb->prepare(
-                $sql,
-                [
-                    $query->contentTypeSlug->toNative(),
-                    $query->contentId->toNative()
-                ]
-            ),
-            Database::ARRAY_A
-        );
-
-        if (is_null__(var: $data)) {
-            return [];
-        }
-
-        $content = $this->populate(data: $data);
-
-        if (is_array(value: $content)) {
-            $content = convert_array_to_object(array: $content);
-        }
-
-        return $content;
+        return $this->repository->findByTypeAndId($query->contentTypeSlug->toNative(), $query->contentId->toNative());
     }
 }

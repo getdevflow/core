@@ -31,13 +31,14 @@ final class PhpFileParser
      * Build and return an object of a class from its file path
      *
      * @param string $filePathName
+     * @param mixed ...$args
      * @return mixed
      */
-    public static function classObjectFromFile(string $filePathName): mixed
+    public static function classObjectFromFile(string $filePathName, ...$args): mixed
     {
         $classString = self::classFullNameFromFile($filePathName);
 
-        return new $classString();
+        return new $classString(...$args);
     }
 
     /**

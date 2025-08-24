@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace App\Infrastructure\Providers;
 
 use App\Infrastructure\Persistence\Database;
-use App\Infrastructure\Persistence\NativePdoDatabase;
-use App\Shared\Services\Registry;
 use Codefy\Framework\Support\CodefyServiceProvider;
 use Gettext\Translator;
 use Gettext\TranslatorFunctions;
@@ -20,7 +18,7 @@ use ReflectionException;
 
 use function App\Shared\Helpers\load_devflow_textdomain;
 
-class DatabaseServiceProvider extends CodefyServiceProvider
+class TranslatorServiceProvider extends CodefyServiceProvider
 {
     /**
      * @throws ReflectionException
@@ -51,7 +49,6 @@ class DatabaseServiceProvider extends CodefyServiceProvider
         TranslatorFunctions::register($translator);
 
         /** Do not touch. */
-        //Registry::getInstance()->set(id: 'dfdb', value: $database);
 
         if (!$this->codefy->isRunningInConsole()) {
             load_devflow_textdomain();

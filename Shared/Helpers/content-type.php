@@ -274,7 +274,7 @@ function cms_insert_content_type(array|ServerRequestInterface|ContentType $conte
     }
 
     // Are we updating or creating?
-    if (!empty($contentTypeData['id'])) {
+    if (!empty($contentTypeData['id']) && !is_false__(get_content_type_by('id', $contentTypeData['id']))) {
         $update = true;
         $contentTypeId = ContentTypeId::fromString($contentTypeData['id']);
 
@@ -566,7 +566,7 @@ function cms_delete_content_type(string $contentTypeId): false|string|Error
  * @file App/Shared/Helpers/content-type.php
  * @return array
  * @throws ReflectionException
- * @throws UnresolvableQueryHandlerException
+ * @throws UnresolvableQueryHandlerException|TypeException
  */
 function get_all_content_types(): array
 {

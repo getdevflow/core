@@ -11,14 +11,12 @@
     }
   ],
   "require": {
-    "php": ">=8.3",
+    "php": ">=8.4",
     "barryvdh/elfinder-flysystem-driver": "^0.5.0",
-    "codefyphp/codefy": "^2",
+    "codefyphp/codefy": "^3.0.x-dev",
     "composer/semver": "^3.4",
     "erusev/parsedown": "^1.7",
     "forxer/gravatar": "^5.0",
-    "franzl/whoops-middleware": "^2.0",
-    "paragonie/csp-builder": "^2.9",
     "qubus/form": "^1.0",
     "qubus/hooks": "^1.0",
     "qubus/nosql": "^3.0",
@@ -26,15 +24,13 @@
     "spatie/image-optimizer": "^1.7",
     "spatie/menu": "^3.2",
     "studio-42/elfinder": "^2.1",
-    "oomphinc/composer-installers-extender": "^2.0",
-    "melbahja/seo": "^2.1"
+    "oomphinc/composer-installers-extender": "^2.0"
   },
   "autoload": {
     "psr-4": {
       "App\\": ""
     },
     "files": [
-      "Infrastructure/Http/Middleware/Csrf/helpers.php",
       "Shared/Helpers/db.php",
       "Shared/Helpers/core.php",
       "Shared/Helpers/hook.php",
@@ -51,7 +47,7 @@
       "Shared/Helpers/menu.php"
     ]
   },
-  "minimum-stability": "stable",
+  "minimum-stability": "dev",
   "prefer-stable": true,
   "config": {
     "allow-plugins": {

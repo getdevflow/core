@@ -40,7 +40,7 @@ class Connector extends elFinderConnector
         $headers = array();
         if ($header) {
             foreach ((array) $header as $headerString) {
-                if (strpos($headerString, ':') !== false) {
+                if (str_contains($headerString, ':')) {
                     [$key, $value] = explode(':', $headerString, 2);
                     $headers[$key] = $value;
                 }

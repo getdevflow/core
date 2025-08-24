@@ -10,25 +10,26 @@ use App\Infrastructure\Services\Options;
 use App\Shared\Services\Image;
 use Codefy\Framework\Application;
 use Codefy\Framework\Codefy;
-use Qubus\Support\ArrayHelper;
-use Qubus\Support\StringHelper;
-use stdClass;
+use Qubus\Exception\Data\TypeException;
+use Qubus\View\Renderer;
 
 /**
  * @property-read Database $dfdb
  * @property-read Image $image
  * @property-read Options $option
  * @property-read NativePhpCookies $cookies
- * @property-read StringHelper $string
- * @property-read ArrayHelper $array
+ * @property-read Renderer $view
  */
-final class Devflow extends stdClass
+final class Devflow extends Codefy
 {
     public static Application|null|Devflow $APP = null;
 
+    /**
+     * @throws TypeException
+     */
     private function __construct()
     {
-        Devflow::$APP = Codefy::$PHP;
+        Devflow::$APP = Application::getInstance();
         $this->init();
     }
 
@@ -44,8 +45,7 @@ final class Devflow extends stdClass
             'image' => Image::class,
             'option' => Options::class,
             'cookies' => NativePhpCookies::class,
-            'string' => StringHelper::class,
-            'array' => ArrayHelper::class,
+            'view' => Renderer::class,
         ];
 
         foreach ($aliases as $property => $name) {
@@ -55,6 +55,6 @@ final class Devflow extends stdClass
 
     public function release(): string
     {
-        return '1.3.0';
+        return '2.0.0-beta.1';
     }
 }

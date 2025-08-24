@@ -9,7 +9,7 @@ use App\Domain\Product\Service\ProductProjection;
 use App\Infrastructure\Persistence\Trait\EventSourcedRepositoryAware;
 use Codefy\Domain\EventSourcing\TransactionalEventStore;
 
-class EventSourcedProductAggregateRepository implements ProductAggregateRepository
+class EventSourcedProductRepository implements ProductAggregateRepository
 {
     use EventSourcedRepositoryAware;
 

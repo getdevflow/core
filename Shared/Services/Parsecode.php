@@ -14,6 +14,7 @@ use function array_key_exists;
 use function array_keys;
 use function array_map;
 use function call_user_func;
+use function implode;
 use function is_array;
 use function is_callable;
 use function join;
@@ -191,7 +192,7 @@ final class Parsecode
      */
     public function has(string $content, string $tag): bool
     {
-        if (false === strpos($content, '[')) {
+        if (!str_contains($content, '[')) {
             return false;
         }
         if ($this->exists($tag)) {
@@ -223,7 +224,7 @@ final class Parsecode
      */
     public function doParsecode(string $content): string
     {
-        if (false === strpos($content, '[')) {
+        if (!str_contains($content, '[')) {
             return $content;
         }
 
@@ -267,7 +268,7 @@ final class Parsecode
             $tagnames = array_keys(self::$parsecodeTags);
         }
 
-        $tagregexp = join('|', array_map('preg_quote', $tagnames));
+        $tagregexp = implode('|', array_map('preg_quote', $tagnames));
 
         // WARNING! Do not change this regex without changing doTag() and strip_parsecode_tag()
         return

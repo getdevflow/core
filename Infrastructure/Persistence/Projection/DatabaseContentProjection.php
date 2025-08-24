@@ -33,25 +33,16 @@ use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
-use Qubus\Expressive\OrmException;
+use Qubus\Expressive\QueryBuilderException;
 use ReflectionException;
 
 use function App\Shared\Helpers\add_contentmeta;
-use function App\Shared\Helpers\dfdb;
 use function App\Shared\Helpers\update_contentmeta;
 
 final class DatabaseContentProjection extends BaseProjection implements ContentProjection
 {
-    protected ?Database $dfdb = null;
-
-    /**
-     * @throws ContainerExceptionInterface
-     * @throws ReflectionException
-     * @throws NotFoundExceptionInterface
-     */
-    public function __construct(?Database $dfdb = null)
+    public function __construct(protected Database $dfdb)
     {
-        $this->dfdb = $dfdb ?? dfdb();
     }
 
     /**
@@ -99,7 +90,7 @@ final class DatabaseContentProjection extends BaseProjection implements ContentP
                     add_contentmeta($event->aggregateId()->__toString(), $meta, $value);
                 }
             }
-        } catch (OrmException $e) {
+        } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
         }
     }
@@ -122,7 +113,7 @@ final class DatabaseContentProjection extends BaseProjection implements ContentP
                         ->where('content_id = ?', $event->contentId()->toNative())
                         ->update();
             });
-        } catch (OrmException $e) {
+        } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
         }
     }
@@ -145,7 +136,7 @@ final class DatabaseContentProjection extends BaseProjection implements ContentP
                         ->where('content_id = ?', $event->contentId()->toNative())
                         ->update();
             });
-        } catch (OrmException $e) {
+        } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
         }
     }
@@ -168,7 +159,7 @@ final class DatabaseContentProjection extends BaseProjection implements ContentP
                         ->where('content_id = ?', $event->contentId()->toNative())
                         ->update();
             });
-        } catch (OrmException $e) {
+        } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
         }
     }
@@ -191,7 +182,7 @@ final class DatabaseContentProjection extends BaseProjection implements ContentP
                         ->where('content_id = ?', $event->contentId()->toNative())
                         ->update();
             });
-        } catch (OrmException $e) {
+        } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
         }
     }
@@ -214,7 +205,7 @@ final class DatabaseContentProjection extends BaseProjection implements ContentP
                         ->where('content_id = ?', $event->contentId()->toNative())
                         ->update();
             });
-        } catch (OrmException $e) {
+        } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
         }
     }
@@ -238,7 +229,7 @@ final class DatabaseContentProjection extends BaseProjection implements ContentP
                         ->where('content_id = ?', $event->contentId()->toNative())
                         ->update();
             });
-        } catch (OrmException $e) {
+        } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
         }
     }
@@ -261,7 +252,7 @@ final class DatabaseContentProjection extends BaseProjection implements ContentP
                         ->where('content_id = ?', $event->contentId()->toNative())
                         ->update();
             });
-        } catch (OrmException $e) {
+        } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
         }
     }
@@ -284,7 +275,7 @@ final class DatabaseContentProjection extends BaseProjection implements ContentP
                         ->where('content_id = ?', $event->contentId()->toNative())
                         ->update();
             });
-        } catch (OrmException $e) {
+        } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
         }
     }
@@ -307,7 +298,7 @@ final class DatabaseContentProjection extends BaseProjection implements ContentP
                         ->where('content_id = ?', $event->contentId()->toNative())
                         ->update();
             });
-        } catch (OrmException $e) {
+        } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
         }
     }
@@ -330,7 +321,7 @@ final class DatabaseContentProjection extends BaseProjection implements ContentP
                         ->where('content_id = ?', $event->contentId()->toNative())
                         ->update();
             });
-        } catch (OrmException $e) {
+        } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
         }
     }
@@ -353,7 +344,7 @@ final class DatabaseContentProjection extends BaseProjection implements ContentP
                         ->where('content_id = ?', $event->contentId()->toNative())
                         ->update();
             });
-        } catch (OrmException $e) {
+        } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
         }
     }
@@ -376,7 +367,7 @@ final class DatabaseContentProjection extends BaseProjection implements ContentP
                         ->where('content_id = ?', $event->contentId()->toNative())
                         ->update();
             });
-        } catch (OrmException $e) {
+        } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
         }
     }
@@ -399,7 +390,7 @@ final class DatabaseContentProjection extends BaseProjection implements ContentP
                         ->where('content_id = ?', $event->contentId()->toNative())
                         ->update();
             });
-        } catch (OrmException $e) {
+        } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
         }
     }
@@ -422,7 +413,7 @@ final class DatabaseContentProjection extends BaseProjection implements ContentP
                         ->where('content_id = ?', $event->contentId()->toNative())
                         ->update();
             });
-        } catch (OrmException $e) {
+        } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
         }
     }
@@ -445,7 +436,7 @@ final class DatabaseContentProjection extends BaseProjection implements ContentP
                         ->where('content_id = ?', $event->contentId()->toNative())
                         ->update();
             });
-        } catch (OrmException $e) {
+        } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
         }
     }
@@ -468,7 +459,7 @@ final class DatabaseContentProjection extends BaseProjection implements ContentP
                     ->where('content_id = ?', $event->contentId()->toNative())
                     ->update();
             });
-        } catch (OrmException $e) {
+        } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
         }
     }
@@ -509,7 +500,7 @@ final class DatabaseContentProjection extends BaseProjection implements ContentP
                         ->where('content_id = ?', $event->contentId()->toNative())
                         ->delete();
             });
-        } catch (OrmException $e) {
+        } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
         }
     }

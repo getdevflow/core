@@ -4,32 +4,15 @@ declare(strict_types=1);
 
 namespace App\Domain\Content\Query;
 
-use App\Domain\Content\Query\Trait\PopulateContentQueryAware;
-use App\Infrastructure\Persistence\Database;
+use App\Domain\Content\Repository\ContentQueryRepository;
 use Codefy\QueryBus\Query;
 use Codefy\QueryBus\QueryHandler;
 use Exception;
-use Psr\Container\ContainerExceptionInterface;
-use Psr\Container\NotFoundExceptionInterface;
-use ReflectionException;
-
-use function App\Shared\Helpers\dfdb;
-use function Qubus\Support\Helpers\is_null__;
 
 final class FindContentByStatusQueryHandler implements QueryHandler
 {
-    use PopulateContentQueryAware;
-
-    protected ?Database $dfdb = null;
-
-    /**
-     * @throws ContainerExceptionInterface
-     * @throws ReflectionException
-     * @throws NotFoundExceptionInterface
-     */
-    public function __construct(?Database $dfdb = null)
+    public function __construct(protected ContentQueryRepository $repository)
     {
-        $this->dfdb = $dfdb ?? dfdb();
     }
 
     /**
@@ -38,21 +21,6 @@ final class FindContentByStatusQueryHandler implements QueryHandler
      */
     public function handle(FindContentByStatusQuery|Query $query): array
     {
-        $sql = "SELECT * FROM {$this->dfdb->prefix}content WHERE content_status = ?";
-
-        $data = $this->dfdb->getResults(
-            query: $this->dfdb->prepare(query: $sql, params: [$query->contentStatus->toNative()]),
-            output: Database::ARRAY_A
-        );
-
-        $contents = [];
-
-        if (!is_null__($data)) {
-            foreach ($data as $content) {
-                $contents[] = $this->populate($content);
-            }
-        }
-
-        return $contents;
+        return $this->repository->findByStatus($query->contentStatus->toNative());
     }
 }

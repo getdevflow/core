@@ -66,7 +66,7 @@ use function str_replace;
  *
  * @return array
  * @throws ReflectionException
- * @throws UnresolvableQueryHandlerException
+ * @throws UnresolvableQueryHandlerException|TypeException
  */
 function get_products(): array
 {
@@ -89,12 +89,12 @@ function get_products(): array
  * @return array Array of published products or product by particular sku.
  * @throws CommandPropertyNotFoundException
  * @throws ReflectionException
- * @throws UnresolvableQueryHandlerException
+ * @throws UnresolvableQueryHandlerException|TypeException
  */
 function get_all_products_with_filters(
     ?string $productSku = null,
     int $limit = 0,
-    int $offset = null,
+    ?int $offset = null,
     string $status = 'all'
 ): array {
     $resolver = new NativeQueryHandlerResolver(container: ContainerFactory::make(config: config('querybus.aliases')));
@@ -126,7 +126,7 @@ function get_all_products_with_filters(
  */
 function get_product_by(string $field, string $value): false|object
 {
-    $productdata = (new Product(dfdb()))->findBy($field, $value);
+    $productdata = new Product(dfdb())->findBy($field, $value);
 
     if (is_false__($productdata)) {
         return false;
@@ -455,6 +455,7 @@ function get_productmeta_by_mid(string $mid): bool|array
  * @throws ReflectionException
  * @throws TypeException
  * @throws UnresolvableQueryHandlerException
+ * @throws InvalidArgumentException
  */
 function update_productmeta(
     string $productId,
@@ -481,6 +482,7 @@ function update_productmeta(
  * @throws ReflectionException
  * @throws TypeException
  * @throws UnresolvableQueryHandlerException
+ * @throws InvalidArgumentException
  */
 function update_productmeta_by_mid(string $mid, string $metaKey, string $metaValue): bool
 {
@@ -488,7 +490,7 @@ function update_productmeta_by_mid(string $mid, string $metaKey, string $metaVal
     $_metaValue = unslash($metaValue);
 
     return MetaData::factory(dfdb()->prefix . 'productmeta')
-            ->updateByMid('product', $mid, $_metaKey, $_metaValue);
+            ->updateByMid('product', $mid, $_metaValue, $_metaKey);
 }
 
 /**
@@ -508,6 +510,7 @@ function update_productmeta_by_mid(string $mid, string $metaKey, string $metaVal
  * @throws ReflectionException
  * @throws TypeException
  * @throws UnresolvableQueryHandlerException
+ * @throws InvalidArgumentException
  */
 function add_productmeta(string $productId, string $metaKey, mixed $metaValue, bool $unique = false): false|string
 {
@@ -1870,39 +1873,39 @@ function cms_insert_product(array|ServerRequestInterface|Product $productdata): 
 
     if (!$update) {
         if (empty($productdata['published']) || php_like('%0000-00-00 00:00', $productdata['published'])) {
-            $productPublished = (new DateTime('now', get_user_timezone()))->getDateTime();
-            $productPublishedGmt = (new DateTime('now', 'GMT'))->getDateTime();
+            $productPublished = new DateTime('now', get_user_timezone())->getDateTime();
+            $productPublishedGmt = new DateTime('now', 'GMT')->getDateTime();
             $productCreated = $productPublished;
             $productCreatedGmt = $productPublishedGmt;
         } else {
-            $productPublished = (new DateTime(
+            $productPublished = new DateTime(
                 str_replace(['AM', 'PM'], '', $productdata['published']),
                 get_user_timezone()
-            ))->getDateTime();
-            $productPublishedGmt = (new DateTime($productdata['publishedGmt'] ?? 'now', 'GMT'))->getDateTime();
+            )->getDateTime();
+            $productPublishedGmt = new DateTime($productdata['publishedGmt'] ?? 'now', 'GMT')->getDateTime();
             $productCreated = $productPublished;
             $productCreatedGmt = $productPublishedGmt;
         }
     } else {
-        $productPublished = (new DateTime(
+        $productPublished = new DateTime(
             str_replace(['AM', 'PM'], '', $productdata['published']),
             get_user_timezone()
-        ))->getDateTime();
-        $productPublishedGmt = (new DateTime(
+        )->getDateTime();
+        $productPublishedGmt = new DateTime(
             $productdata['publishedGmt'] ?? str_replace(['AM', 'PM'], '', $productdata['published']),
             'GMT'
-        ))->getDateTime();
+        )->getDateTime();
         $productCreated = $productPublished;
         $productCreatedGmt = $productPublishedGmt;
-        $productModified = (new DateTime(QubusDateTimeImmutable::now(get_user_timezone())->toDateTimeString()))
+        $productModified = new DateTime(QubusDateTimeImmutable::now(get_user_timezone())->toDateTimeString())
                 ->getDateTime();
-        $productModifiedGmt = (new DateTime(QubusDateTimeImmutable::now('GMT')->toDateTimeString()))->getDateTime();
+        $productModifiedGmt = new DateTime(QubusDateTimeImmutable::now('GMT')->toDateTimeString())->getDateTime();
     }
 
     if (
         $productStatus !== 'scheduled' &&
             ($productPublished->format('Y-m-d H:i:s') >
-                    (new DateTime('now', get_user_timezone()))->format())
+                    new DateTime('now', get_user_timezone())->format())
     ) {
         $productStatus = 'scheduled';
         $product->status = $productStatus;
@@ -2374,6 +2377,7 @@ function the_product_meta(string|Product|ProductId $product, string $key): strin
  *
  * @param string|null $active Currency selected.
  * @return void
+ * @throws TypeException
  */
 function currency_option(?string $active = null): void
 {
@@ -2402,13 +2406,13 @@ function publish_scheduled_product(): void
     $odin = new Odin(bus: new SynchronousCommandBus($resolver));
 
     $products = get_all_products_with_filters();
-    $now = (new DateTime('now', get_user_timezone()))->getDateTime();
+    $now = new DateTime('now', get_user_timezone())->getDateTime();
 
     try {
         foreach ($products as $product) {
             if (
                 $product['status'] === 'scheduled' &&
-                ($now->format('Y-m-d H:i:s') >= (new DateTime($product['published'], get_user_timezone()))->format())
+                ($now->format('Y-m-d H:i:s') >= new DateTime($product['published'], get_user_timezone())->format())
             ) {
                 $command = new UpdateProductStatusCommand([
                     'productId' => ProductId::fromString($product['id']),

@@ -11,6 +11,7 @@ use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Psr\SimpleCache\InvalidArgumentException;
 use Qubus\EventDispatcher\ActionFilter\Action;
+use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
 use ReflectionException;
 
@@ -22,10 +23,11 @@ class ProductCachePsr16 implements ProductCache
     /**
      * @inheritDoc
      * @param Product|array $product
-     * @throws InvalidArgumentException
-     * @throws ReflectionException
      * @throws ContainerExceptionInterface
+     * @throws InvalidArgumentException
      * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
+     * @throws TypeException
      */
     public static function update(Product|array $product): void
     {

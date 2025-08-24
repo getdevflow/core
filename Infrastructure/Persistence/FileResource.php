@@ -11,6 +11,8 @@ use Codefy\Framework\Auth\Rbac\Resource\BaseStorageResource;
 use Codefy\Framework\Support\LocalStorage;
 use League\Flysystem\FilesystemException;
 
+use Qubus\Exception\Data\TypeException;
+
 use function json_decode;
 
 use const JSON_PRETTY_PRINT;
@@ -31,8 +33,9 @@ final class FileResource extends BaseStorageResource
     }
 
     /**
-     * @throws SentinelException
      * @throws FilesystemException
+     * @throws SentinelException
+     * @throws TypeException
      */
     public function load(): void
     {
@@ -48,6 +51,7 @@ final class FileResource extends BaseStorageResource
 
     /**
      * @throws FilesystemException
+     * @throws TypeException
      */
     public function save(): void
     {

@@ -9,11 +9,13 @@ use App\Domain\ContentType\Services\ContentTypeProjection;
 use App\Infrastructure\Persistence\Trait\EventSourcedRepositoryAware;
 use Codefy\Domain\EventSourcing\TransactionalEventStore;
 
-class EventSourcedContentTypeAggregateRepository implements ContentTypeAggregateRepository
+class EventSourcedContentTypeRepository implements ContentTypeAggregateRepository
 {
     use EventSourcedRepositoryAware;
 
-    public function __construct(protected TransactionalEventStore $eventStore, protected ContentTypeProjection $projection)
-    {
+    public function __construct(
+        protected TransactionalEventStore $eventStore,
+        protected ContentTypeProjection $projection
+    ) {
     }
 }

@@ -13,6 +13,7 @@ use App\Shared\Services\Trait\HydratorAware;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Psr\SimpleCache\InvalidArgumentException;
+use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
 use ReflectionException;
 use stdClass;
@@ -132,6 +133,7 @@ final class Content extends stdClass
      *
      * @param array $data
      * @return Content
+     * @throws TypeException
      */
     public function create(array $data = []): Content
     {
@@ -152,6 +154,9 @@ final class Content extends stdClass
         return new Content();
     }
 
+    /**
+     * @throws TypeException
+     */
     public function populate(Content $content, array $data = []): self
     {
         if (config(key: 'cms.relative_url') === 'contenttype') {

@@ -4,37 +4,15 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Services;
 
-use App\Application\Devflow;
 use App\Infrastructure\Persistence\Database;
-use Psr\Container\ContainerExceptionInterface;
-use Psr\Container\NotFoundExceptionInterface;
-use Qubus\Exception\Exception;
-use Qubus\View\Native\NativeLoader;
 use Qubus\View\Renderer;
-use ReflectionException;
 
-use function App\Shared\Helpers\dfdb;
-use function Codefy\Framework\Helpers\config;
 use function sprintf;
 
 abstract class Theme implements Extension
 {
-    protected ?Options $option = null;
-
-    protected ?Database $dfdb = null;
-
-    protected ?Renderer $view = null;
-
-    /**
-     * @throws ContainerExceptionInterface
-     * @throws ReflectionException
-     * @throws NotFoundExceptionInterface|Exception
-     */
-    public function __construct(?Options $option = null, Database $dfdb = null, ?Renderer $view = null)
+    public function __construct(protected Options $option, protected Database $dfdb, protected Renderer $view)
     {
-        $this->option = $option ?? Options::factory();
-        $this->dfdb = $dfdb ?? dfdb();
-        $this->view = $view ?? new NativeLoader(Devflow::inst()::$APP->configContainer->getConfigKey(key: 'view.path'));
     }
 
     /**

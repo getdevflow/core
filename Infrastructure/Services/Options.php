@@ -34,9 +34,11 @@ final class Options
     }
 
     /**
-     * @throws ReflectionException
+     * @return Options
      * @throws ContainerExceptionInterface
      * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
+     * @throws TypeException
      */
     public static function factory(): Options
     {

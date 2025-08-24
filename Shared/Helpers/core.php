@@ -791,7 +791,7 @@ function generate_site_key(int $length = 6): string
 function convert_date_to_gmt(string $string = 'now', string $format = 'Y-m-d H:i:s'): string
 {
     $date = str_replace(['AM', 'PM'], '', $string);
-    return (new DateTime(time: $date, timezone: 'GMT'))->format(format: $format);
+    return new DateTime(time: $date, timezone: 'GMT')->format(format: $format);
 }
 
 /**
@@ -929,7 +929,7 @@ function get_domain_name(): string
 {
     $request = new Request();
     $serverName = strtolower($request->getServerName());
-    if (substr($serverName, 0, 4) === 'www.') {
+    if (str_starts_with($serverName, 'www.')) {
         $serverName = substr($serverName, 4);
     }
     return $serverName;
@@ -1133,7 +1133,7 @@ function generate_random_password(
         $chars .= '-_ []{}<>~`+=,.;:/?|';
     }
 
-    $password = (new Factory())->getGenerator(new Strength(Strength::MEDIUM))->generateString($length, $chars);
+    $password = new Factory()->getGenerator(new Strength(Strength::MEDIUM))->generateString($length, $chars);
 
     /**
      * Filters the system generated password.
@@ -1373,6 +1373,7 @@ function current_screen(string $key, string $value): string
  * Whether multisite is enabled.
  *
  * @return bool
+ * @throws TypeException
  */
 function is_multisite(): bool
 {
@@ -1494,6 +1495,7 @@ function show_update_message(): void
  * @param string $removedVersion Version for when deprecated code will be removed.
  * @param string|null $replacement Replacement of deprecated code if any.
  * @throws ReflectionException
+ * @throws TypeException
  */
 function deprecation_notice(
     string $functionName,

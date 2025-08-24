@@ -46,7 +46,7 @@ final class WebRouteServiceProvider extends CodefyServiceProvider
 
             $group->post(uri: '/auth/', callback: 'AdminAuthController@auth')
                     ->name('admin.auth')
-                    ->middleware(['csrf.protection', 'user.authenticate','user.session']);
+                    ->middleware(['csrf.protection','user.authenticate','user.session']);
 
             $group->get(uri: '/flush-cache/', callback: 'AdminDashboardController@flushCache')
                     ->name('admin.cache.flush');
@@ -61,8 +61,7 @@ final class WebRouteServiceProvider extends CodefyServiceProvider
                     ->name('admin.media');
 
             $group->get(uri: "/{$loginRoute}/", callback: 'AdminAuthController@login')
-                ->name('admin.login')
-                ->middleware(['csrf.token']);
+                ->name('admin.login');
 
             $group->get(uri: '/logout/', callback: 'AdminAuthController@logout')
                     ->name('admin.logout')
@@ -90,8 +89,7 @@ final class WebRouteServiceProvider extends CodefyServiceProvider
             $group->post(uri: '/content-type/create/', callback: 'AdminContentTypeController@contentTypeCreate')
                 ->middleware(['csrf.protection']);
             $group->get(uri: '/content-type/{contentTypeId}/', callback: 'AdminContentTypeController@contentTypeView')
-                ->where(['contentTypeId' => '[0123456789ABCDEFGHJKMNPQRSTVWXYZ{26}$]+'])
-                ->middleware(['csrf.token', 'csrf.protection']);
+                ->where(['contentTypeId' => '[0123456789ABCDEFGHJKMNPQRSTVWXYZ{26}$]+']);
             $group->post(
                 uri: '/content-type/{contentTypeId}/',
                 callback: 'AdminContentTypeController@contentTypeChange'
@@ -113,8 +111,7 @@ final class WebRouteServiceProvider extends CodefyServiceProvider
             $group->post(uri: '/site/users/{userId}/d/', callback: 'AdminSiteController@siteUsersDelete')
                 ->where(['userId' => '[0123456789ABCDEFGHJKMNPQRSTVWXYZ{26}$]+']);
             $group->get(uri: '/site/{siteId}/', callback: 'AdminSiteController@siteView')
-                ->where(['siteId' => '[0123456789ABCDEFGHJKMNPQRSTVWXYZ{26}$]+'])
-                ->middleware(['csrf.token', 'csrf.protection']);
+                ->where(['siteId' => '[0123456789ABCDEFGHJKMNPQRSTVWXYZ{26}$]+']);
             $group->post(
                 uri: '/site/{siteId}/',
                 callback: 'AdminSiteController@siteChange'
@@ -131,14 +128,12 @@ final class WebRouteServiceProvider extends CodefyServiceProvider
             // User routes
             $group->get(uri: '/user/', callback: 'AdminUserController@users');
             $group->map(['GET', 'POST'], '/user/profile/', 'AdminUserController@userProfile')
-                ->middleware(['csrf.token', 'csrf.protection']);
-            $group->get(uri: '/user/create/', callback: 'AdminUserController@userCreateView')
-                ->middleware(['csrf.token', 'csrf.protection']);
+                ->middleware(['csrf.protection']);
+            $group->get(uri: '/user/create/', callback: 'AdminUserController@userCreateView');
             $group->post(uri: '/user/create/', callback: 'AdminUserController@userCreate')
                 ->middleware(['csrf.protection']);
             $group->get(uri: '/user/{userId}/', callback: 'AdminUserController@userView')
-                ->where(['userId' => '[0123456789ABCDEFGHJKMNPQRSTVWXYZ{26}$]+'])
-                ->middleware(['csrf.token', 'csrf.protection']);
+                ->where(['userId' => '[0123456789ABCDEFGHJKMNPQRSTVWXYZ{26}$]+']);
             $group->post(
                 uri: '/user/{userId}/',
                 callback: 'AdminUserController@userChange'
@@ -162,12 +157,10 @@ final class WebRouteServiceProvider extends CodefyServiceProvider
             // Option routes
             $group->post(uri: '/options/', callback: 'AdminOptionsController@options')
                 ->middleware(['csrf.protection']);
-            $group->get(uri: '/general/', callback: 'AdminOptionsController@generalView')
-                ->middleware(['csrf.token', 'csrf.protection']);
+            $group->get(uri: '/general/', callback: 'AdminOptionsController@generalView');
             $group->post(uri: '/general/', callback: 'AdminOptionsController@generalOptions')
                 ->middleware(['csrf.protection']);
-            $group->get(uri: '/reading/', callback: 'AdminOptionsController@readingView')
-                ->middleware(['csrf.token', 'csrf.protection']);
+            $group->get(uri: '/reading/', callback: 'AdminOptionsController@readingView');
             $group->post(uri: '/reading/', callback: 'AdminOptionsController@readingOptions')
                 ->middleware(['csrf.protection']);
 
@@ -177,8 +170,7 @@ final class WebRouteServiceProvider extends CodefyServiceProvider
             $group->get(
                 uri: '/content-type/{contentTypeSlug}/create/',
                 callback: 'AdminContentController@contentCreateView'
-            )
-                ->middleware(['csrf.token']);
+            );
             $group->post(
                 uri: '/content-type/{contentTypeSlug}/create/',
                 callback: 'AdminContentController@contentCreate'
@@ -188,8 +180,7 @@ final class WebRouteServiceProvider extends CodefyServiceProvider
                 uri: '/content-type/{contentTypeSlug}/{contentId}/',
                 callback: 'AdminContentController@contentView'
             )
-                ->where(['contentId' => '[0123456789ABCDEFGHJKMNPQRSTVWXYZ{26}$]+'])
-                ->middleware(['csrf.token']);
+                ->where(['contentId' => '[0123456789ABCDEFGHJKMNPQRSTVWXYZ{26}$]+']);
             $group->post(
                 uri: '/content-type/{contentTypeSlug}/{contentId}/',
                 callback: 'AdminContentController@contentChange'
@@ -213,8 +204,7 @@ final class WebRouteServiceProvider extends CodefyServiceProvider
             $group->get(
                 uri: '/product/create/',
                 callback: 'AdminProductController@productCreateView'
-            )
-                    ->middleware(['csrf.token']);
+            );
             $group->post(
                 uri: '/product/create/',
                 callback: 'AdminProductController@productCreate'
@@ -224,8 +214,7 @@ final class WebRouteServiceProvider extends CodefyServiceProvider
                 uri: '/product/{productId}/',
                 callback: 'AdminProductController@productView'
             )
-                    ->where(['productId' => '[0123456789ABCDEFGHJKMNPQRSTVWXYZ{26}$]+'])
-                    ->middleware(['csrf.token']);
+                    ->where(['productId' => '[0123456789ABCDEFGHJKMNPQRSTVWXYZ{26}$]+']);
             $group->post(
                 uri: '/product/{productId}/',
                 callback: 'AdminProductController@productChange'

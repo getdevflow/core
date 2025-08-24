@@ -18,26 +18,13 @@ use App\Domain\Site\Services\SiteProjection;
 use App\Infrastructure\Persistence\Database;
 use Codefy\Domain\EventSourcing\BaseProjection;
 use Exception as NativeException;
-use Psr\Container\ContainerExceptionInterface;
-use Psr\Container\NotFoundExceptionInterface;
 use Qubus\Exception\Data\TypeException;
-use Qubus\Expressive\OrmException;
-use ReflectionException;
-
-use function App\Shared\Helpers\dfdb;
+use Qubus\Expressive\QueryBuilderException;
 
 final class DatabaseSiteProjection extends BaseProjection implements SiteProjection
 {
-    protected ?Database $dfdb = null;
-
-    /**
-     * @throws ContainerExceptionInterface
-     * @throws ReflectionException
-     * @throws NotFoundExceptionInterface
-     */
-    public function __construct(?Database $dfdb = null)
+    public function __construct(protected Database $dfdb)
     {
-        $this->dfdb = $dfdb ?? dfdb();
     }
 
     /**
@@ -66,7 +53,7 @@ final class DatabaseSiteProjection extends BaseProjection implements SiteProject
                     ])
                     ->save();
             });
-        } catch (OrmException $e) {
+        } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
         }
     }
@@ -89,7 +76,7 @@ final class DatabaseSiteProjection extends BaseProjection implements SiteProject
                     ->where('site_id = ?', $event->siteId()->toNative())
                     ->update();
             });
-        } catch (OrmException $e) {
+        } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
         }
     }
@@ -112,7 +99,7 @@ final class DatabaseSiteProjection extends BaseProjection implements SiteProject
                     ->where('site_id = ?', $event->siteId()->toNative())
                     ->update();
             });
-        } catch (OrmException $e) {
+        } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
         }
     }
@@ -135,7 +122,7 @@ final class DatabaseSiteProjection extends BaseProjection implements SiteProject
                     ->where('site_id = ?', $event->siteId()->toNative())
                     ->update();
             });
-        } catch (OrmException $e) {
+        } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
         }
     }
@@ -156,7 +143,7 @@ final class DatabaseSiteProjection extends BaseProjection implements SiteProject
                     ->where('site_id = ?', $event->siteId()->toNative())
                     ->update();
             });
-        } catch (OrmException $e) {
+        } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
         }
     }
@@ -179,7 +166,7 @@ final class DatabaseSiteProjection extends BaseProjection implements SiteProject
                     ->where('site_id = ?', $event->siteId()->toNative())
                     ->update();
             });
-        } catch (OrmException $e) {
+        } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
         }
     }
@@ -202,7 +189,7 @@ final class DatabaseSiteProjection extends BaseProjection implements SiteProject
                     ->where('site_id = ?', $event->siteId()->toNative())
                     ->update();
             });
-        } catch (OrmException $e) {
+        } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
         }
     }
@@ -225,7 +212,7 @@ final class DatabaseSiteProjection extends BaseProjection implements SiteProject
                     ->where('site_id = ?', $event->siteId()->toNative())
                     ->update();
             });
-        } catch (OrmException $e) {
+        } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
         }
     }
@@ -248,7 +235,7 @@ final class DatabaseSiteProjection extends BaseProjection implements SiteProject
                     ->where('site_id = ?', $event->siteId()->toNative())
                     ->update();
             });
-        } catch (OrmException $e) {
+        } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
         }
     }
@@ -269,7 +256,7 @@ final class DatabaseSiteProjection extends BaseProjection implements SiteProject
                     ->where('site_id = ?', $event->siteId()->toNative())
                     ->delete();
             });
-        } catch (OrmException $e) {
+        } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
         }
     }

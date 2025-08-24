@@ -18,6 +18,7 @@ use Psr\Container\NotFoundExceptionInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\SimpleCache\InvalidArgumentException;
 use Qubus\Config\ConfigContainer;
+use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
 use Qubus\Http\Factories\JsonResponseFactory;
 use Qubus\Http\ServerRequest;
@@ -38,21 +39,25 @@ use function Qubus\Security\Helpers\t__;
 final class AdminMediaController extends BaseController
 {
     public function __construct(
-        SessionService $sessionService,
-        Router $router,
+        protected SessionService $sessionService,
+        protected Router $router,
         protected Database $dfdb,
         protected UserAuth $user,
         protected ConfigContainer $configContainer,
-        ?Renderer $view = null
+        protected Renderer $view
     ) {
         parent::__construct($sessionService, $router, $view);
     }
 
     /**
+     * @param ServerRequest $request
+     * @return ResponseInterface
      * @throws ContainerExceptionInterface
+     * @throws Exception
+     * @throws InvalidArgumentException
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
-     * @throws \Exception
+     * @throws TypeException
      */
     public function connector(ServerRequest $request): ResponseInterface
     {
@@ -138,7 +143,7 @@ final class AdminMediaController extends BaseController
     public function elFinder(): string|ResponseInterface
     {
         if (!is_user_logged_in()) {
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
 

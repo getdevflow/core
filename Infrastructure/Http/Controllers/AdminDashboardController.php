@@ -34,11 +34,11 @@ use function Qubus\Security\Helpers\t__;
 final class AdminDashboardController extends BaseController
 {
     public function __construct(
-        SessionService $sessionService,
-        Router $router,
+        protected SessionService $sessionService,
+        protected Router $router,
         protected UserAuth $user,
         protected Database $dfdb,
-        ?Renderer $view = null
+        protected Renderer $view
     ) {
         parent::__construct($sessionService, $router, $view);
     }
@@ -59,7 +59,7 @@ final class AdminDashboardController extends BaseController
     public function index(ServerRequest $request): ResponseInterface|string
     {
         if (false === $this->user->can(permissionName: 'access:admin', request: $request)) {
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
             return $this->redirect($this->router->url(name: 'admin.login'));
@@ -85,7 +85,7 @@ final class AdminDashboardController extends BaseController
     public function snapshot(ServerRequest $request): ResponseInterface|string
     {
         if (false === $this->user->can(permissionName: 'access:admin', request: $request)) {
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
             return $this->redirect($this->router->url(name: 'admin.login'));
@@ -113,7 +113,7 @@ final class AdminDashboardController extends BaseController
     public function flushCache(ServerRequest $request): ResponseInterface
     {
         if (false === $this->user->can(permissionName: 'manage:settings', request: $request)) {
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
         }
@@ -136,7 +136,7 @@ final class AdminDashboardController extends BaseController
             SimpleCacheObjectCacheFactory::make(namespace: 'siteslug')->clear();
             SimpleCacheObjectCacheFactory::make(namespace: $this->dfdb->prefix . 'options')->clear();
             SimpleCacheObjectCacheFactory::make(namespace: $this->dfdb->prefix . 'database')->clear();
-            Devflow::inst()::$APP->flash->success(
+            Devflow::$PHP->flash->success(
                 esc_html__(string: 'Cache flushed successfully.', domain: 'devflow')
             );
         }
@@ -163,7 +163,7 @@ final class AdminDashboardController extends BaseController
     public function media(ServerRequest $request): ResponseInterface|string
     {
         if (false === $this->user->can(permissionName: 'manage:media', request: $request)) {
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
 

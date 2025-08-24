@@ -9,15 +9,13 @@ use App\Domain\Site\Command\CreateSiteCommand;
 use App\Domain\Site\Command\DeleteSiteCommand;
 use App\Domain\Site\Command\UpdateSiteCommand;
 use App\Domain\Site\Model\Site;
-use App\Domain\Site\Query\FindSiteByIdQuery;
-use App\Domain\Site\Query\FindSiteByKeyQuery;
-use App\Domain\Site\Query\FindSiteBySlugQuery;
 use App\Domain\Site\Query\FindSitesQuery;
 use App\Domain\Site\SiteError;
 use App\Domain\Site\ValueObject\SiteId;
 use App\Domain\User\Model\User;
 use App\Domain\User\Query\FindMultisiteUniqueUsersQuery;
 use App\Domain\User\ValueObject\UserId;
+use App\Infrastructure\Persistence\Cache\SiteCachePsr16;
 use App\Infrastructure\Persistence\Cache\UserCachePsr16;
 use App\Infrastructure\Persistence\Database;
 use App\Infrastructure\Services\Options;
@@ -83,7 +81,7 @@ use function strtotime;
  *
  * @file App/Shared/Helpers/site.php
  * @throws ReflectionException
- * @throws UnresolvableQueryHandlerException
+ * @throws UnresolvableQueryHandlerException|TypeException
  */
 function get_all_sites(): mixed
 {
@@ -104,46 +102,20 @@ function get_all_sites(): mixed
  * @param string $field The field to retrieve the site with (id, key or slug).
  * @param string $value A value for $field.
  * @return object|bool
- * @throws CommandPropertyNotFoundException
+ * @throws ContainerExceptionInterface
+ * @throws Exception
+ * @throws InvalidArgumentException
+ * @throws NotFoundExceptionInterface
  * @throws ReflectionException
- * @throws TypeException
- * @throws UnresolvableQueryHandlerException
  */
-function get_site_by(string $field, string $value): object|bool
+function get_site_by(string $field, string $value): false|object
 {
-    try {
-        $resolver = new NativeQueryHandlerResolver(
-            container: ContainerFactory::make(config: config(key: 'querybus.aliases'))
-        );
-        $enquirer = new Enquire(bus: new SynchronousQueryBus($resolver));
-
-        $query = match ($field) {
-            'id' => new FindSiteByIdQuery(['siteId' => new StringLiteral($value)]),
-            'key' => new FindSiteByKeyQuery(['siteKey' => new StringLiteral($value)]),
-            'slug' => new FindSiteBySlugQuery(['siteSlug' => new StringLiteral($value)]),
-        };
-
-        $results = $enquirer->execute($query);
-
-        if (is_null__($results) || is_false__($results)) {
-            return false;
-        }
-
-        return new Site((array) $results);
-    } catch (PDOException $e) {
-        FileLoggerFactory::getLogger()->error(
-            sprintf(
-                'SQLSTATE[%s]: %s',
-                $e->getCode(),
-                $e->getMessage()
-            ),
-            [
-                'Site Function' => 'get_site_by'
-            ]
-        );
+    $sitedata = new Site(dfdb: dfdb())->findBy($field, $value);
+    if (is_false__($sitedata)) {
+        return false;
     }
 
-    return false;
+    return $sitedata;
 }
 
 /**
@@ -218,6 +190,7 @@ function if_site_exists(string $siteDomain, string $sitePath): bool
  * @throws ReflectionException
  * @throws TypeException
  * @throws UnresolvableQueryHandlerException
+ * @throws InvalidArgumentException
  */
 function add_site_usermeta(string $siteKey, array $params = []): bool
 {
@@ -252,8 +225,13 @@ function add_site_usermeta(string $siteKey, array $params = []): bool
  * @param bool $update Whether the site is being created or updated.
  * @return bool True on success or false on failure.
  * @throws CommandPropertyNotFoundException
+ * @throws ContainerExceptionInterface
+ * @throws Exception
+ * @throws InvalidArgumentException
+ * @throws NotFoundExceptionInterface
  * @throws ReflectionException
- * @throws UnresolvableQueryHandlerException|TypeException
+ * @throws TypeException
+ * @throws UnresolvableQueryHandlerException
  */
 function create_site_directories(string $siteId, Site $site, bool $update = false): bool
 {
@@ -268,8 +246,8 @@ function create_site_directories(string $siteId, Site $site, bool $update = fals
 
     mkdir(
         directory: public_path(
-            path: 'sites' . Codefy::$PHP::DS . $site->key .
-            Codefy::$PHP::DS . 'uploads' . Codefy::$PHP::DS  . '__optimized__'
+            path: 'sites' . Devflow::$PHP::DS . $site->key .
+            Devflow::$PHP::DS . 'uploads' . Devflow::$PHP::DS  . '__optimized__'
         ),
         permissions: 0755,
         recursive: true
@@ -277,7 +255,7 @@ function create_site_directories(string $siteId, Site $site, bool $update = fals
 
     mkdir(
         directory: public_path(
-            path: 'sites' . Codefy::$PHP::DS . $site->key . Codefy::$PHP::DS . '.trash'
+            path: 'sites' . Devflow::$PHP::DS . $site->key . Devflow::$PHP::DS . '.trash'
         ),
         permissions: 0755,
         recursive: true
@@ -425,7 +403,7 @@ function delete_site_directories(string $siteId, Site $oldSite): bool
         return false;
     }
 
-    rmdir__(public_path(path: 'sites' . Codefy::$PHP::DS . $oldSite->key));
+    rmdir__(public_path(path: 'sites' . Devflow::$PHP::DS . $oldSite->key));
 
     return true;
 }
@@ -450,7 +428,7 @@ function get_current_site_key(): mixed
  * @file App/Shared/Helpers/site.php
  * @return array Users data.
  * @throws ReflectionException
- * @throws UnresolvableQueryHandlerException
+ * @throws UnresolvableQueryHandlerException|TypeException
  */
 function get_multisite_users(): array
 {
@@ -583,7 +561,6 @@ function add_user_to_site(User|string $user, Site|string $site, string $role): f
  * @throws TypeException
  * @throws UnresolvableCommandHandlerException
  * @throws UnresolvableQueryHandlerException
- * @throws DateInvalidTimeZoneException
  */
 function cms_insert_site(array|ServerRequestInterface|Site $sitedata): Error|string
 {
@@ -814,9 +791,9 @@ function cms_insert_site(array|ServerRequestInterface|Site $sitedata): Error|str
     );
     $site->status = $siteStatus;
 
-    $siteRegistered = (new DateTime())->current(type: 'db');
+    $siteRegistered = new DateTime()->current(type: 'db');
 
-    $siteModified = (new DateTime())->current(type: 'db');
+    $siteModified = new DateTime()->current(type: 'db');
 
     $compacted = [
         'id' => $siteId->toNative(),
@@ -1087,7 +1064,7 @@ function cms_update_site(array|ServerRequestInterface|Site $sitedata): Error|str
         add_user_to_site($sitedata['owner'], $sitedata['id'], 'admin');
     }
 
-    //cms()->obj['sitecache']->clean($siteId);
+    SiteCachePsr16::clean($sitedata);
 
     return $siteId;
 }
@@ -1162,7 +1139,7 @@ function cms_delete_site(string $siteId): Error|string
      */
     Action::getInstance()->doAction('deleted_site', $siteId, $oldSite);
 
-    //ttcms()->obj['sitecache']->clean($oldSite);
+    SiteCachePsr16::clean($oldSite);
 
     return $siteId;
 }
@@ -1201,7 +1178,7 @@ function cms_delete_site_user(string $userId, array $params = []): Error|bool
     }
 
     if ($user->role === 'super') {
-        Codefy::$PHP->flash->error(
+        Devflow::$PHP->flash->error(
             esc_html__(
                 string: 'You are not allowed to delete a super administrator account.',
                 domain: 'devflow'
@@ -1256,7 +1233,7 @@ function cms_delete_site_user(string $userId, array $params = []): Error|bool
             }
 
             foreach ($sites as $oldSite) {
-                $site = new Site((array) $oldSite);
+                $site = new Site()->create($oldSite);
                 SimpleCacheObjectCacheFactory::make(namespace: 'sites')->delete(key: md5($site->id));
                 /**
                  * Action hook triggered after the site is deleted.
@@ -1508,8 +1485,13 @@ function does_site_exist(): \Psr\Http\Message\ResponseInterface
  * @param string $siteId
  * @return string Site's name on success or '' on failure.
  * @throws CommandPropertyNotFoundException
+ * @throws ContainerExceptionInterface
+ * @throws Exception
+ * @throws InvalidArgumentException
+ * @throws NotFoundExceptionInterface
  * @throws ReflectionException
- * @throws UnresolvableQueryHandlerException|Exception
+ * @throws TypeException
+ * @throws UnresolvableQueryHandlerException
  */
 function get_site_name(string $siteId): string
 {
@@ -1541,8 +1523,12 @@ function get_site_name(string $siteId): string
  * @param string $siteId The unique id of a site.
  * @return string Site's domain on success or '' on failure.
  * @throws CommandPropertyNotFoundException
+ * @throws ContainerExceptionInterface
  * @throws Exception
+ * @throws InvalidArgumentException
+ * @throws NotFoundExceptionInterface
  * @throws ReflectionException
+ * @throws TypeException
  * @throws UnresolvableQueryHandlerException
  */
 function get_site_domain(string $siteId): string
@@ -1575,8 +1561,12 @@ function get_site_domain(string $siteId): string
  * @param string $siteId The unique id of a site.
  * @return string Site's path on success or false on failure.
  * @throws CommandPropertyNotFoundException
+ * @throws ContainerExceptionInterface
  * @throws Exception
+ * @throws InvalidArgumentException
+ * @throws NotFoundExceptionInterface
  * @throws ReflectionException
+ * @throws TypeException
  * @throws UnresolvableQueryHandlerException
  */
 function get_site_path(string $siteId): string
@@ -1609,8 +1599,12 @@ function get_site_path(string $siteId): string
  * @param string $siteId The unique id of a site.
  * @return string Site's owner on success or false on failure.
  * @throws CommandPropertyNotFoundException
+ * @throws ContainerExceptionInterface
  * @throws Exception
+ * @throws InvalidArgumentException
+ * @throws NotFoundExceptionInterface
  * @throws ReflectionException
+ * @throws TypeException
  * @throws UnresolvableQueryHandlerException
  */
 function get_site_owner(string $siteId): string
@@ -1643,8 +1637,12 @@ function get_site_owner(string $siteId): string
  * @param string $siteId The unique id of a site.
  * @return string Site's status on success or false on failure.
  * @throws CommandPropertyNotFoundException
+ * @throws ContainerExceptionInterface
  * @throws Exception
+ * @throws InvalidArgumentException
+ * @throws NotFoundExceptionInterface
  * @throws ReflectionException
+ * @throws TypeException
  * @throws UnresolvableQueryHandlerException
  */
 function get_site_status(string $siteId): string

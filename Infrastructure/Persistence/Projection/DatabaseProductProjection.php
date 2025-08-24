@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Infrastructure\Persistence\Projection;
 
 use App\Domain\Product\Event\ProductShowInSearchWasChanged;
@@ -28,39 +30,32 @@ use Codefy\QueryBus\UnresolvableQueryHandlerException;
 use Exception as NativeException;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
+use Psr\SimpleCache\InvalidArgumentException;
 use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
-use Qubus\Expressive\OrmException;
+use Qubus\Expressive\QueryBuilderException;
 use ReflectionException;
 
 use function App\Shared\Helpers\add_productmeta;
-use function App\Shared\Helpers\dfdb;
 use function App\Shared\Helpers\update_productmeta;
 
 class DatabaseProductProjection extends BaseProjection implements ProductProjection
 {
-    protected ?Database $dfdb = null;
-
-    /**
-     * @throws ContainerExceptionInterface
-     * @throws ReflectionException
-     * @throws NotFoundExceptionInterface
-     */
-    public function __construct(?Database $dfdb = null)
+    public function __construct(protected Database $dfdb)
     {
-        $this->dfdb = $dfdb ?? dfdb();
     }
 
     /**
      * @param ProductWasCreated $event
      * @return void
+     * @throws CommandPropertyNotFoundException
      * @throws ContainerExceptionInterface
+     * @throws Exception
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
      * @throws TypeException
-     * @throws CommandPropertyNotFoundException
      * @throws UnresolvableQueryHandlerException
-     * @throws Exception
+     * @throws InvalidArgumentException
      * @throws NativeException
      */
     public function projectWhenProductWasCreated(ProductWasCreated $event): void
@@ -98,7 +93,7 @@ class DatabaseProductProjection extends BaseProjection implements ProductProject
                     add_productmeta($event->aggregateId()->__toString(), $meta, $value);
                 }
             }
-        } catch (OrmException $e) {
+        } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
         }
     }
@@ -121,7 +116,7 @@ class DatabaseProductProjection extends BaseProjection implements ProductProject
                     ->where('product_id = ?', $event->productId()->toNative())
                     ->update();
             });
-        } catch (OrmException $e) {
+        } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
         }
     }
@@ -144,7 +139,7 @@ class DatabaseProductProjection extends BaseProjection implements ProductProject
                     ->where('product_id = ?', $event->productId()->toNative())
                     ->update();
             });
-        } catch (OrmException $e) {
+        } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
         }
     }
@@ -167,7 +162,7 @@ class DatabaseProductProjection extends BaseProjection implements ProductProject
                     ->where('product_id = ?', $event->productId()->toNative())
                     ->update();
             });
-        } catch (OrmException $e) {
+        } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
         }
     }
@@ -190,7 +185,7 @@ class DatabaseProductProjection extends BaseProjection implements ProductProject
                     ->where('product_id = ?', $event->productId()->toNative())
                     ->update();
             });
-        } catch (OrmException $e) {
+        } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
         }
     }
@@ -213,7 +208,7 @@ class DatabaseProductProjection extends BaseProjection implements ProductProject
                     ->where('product_id = ?', $event->productId()->toNative())
                     ->update();
             });
-        } catch (OrmException $e) {
+        } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
         }
     }
@@ -237,7 +232,7 @@ class DatabaseProductProjection extends BaseProjection implements ProductProject
                     ->where('product_id = ?', $event->productId()->toNative())
                     ->update();
             });
-        } catch (OrmException $e) {
+        } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
         }
     }
@@ -260,7 +255,7 @@ class DatabaseProductProjection extends BaseProjection implements ProductProject
                         ->where('product_id = ?', $event->productId()->toNative())
                         ->update();
             });
-        } catch (OrmException $e) {
+        } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
         }
     }
@@ -283,7 +278,7 @@ class DatabaseProductProjection extends BaseProjection implements ProductProject
                         ->where('product_id = ?', $event->productId()->toNative())
                         ->update();
             });
-        } catch (OrmException $e) {
+        } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
         }
     }
@@ -306,7 +301,7 @@ class DatabaseProductProjection extends BaseProjection implements ProductProject
                         ->where('product_id = ?', $event->productId()->toNative())
                         ->update();
             });
-        } catch (OrmException $e) {
+        } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
         }
     }
@@ -329,7 +324,7 @@ class DatabaseProductProjection extends BaseProjection implements ProductProject
                         ->where('product_id = ?', $event->productId()->toNative())
                         ->update();
             });
-        } catch (OrmException $e) {
+        } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
         }
     }
@@ -352,7 +347,7 @@ class DatabaseProductProjection extends BaseProjection implements ProductProject
                         ->where('product_id = ?', $event->productId()->toNative())
                         ->update();
             });
-        } catch (OrmException $e) {
+        } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
         }
     }
@@ -363,6 +358,7 @@ class DatabaseProductProjection extends BaseProjection implements ProductProject
      * @throws CommandPropertyNotFoundException
      * @throws ContainerExceptionInterface
      * @throws Exception
+     * @throws InvalidArgumentException
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
      * @throws TypeException
@@ -395,7 +391,7 @@ class DatabaseProductProjection extends BaseProjection implements ProductProject
                         ->where('product_id = ?', $event->productId()->toNative())
                         ->update();
             });
-        } catch (OrmException $e) {
+        } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
         }
     }
@@ -418,7 +414,7 @@ class DatabaseProductProjection extends BaseProjection implements ProductProject
                         ->where('product_id = ?', $event->productId()->toNative())
                         ->update();
             });
-        } catch (OrmException $e) {
+        } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
         }
     }
@@ -441,7 +437,7 @@ class DatabaseProductProjection extends BaseProjection implements ProductProject
                         ->where('product_id = ?', $event->productId()->toNative())
                         ->update();
             });
-        } catch (OrmException $e) {
+        } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
         }
     }
@@ -464,7 +460,7 @@ class DatabaseProductProjection extends BaseProjection implements ProductProject
                         ->where('product_id = ?', $event->productId()->toNative())
                         ->update();
             });
-        } catch (OrmException $e) {
+        } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
         }
     }
@@ -484,7 +480,7 @@ class DatabaseProductProjection extends BaseProjection implements ProductProject
                         ->where('product_id = ?', $event->productId()->toNative())
                         ->delete();
             });
-        } catch (OrmException $e) {
+        } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
         }
     }

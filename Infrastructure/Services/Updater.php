@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Services;
 
+use App\Application\Devflow;
 use App\Shared\Services\SimpleCacheObjectCacheFactory;
 use Codefy\Framework\Codefy;
 use Codefy\Framework\Factory\FileLoggerFactory;
@@ -132,7 +133,7 @@ final class Updater
         // Init logger
         $this->log = FileLoggerFactory::getLogger();
 
-        $this->setTempDir($tempDir ?? storage_path('temp') . Codefy::$PHP::DS);
+        $this->setTempDir($tempDir ?? storage_path('temp') . Devflow::$PHP::DS);
         $this->setInstallDir($installDir ?? base_path());
 
         $this->latestVersion  = '0.0.0';
@@ -656,7 +657,7 @@ final class Updater
             }
 
             // Skip if entry is a directory
-            if ($filename[strlen($filename) - 1] === Codefy::$PHP::DS) {
+            if ($filename[strlen($filename) - 1] === Devflow::$PHP::DS) {
                 continue;
             }
 
@@ -747,13 +748,13 @@ final class Updater
         // Read every file from archive
         for ($i = 0; $i < $zip->numFiles; $i++) {
             $fileStats        = $zip->statIndex($i);
-            $filename         = str_replace(array('/', '\\'), Codefy::$PHP::DS, $fileStats['name']);
+            $filename         = str_replace(array('/', '\\'), Devflow::$PHP::DS, $fileStats['name']);
             $foldername       = str_replace(
                 array('/', '\\'),
-                Codefy::$PHP::DS,
+                Devflow::$PHP::DS,
                 $this->installDir . dirname($filename)
             );
-            $absoluteFilename = str_replace(array('/', '\\'), Codefy::$PHP::DS, $this->installDir . $filename);
+            $absoluteFilename = str_replace(array('/', '\\'), Devflow::$PHP::DS, $this->installDir . $filename);
             $this->log->debug(sprintf('Updating file "%s"', $filename));
 
             if (!is_dir($foldername) && !mkdir($foldername, $this->dirPermissions, true) && !is_dir($foldername)) {
@@ -763,7 +764,7 @@ final class Updater
             }
 
             // Skip if entry is a directory
-            if ($filename[strlen($filename) - 1] === Codefy::$PHP::DS) {
+            if ($filename[strlen($filename) - 1] === Devflow::$PHP::DS) {
                 continue;
             }
 

@@ -9,7 +9,7 @@ use App\Domain\User\Services\UserProjection;
 use App\Infrastructure\Persistence\Trait\EventSourcedRepositoryAware;
 use Codefy\Domain\EventSourcing\TransactionalEventStore;
 
-final class EventSourcedUserAggregateRepository implements UserAggregateRepository
+final class EventSourcedUserRepository implements UserAggregateRepository
 {
     use EventSourcedRepositoryAware;
 

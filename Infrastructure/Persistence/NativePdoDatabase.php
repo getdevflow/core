@@ -16,7 +16,7 @@ use Qubus\Config\ConfigContainer;
 use Qubus\Dbal\Schema;
 use Qubus\Error\Error;
 use Qubus\Exception\Exception;
-use Qubus\Expressive\OrmBuilder;
+use Qubus\Expressive\QueryBuilder;
 use ReflectionException;
 
 use function array_key_exists;
@@ -47,6 +47,8 @@ use const JSON_PRETTY_PRINT;
 
 final class NativePdoDatabase implements Database
 {
+    private static ?NativePdoDatabase $instance = null;
+
     protected ?Schema $schema = null;
 
     protected ?string $connection = null;
@@ -125,6 +127,20 @@ final class NativePdoDatabase implements Database
         $this->prefix = $this->sitePrefix;
 
         Registry::getInstance()->set('tblPrefix', $this->prefix);
+    }
+
+    /**
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
+     * @throws ContainerExceptionInterface
+     * @throws Exception
+     */
+    public static function getInstance(PDO $pdo, ConfigContainer $configContainer): NativePdoDatabase
+    {
+        if (self::$instance === null) {
+            self::$instance = new self($pdo, $configContainer);
+        }
+        return self::$instance;
     }
 
     /**
@@ -467,7 +483,7 @@ final class NativePdoDatabase implements Database
     /**
      * @inheritDoc
      */
-    public function qb(): ?OrmBuilder
+    public function qb(): ?QueryBuilder
     {
         return orm();
     }
@@ -631,5 +647,9 @@ final class NativePdoDatabase implements Database
             }
         }
         return $tables;
+    }
+
+    private function __clone(): void
+    {
     }
 }

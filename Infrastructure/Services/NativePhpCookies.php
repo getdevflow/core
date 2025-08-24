@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Services;
 
+use Qubus\Exception\Data\TypeException;
+
 use function Codefy\Framework\Helpers\config;
 use function Codefy\Framework\Helpers\storage_path;
 
@@ -19,6 +21,7 @@ final class NativePhpCookies
      *
      * @param int $length
      * @return string
+     * @throws TypeException
      */
     public function token(int $length = 20): string
     {
@@ -38,6 +41,7 @@ final class NativePhpCookies
      * @param mixed $value
      * @param int|null $expires
      * @return bool
+     * @throws TypeException
      */
     public function set(mixed $key, mixed $value, ?int $expires = null): bool
     {
@@ -73,6 +77,7 @@ final class NativePhpCookies
      *
      * @param array $data
      * @return bool
+     * @throws TypeException
      */
     public function setSecureCookie(array $data): bool
     {
@@ -110,6 +115,7 @@ final class NativePhpCookies
      *
      * @param $key
      * @return bool
+     * @throws TypeException
      */
     public function remove($key): bool
     {
@@ -128,6 +134,7 @@ final class NativePhpCookies
      * Generates a hardened cookie string with digest.
      *
      * @param mixed $data Cookie value: e.g. random token or hash
+     * @throws TypeException
      */
     public function buildCookie(mixed $data, mixed $expires): string
     {
@@ -170,6 +177,7 @@ final class NativePhpCookies
      *
      * @param string $key String from the client
      * @return bool
+     * @throws TypeException
      */
     public function verifySecureCookie(string $key): bool
     {

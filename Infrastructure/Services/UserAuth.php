@@ -62,13 +62,7 @@ final class UserAuth
         }
 
         $roles = $this->getRoles();
-        foreach ($roles as $role) {
-            if ($role->checkAccess($permissionName, $ruleParams)) {
-                return true;
-            }
-        }
-
-        return false;
+        return array_any($roles, fn($role) => $role->checkAccess($permissionName, $ruleParams));
     }
 
     /**

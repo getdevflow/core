@@ -91,13 +91,7 @@ function current_user_can(string $perm, array $ruleParams = []): bool
     }
 
     $roles = get_roles();
-    foreach ($roles as $role) {
-        if ($role->checkAccess($perm, $ruleParams)) {
-            return true;
-        }
-    }
-
-    return false;
+    return array_any($roles, fn($role) => $role->checkAccess($perm, $ruleParams));
 }
 
 /**
@@ -438,6 +432,7 @@ function login_form_show_message(): void
  * @file App/Shared/Helpers/auth.php
  * @param string $key COOKIE key.
  * @return false|array|object Cookie data or false.
+ * @throws TypeException
  */
 function get_secure_cookie_data(string $key): false|array|object
 {
@@ -449,6 +444,9 @@ function get_secure_cookie_data(string $key): false|array|object
     return false;
 }
 
+/**
+ * @throws TypeException
+ */
 function get_user_roles(): array
 {
     return config(key: 'rbac.roles');

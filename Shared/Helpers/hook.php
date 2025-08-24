@@ -156,31 +156,6 @@ function get_logo_mini(): string
 }
 
 /**
- * Returns full base url of a site's private url.
- *
- * @deprecated 1.2.0
- *
- * @file App/Shared/Helpers/hook.php
- * @param string $path
- * @return string Site's private base url.
- * @throws ContainerExceptionInterface
- * @throws Exception
- * @throws NotFoundExceptionInterface
- * @throws ReflectionException
- */
-function get_private_site_url(string $path = ''): string
-{
-    \Qubus\Support\Helpers\trigger_deprecation(
-        functionName: __FUNCTION__,
-        deprecatedVersion: '1.2.0',
-        removedVersion: '2.0.0',
-        replacement: 'App\Shared\Helpers\public_site_url'
-    );
-
-    return public_site_url($path);
-}
-
-/**
  * Returns full base url of a site's public url.
  *
  * @file App/Shared/Helpers/hook.php
@@ -196,31 +171,6 @@ function public_site_url(string $path = ''): string
     $siteKey = Registry::getInstance()->get('siteKey');
     $url = site_url('sites/' . $siteKey . '/' . $path);
     return Filter::getInstance()->applyFilter("public_site_url_{$siteKey}", $url);
-}
-
-/**
- * Returns full base url of a site's private upload url.
- *
- * @deprecated 1.2.0
- *
- * @file App/Shared/Helpers/hook.php
- * @param string $path
- * @return string Site's private upload base url.
- * @throws ContainerExceptionInterface
- * @throws Exception
- * @throws NotFoundExceptionInterface
- * @throws ReflectionException
- */
-function get_private_site_upload_url(string $path = ''): string
-{
-    \Qubus\Support\Helpers\trigger_deprecation(
-        functionName: __FUNCTION__,
-        deprecatedVersion: '1.2.0',
-        removedVersion: '2.0.0',
-        replacement: 'App\Shared\Helpers\public_site_upload_url'
-    );
-
-    return public_site_upload_url($path);
 }
 
 /**
@@ -258,7 +208,7 @@ function cms_encode_email(string $string): string
 {
     // abort if $string doesn't contain a @-sign
     if (Filter::getInstance()->applyFilter('encode_email_at_sign_check', true)) {
-        if (strpos($string, '@') === false) {
+        if (!str_contains($string, '@')) {
             return $string;
         }
     }
@@ -545,7 +495,7 @@ function admin_dashboard_js(): void
  * @throws Exception
  * @throws ReflectionException
  */
-function cms_charset(string $charset = null)
+function cms_charset(?string $charset = null): mixed
 {
     $select = '<select class="form-control select2" name="charset" style="width: 100%;" required>
         <option value="">&nbsp;</option>
@@ -820,6 +770,7 @@ function get_http_response_code(string $url): int
  * Shows an error message when system is in DEV mode.
  *
  * @file App/Shared/Helpers/hook.php
+ * @throws TypeException
  */
 function cms_dev_mode(): void
 {

@@ -41,11 +41,11 @@ use function Qubus\Support\Helpers\is_false__;
 final class AdminContentTypeController extends BaseController
 {
     public function __construct(
-        SessionService $sessionService,
-        Router $router,
-        protected Database $dfdb,
+        protected SessionService $sessionService,
+        protected Router $router,
         protected UserAuth $user,
-        ?Renderer $view = null
+        protected Database $dfdb,
+        protected Renderer $view
     ) {
         parent::__construct($sessionService, $router, $view);
     }
@@ -64,7 +64,7 @@ final class AdminContentTypeController extends BaseController
     public function contentTypeCreate(ServerRequest $request): ?ResponseInterface
     {
         if (false === $this->user->can(permissionName: 'create:content', request: $request)) {
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
             return $this->redirect(admin_url());
@@ -73,12 +73,12 @@ final class AdminContentTypeController extends BaseController
         try {
             $id = cms_insert_content_type($request);
             if (is_error($id)) {
-                Devflow::inst()::$APP->flash->error(
+                Devflow::$PHP->flash->error(
                     message: t__(msgid: 'Insertion error occurred.', domain: 'devflow')
                 );
             }
 
-            Devflow::inst()::$APP->flash->success(Devflow::inst()::$APP->flash->notice(num: 201));
+            Devflow::$PHP->flash->success(Devflow::$PHP->flash->notice(num: 201));
         } catch (
             CommandCouldNotBeHandledException |
             CommandPropertyNotFoundException |
@@ -89,7 +89,7 @@ final class AdminContentTypeController extends BaseController
             ReflectionException $e
         ) {
             FileLoggerFactory::getLogger()->error($e->getMessage());
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Insertion exception occurred and was logged.', domain: 'devflow')
             );
         }
@@ -112,7 +112,7 @@ final class AdminContentTypeController extends BaseController
     public function contentTypes(ServerRequest $request): string|ResponseInterface
     {
         if (false === $this->user->can(permissionName: 'manage:content', request: $request)) {
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
             return $this->redirect(admin_url());
@@ -132,7 +132,7 @@ final class AdminContentTypeController extends BaseController
             );
         } catch (UnresolvableQueryHandlerException | ReflectionException $e) {
             FileLoggerFactory::getLogger()->error($e->getMessage());
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Error fetching content types.', domain: 'devflow')
             );
         }
@@ -155,7 +155,7 @@ final class AdminContentTypeController extends BaseController
     public function contentTypeChange(ServerRequest $request, string $contentTypeId): ?ResponseInterface
     {
         if (false === $this->user->can(permissionName: 'update:content', request: $request)) {
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
             return $this->redirect(admin_url());
@@ -166,12 +166,12 @@ final class AdminContentTypeController extends BaseController
         try {
             $id = cms_update_content_type($dataArrayMerge);
             if (is_error($id)) {
-                Devflow::inst()::$APP->flash->error(
+                Devflow::$PHP->flash->error(
                     message: t__(msgid: 'Change error occurred.', domain: 'devflow')
                 );
             }
 
-            Devflow::inst()::$APP->flash->success(Devflow::inst()::$APP->flash->notice(num: 200));
+            Devflow::$PHP->flash->success(Devflow::$PHP->flash->notice(num: 200));
         } catch (
             CommandCouldNotBeHandledException |
             CommandPropertyNotFoundException |
@@ -182,7 +182,7 @@ final class AdminContentTypeController extends BaseController
             ReflectionException $e
         ) {
             FileLoggerFactory::getLogger()->error($e->getMessage());
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Change exception occurred and was logged.', domain: 'devflow')
             );
         }
@@ -206,7 +206,7 @@ final class AdminContentTypeController extends BaseController
     public function contentTypeView(ServerRequest $request, string $contentTypeId): string|ResponseInterface
     {
         if (false === $this->user->can(permissionName: 'update:content', request: $request)) {
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
             return $this->redirect(admin_url());
@@ -267,7 +267,7 @@ final class AdminContentTypeController extends BaseController
     public function contentTypeDelete(ServerRequest $request, string $contentTypeId): ResponseInterface
     {
         if (false === $this->user->can(permissionName: 'delete:content', request: $request)) {
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
             return $this->redirect(admin_url());
@@ -277,11 +277,11 @@ final class AdminContentTypeController extends BaseController
             $delete = cms_delete_content_type($contentTypeId);
 
             if (is_error($delete) || is_false__($delete)) {
-                Devflow::inst()::$APP->flash->error(
+                Devflow::$PHP->flash->error(
                     message: t__(msgid: 'Delete error occurred.', domain: 'devflow')
                 );
             } else {
-                Devflow::inst()::$APP->flash->success(Devflow::inst()::$APP->flash->notice(num: 200));
+                Devflow::$PHP->flash->success(Devflow::$PHP->flash->notice(num: 200));
             }
         } catch (
             CommandCouldNotBeHandledException |
@@ -293,7 +293,7 @@ final class AdminContentTypeController extends BaseController
             ReflectionException $e
         ) {
             FileLoggerFactory::getLogger()->error($e->getMessage());
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Delete exception occurred and was logged.', domain: 'devflow')
             );
         }

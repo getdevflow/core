@@ -5,11 +5,6 @@ declare(strict_types=1);
 namespace App\Infrastructure\Providers;
 
 use Codefy\Framework\Support\CodefyServiceProvider;
-use Psr\Http\Message\RequestInterface;
-use Qubus\Http\Request;
-
-use function Laminas\Diactoros\marshalHeadersFromSapi;
-use function Laminas\Diactoros\marshalMethodFromSapi;
 
 final class AppServiceProvider extends CodefyServiceProvider
 {
@@ -18,19 +13,6 @@ final class AppServiceProvider extends CodefyServiceProvider
         if ($this->codefy->isRunningInConsole()) {
             return;
         }
-
-        $server = $_SERVER;
-        $uri = (empty($server['HTTPS']) ? 'http' : 'https') . "://$server[HTTP_HOST]$server[REQUEST_URI]";
-        $headers = marshalHeadersFromSapi($_SERVER);
-
-        $this->codefy->alias(RequestInterface::class, Request::class);
-        $this->codefy->define(Request::class, [
-                ':uri' => $uri,
-                ':method' => marshalMethodFromSapi($server),
-                ':body' => 'php://temp',
-                ':headers' => $headers,
-        ]);
-        $this->codefy->share(nameOrInstance: RequestInterface::class);
     }
 
     public function boot(): void

@@ -51,11 +51,11 @@ use function Qubus\Support\Helpers\is_false__;
 final class AdminProductController extends BaseController
 {
     public function __construct(
-        SessionService $sessionService,
-        Router $router,
-        protected Database $dfdb,
+        protected SessionService $sessionService,
+        protected Router $router,
         protected UserAuth $user,
-        ?Renderer $view = null
+        protected Database $dfdb,
+        protected Renderer $view
     ) {
         parent::__construct($sessionService, $router, $view);
     }
@@ -76,7 +76,7 @@ final class AdminProductController extends BaseController
     public function products(ServerRequest $request): string|ResponseInterface
     {
         if (false === $this->user->can(permissionName: 'manage:product', request: $request)) {
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow'),
             );
             return $this->redirect(admin_url());
@@ -94,7 +94,7 @@ final class AdminProductController extends BaseController
             );
         } catch (UnresolvableQueryHandlerException | ReflectionException $e) {
             FileLoggerFactory::getLogger()->error($e->getMessage());
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Query error.', domain: 'devflow')
             );
         }
@@ -116,7 +116,7 @@ final class AdminProductController extends BaseController
     public function productCreate(ServerRequest $request): ?ResponseInterface
     {
         if (false === $this->user->can(permissionName: 'create:product', request: $request)) {
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
             return $this->redirect(admin_url());
@@ -125,11 +125,11 @@ final class AdminProductController extends BaseController
         try {
             $id = cms_insert_product($request);
             if (is_error($id)) {
-                Devflow::inst()::$APP->flash->error(
+                Devflow::$PHP->flash->error(
                     message: t__(msgid: 'Insertion error occurred.', domain: 'devflow')
                 );
             } else {
-                Devflow::inst()::$APP->flash->success(Devflow::inst()::$APP->flash->notice(num: 201));
+                Devflow::$PHP->flash->success(Devflow::$PHP->flash->notice(num: 201));
             }
 
             return $this->redirect(admin_url(path: "product/{$id}/"));
@@ -146,7 +146,7 @@ final class AdminProductController extends BaseController
             ContainerExceptionInterface $e
         ) {
             FileLoggerFactory::getLogger()->error($e->getMessage());
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Insertion exception occurred and was logged.', domain: 'devflow')
             );
         }
@@ -171,7 +171,7 @@ final class AdminProductController extends BaseController
     public function productCreateView(ServerRequest $request): ResponseInterface|null|string
     {
         if (false === $this->user->can(permissionName: 'create:product', request: $request)) {
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
             return $this->redirect(admin_url());
@@ -182,7 +182,7 @@ final class AdminProductController extends BaseController
             data: [
                 'title' => t__(msgid: 'Create Product', domain: 'devflow'),
                 'request' => $request->getParsedBody(),
-                'form' => (new ProductForm())->buildForm($request->getParsedBody(), null),
+                'form' => new ProductForm()->buildForm($request->getParsedBody(), null),
             ]
         );
     }
@@ -204,7 +204,7 @@ final class AdminProductController extends BaseController
         string $productId
     ): ?ResponseInterface {
         if (false === $this->user->can(permissionName: 'update:product', request: $request)) {
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
             return $this->redirect(admin_url());
@@ -215,18 +215,17 @@ final class AdminProductController extends BaseController
         try {
             $id = cms_update_product($dataArrayMerge);
             if (is_error($id)) {
-                Devflow::inst()::$APP->flash->error(
+                Devflow::$PHP->flash->error(
                     message: t__(msgid: 'Change error occurred.', domain: 'devflow')
                 );
             }
 
-            Devflow::inst()::$APP->flash->success(Devflow::inst()::$APP->flash->notice(num: 200));
+            Devflow::$PHP->flash->success(Devflow::$PHP->flash->notice(num: 200));
         } catch (
             CommandCouldNotBeHandledException |
             ContainerExceptionInterface |
             InvalidArgumentException |
             CommandPropertyNotFoundException |
-            NotFoundExceptionInterface |
             UnresolvableCommandHandlerException |
             UnresolvableQueryHandlerException |
             TypeException |
@@ -234,7 +233,7 @@ final class AdminProductController extends BaseController
             ReflectionException $e
         ) {
             FileLoggerFactory::getLogger()->error($e->getMessage());
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Change exception occurred and was logged.', domain: 'devflow')
             );
         }
@@ -258,7 +257,7 @@ final class AdminProductController extends BaseController
     public function productView(ServerRequest $request, string $productId): string|ResponseInterface
     {
         if (false === $this->user->can(permissionName: 'update:product', request: $request)) {
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
             return $this->redirect(admin_url());
@@ -288,9 +287,7 @@ final class AdminProductController extends BaseController
             CommandPropertyNotFoundException |
             Exception |
             InvalidArgumentException |
-            NotFoundExceptionInterface |
             UnresolvableQueryHandlerException |
-            TypeException |
             ReflectionException $e
         ) {
             FileLoggerFactory::getLogger()->error($e->getMessage());
@@ -314,7 +311,7 @@ final class AdminProductController extends BaseController
     public function removeFeaturedImage(ServerRequest $request, string $productId): ?ResponseInterface
     {
         if (false === $this->user->can(permissionName: 'update:product', request: $request)) {
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
             return $this->redirect(admin_url());
@@ -333,7 +330,7 @@ final class AdminProductController extends BaseController
 
             $odin->execute($command);
 
-            Devflow::inst()::$APP->flash->success(
+            Devflow::$PHP->flash->success(
                 message: t__(msgid: 'Removal of featured image was successful.', domain: 'devflow')
             );
         } catch (
@@ -344,7 +341,7 @@ final class AdminProductController extends BaseController
             ReflectionException $e
         ) {
             FileLoggerFactory::getLogger()->error($e->getMessage());
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Removal exception error and was logged.', domain: 'devflow')
             );
         }
@@ -367,7 +364,7 @@ final class AdminProductController extends BaseController
     public function productDelete(ServerRequest $request, string $productId): ResponseInterface
     {
         if (false === $this->user->can(permissionName: 'delete:product', request: $request)) {
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
             return $this->redirect(admin_url());
@@ -377,7 +374,7 @@ final class AdminProductController extends BaseController
             $delete = cms_delete_product($productId);
 
             if (is_error($delete) || is_false__($delete)) {
-                Devflow::inst()::$APP->flash->error(
+                Devflow::$PHP->flash->error(
                     message: t__(msgid: 'A deletion error occurred.', domain: 'devflow')
                 );
             }
@@ -386,19 +383,18 @@ final class AdminProductController extends BaseController
             CommandPropertyNotFoundException |
             ContainerExceptionInterface |
             InvalidArgumentException |
-            NotFoundExceptionInterface |
             UnresolvableCommandHandlerException |
             TypeException |
             Exception |
             ReflectionException $e
         ) {
             FileLoggerFactory::getLogger()->error($e->getMessage());
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 message: t__(msgid: 'A deletion exception occurred and was logged.', domain: 'devflow')
             );
         }
 
-        Devflow::inst()::$APP->flash->success(
+        Devflow::$PHP->flash->success(
             message: t__(msgid: 'Removal was successful.', domain: 'devflow')
         );
 

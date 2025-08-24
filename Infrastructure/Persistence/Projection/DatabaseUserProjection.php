@@ -26,26 +26,18 @@ use Codefy\QueryBus\UnresolvableQueryHandlerException;
 use Exception as NativeException;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
+use Psr\SimpleCache\InvalidArgumentException;
 use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
-use Qubus\Expressive\OrmException;
+use Qubus\Expressive\QueryBuilderException;
 use ReflectionException;
 
-use function App\Shared\Helpers\dfdb;
 use function App\Shared\Helpers\update_user_option;
 
 final class DatabaseUserProjection extends BaseProjection implements UserProjection
 {
-    protected ?Database $dfdb = null;
-
-    /**
-     * @throws ContainerExceptionInterface
-     * @throws ReflectionException
-     * @throws NotFoundExceptionInterface
-     */
-    public function __construct(?Database $dfdb = null)
+    public function __construct(protected Database $dfdb)
     {
-        $this->dfdb = $dfdb ?? dfdb();
     }
 
     /**
@@ -57,6 +49,7 @@ final class DatabaseUserProjection extends BaseProjection implements UserProject
      * @throws ReflectionException
      * @throws TypeException
      * @throws UnresolvableQueryHandlerException
+     * @throws InvalidArgumentException
      * @throws NativeException
      */
     public function projectWhenUserWasCreated(UserWasCreated $event): void
@@ -89,7 +82,7 @@ final class DatabaseUserProjection extends BaseProjection implements UserProject
                     update_user_option($event->aggregateId()->__toString(), $meta, $value);
                 }
             }
-        } catch (OrmException $e) {
+        } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
         }
     }
@@ -109,7 +102,7 @@ final class DatabaseUserProjection extends BaseProjection implements UserProject
                     ->where('user_id = ?', $event->userId()->__toString())
                     ->update();
             });
-        } catch (OrmException $e) {
+        } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
         }
     }
@@ -132,7 +125,7 @@ final class DatabaseUserProjection extends BaseProjection implements UserProject
                     ->where('user_id = ?', $event->userId()->__toString())
                     ->update();
             });
-        } catch (OrmException $e) {
+        } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
         }
     }
@@ -153,7 +146,7 @@ final class DatabaseUserProjection extends BaseProjection implements UserProject
                 ->where('user_id = ?', $event->userId()->__toString())
                 ->update();
             });
-        } catch (OrmException $e) {
+        } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
         }
     }
@@ -174,7 +167,7 @@ final class DatabaseUserProjection extends BaseProjection implements UserProject
                     ->where('user_id = ?', $event->userId()->__toString())
                     ->update();
             });
-        } catch (OrmException $e) {
+        } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
         }
     }
@@ -195,7 +188,7 @@ final class DatabaseUserProjection extends BaseProjection implements UserProject
                 ->where('user_id = ?', $event->userId()->__toString())
                 ->update();
             });
-        } catch (OrmException $e) {
+        } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
         }
     }
@@ -216,7 +209,7 @@ final class DatabaseUserProjection extends BaseProjection implements UserProject
                     ->where('user_id = ?', $event->userId()->__toString())
                     ->update();
             });
-        } catch (OrmException $e) {
+        } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
         }
     }
@@ -237,7 +230,7 @@ final class DatabaseUserProjection extends BaseProjection implements UserProject
                     ->where('user_id = ?', $event->userId()->__toString())
                     ->update();
             });
-        } catch (OrmException $e) {
+        } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
         }
     }
@@ -258,7 +251,7 @@ final class DatabaseUserProjection extends BaseProjection implements UserProject
                     ->where('user_id = ?', $event->userId()->__toString())
                     ->update();
             });
-        } catch (OrmException $e) {
+        } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
         }
     }
@@ -279,7 +272,7 @@ final class DatabaseUserProjection extends BaseProjection implements UserProject
                     ->where('user_id = ?', $event->userId()->__toString())
                     ->update();
             });
-        } catch (OrmException $e) {
+        } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
         }
     }
@@ -300,7 +293,7 @@ final class DatabaseUserProjection extends BaseProjection implements UserProject
                     ->where('user_id = ?', $event->userId()->__toString())
                     ->update();
             });
-        } catch (OrmException $e) {
+        } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
         }
     }
@@ -321,7 +314,7 @@ final class DatabaseUserProjection extends BaseProjection implements UserProject
                     ->where('user_id = ?', $event->userId()->__toString())
                     ->update();
             });
-        } catch (OrmException $e) {
+        } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
         }
     }
@@ -329,13 +322,14 @@ final class DatabaseUserProjection extends BaseProjection implements UserProject
     /**
      * @param UserMetaWasChanged $event
      * @return void
+     * @throws CommandPropertyNotFoundException
      * @throws ContainerExceptionInterface
+     * @throws Exception
+     * @throws InvalidArgumentException
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
      * @throws TypeException
-     * @throws CommandPropertyNotFoundException
      * @throws UnresolvableQueryHandlerException
-     * @throws Exception
      */
     public function projectWhenUserMetaWasChanged(UserMetaWasChanged $event): void
     {
@@ -361,7 +355,7 @@ final class DatabaseUserProjection extends BaseProjection implements UserProject
                     ->where('user_id = ?', $event->userId()->toNative())
                     ->delete();
             });
-        } catch (OrmException $e) {
+        } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
         }
     }

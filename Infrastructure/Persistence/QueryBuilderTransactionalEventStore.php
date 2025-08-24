@@ -16,27 +16,14 @@ use Codefy\Domain\EventSourcing\TransactionalEventStore;
 use Codefy\Domain\EventSourcing\TransactionId;
 use Codefy\Domain\Metadata;
 use Exception as NativeException;
-use Psr\Container\ContainerExceptionInterface;
-use Psr\Container\NotFoundExceptionInterface;
 use Qubus\Exception\Data\TypeException;
-use Qubus\Expressive\OrmBuilder;
-use Qubus\Expressive\OrmException;
-use ReflectionException;
+use Qubus\Expressive\QueryBuilder;
+use Qubus\Expressive\QueryBuilderException;
 
-use function App\Shared\Helpers\dfdb;
-
-final class OrmTransactionalEventStore implements TransactionalEventStore
+final class QueryBuilderTransactionalEventStore implements TransactionalEventStore
 {
-    protected ?Database $dfdb = null;
-
-    /**
-     * @throws ReflectionException
-     * @throws ContainerExceptionInterface
-     * @throws NotFoundExceptionInterface
-     */
-    public function __construct(?Database $dfdb = null)
+    public function __construct(protected Database $dfdb)
     {
-        $this->dfdb = $dfdb ?? dfdb();
     }
 
     /**
@@ -71,7 +58,7 @@ final class OrmTransactionalEventStore implements TransactionalEventStore
                 ])
                 ->save();
             });
-        } catch (OrmException $e) {
+        } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
         }
     }
@@ -136,13 +123,13 @@ final class OrmTransactionalEventStore implements TransactionalEventStore
     }
 
     /**
-     * @param OrmBuilder|null $query
+     * @param QueryBuilder|null $query
      * @param AggregateId $aggregateId
      * @return EventStream
      * @throws TypeException
      * @throws CorruptEventStreamException
      */
-    private function eventStream(?OrmBuilder $query, AggregateId $aggregateId): EventStream
+    private function eventStream(?QueryBuilder $query, AggregateId $aggregateId): EventStream
     {
         $stream = [];
 

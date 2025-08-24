@@ -81,7 +81,7 @@ use function strtolower;
  * @file App/Shared/Helpers/user.php
  * @return mixed
  * @throws ReflectionException
- * @throws UnresolvableQueryHandlerException
+ * @throws UnresolvableQueryHandlerException|TypeException
  */
 function get_all_users(): mixed
 {
@@ -127,6 +127,7 @@ function get_users_dropdown(?string $active = null): void
  *
  * @file App/Shared/Helpers/user.php
  * @return string The current user's ID, or '' if no user is logged in.
+ * @throws TypeException
  */
 function get_current_user_id(): string
 {
@@ -140,29 +141,6 @@ function get_current_user_id(): string
     }
 
     return $cookie->id;
-}
-
-/**
- * Returns object of data for current user.
- *
- * @file App/Shared/Helpers/user.php
- * @return object|false
- * @throws ContainerExceptionInterface
- * @throws Exception
- * @throws InvalidArgumentException
- * @throws NotFoundExceptionInterface
- * @throws ReflectionException
- */
-function get_current_user(): false|object
-{
-    deprecation_notice(
-        functionName: __FUNCTION__,
-        deprecatedVersion: '1.3.0',
-        removedVersion: '2.0.0',
-        replacement: 'App\Shared\Helpers\cms_get_current_user()'
-    );
-
-    return cms_get_current_user();
 }
 
 /**
@@ -196,7 +174,7 @@ function cms_get_current_user(): false|object
  */
 function get_user_by(string $field, mixed $value): User|false
 {
-    $userdata = (new User(dfdb()))->findBy($field, $value);
+    $userdata = new User(dfdb())->findBy($field, $value);
 
     if (is_false__($userdata)) {
         return false;
@@ -413,6 +391,7 @@ function user_status_label(string $status): array
  * @file App/Shared/Helpers/user.php
  * @param string|null $active
  * @return void
+ * @throws TypeException
  */
 function get_system_roles(?string $active = null): void
 {
@@ -506,6 +485,7 @@ function get_usermeta_by_mid(string $mid): bool|array
  * @throws CommandPropertyNotFoundException
  * @throws ContainerExceptionInterface
  * @throws Exception
+ * @throws InvalidArgumentException
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  * @throws TypeException
@@ -528,6 +508,7 @@ function update_usermeta(string $userId, string $metaKey, mixed $value, mixed $p
  * @throws CommandPropertyNotFoundException
  * @throws ContainerExceptionInterface
  * @throws Exception
+ * @throws InvalidArgumentException
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  * @throws TypeException
@@ -536,7 +517,7 @@ function update_usermeta(string $userId, string $metaKey, mixed $value, mixed $p
 function update_usermeta_by_mid(string $mid, string $metaKey, mixed $value): bool
 {
     return MetaData::factory(dfdb()->prefix . 'usermeta')
-            ->updateByMid('user', $mid, $metaKey, $value);
+            ->updateByMid('user', $mid, $value, $metaKey);
 }
 
 /**
@@ -551,6 +532,7 @@ function update_usermeta_by_mid(string $mid, string $metaKey, mixed $value): boo
  * @throws CommandPropertyNotFoundException
  * @throws ContainerExceptionInterface
  * @throws Exception
+ * @throws InvalidArgumentException
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  * @throws TypeException
@@ -682,6 +664,7 @@ function get_user_option(string $option, string $userId = ''): false|string
  * @throws CommandPropertyNotFoundException
  * @throws ContainerExceptionInterface
  * @throws Exception
+ * @throws InvalidArgumentException
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  * @throws TypeException
@@ -755,6 +738,7 @@ function delete_user_option(string $userId, string $optionName, bool $global = f
  * @throws ReflectionException
  * @throws TypeException
  * @throws UnresolvableQueryHandlerException
+ * @throws InvalidArgumentException
  */
 function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Error
 {
@@ -1068,7 +1052,7 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
 
     $userAdminSkin = 'skin-red';
 
-    $meta['admin_skin'] = isset($userdata['admin_skin']) ? $userdata['admin_skin'] : $userAdminSkin;
+    $meta['admin_skin'] = $userdata['admin_skin'] ?? $userAdminSkin;
 
     $userRegistered = QubusDateTimeImmutable::now();
 
@@ -1115,7 +1099,7 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
      *      @type string $locale       The user's locale.
      *      @type string $registered   Timestamp describing the moment when the user registered. Defaults to
      *                                 Y-m-d h:i:s
-     *      @type string $activateionKey
+     *      @type string $activationKey
      * }
      * @param bool     $update Whether the user is being updated rather than created.
      * @param string|null $userID ID of the user to be updated, or NULL if the user is being created.
@@ -1251,6 +1235,7 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
  * @throws CommandPropertyNotFoundException
  * @throws ContainerExceptionInterface
  * @throws Exception
+ * @throws InvalidArgumentException
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  * @throws TypeException
@@ -1556,6 +1541,7 @@ function queue_new_user_email(string $userId, string $pass): bool
  * @return string|bool User id on success, false on failure.
  * @throws EnvironmentIsBrokenException
  * @throws ReflectionException
+ * @throws TypeException
  */
 function queue_reset_user_password(User $user): bool|string
 {
@@ -1663,7 +1649,7 @@ function send_reset_password_email(object|array $user, string $password): bool
             headers: $headers
         );
     } catch (\PHPMailer\PHPMailer\Exception | Exception $e) {
-        Devflow::inst()::$APP->flash->error($e->getMessage());
+        Devflow::$PHP->flash->error($e->getMessage());
     }
 
     return false;
@@ -1732,7 +1718,7 @@ function send_password_change_email(object|array $user, string $password, array 
             headers: $headers
         );
     } catch (\PHPMailer\PHPMailer\Exception | Exception | ReflectionException $e) {
-        Devflow::inst()::$APP->flash->error($e->getMessage());
+        Devflow::$PHP->flash->error($e->getMessage());
     }
 
     return false;
@@ -1800,7 +1786,7 @@ function send_email_change_email(object|array $user, array $userdata): bool
             headers: $headers
         );
     } catch (\PHPMailer\PHPMailer\Exception | Exception | ReflectionException $e) {
-        Devflow::inst()::$APP->flash->error($e->getMessage());
+        Devflow::$PHP->flash->error($e->getMessage());
     }
 
     return false;
@@ -1941,7 +1927,7 @@ function reset_password(string $userId): bool|string
         $odin->execute($command);
 
         $_userId = queue_reset_user_password($user);
-        Devflow::inst()::$APP->flash->success(
+        Devflow::$PHP->flash->success(
             t__(
                 msgid: "The password reset email has been queued for sending.",
                 domain: 'devflow'
@@ -1950,7 +1936,7 @@ function reset_password(string $userId): bool|string
         return $_userId;
     } catch (SessionException | CommandPropertyNotFoundException $e) {
         FileLoggerFactory::getLogger()->error($e->getMessage());
-        Devflow::inst()::$APP->flash->error($e->getMessage());
+        Devflow::$PHP->flash->error($e->getMessage());
     }
 
     return false;
@@ -2104,6 +2090,6 @@ function get_user_datetime_format(): string
  */
 function get_user_datetime(string $string, string $format = 'Y-m-d H:i:s'): string
 {
-    $datetime = (new DateTime($string, get_user_timezone()))->getDateTime();
+    $datetime = new DateTime($string, get_user_timezone())->getDateTime();
     return $datetime->format($format);
 }

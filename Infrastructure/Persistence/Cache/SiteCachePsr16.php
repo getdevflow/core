@@ -11,6 +11,7 @@ use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Psr\SimpleCache\InvalidArgumentException;
 use Qubus\EventDispatcher\ActionFilter\Action;
+use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
 use ReflectionException;
 
@@ -21,10 +22,11 @@ class SiteCachePsr16 implements SiteCache
     /**
      * @inheritDoc
      * @param Site|array $site
-     * @throws InvalidArgumentException
-     * @throws ReflectionException
      * @throws ContainerExceptionInterface
+     * @throws InvalidArgumentException
      * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
+     * @throws TypeException
      */
     public static function update(Site|array $site): void
     {

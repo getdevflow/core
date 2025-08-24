@@ -8,6 +8,7 @@ use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
 use Codefy\QueryBus\UnresolvableQueryHandlerException;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
+use Psr\SimpleCache\InvalidArgumentException;
 use Qubus\EventDispatcher\ActionFilter\Filter;
 use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
@@ -34,13 +35,14 @@ use function Qubus\Support\Helpers\add_trailing_slash;
  * @throws ReflectionException
  * @throws TypeException
  * @throws UnresolvableQueryHandlerException
+ * @throws InvalidArgumentException
  */
 function add_admin_submenu(
     string $location,
     string $menuTitle,
     string $menuRoute,
     string $screen,
-    string $permission = null
+    ?string $permission = null
 ): mixed {
     if ($permission !== null) {
         if (!current_user_can($permission)) {
@@ -86,12 +88,13 @@ function add_admin_submenu(
  * @throws ReflectionException
  * @throws TypeException
  * @throws UnresolvableQueryHandlerException
+ * @throws InvalidArgumentException
  */
 function add_dashboard_submenu(
     string $menuTitle,
     string $menuRoute,
     string $screen,
-    string $permission = null
+    ?string $permission = null
 ): false|string {
     return add_admin_submenu('dashboard', $menuTitle, $menuRoute, $screen, $permission);
 }
@@ -112,12 +115,13 @@ function add_dashboard_submenu(
  * @throws ReflectionException
  * @throws TypeException
  * @throws UnresolvableQueryHandlerException
+ * @throws InvalidArgumentException
  */
 function add_sites_submenu(
     string $menuTitle,
     string $menuRoute,
     string $screen,
-    string $permission = null
+    ?string $permission = null
 ): false|string {
     return add_admin_submenu('sites', $menuTitle, $menuRoute, $screen, $permission);
 }
@@ -138,12 +142,13 @@ function add_sites_submenu(
  * @throws ReflectionException
  * @throws TypeException
  * @throws UnresolvableQueryHandlerException
+ * @throws InvalidArgumentException
  */
 function add_plugins_submenu(
     string $menuTitle,
     string $menuRoute,
     string $screen,
-    string $permission = null
+    ?string $permission = null
 ): false|string {
     return add_admin_submenu('plugins', $menuTitle, $menuRoute, $screen, $permission);
 }
@@ -164,12 +169,13 @@ function add_plugins_submenu(
  * @throws ReflectionException
  * @throws TypeException
  * @throws UnresolvableQueryHandlerException
+ * @throws InvalidArgumentException
  */
 function add_themes_submenu(
     string $menuTitle,
     string $menuRoute,
     string $screen,
-    string $permission = null
+    ?string $permission = null
 ): false|string {
     return add_admin_submenu('themes', $menuTitle, $menuRoute, $screen, $permission);
 }
@@ -190,12 +196,13 @@ function add_themes_submenu(
  * @throws ReflectionException
  * @throws TypeException
  * @throws UnresolvableQueryHandlerException
+ * @throws InvalidArgumentException
  */
 function add_users_submenu(
     string $menuTitle,
     string $menuRoute,
     string $screen,
-    string $permission = null
+    ?string $permission = null
 ): false|string {
     return add_admin_submenu('users', $menuTitle, $menuRoute, $screen, $permission);
 }
@@ -216,12 +223,13 @@ function add_users_submenu(
  * @throws ReflectionException
  * @throws TypeException
  * @throws UnresolvableQueryHandlerException
+ * @throws InvalidArgumentException
  */
 function add_options_submenu(
     string $menuTitle,
     string $menuRoute,
     string $screen,
-    string $permission = null
+    ?string $permission = null
 ): false|string {
     return add_admin_submenu('options', $menuTitle, $menuRoute, $screen, $permission);
 }

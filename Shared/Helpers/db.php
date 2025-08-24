@@ -18,7 +18,6 @@ use App\Domain\User\ValueObject\UserId;
 use App\Infrastructure\Persistence\Database;
 use App\Infrastructure\Services\Options;
 use App\Shared\Services\MetaData;
-use App\Shared\Services\Registry;
 use App\Shared\Services\Sanitizer;
 use App\Shared\Services\SimpleCacheObjectCacheFactory;
 use Codefy\CommandBus\Busses\SynchronousCommandBus;
@@ -28,6 +27,7 @@ use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
 use Codefy\CommandBus\Exceptions\UnresolvableCommandHandlerException;
 use Codefy\CommandBus\Odin;
 use Codefy\CommandBus\Resolvers\NativeCommandHandlerResolver;
+use Codefy\Framework\Application;
 use Codefy\Framework\Factory\FileLoggerFactory;
 use Codefy\QueryBus\Busses\SynchronousQueryBus;
 use Codefy\QueryBus\Enquire;
@@ -67,13 +67,11 @@ use function sprintf;
  * Global database function.
  *
  * @return Database
- * @throws ContainerExceptionInterface
- * @throws NotFoundExceptionInterface
- * @throws ReflectionException
+ * @throws TypeException
  */
 function dfdb(): Database
 {
-    return Registry::getInstance()->get('dfdb');
+    return Application::getInstance()->make(name: Database::class);
 }
 
 /**
@@ -757,6 +755,7 @@ function get_owner_sites(string $userId): array|object
  * @throws InvalidArgumentException
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
+ * @throws TypeException
  */
 function populate_options_cache(): bool
 {
@@ -1130,6 +1129,7 @@ function cms_nodeq_reset_password(): void
  * @throws CommandPropertyNotFoundException
  * @throws ReflectionException
  * @throws UnresolvableQueryHandlerException
+ * @throws TypeException
  */
 function cms_collection(?string $value = null): Collection
 {

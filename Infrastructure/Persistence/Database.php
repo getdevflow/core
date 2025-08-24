@@ -7,7 +7,7 @@ namespace App\Infrastructure\Persistence;
 use PDOException;
 use Qubus\Dbal\Schema;
 use Qubus\Exception\Exception;
-use Qubus\Expressive\OrmBuilder;
+use Qubus\Expressive\QueryBuilder;
 use ReflectionException;
 
 interface Database
@@ -119,11 +119,11 @@ interface Database
     /**
      * Query builder.
      *
-     * @return OrmBuilder|null
+     * @return QueryBuilder|null
      * @throws PDOException
      * @throws \Exception
      */
-    public function qb(): ?OrmBuilder;
+    public function qb(): ?QueryBuilder;
 
     /**
      * Raw queries.

@@ -125,7 +125,7 @@ function add_query_arg(string $key, string $value, string $url): string
  */
 function url(?string $path = null): string
 {
-    $url = (is_ssl() ? 'https://' : 'http://') . (new Request())->getHost();
+    $url = (is_ssl() ? 'https://' : 'http://') . new Request()->getHost();
 
     return concat_ws($url, $path, '');
 }

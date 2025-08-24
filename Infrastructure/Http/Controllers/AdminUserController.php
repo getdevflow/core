@@ -67,12 +67,12 @@ use function unlink;
 final class AdminUserController extends BaseController
 {
     public function __construct(
-        SessionService $sessionService,
-        Router $router,
+        protected SessionService $sessionService,
+        protected Router $router,
         protected Database $dfdb,
         protected UserAuth $user,
         protected ConfigContainer $configContainer,
-        ?Renderer $view = null
+        protected Renderer $view
     ) {
         parent::__construct($sessionService, $router, $view);
     }
@@ -92,14 +92,14 @@ final class AdminUserController extends BaseController
     public function userCreate(ServerRequest $request): ?ResponseInterface
     {
         if (false === $this->user->can(permissionName: 'create:users', request: $request)) {
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow'),
             );
             return $this->redirect(admin_url());
         }
 
         if (strlen($request->get('pass')) < (int) $this->configContainer->getConfigKey(key: 'cms.password_length')) {
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 message: sprintf(
                     esc_html__(string: 'Passwords cannot be less than %s characters.', domain: 'devflow'),
                     $this->configContainer->getConfigKey(key: 'cms.password_length')
@@ -123,7 +123,7 @@ final class AdminUserController extends BaseController
             }
 
             if (empty($userLogin)) {
-                Devflow::inst()::$APP->flash->error(
+                Devflow::$PHP->flash->error(
                     message: t__(msgid: 'Username cannot be empty or null.', domain: 'devflow'),
                 );
                 return $this->redirect($request->getServerParams()['HTTP_REFERER']);
@@ -131,11 +131,10 @@ final class AdminUserController extends BaseController
         } catch (
             NotFoundExceptionInterface |
             ContainerExceptionInterface |
-            Exception |
-            ReflectionException $e
+            Exception $e
         ) {
             FileLoggerFactory::getLogger()->error($e->getMessage());
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 t__(msgid: 'User check exception occurred and was logged.', domain: 'devflow')
             );
             return $this->redirect($request->getServerParams()['HTTP_REFERER']);
@@ -150,7 +149,7 @@ final class AdminUserController extends BaseController
             }
 
             if (is_error($userId)) {
-                Devflow::inst()::$APP->flash->error(
+                Devflow::$PHP->flash->error(
                     message: $userId->getMessage(),
                 );
                 return $this->redirect($request->getServerParams()['HTTP_REFERER']);
@@ -165,8 +164,8 @@ final class AdminUserController extends BaseController
                 queue_new_user_email($userId, $request->get('pass'));
             }
 
-            Devflow::inst()::$APP->flash->success(
-                message: Devflow::inst()::$APP->flash->notice(num: 201),
+            Devflow::$PHP->flash->success(
+                message: Devflow::$PHP->flash->notice(num: 201),
             );
 
             $request->withHeader('USER_BODY', $request->getParsedBody());
@@ -175,18 +174,15 @@ final class AdminUserController extends BaseController
         } catch (
             CommandPropertyNotFoundException |
             ContainerExceptionInterface |
-            NotFoundExceptionInterface |
             UnresolvableQueryHandlerException |
             TypeException |
-            Exception |
-            EnvironmentIsBrokenException |
-            ReflectionException $e
+            Exception $e
         ) {
             FileLoggerFactory::getLogger()->error(
                 $e->getMessage(),
                 ['code' => $e->getCode(), 'exception' => get_class($e)]
             );
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Insertion exception occurred and was logged.', domain: 'devflow')
             );
         }
@@ -208,7 +204,7 @@ final class AdminUserController extends BaseController
     public function userCreateView(ServerRequest $request): ResponseInterface|string
     {
         if (false === $this->user->can(permissionName: 'create:users', request: $request)) {
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow'),
             );
             return $this->redirect(admin_url());
@@ -238,7 +234,7 @@ final class AdminUserController extends BaseController
     public function users(ServerRequest $request): string|ResponseInterface
     {
         if (false === $this->user->can(permissionName: 'manage:users', request: $request)) {
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow'),
             );
             return $this->redirect(admin_url());
@@ -256,7 +252,7 @@ final class AdminUserController extends BaseController
             );
         } catch (UnresolvableQueryHandlerException | ReflectionException $e) {
             FileLoggerFactory::getLogger()->error($e->getMessage());
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Query exception occurred and was logged.', domain: 'devflow')
             );
         }
@@ -279,7 +275,7 @@ final class AdminUserController extends BaseController
     public function userChange(ServerRequest $request, string $userId): ?ResponseInterface
     {
         if (false === $this->user->can(permissionName: 'update:users', request: $request)) {
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Permission denied.', domain: 'devflow')
             );
             return $this->redirect(admin_url());
@@ -296,7 +292,7 @@ final class AdminUserController extends BaseController
             $userId = cms_update_user($dataArrayMerge);
 
             if (is_error($userId)) {
-                Devflow::inst()::$APP->flash->error(
+                Devflow::$PHP->flash->error(
                     message: $userId->getMessage(),
                 );
                 return $this->redirect($request->getServerParams()['HTTP_REFERER']);
@@ -307,20 +303,18 @@ final class AdminUserController extends BaseController
             $newUser->id = $userId;
             $newUser->setRole($request->get('role'));
 
-            Devflow::inst()::$APP->flash->success(
-                message: Devflow::inst()::$APP->flash->notice(num: 201),
+            Devflow::$PHP->flash->success(
+                message: Devflow::$PHP->flash->notice(num: 201),
             );
         } catch (
             CommandPropertyNotFoundException |
             ContainerExceptionInterface |
-            NotFoundExceptionInterface |
             UnresolvableQueryHandlerException |
             TypeException |
-            Exception |
-            ReflectionException $e
+            Exception $e
         ) {
             FileLoggerFactory::getLogger()->error($e->getMessage());
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 message: t__(msgid: 'User change exception occurred and was logged.', domain: 'devflow')
             );
         }
@@ -346,7 +340,7 @@ final class AdminUserController extends BaseController
     public function userView(ServerRequest $request, string $userId): string|ResponseInterface
     {
         if (false === $this->user->can(permissionName: 'update:content', request: $request)) {
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
             return $this->redirect(admin_url());
@@ -367,7 +361,6 @@ final class AdminUserController extends BaseController
             CommandPropertyNotFoundException |
             ContainerExceptionInterface |
             InvalidArgumentException |
-            NotFoundExceptionInterface |
             UnresolvableQueryHandlerException |
             TypeException |
             ReflectionException $e
@@ -395,7 +388,7 @@ final class AdminUserController extends BaseController
     public function userDelete(ServerRequest $request): ResponseInterface
     {
         if (false === $this->user->can(permissionName: 'delete:users', request: $request)) {
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
             return $this->redirect(admin_url());
@@ -408,24 +401,23 @@ final class AdminUserController extends BaseController
             );
 
             if (is_error($delete) || is_false__($delete)) {
-                Devflow::inst()::$APP->flash->error(
+                Devflow::$PHP->flash->error(
                     message: t__(msgid: 'A deletion error occurred.', domain: 'devflow')
                 );
             } else {
-                Devflow::inst()::$APP->flash->success(
-                    message: Devflow::inst()::$APP->flash->notice(num: 201),
+                Devflow::$PHP->flash->success(
+                    message: Devflow::$PHP->flash->notice(num: 201),
                 );
             }
         } catch (
             CommandPropertyNotFoundException |
             ContainerExceptionInterface |
-            NotFoundExceptionInterface |
             TypeException |
             Exception |
             ReflectionException $e
         ) {
             FileLoggerFactory::getLogger()->error($e->getMessage());
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 message: t__(msgid: 'A deletion exception occurred and was logged.', domain: 'devflow')
             );
         }
@@ -446,7 +438,7 @@ final class AdminUserController extends BaseController
     public function userLookup(ServerRequest $request): false|string
     {
         if (!is_user_logged_in()) {
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
         }
@@ -483,7 +475,7 @@ final class AdminUserController extends BaseController
     public function userResetPassword(ServerRequest $request, string $userId): ResponseInterface
     {
         if (false === $this->user->can(permissionName: 'update:users', request: $request)) {
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
         }
@@ -491,12 +483,12 @@ final class AdminUserController extends BaseController
         try {
             $user = get_user_by('id', $userId);
             if (is_false__($user)) {
-                Devflow::inst()::$APP->flash->error(t__(msgid: 'User not found.', domain: 'devflow'));
+                Devflow::$PHP->flash->error(t__(msgid: 'User not found.', domain: 'devflow'));
             }
 
             $_userId = reset_password($userId);
             if (is_string($_userId) && !is_false__($_userId)) {
-                Devflow::inst()::$APP->flash->success(
+                Devflow::$PHP->flash->success(
                     sprintf(
                         t__(msgid: 'Password successfully updated for <strong>%s</strong>.', domain: 'devflow'),
                         get_name($_userId)
@@ -514,7 +506,7 @@ final class AdminUserController extends BaseController
             EnvironmentIsBrokenException $e
         ) {
             FileLoggerFactory::getLogger()->error($e->getMessage());
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 t__(msgid: 'Reset password exception occurred and was logged.', domain: 'devflow')
             );
         }
@@ -534,7 +526,7 @@ final class AdminUserController extends BaseController
     public function userProfile(ServerRequest $request): string|ResponseInterface
     {
         if (!is_user_logged_in()) {
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
         }
@@ -544,7 +536,7 @@ final class AdminUserController extends BaseController
                 $userId = cms_update_user($request->getParsedBody());
 
                 if (is_error($userId)) {
-                    Devflow::inst()::$APP->flash->error(t__(msgid: 'An update error occurred.', domain: 'devflow'));
+                    Devflow::$PHP->flash->error(t__(msgid: 'An update error occurred.', domain: 'devflow'));
 
                     return $this->redirect(admin_url('user/profile/'));
                 }
@@ -553,7 +545,7 @@ final class AdminUserController extends BaseController
                 $user->id = $userId;
                 $user->setRole($request->get('role'));
 
-                Devflow::inst()::$APP->flash->success(message: Devflow::inst()::$APP->flash->notice(num: 200));
+                Devflow::$PHP->flash->success(message: Devflow::$PHP->flash->notice(num: 200));
             } catch (
                 CommandPropertyNotFoundException |
                 UnresolvableQueryHandlerException |
@@ -564,7 +556,7 @@ final class AdminUserController extends BaseController
                 ReflectionException $e
             ) {
                 FileLoggerFactory::getLogger()->error($e->getMessage());
-                Devflow::inst()::$APP->flash->error(
+                Devflow::$PHP->flash->error(
                     t__(msgid: 'An update exception occurred and was logged.', domain: 'devflow')
                 );
             }
@@ -595,7 +587,7 @@ final class AdminUserController extends BaseController
     public function userSwitchTo(ServerRequest $request, string $userId, Response $response): ResponseInterface
     {
         if (false === $this->user->can(permissionName: 'switch:user', request: $request)) {
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
         }
@@ -656,7 +648,7 @@ final class AdminUserController extends BaseController
 
             $this->sessionService->commitSession($response, $session);
 
-            Devflow::inst()::$APP->flash->success(
+            Devflow::$PHP->flash->success(
                 message: t__(msgid: 'User switching was successful.', domain: 'devflow')
             );
         } catch (
@@ -667,7 +659,7 @@ final class AdminUserController extends BaseController
             Exception $e
         ) {
             FileLoggerFactory::getLogger()->error($e->getMessage());
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 t__(msgid: 'User switching exception occurred and was logged.', domain: 'devflow')
             );
         }
@@ -690,7 +682,7 @@ final class AdminUserController extends BaseController
     public function userSwitchBack(ServerRequest $request, string $userId, Response $response): ResponseInterface
     {
         if (!is_user_logged_in()) {
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
         }
@@ -699,7 +691,7 @@ final class AdminUserController extends BaseController
             $cookies = NativePhpCookies::factory();
 
             if ($cookies->get('USERCOOKIEID') === null || $cookies->get('USERCOOKIEID') === '') {
-                Devflow::inst()::$APP->flash->error(
+                Devflow::$PHP->flash->error(
                     message: t__(msgid: 'Cookie is not properly set for user switching.', domain: 'devflow')
                 );
 
@@ -758,7 +750,7 @@ final class AdminUserController extends BaseController
 
             $this->sessionService->commitSession($response, $session);
 
-            Devflow::inst()::$APP->flash->success(
+            Devflow::$PHP->flash->success(
                 message: t__(msgid: 'Switching back to previous user session was successful.', domain: 'devflow')
             );
         } catch (
@@ -769,7 +761,7 @@ final class AdminUserController extends BaseController
             Exception $e
         ) {
             FileLoggerFactory::getLogger()->error($e->getMessage());
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 t__(msgid: 'User switch back exception occurred and was logged.', domain: 'devflow')
             );
         }

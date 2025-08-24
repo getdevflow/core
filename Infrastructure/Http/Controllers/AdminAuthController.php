@@ -43,11 +43,11 @@ use function Qubus\Support\Helpers\is_false__;
 final class AdminAuthController extends BaseController
 {
     public function __construct(
-        SessionService $sessionService,
-        Router $router,
+        protected SessionService $sessionService,
+        protected Router $router,
         protected UserAuth $user,
         protected Database $dfdb,
-        ?Renderer $view = null
+        protected Renderer $view
     ) {
         parent::__construct($sessionService, $router, $view);
     }
@@ -91,7 +91,7 @@ final class AdminAuthController extends BaseController
             Exception |
             ReflectionException $e
         ) {
-            Devflow::inst()::$APP->flash->error($e->getMessage());
+            Devflow::$PHP->flash->error($e->getMessage());
         }
 
         return $this->redirect($request->getServerParams()['HTTP_REFERER']);
@@ -155,7 +155,7 @@ final class AdminAuthController extends BaseController
         }
 
         if (false === $this->user->can(permissionName: 'access:admin', request: $request)) {
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 message: t__(msgid: 'You are already logged out.', domain: 'devflow')
             );
             return $this->redirect($redirectLink);
@@ -189,7 +189,7 @@ final class AdminAuthController extends BaseController
         try {
             $user = get_user_by('email', $request->getParsedBody()['email']);
             if (is_false__($user)) {
-                Devflow::inst()::$APP->flash->error(
+                Devflow::$PHP->flash->error(
                     message: t__(msgid: 'Request error.', domain: 'devflow')
                 );
 
@@ -208,13 +208,13 @@ final class AdminAuthController extends BaseController
                 $update = cms_update_user($_user);
 
                 if (is_error($update)) {
-                    Devflow::inst()::$APP->flash->error(
+                    Devflow::$PHP->flash->error(
                         message: t__(msgid: 'Request error.', domain: 'devflow')
                     );
 
                     return $this->redirect($request->getServerParams()['HTTP_REFERER']);
                 } else {
-                    Devflow::inst()::$APP->flash->success(
+                    Devflow::$PHP->flash->success(
                         message: t__(
                             msgid: 'A new password was sent to your email. May take a few minutes to arrive, so please be patient',
                             domain: 'devflow'
@@ -226,7 +226,7 @@ final class AdminAuthController extends BaseController
             return $this->redirect($this->router->url(name: 'admin.login'));
         } catch (\Exception | NotFoundExceptionInterface | ContainerExceptionInterface $e) {
             FileLoggerFactory::getLogger()->error($e->getMessage());
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 t__(msgid: 'Password reset exception occurred and was logged.', domain: 'devflow')
             );
             return $this->redirect($request->getServerParams()['HTTP_REFERER']);

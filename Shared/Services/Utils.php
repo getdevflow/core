@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace App\Shared\Services;
 
 use Codefy\Framework\Codefy;
+use Codefy\Framework\Support\ArgsParser;
+use Codefy\Framework\Support\StringParser;
 use Qubus\EventDispatcher\ActionFilter\Filter;
+use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
 use ReflectionException;
 
@@ -62,10 +65,13 @@ class Utils
         return ArgsParser::parse($args, $defaults, $deep);
     }
 
+    /**
+     * @throws TypeException
+     */
     public static function getPathInfo(string $relative)
     {
         $base = basename(config(key: 'app.path'));
-        if (strpos($_SERVER['REQUEST_URI'], Codefy::$PHP::DS . $base . $relative) === 0) {
+        if (str_starts_with($_SERVER['REQUEST_URI'], Codefy::$PHP::DS . $base . $relative)) {
             return $relative;
         } else {
             return $_SERVER['REQUEST_URI'];
@@ -78,10 +84,11 @@ class Utils
      * e.g. `/admin/`
      *
      * @return bool True if an admin screen, otherwise false.
+     * @throws TypeException
      */
     public static function isAdmin(): bool
     {
-        if (strpos(self::getPathInfo('/admin'), "/admin") === 0) {
+        if (str_starts_with(self::getPathInfo('/admin'), "/admin")) {
             return true;
         }
         return false;
@@ -93,10 +100,11 @@ class Utils
      * e.g. `/login/`
      *
      * @return bool True if login screen, otherwise false.
+     * @throws TypeException
      */
     public static function isLogin(): bool
     {
-        if (strpos(self::getPathInfo('/login'), "/login") === 0) {
+        if (str_starts_with(self::getPathInfo('/login'), "/login")) {
             return true;
         }
         return false;
