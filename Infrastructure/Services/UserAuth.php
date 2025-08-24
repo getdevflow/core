@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace App\Infrastructure\Services;
 
 use App\Domain\User\Model\User;
-use App\Infrastructure\Http\Middleware\UserAuthorizationMiddleware;
 use Codefy\Framework\Auth\Rbac\Rbac;
 use Codefy\Framework\Auth\UserSession;
 use Codefy\Framework\Factory\FileLoggerFactory;
+use Codefy\Framework\Http\Middleware\Auth\UserAuthorizationMiddleware;
 use Exception;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
@@ -83,7 +83,7 @@ final class UserAuth
         $session = $this->sessionService->makeSession($this->request);
 
         /** @var UserSession $user */
-        $user = $session->get(type: CmsUserSession::class);
+        $user = $session->get(type: UserSession::class);
         if ($user->isEmpty()) {
             return null;
         }
