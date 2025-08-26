@@ -5,56 +5,27 @@ declare(strict_types=1);
 namespace App\Application;
 
 use App\Infrastructure\Persistence\Database;
-use App\Infrastructure\Services\NativePhpCookies;
-use App\Infrastructure\Services\Options;
-use App\Shared\Services\Image;
-use Codefy\Framework\Application;
 use Codefy\Framework\Codefy;
-use Qubus\Exception\Data\TypeException;
-use Qubus\View\Renderer;
+use Qubus\Exception\Exception;
+use Qubus\Expressive\QueryBuilder;
 
-/**
- * @property-read Database $dfdb
- * @property-read Image $image
- * @property-read Options $option
- * @property-read NativePhpCookies $cookies
- * @property-read Renderer $view
- */
 final class Devflow extends Codefy
 {
-    public static Application|null|Devflow $APP = null;
+    public static function db(): Database
+    {
+        return self::$PHP->make(name: Database::class);
+    }
 
     /**
-     * @throws TypeException
+     * @throws Exception
      */
-    private function __construct()
+    public static function query(): QueryBuilder
     {
-        Devflow::$APP = Application::getInstance();
-        $this->init();
+        return self::$PHP->getDb();
     }
 
-    public static function inst(): Application|Devflow
+    public static function release(): string
     {
-        return new self();
-    }
-
-    private function init(): void
-    {
-        $aliases = [
-            'dfdb' => Database::class,
-            'image' => Image::class,
-            'option' => Options::class,
-            'cookies' => NativePhpCookies::class,
-            'view' => Renderer::class,
-        ];
-
-        foreach ($aliases as $property => $name) {
-            $this->{$property} = Application::$APP->make(name: $name);
-        }
-    }
-
-    public function release(): string
-    {
-        return '2.0.0-beta.1';
+        return '2.0.0-beta.2';
     }
 }

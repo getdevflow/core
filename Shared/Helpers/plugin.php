@@ -14,8 +14,6 @@ use Exception;
 use PDOException;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
-use Qubus\EventDispatcher\ActionFilter\Action;
-use Qubus\EventDispatcher\ActionFilter\Filter;
 use Qubus\Exception\Data\TypeException;
 use Qubus\ValueObjects\Identity\Ulid;
 use Qubus\View\Renderer;
@@ -64,12 +62,11 @@ function plugin_basename(string $filename): string
  *
  * @param string $filename Plugin's filename.
  * @param mixed $function The function that should be triggered by the hook.
- * @throws ReflectionException
  */
 function register_activation_hook(string $filename, mixed $function): void
 {
     $pluginName = plugin_basename($filename);
-    Action::getInstance()->addAction(hook: "activate_{$pluginName}", callback: $function);
+    Devflow::$PHP->hook->action->addAction(hook: "activate_{$pluginName}", callback: $function);
 }
 
 /**
@@ -80,12 +77,11 @@ function register_activation_hook(string $filename, mixed $function): void
  *
  * @param string $filename Plugin's filename.
  * @param mixed $function The function that should be triggered by the hook.
- * @throws ReflectionException
  */
 function register_deactivation_hook(string $filename, mixed $function): void
 {
     $pluginName = plugin_basename($filename);
-    Action::getInstance()->addAction(hook: "deactivate_{$pluginName}", callback: $function);
+    Devflow::$PHP->hook->action->addAction(hook: "deactivate_{$pluginName}", callback: $function);
 }
 
 /**
@@ -103,9 +99,6 @@ function plugin_dir_path(string $filename): string
  * Returns a list of all plugins that have been activated.
  *
  * @return array|false
- * @throws ReflectionException
- * @throws ContainerExceptionInterface
- * @throws NotFoundExceptionInterface
  * @throws TypeException
  */
 function active_plugins(): array|false
@@ -124,8 +117,6 @@ function active_plugins(): array|false
  * Activates a specific plugin that is called by $_GET['id'] variable.
  *
  * @param string $plugin ID of the plugin to activate
- * @throws ContainerExceptionInterface
- * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  * @throws TypeException
  */
@@ -157,8 +148,6 @@ function activate_plugin(string $plugin): void
  *
  * @param string $plugin
  * @return void
- * @throws ContainerExceptionInterface
- * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  * @throws TypeException
  */
@@ -191,9 +180,8 @@ function deactivate_plugin(string $plugin): void
  *
  * @param string $plugin
  * @return bool
- * @throws ContainerExceptionInterface
- * @throws NotFoundExceptionInterface
  * @throws ReflectionException
+ * @throws TypeException
  * @throws \Qubus\Exception\Exception
  */
 function is_plugin_activated(string $plugin): bool
@@ -212,8 +200,6 @@ function is_plugin_activated(string $plugin): bool
 }
 
 /**
- * @throws ContainerExceptionInterface
- * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  * @throws TypeException
  * @throws \Qubus\Exception\Exception
@@ -237,7 +223,7 @@ function load_active_plugins(): void
              *
              * @param $string $plugin Class name of the plugin that was loaded.
              */
-            Action::getInstance()->doAction('plugin_loaded', $plugin->plugin_classname);
+            Devflow::$PHP->hook->action->doAction('plugin_loaded', $plugin->plugin_classname);
         }
     }
 }
@@ -285,7 +271,7 @@ function plugin_url(string $path = '', string $plugin = ''): string
      * @param string $plugin  The plugin file path to be relative to. Blank string if no plugin
      *                        is specified.
      */
-    return Filter::getInstance()->applyFilter('plugins_url', $url, $path, $plugin);
+    return Devflow::$PHP->hook->filter->applyFilter('plugins_url', $url, $path, $plugin);
 }
 
 /**
@@ -299,7 +285,7 @@ function plugin_url(string $path = '', string $plugin = ''): string
 function plugin_dir_url(string $file): string
 {
     $url = add_trailing_slash(plugin_url('', $file));
-    return Filter::getInstance()->applyFilter('plugin_dir_url', $url, $file);
+    return Devflow::$PHP->hook->filter->applyFilter('plugin_dir_url', $url, $file);
 }
 
 /**

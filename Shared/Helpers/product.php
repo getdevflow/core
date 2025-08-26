@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Shared\Helpers;
 
+use App\Application\Devflow;
 use App\Domain\Product\Command\DeleteProductCommand;
 use App\Domain\Product\Command\UpdateProductStatusCommand;
 use App\Domain\Product\Query\FindProductsQuery;
@@ -37,8 +38,6 @@ use Psr\Container\NotFoundExceptionInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\SimpleCache\InvalidArgumentException;
 use Qubus\Error\Error;
-use Qubus\EventDispatcher\ActionFilter\Action;
-use Qubus\EventDispatcher\ActionFilter\Filter;
 use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
 use Qubus\Support\DateTime\QubusDateTimeImmutable;
@@ -178,7 +177,7 @@ function get_product_datetime(?string $product = null): string
      * @param string $datetime  The product's datetime.
      * @param string $productId Product id or product object.
      */
-    return Filter::getInstance()->applyFilter('product_datetime', $datetime, $product);
+    return Devflow::$PHP->hook->filter->applyFilter('product_datetime', $datetime, $product);
 }
 
 /**
@@ -217,7 +216,7 @@ function get_product_modified(string $productId): string
      * @param string $format   Format to return datetime string.
      * @param string $productId Product id or product object.
      */
-    return Filter::getInstance()->applyFilter('product_modified', $modified, $format, $product);
+    return Devflow::$PHP->hook->filter->applyFilter('product_modified', $modified, $format, $product);
 }
 
 /**
@@ -252,7 +251,7 @@ function get_product_body(string $productId): string
      * @param string $body The product's body content.
      * @param string $productId Product id or product object.
      */
-    return Filter::getInstance()->applyFilter('product_body', $body, $productId);
+    return Devflow::$PHP->hook->filter->applyFilter('product_body', $body, $productId);
 }
 
 /**
@@ -287,7 +286,7 @@ function get_product_sku(string $productId): false|string
      * @param string $sku The product's sku.
      * @param string $productId  Product id.
      */
-    return Filter::getInstance()->applyFilter('product_sku', $sku, $productId);
+    return Devflow::$PHP->hook->filter->applyFilter('product_sku', $sku, $productId);
 }
 
 /**
@@ -322,7 +321,7 @@ function get_product_title(string $productId): string
      * @param string   $title The product's title.
      * @param string $product  Product object.
      */
-    return Filter::getInstance()->applyFilter('product_title', $title, $product);
+    return Devflow::$PHP->hook->filter->applyFilter('product_title', $title, $product);
 }
 
 /**
@@ -357,7 +356,7 @@ function get_product_slug(string $productId): string
      * @param string $slug The product's slug.
      * @param string $product   Product object.
      */
-    return Filter::getInstance()->applyFilter('product_slug', $slug, $product);
+    return Devflow::$PHP->hook->filter->applyFilter('product_slug', $slug, $product);
 }
 
 /**
@@ -656,7 +655,7 @@ function get_product_author_id(string $productId): false|string
      * @param string $authorId The product's author id.
      * @param object $product Product object.
      */
-    return Filter::getInstance()->applyFilter('product_author_id', $authorId, $product);
+    return Devflow::$PHP->hook->filter->applyFilter('product_author_id', $authorId, $product);
 }
 
 /**
@@ -692,7 +691,7 @@ function get_product_author(string $productId, bool $reverse = false): false|str
      * @param string $author The product's author.
      * @param object $product Product object.
      */
-    return Filter::getInstance()->applyFilter('product_author', $author, $product);
+    return Devflow::$PHP->hook->filter->applyFilter('product_author', $author, $product);
 }
 
 /**
@@ -727,7 +726,7 @@ function get_product_status(string $productId): false|string
      * @param string  $status The product's status.
      * @param Product $product Product object.
      */
-    return Filter::getInstance()->applyFilter('product_status', $status, $product);
+    return Devflow::$PHP->hook->filter->applyFilter('product_status', $status, $product);
 }
 
 /**
@@ -816,7 +815,7 @@ function get_product_created_date(
      *                       Accepts 'G', 'U', or php date format. Default 'U'.
      * @param bool   $gmt    Whether to retrieve the GMT date. Default false.
      */
-    return Filter::getInstance()->applyFilter('get_product_created_date', $theDate, $format, $gmt);
+    return Devflow::$PHP->hook->filter->applyFilter('get_product_created_date', $theDate, $format, $gmt);
 }
 
 /**
@@ -865,7 +864,7 @@ function the_product_created_date(string $productId, string $format = ''): strin
      *                           in 'date_format' option. Default empty.
      * @param Product  $product  Product object.
      */
-    return Filter::getInstance()->applyFilter('product_created_date', $theDate, $format, $product);
+    return Devflow::$PHP->hook->filter->applyFilter('product_created_date', $theDate, $format, $product);
 }
 
 /**
@@ -925,7 +924,7 @@ function get_product_created_time(
      *                         Accepts 'G', 'U', or php date format. Default 'U'.
      * @param bool   $gmt      Whether to retrieve the GMT time. Default false.
      */
-    return Filter::getInstance()->applyFilter('get_product_created_time', $theTime, $format, $gmt);
+    return Devflow::$PHP->hook->filter->applyFilter('get_product_created_time', $theTime, $format, $gmt);
 }
 
 /**
@@ -978,7 +977,7 @@ function the_product_created_time(string $productId, string $format = ''): strin
      *                           in 'time_format' option. Default empty.
      * @param object    $product Product object.
      */
-    return Filter::getInstance()->applyFilter('product_created_time', $theTime, $format, $product);
+    return Devflow::$PHP->hook->filter->applyFilter('product_created_time', $theTime, $format, $product);
 }
 
 /**
@@ -1035,7 +1034,7 @@ function get_product_published_date(
      *                     Accepts 'G', 'U', or php date format. Default 'U'.
      * @param bool   $gmt  Whether to retrieve the GMT date. Default false.
      */
-    return Filter::getInstance()->applyFilter('get_product_published_date', $theDate, $format, $gmt);
+    return Devflow::$PHP->hook->filter->applyFilter('get_product_published_date', $theDate, $format, $gmt);
 }
 
 /**
@@ -1088,7 +1087,7 @@ function the_product_published_date(string $productId, string $format = ''): str
      *                            in 'date_format' option. Default empty.
      * @param object    $product  Product object.
      */
-    return Filter::getInstance()->applyFilter('product_published_date', $theDate, $format, $product);
+    return Devflow::$PHP->hook->filter->applyFilter('product_published_date', $theDate, $format, $product);
 }
 
 /**
@@ -1145,7 +1144,7 @@ function get_product_published_time(
      *                         Accepts 'G', 'U', or php date format. Default 'U'.
      * @param bool   $gmt      Whether to retrieve the GMT time. Default false.
      */
-    return Filter::getInstance()->applyFilter('get_product_published_time', $theTime, $format, $gmt);
+    return Devflow::$PHP->hook->filter->applyFilter('get_product_published_time', $theTime, $format, $gmt);
 }
 
 /**
@@ -1197,7 +1196,7 @@ function the_product_published_time(string $productId, string $format = ''): str
      *                            in 'time_format' option. Default empty.
      * @param object    $product  Product object.
      */
-    return Filter::getInstance()->applyFilter('product_published_time', $theTime, $format, $product);
+    return Devflow::$PHP->hook->filter->applyFilter('product_published_time', $theTime, $format, $product);
 }
 
 /**
@@ -1254,7 +1253,7 @@ function get_product_modified_date(
      *                        Accepts 'G', 'U', or php date format. Default 'U'.
      * @param bool   $gmt     Whether to retrieve the GMT date. Default false.
      */
-    return Filter::getInstance()->applyFilter('get_product_modified_date', $theDate, $format, $gmt);
+    return Devflow::$PHP->hook->filter->applyFilter('get_product_modified_date', $theDate, $format, $gmt);
 }
 
 /**
@@ -1307,7 +1306,7 @@ function the_product_modified_date(string $productId, string $format = ''): stri
      *                           in 'date_format' option. Default empty.
      * @param object    $product Product object.
      */
-    return Filter::getInstance()->applyFilter('product_modified_date', $theDate, $format, $product);
+    return Devflow::$PHP->hook->filter->applyFilter('product_modified_date', $theDate, $format, $product);
 }
 
 /**
@@ -1364,7 +1363,7 @@ function get_product_modified_time(
      *                         Accepts 'G', 'U', or php date format. Default 'U'.
      * @param bool   $gmt      Whether to retrieve the GMT time. Default false.
      */
-    return Filter::getInstance()->applyFilter('get_product_modified_time', $theTime, $format, $gmt);
+    return Devflow::$PHP->hook->filter->applyFilter('get_product_modified_time', $theTime, $format, $gmt);
 }
 
 /**
@@ -1417,7 +1416,7 @@ function the_product_modified_time(string $productId, string $format = ''): stri
      *                           in 'time_format' option. Default empty.
      * @param object    $product Product object.
      */
-    return Filter::getInstance()->applyFilter('product_modified_time', $theTime, $format, $product);
+    return Devflow::$PHP->hook->filter->applyFilter('product_modified_time', $theTime, $format, $product);
 }
 
 /**
@@ -1452,7 +1451,7 @@ function get_product_show_in_menu(string $productId): int
      * @param int    $menu      The product's show in menu option.
      * @param string $productId The product ID.
      */
-    return Filter::getInstance()->applyFilter('product_show_in_menu', (int) $menu, $productId);
+    return Devflow::$PHP->hook->filter->applyFilter('product_show_in_menu', (int) $menu, $productId);
 }
 
 /**
@@ -1486,7 +1485,7 @@ function get_product_show_in_search(string $productId): int
      * @param int    $search    The product's show in search option.
      * @param string $productId The product ID.
      */
-    return Filter::getInstance()->applyFilter('product_show_in_search', (int) $search, $productId);
+    return Devflow::$PHP->hook->filter->applyFilter('product_show_in_search', (int) $search, $productId);
 }
 
 /**
@@ -1523,7 +1522,7 @@ function cms_unique_product_slug(
      * @param string    $originalTitle The product's original title before slugified.
      * @param string    $productId     The product's unique id.
      */
-    return Filter::getInstance()->applyFilter(
+    return Devflow::$PHP->hook->filter->applyFilter(
         'cms_unique_product_slug',
         $productSlug,
         $originalSlug,
@@ -1612,7 +1611,7 @@ function cms_insert_product(array|ServerRequestInterface|Product $productdata): 
          * @param string $productId      The product's product_id.
          * @param bool   $update         Whether this is an existing product or a new product.
          */
-        Action::getInstance()->doAction('product_previous_status', $previousStatus, $productId->toNative(), $update);
+        Devflow::$PHP->hook->action->doAction('product_previous_status', $previousStatus, $productId->toNative(), $update);
 
         /**
          * Create new product object.
@@ -1630,7 +1629,7 @@ function cms_insert_product(array|ServerRequestInterface|Product $productdata): 
          * @param string $productId      The product's product_id.
          * @param bool   $update         Whether this is an existing product or a new product.
          */
-        Action::getInstance()->doAction('product_previous_status', $previousStatus, $productId->toNative(), $update);
+        Devflow::$PHP->hook->action->doAction('product_previous_status', $previousStatus, $productId->toNative(), $update);
 
         /**
          * Create new product object.
@@ -1657,7 +1656,7 @@ function cms_insert_product(array|ServerRequestInterface|Product $productdata): 
      * @param string $sanitizedProductType Product type after it has been sanitized.
      * @param string $rawProductType The product's product type.
      */
-    $productSku = Filter::getInstance()->applyFilter(
+    $productSku = Devflow::$PHP->hook->filter->applyFilter(
         'pre_product_sku',
         $sanitizedProductSku,
         $rawProductSku
@@ -1672,7 +1671,7 @@ function cms_insert_product(array|ServerRequestInterface|Product $productdata): 
      * @param string $sanitizedProductTitle Product title after it has been sanitized.
      * @param string $rawProductTitle The product's title.
      */
-    $productTitle = Filter::getInstance()->applyFilter(
+    $productTitle = Devflow::$PHP->hook->filter->applyFilter(
         'pre_product_title',
         (string) $sanitizedProductTitle,
         (string) $rawProductTitle
@@ -1706,7 +1705,7 @@ function cms_insert_product(array|ServerRequestInterface|Product $productdata): 
      * @param string $sanitizedProductSlug Product slug after it has been sanitized.
      * @param string $rawProductSlug The product's slug.
      */
-    $productSlug = Filter::getInstance()->applyFilter(
+    $productSlug = Devflow::$PHP->hook->filter->applyFilter(
         'pre_product_slug',
         (string) $sanitizedProductSlug,
         (string) $rawProductSlug
@@ -1719,7 +1718,7 @@ function cms_insert_product(array|ServerRequestInterface|Product $productdata): 
      *
      * @param string $rawProductSlug The product's slug.
      */
-    $productBody = Filter::getInstance()->applyFilter(
+    $productBody = Devflow::$PHP->hook->filter->applyFilter(
         'pre_product_body',
         $rawProductBody
     );
@@ -1748,7 +1747,7 @@ function cms_insert_product(array|ServerRequestInterface|Product $productdata): 
      * @param string $sanitizedProductSku Product sku after it has been sanitized.
      * @param string $rawProductSku The product's sku.
      */
-    $productSku = Filter::getInstance()->applyFilter(
+    $productSku = Devflow::$PHP->hook->filter->applyFilter(
         'pre_product_sku',
         $sanitizedProductSku,
         $rawProductSku
@@ -1763,7 +1762,7 @@ function cms_insert_product(array|ServerRequestInterface|Product $productdata): 
      * @param string $sanitizedProductPrice Product price after it has been sanitized.
      * @param string $rawProductPrice The product's price.
      */
-    $productPrice = Filter::getInstance()->applyFilter(
+    $productPrice = Devflow::$PHP->hook->filter->applyFilter(
         'pre_product_price',
         (int) $sanitizedProductPrice,
         (int) $rawProductPrice
@@ -1778,7 +1777,7 @@ function cms_insert_product(array|ServerRequestInterface|Product $productdata): 
      * @param string $sanitizedProductCurrency Product currency after it has been sanitized.
      * @param string $rawProductCurrency The product's currency.
      */
-    $productCurrency = Filter::getInstance()->applyFilter(
+    $productCurrency = Devflow::$PHP->hook->filter->applyFilter(
         'pre_product_currency',
         $sanitizedProductCurrency,
         $rawProductCurrency
@@ -1793,7 +1792,7 @@ function cms_insert_product(array|ServerRequestInterface|Product $productdata): 
      * @param string $sanitizedProductPurchaseUrl Product purchase url after it has been sanitized.
      * @param string $rawProductPurchaseUrl The product's purchase url.
      */
-    $productPurchaseUrl = Filter::getInstance()->applyFilter(
+    $productPurchaseUrl = Devflow::$PHP->hook->filter->applyFilter(
         'pre_product_purchase_url',
         $sanitizedProductPurchaseUrl,
         $rawProductPurchaseUrl
@@ -1808,7 +1807,7 @@ function cms_insert_product(array|ServerRequestInterface|Product $productdata): 
      * @param string $sanitizedProductShowInMenu Product show in menu after it has been sanitized.
      * @param int $rawProductShowInMenu The product's show in menu.
      */
-    $productShowInMenu = Filter::getInstance()->applyFilter(
+    $productShowInMenu = Devflow::$PHP->hook->filter->applyFilter(
         'pre_product_show_in_menu',
         (int) $sanitizedProductShowInMenu,
         (int) $rawProductShowInMenu
@@ -1823,7 +1822,7 @@ function cms_insert_product(array|ServerRequestInterface|Product $productdata): 
      * @param int $sanitizedProductShowInSearch Product show in search after it has been sanitized.
      * @param int $rawProductShowInSearch The product's show in search.
      */
-    $productShowInSearch = Filter::getInstance()->applyFilter(
+    $productShowInSearch = Devflow::$PHP->hook->filter->applyFilter(
         'pre_product_show_in_search',
         (int) $sanitizedProductShowInSearch,
         (int) $rawProductShowInSearch
@@ -1838,7 +1837,7 @@ function cms_insert_product(array|ServerRequestInterface|Product $productdata): 
      * @param string $sanitizedProductFeaturedImage Product featured image url after it has been sanitized.
      * @param string $rawProductFeaturedImage The product's featured image url.
      */
-    $productFeaturedImage = Filter::getInstance()->applyFilter(
+    $productFeaturedImage = Devflow::$PHP->hook->filter->applyFilter(
         'pre_product_featured_image',
         (string) $sanitizedProductFeaturedImage,
         (string) $rawProductFeaturedImage
@@ -1853,7 +1852,7 @@ function cms_insert_product(array|ServerRequestInterface|Product $productdata): 
      * @param string $sanitizedProductStatus Product status after it has been sanitized.
      * @param string $rawProductStatus The product's status.
      */
-    $productStatus = Filter::getInstance()->applyFilter(
+    $productStatus = Devflow::$PHP->hook->filter->applyFilter(
         'pre_product_status',
         (string) $sanitizedProductStatus,
         (string) $rawProductStatus
@@ -1867,7 +1866,7 @@ function cms_insert_product(array|ServerRequestInterface|Product $productdata): 
      * @param array $productdata   Array of product data.
      */
     $maybeNull = !$productTitle && !$productBody;
-    if (Filter::getInstance()->applyFilter('cms_insert_empty_product', $maybeNull, $productdata)) {
+    if (Devflow::$PHP->hook->filter->applyFilter('cms_insert_empty_product', $maybeNull, $productdata)) {
         return new ProductError(message: esc_html__(string: 'The title and product are null.', domain: 'devflow'));
     }
 
@@ -1970,7 +1969,7 @@ function cms_insert_product(array|ServerRequestInterface|Product $productdata): 
      * @param bool     $update Whether the product is being updated rather than created.
      * @param string|null $id  ID of the product to be updated, or NULL if the product is being created.
      */
-    Filter::getInstance()->applyFilter(
+    Devflow::$PHP->hook->filter->applyFilter(
         'cms_before_insert_product_data',
         $productDataArray,
         $update,
@@ -1988,7 +1987,7 @@ function cms_insert_product(array|ServerRequestInterface|Product $productdata): 
          *
          * @param Product $product Product object.
          */
-        Action::getInstance()->doAction('pre_product_insert', $product);
+        Devflow::$PHP->hook->action->doAction('pre_product_insert', $product);
 
         try {
             $command = new CreateProductCommand([
@@ -2037,7 +2036,7 @@ function cms_insert_product(array|ServerRequestInterface|Product $productdata): 
          * @param string  $productId Product id.
          * @param product $product   Product object.
          */
-        Action::getInstance()->doAction('pre_product_update', $productId, $product);
+        Devflow::$PHP->hook->action->doAction('pre_product_update', $productId, $product);
 
         try {
             $command = new UpdateProductCommand([
@@ -2098,7 +2097,7 @@ function cms_insert_product(array|ServerRequestInterface|Product $productdata): 
          * @param string $productId Product id.
          * @param array  $product   Product object.
          */
-        Action::getInstance()->doAction('update_product', $productId, $product);
+        Devflow::$PHP->hook->action->doAction('update_product', $productId, $product);
         /** @var Product $productAfter */
         $productAfter = get_product_by_id($productId->toNative());
         /**
@@ -2108,14 +2107,14 @@ function cms_insert_product(array|ServerRequestInterface|Product $productdata): 
          * @param object $productAfter   Product object following the update.
          * @param object $productBefore  Product object before the update.
          */
-        Action::getInstance()->doAction('product_updated', $productId->toNative(), $productAfter, $productBefore);
+        Devflow::$PHP->hook->action->doAction('product_updated', $productId->toNative(), $productAfter, $productBefore);
     } else {
         /**
          * Action hook triggered after product is created.
          *
          * @param array $product Product object.
          */
-        Action::getInstance()->doAction('create_product', $product);
+        Devflow::$PHP->hook->action->doAction('create_product', $product);
     }
 
     /**
@@ -2128,7 +2127,7 @@ function cms_insert_product(array|ServerRequestInterface|Product $productdata): 
      * @param array $product    Product object.
      * @param bool  $update     Whether this is an existing product or a new product.
      */
-    Action::getInstance()->doAction("save_product_{$productSku}", $productId->toNative(), $product, $update);
+    Devflow::$PHP->hook->action->doAction("save_product_{$productSku}", $productId->toNative(), $product, $update);
 
     /**
      * Action hook triggered after product has been saved.
@@ -2140,7 +2139,7 @@ function cms_insert_product(array|ServerRequestInterface|Product $productdata): 
      * @param array  $product   Product object.
      * @param bool   $update    Whether this is existing product or new product.
      */
-    Action::getInstance()->doAction(
+    Devflow::$PHP->hook->action->doAction(
         "save_product_{$productSku}_{$productStatus}",
         $productId->toNative(),
         $product,
@@ -2154,7 +2153,7 @@ function cms_insert_product(array|ServerRequestInterface|Product $productdata): 
      * @param object $product   Product object.
      * @param bool   $update    Whether this is existing product or new product.
      */
-    Action::getInstance()->doAction('cms_after_insert_product_data', $productId->toNative(), $product, $update);
+    Devflow::$PHP->hook->action->doAction('cms_after_insert_product_data', $productId->toNative(), $product, $update);
 
     return $productId->toNative();
 }
@@ -2235,7 +2234,7 @@ function cms_delete_product(string $productId): Product|bool
      *
      * @param string $productId Product id.
      */
-    Action::getInstance()->doAction('before_delete_product', $productId);
+    Devflow::$PHP->hook->action->doAction('before_delete_product', $productId);
 
     $productMetaKeys = get_productmeta($productId);
     if ($productMetaKeys) {
@@ -2250,7 +2249,7 @@ function cms_delete_product(string $productId): Product|bool
      *
      * @param string $productId Product ID.
      */
-    Action::getInstance()->doAction('delete_product', $productId);
+    Devflow::$PHP->hook->action->doAction('delete_product', $productId);
 
     try {
         $command = new DeleteProductCommand([
@@ -2276,14 +2275,14 @@ function cms_delete_product(string $productId): Product|bool
      *
      * @param string $productId Product id.
      */
-    Action::getInstance()->doAction('deleted_product', $productId);
+    Devflow::$PHP->hook->action->doAction('deleted_product', $productId);
 
     /**
      * Action hook fires after a product is deleted.
      *
      * @param string $productId Product id.
      */
-    Action::getInstance()->doAction('after_delete_product', $productId);
+    Devflow::$PHP->hook->action->doAction('after_delete_product', $productId);
 
     return $product;
 }
@@ -2332,7 +2331,7 @@ function get_product_class(string $productId, string|array $class = ''): array
      * @param array $class   An array of additional css class names.
      * @param string $productId Product id of the current product.
      */
-    $classes = Filter::getInstance()->applyFilter('product_class', $classes, $class, $product->id);
+    $classes = Devflow::$PHP->hook->filter->applyFilter('product_class', $classes, $class, $product->id);
 
     return array_unique($classes);
 }
@@ -2369,7 +2368,7 @@ function the_product_meta(string|Product|ProductId $product, string $key): strin
      * @param mixed  $theMeta Product meta value.
      * @param string $key     Product meta key.
      */
-    return Filter::getInstance()->applyFilter('the_product_meta', $theMeta, $key);
+    return Devflow::$PHP->hook->filter->applyFilter('the_product_meta', $theMeta, $key);
 }
 
 /**

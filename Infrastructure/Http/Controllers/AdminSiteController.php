@@ -101,7 +101,6 @@ final class AdminSiteController extends BaseController
             CommandCouldNotBeHandledException |
             CommandPropertyNotFoundException |
             ContainerExceptionInterface |
-            DateInvalidTimeZoneException |
             InvalidArgumentException |
             UnresolvableCommandHandlerException |
             UnresolvableQueryHandlerException |
@@ -320,7 +319,9 @@ final class AdminSiteController extends BaseController
             return $this->redirect(admin_url());
         }
 
-        $resolver = new NativeQueryHandlerResolver(container: ContainerFactory::make(config: []));
+        $resolver = new NativeQueryHandlerResolver(
+            container: ContainerFactory::make(config: config(key: 'querybus.aliases'))
+        );
         $enquirer = new Enquire(bus: new SynchronousQueryBus($resolver));
 
         $query = new FindUsersQuery();
@@ -396,7 +397,6 @@ final class AdminSiteController extends BaseController
         } catch (
             CommandPropertyNotFoundException |
             Exception |
-            InvalidArgumentException |
             UnresolvableQueryHandlerException |
             NotFoundExceptionInterface |
             ContainerExceptionInterface |

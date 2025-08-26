@@ -7,10 +7,12 @@ namespace App\Shared\Helpers;
 use App\Application\Devflow;
 use App\Infrastructure\Services\Options;
 use App\Infrastructure\Services\Updater;
+use App\Shared\Services\Assets\AppAssets;
+use App\Shared\Services\Assets\PluginAssets;
+use App\Shared\Services\Assets\ThemeAssets;
 use App\Shared\Services\DateTime;
 use App\Shared\Services\ListUtil;
 use App\Shared\Services\Registry;
-use Codefy\Framework\Codefy;
 use Codefy\Framework\Factory\FileLoggerFactory;
 use DateInvalidTimeZoneException;
 use DateMalformedStringException;
@@ -23,13 +25,10 @@ use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Psr\SimpleCache\InvalidArgumentException;
 use Qubus\Error\Error;
-use Qubus\EventDispatcher\ActionFilter\Action;
-use Qubus\EventDispatcher\ActionFilter\Filter;
 use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
 use Qubus\Exception\Http\Client\NotFoundException;
 use Qubus\Http\Request;
-use Qubus\Support\Assets;
 use Qubus\Support\DateTime\QubusDateTime;
 use RandomLib\Factory;
 use ReflectionException;
@@ -426,7 +425,7 @@ function beautify_filename(string $filename): string
      * @param string $filename     Beautified filename.
      * @param string $filenameRaw The filename prior to beautification.
      */
-    $filename = Filter::getInstance()->applyFilter('beautified_filename', $filename, $filenameRaw);
+    $filename = Devflow::$PHP->hook->filter->applyFilter('beautified_filename', $filename, $filenameRaw);
 
     // lowercase for windows/unix interoperability http://support.microsoft.com/kb/100625
     $filename = mb_strtolower($filename, mb_detect_encoding($filename));
@@ -478,7 +477,7 @@ function sanitize_filename(string $filename, bool $beautify = true): string
      * @param string $filename     Sanitized filename.
      * @param string $filenameRaw The filename prior to sanitization.
      */
-    $filename = Filter::getInstance()->applyFilter('sanitized_filename', $filename, $filenameRaw);
+    $filename = Devflow::$PHP->hook->filter->applyFilter('sanitized_filename', $filename, $filenameRaw);
 
     // maximise filename length to 255 bytes http://serverfault.com/a/9548/44086
     $ext = pathinfo($filename, PATHINFO_EXTENSION);
@@ -593,7 +592,7 @@ function check_includes(string $filename): array|string
             // If the path is not absolute, add the dir and separator
             // Then call realpath to chop out extra separators
             if (str_contains($include, ':') === false) {
-                $include = realpath($dir . Codefy::$PHP::DS . $include);
+                $include = realpath($dir . Devflow::$PHP::DS . $include);
             }
 
             $includes[] = $include;
@@ -665,10 +664,10 @@ function rmdir__(string $dir): void
         $objects = scandir($dir);
         foreach ($objects as $object) {
             if ($object != "." && $object != "..") {
-                if (is_dir($dir . Codefy::$PHP::DS . $object)) {
-                    rmdir__($dir . Codefy::$PHP::DS . $object);
+                if (is_dir($dir . Devflow::$PHP::DS . $object)) {
+                    rmdir__($dir . Devflow::$PHP::DS . $object);
                 } else {
-                    unlink($dir . Codefy::$PHP::DS . $object);
+                    unlink($dir . Devflow::$PHP::DS . $object);
                 }
             }
         }
@@ -770,9 +769,9 @@ function generate_unique_key(int $length = 6): string
  * A private function for generating unique site key.
  *
  * @access private
- * @throws ContainerExceptionInterface
- * @throws ReflectionException
- * @throws NotFoundExceptionInterface
+ * @param int $length
+ * @return string
+ * @throws TypeException
  */
 function generate_site_key(int $length = 6): string
 {
@@ -843,13 +842,12 @@ function convert_seconds_to_time(int $seconds): string
  * @param string $body The message to templatize.
  * @return string $email The email surrounded by template.
  * @throws Exception
- * @throws ReflectionException
  */
 function set_email_template(string $body): string
 {
-    $tpl = file_get_contents(resource_path('tpl' . Codefy::$PHP::DS . 'system_email.tpl'));
+    $tpl = file_get_contents(resource_path('tpl' . Devflow::$PHP::DS . 'system_email.tpl'));
 
-    $template = Filter::getInstance()->applyFilter('email_template', $tpl);
+    $template = Devflow::$PHP->hook->filter->applyFilter('email_template', $tpl);
 
     return str_replace('{content}', $body, $template);
 }
@@ -880,7 +878,7 @@ function replace_template_vars(string $template): string
         'time_format' => $option->read(optionKey: 'time_format')
     ];
 
-    $toReplace = Filter::getInstance()->applyFilter('email_template_tags', $varArray);
+    $toReplace = Devflow::$PHP->hook->filter->applyFilter('email_template_tags', $varArray);
 
     foreach ($toReplace as $tag => $var) {
         $template = str_replace(search: '{' . $tag . '}', replace: $var, subject: $template);
@@ -916,7 +914,7 @@ function process_email_html(string $text, string $title): string
     $body = str_replace('{title}', $title, $template);
 
     // Replace variables in email
-    return Filter::getInstance()->applyFilter('email_template_body', replace_template_vars($body));
+    return Devflow::$PHP->hook->filter->applyFilter('email_template_body', replace_template_vars($body));
 }
 
 /**
@@ -956,7 +954,6 @@ function get_domain_name(): string
  * @param string|null $slug   Slug to set asset location
  * @return void
  * @throws Exception
- * @throws ReflectionException
  */
 function cms_enqueue_css(
     string $config,
@@ -967,38 +964,29 @@ function cms_enqueue_css(
     if ($config === 'default') {
         $options = [
             'public_dir' => remove_trailing_slash(public_path()),
-            'css_dir' => 'static' . Codefy::$PHP::DS . 'assets' . Codefy::$PHP::DS  . 'css',
-            'pipeline' => Filter::getInstance()->applyFilter('default_css_pipeline', $minify),
+            'css_dir' => 'static' . Devflow::$PHP::DS . 'assets' . Devflow::$PHP::DS  . 'css',
+            'pipeline' => Devflow::$PHP->hook->filter->applyFilter('default_css_pipeline', $minify),
             'pipeline_dir' => 'minify',
-            'collections' => [
-                'colorpicker-css' => 'bootstrap-colorpicker/bootstrap-colorpicker.min.css',
-                'fontawesome' => '//cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css',
-                'ionicons' => '//cdnjs.cloudflare.com/ajax/libs/ionicons/2.0.1/css/ionicons.min.css',
-                'datatables-css' => 'datatables/dataTables.bootstrap.css',
-                'select2-css' => 'select2/select2.min.css',
-                'datetimepicker-css' => 'bootstrap-datetimepicker/bootstrap-datetimepicker.min.css',
-                'switchery-css' => 'bootstrap-switchery/switchery.min.css'
-            ]
         ];
-        $default = new Assets($options);
+        $default = new AppAssets($options);
         $default->reset()->add($asset);
     } elseif ($config === 'plugin') {
         $options = [
             'public_dir' => remove_trailing_slash(public_path()),
-            'css_dir' => 'plugins' . Codefy::$PHP::DS  . $slug . Codefy::$PHP::DS  . 'assets' . Codefy::$PHP::DS  . 'css',
-            'pipeline' => Filter::getInstance()->applyFilter('plugin_css_pipeline', $minify),
+            'css_dir' => 'plugins' . Devflow::$PHP::DS  . $slug . Devflow::$PHP::DS  . 'assets' . Devflow::$PHP::DS  . 'css',
+            'pipeline' => Devflow::$PHP->hook->filter->applyFilter('plugin_css_pipeline', $minify),
             'pipeline_dir' => 'minify'
         ];
-        $default = new Assets($options);
+        $default = new PluginAssets($options);
         $default->reset()->add($asset);
     } elseif ($config === 'theme') {
         $options = [
             'public_dir' => remove_trailing_slash(public_path()),
-            'css_dir' => 'themes' . Codefy::$PHP::DS  . $slug . Codefy::$PHP::DS  . 'assets' . Codefy::$PHP::DS  . 'css',
-            'pipeline' => Filter::getInstance()->applyFilter('theme_css_pipeline', $minify),
+            'css_dir' => 'themes' . Devflow::$PHP::DS  . $slug . Devflow::$PHP::DS  . 'assets' . Devflow::$PHP::DS  . 'css',
+            'pipeline' => Devflow::$PHP->hook->filter->applyFilter('theme_css_pipeline', $minify),
             'pipeline_dir' => 'minify'
         ];
-        $default = new Assets($options);
+        $default = new ThemeAssets($options);
         $default->reset()->add($asset);
     }
     echo $default->css();
@@ -1025,7 +1013,6 @@ function cms_enqueue_css(
  * @param string|null $slug   Slug to set asset location.
  * @return void
  * @throws Exception
- * @throws ReflectionException
  */
 function cms_enqueue_js(
     string $config,
@@ -1036,51 +1023,29 @@ function cms_enqueue_js(
     if ($config === 'default') {
         $options = [
             'public_dir' => remove_trailing_slash(public_path()),
-            'js_dir' => 'static' . Codefy::$PHP::DS  . 'assets' . Codefy::$PHP::DS  . 'js',
-            'pipeline' => Filter::getInstance()->applyFilter('default_js_pipeline', $minify),
+            'js_dir' => 'static' . Devflow::$PHP::DS  . 'assets' . Devflow::$PHP::DS  . 'js',
+            'pipeline' => Devflow::$PHP->hook->filter->applyFilter('default_js_pipeline', $minify),
             'pipeline_dir' => 'minify',
-            'collections' => [
-                'jquery' => '//cdnjs.cloudflare.com/ajax/libs/jquery/2.2.4/jquery.js',
-                'jquery-ui' => [
-                    'jquery',
-                    '//cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js'
-                ],
-                'colorpicker-js' => [
-                    'bootstrap-colorpicker/bootstrap-colorpicker.min.js',
-                    'bootstrap-colorpicker/config.js'
-                ],
-                'datatables-js' => [
-                    'datatables/jquery.dataTables.min.js',
-                    'datatables/dataTables.bootstrap.min.js',
-                    'pages/datatable.js'
-                ],
-                'datetimepicker-js' => 'bootstrap-datetimepicker/bootstrap-datetimepicker.min.js',
-                'select2-js' => [
-                    'select2/select2.full.min.js',
-                    'pages/select2.js'
-                ],
-                'switchery-js' => 'bootstrap-switchery/switchery.min.js'
-            ]
         ];
-        $default = new Assets($options);
+        $default = new AppAssets($options);
         $default->reset()->add($asset);
     } elseif ($config === 'plugin') {
         $options = [
             'public_dir' => remove_trailing_slash(public_path()),
-            'js_dir' => 'plugins' . Codefy::$PHP::DS  . $slug . Codefy::$PHP::DS  . 'assets' . Codefy::$PHP::DS  . 'js',
-            'pipeline' => Filter::getInstance()->applyFilter('plugin_js_pipeline', $minify),
+            'js_dir' => 'plugins' . Devflow::$PHP::DS  . $slug . Devflow::$PHP::DS  . 'assets' . Devflow::$PHP::DS  . 'js',
+            'pipeline' => Devflow::$PHP->hook->filter->applyFilter('plugin_js_pipeline', $minify),
             'pipeline_dir' => 'minify'
         ];
-        $default = new Assets($options);
+        $default = new PluginAssets($options);
         $default->reset()->add($asset);
     } elseif ($config === 'theme') {
         $options = [
             'public_dir' => remove_trailing_slash(public_path()),
-            'js_dir' => 'themes' . Codefy::$PHP::DS  . $slug . Codefy::$PHP::DS  . 'assets' . Codefy::$PHP::DS  . 'js',
-            'pipeline' => Filter::getInstance()->applyFilter('theme_js_pipeline', $minify),
+            'js_dir' => 'themes' . Devflow::$PHP::DS  . $slug . Devflow::$PHP::DS  . 'assets' . Devflow::$PHP::DS  . 'js',
+            'pipeline' => Devflow::$PHP->hook->filter->applyFilter('theme_js_pipeline', $minify),
             'pipeline_dir' => 'minify'
         ];
-        $default = new Assets($options);
+        $default = new ThemeAssets($options);
         $default->reset()->add($asset);
     }
     echo $default->js();
@@ -1116,7 +1081,6 @@ function generate_random_username(int $length = 6): string
  *                                Default false.
  * @return string The system generated password.
  * @throws Exception
- * @throws ReflectionException
  */
 function generate_random_password(
     int $length = 12,
@@ -1144,7 +1108,7 @@ function generate_random_password(
      * @param bool   $specialChars      Whether to include standard special characters.
      * @param bool   $extraSpecialChars Whether to include other special characters.
      */
-    return Filter::getInstance()->applyFilter(
+    return Devflow::$PHP->hook->filter->applyFilter(
         'random_password',
         $password,
         $length,
@@ -1234,7 +1198,7 @@ function sort_list(
 function site_path(?string $path = null): string
 {
     return public_path(
-        'sites' . Codefy::$PHP::DS . Registry::getInstance()->get('siteKey') . Codefy::$PHP::DS . $path
+        'sites' . Devflow::$PHP::DS . Registry::getInstance()->get('siteKey') . Devflow::$PHP::DS . $path
     );
 }
 
@@ -1246,6 +1210,7 @@ function site_path(?string $path = null): string
  * @return string
  * @throws BadFormatException
  * @throws EnvironmentIsBrokenException
+ * @throws TypeException
  */
 function encrypt(string $string): string
 {
@@ -1260,6 +1225,7 @@ function encrypt(string $string): string
  * @return string
  * @throws BadFormatException
  * @throws EnvironmentIsBrokenException
+ * @throws TypeException
  * @throws WrongKeyOrModifiedCiphertextException
  */
 function decrypt(string $string): string
@@ -1425,21 +1391,27 @@ function time_ago(string $original): string
     return $print . ' ago';
 }
 
+/**
+ * @throws Exception
+ */
 function updater_server_url(): string
 {
     /**
      * Filters the update api version.
      */
-    $apiVersion = Filter::getInstance()->applyFilter('updater_api_version', 'api/1.1');
+    $apiVersion = Devflow::$PHP->hook->filter->applyFilter('updater_api_version', 'api/1.1');
     /**
      * Filters the update base server url.
      */
-    $updateBaseUrl = Filter::getInstance()->applyFilter('updater_base_url', 'https://devflow-cmf.s3.amazonaws.com');
+    $updateBaseUrl = Devflow::$PHP->hook->filter->applyFilter(
+        'updater_base_url',
+        'https://devflow-cmf.s3.amazonaws.com'
+    );
     /**
      * Filters the updater url where update.json and
      * releases.json are located.
      */
-    return Filter::getInstance()->applyFilter(
+    return Devflow::$PHP->hook->filter->applyFilter(
         'updater_url',
         sprintf('%s/%s', $updateBaseUrl, $apiVersion)
     );
@@ -1461,7 +1433,7 @@ function show_update_message(): void
             get_user_option('role', $currentUserId) === 'admin'
     ) {
         $update = new Updater();
-        $update->setCurrentVersion(Devflow::inst()->release());
+        $update->setCurrentVersion(Devflow::release());
         $update->setUpdateUrl(updater_server_url() . '/update-check');
 
         try {
@@ -1477,7 +1449,7 @@ function show_update_message(): void
                     );
                     $alert .= '</div>';
 
-                    echo Filter::getInstance()->applyFilter('update_message', $alert);
+                    echo Devflow::$PHP->hook->filter->applyFilter('update_message', $alert);
                 }
             }
         } catch (Exception $e) {
@@ -1494,7 +1466,6 @@ function show_update_message(): void
  * @param string $deprecatedVersion Version for which code becomes deprecated.
  * @param string $removedVersion Version for when deprecated code will be removed.
  * @param string|null $replacement Replacement of deprecated code if any.
- * @throws ReflectionException
  * @throws TypeException
  */
 function deprecation_notice(
@@ -1516,7 +1487,7 @@ function deprecation_notice(
     );
 
     if (php_like("%dev%", config(key: 'app.env'))) {
-        Action::getInstance()->addAction('admin_notices', function () use ($message, $caller) {
+        Devflow::$PHP->hook->action->addAction('admin_notices', function () use ($message, $caller) {
             echo '<div class="alert dismissable alert-danger center sticky">' .
                     $message . ' <strong>' . $caller['function'] . '()</strong> is called from <strong>'
                     . $caller['file'] . '</strong> on line <strong>' . $caller['line'] . '</strong>' .

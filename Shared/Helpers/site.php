@@ -30,7 +30,6 @@ use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
 use Codefy\CommandBus\Exceptions\UnresolvableCommandHandlerException;
 use Codefy\CommandBus\Odin;
 use Codefy\CommandBus\Resolvers\NativeCommandHandlerResolver;
-use Codefy\Framework\Codefy;
 use Codefy\Framework\Factory\FileLoggerFactory;
 use Codefy\QueryBus\Busses\SynchronousQueryBus;
 use Codefy\QueryBus\Enquire;
@@ -45,8 +44,6 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\SimpleCache\InvalidArgumentException;
 use Qubus\Error\Error;
-use Qubus\EventDispatcher\ActionFilter\Action;
-use Qubus\EventDispatcher\ActionFilter\Filter;
 use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
 use Qubus\Http\Factories\JsonResponseFactory;
@@ -124,10 +121,9 @@ function get_site_by(string $field, string $value): false|object
  * @file App/Shared/Helpers/site.php
  * @param string $sitedomain Site domain to check against.
  * @return bool If site domain exists, return true otherwise return false.
- * @throws ContainerExceptionInterface
  * @throws Exception
- * @throws NotFoundExceptionInterface
  * @throws ReflectionException
+ * @throws TypeException
  */
 function if_site_domain_exists(string $sitedomain): bool
 {
@@ -152,10 +148,9 @@ function if_site_domain_exists(string $sitedomain): bool
  * @param string $siteDomain Site domain to check against.
  * @param string $sitePath Site path to check against.
  * @return bool If site exists, return true otherwise return false.
- * @throws ContainerExceptionInterface
  * @throws Exception
- * @throws NotFoundExceptionInterface
  * @throws ReflectionException
+ * @throws TypeException
  */
 function if_site_exists(string $siteDomain, string $sitePath): bool
 {
@@ -358,7 +353,7 @@ function delete_site_tables(string $siteId, Site $oldSite): bool
      * @param array  $tables  Name array of the site tables to be dropped.
      * @param string $siteKey The key of the site to drop tables for.
      */
-    $dropTables = Filter::getInstance()->applyFilter('site_drop_tables', $tables, $oldSite->key);
+    $dropTables = Devflow::$PHP->hook->filter->applyFilter('site_drop_tables', $tables, $oldSite->key);
 
     try {
         $dfdb->qb()->transactional(function () use ($dfdb, $dropTables) {
@@ -512,7 +507,7 @@ function add_user_to_site(User|string $user, Site|string $site, string $role): f
      * }
      * @param $userdata User object.
      */
-    $meta = Filter::getInstance()->applyFilter('add_user_usermeta', $meta, $userdata);
+    $meta = Devflow::$PHP->hook->filter->applyFilter('add_user_usermeta', $meta, $userdata);
 
     // Make sure metadata doesn't already exist for this user.
     $prefix = $sitedata->key;
@@ -597,7 +592,7 @@ function cms_insert_site(array|ServerRequestInterface|Site $sitedata): Error|str
          * @param string $siteId         The site's site_id.
          * @param bool   $update         Whether this is an existing site or a new site.
          */
-        Action::getInstance()->doAction('site_previous_status', $previousStatus, $siteId->toNative(), $update);
+        Devflow::$PHP->hook->action->doAction('site_previous_status', $previousStatus, $siteId->toNative(), $update);
 
         /**
          * Create new site object.
@@ -617,7 +612,7 @@ function cms_insert_site(array|ServerRequestInterface|Site $sitedata): Error|str
          * @param string $siteId         The site's site_id.
          * @param bool   $update         Whether this is an existing site or a new site.
          */
-        Action::getInstance()->doAction('site_previous_status', $previousStatus, $siteId->toNative(), $update);
+        Devflow::$PHP->hook->action->doAction('site_previous_status', $previousStatus, $siteId->toNative(), $update);
 
         /**
          * Create new site object.
@@ -642,7 +637,7 @@ function cms_insert_site(array|ServerRequestInterface|Site $sitedata): Error|str
      * @param string $sanitizedSiteDomain Site domain after it has been sanitized
      * @param string $preSiteDomain The site's domain.
      */
-    $preSiteDomain = Filter::getInstance()->applyFilter(
+    $preSiteDomain = Devflow::$PHP->hook->filter->applyFilter(
         'pre_site_domain',
         (string) $sanitizedSiteDomain,
         (string) $rawSiteDomain
@@ -681,7 +676,7 @@ function cms_insert_site(array|ServerRequestInterface|Site $sitedata): Error|str
      * @param string $sanitizedSiteMapping Mapped domain after it has been sanitized
      * @param string $rawSiteMapping The site's mapping.
      */
-    $siteMapping = Filter::getInstance()->applyFilter(
+    $siteMapping = Devflow::$PHP->hook->filter->applyFilter(
         'pre_site_mapping',
         (string) $sanitizedSiteMapping,
         (string) $rawSiteMapping
@@ -697,7 +692,7 @@ function cms_insert_site(array|ServerRequestInterface|Site $sitedata): Error|str
      * @param string $sanitizedSiteName Site name after it has been sanitized
      * @param string $rawSiteName The site's name.
      */
-    $siteName = Filter::getInstance()->applyFilter(
+    $siteName = Devflow::$PHP->hook->filter->applyFilter(
         'pre_site_name',
         (string) $sanitizedSiteName,
         (string) $rawSiteName
@@ -728,7 +723,7 @@ function cms_insert_site(array|ServerRequestInterface|Site $sitedata): Error|str
      * @param string $sanitizedSiteSlug Site slug after it has been sanitized
      * @param string $rawSiteSlug The site's slug.
      */
-    $siteSlug = Filter::getInstance()->applyFilter(
+    $siteSlug = Devflow::$PHP->hook->filter->applyFilter(
         'pre_site_slug',
         (string) $sanitizedSiteSlug,
         (string) $rawSiteSlug
@@ -744,7 +739,7 @@ function cms_insert_site(array|ServerRequestInterface|Site $sitedata): Error|str
      * @param string $sanitizedSitePath Site path after it has been sanitized
      * @param string $rawSitePath The site's path.
      */
-    $sitePath = Filter::getInstance()->applyFilter(
+    $sitePath = Devflow::$PHP->hook->filter->applyFilter(
         'pre_site_path',
         (string) $sanitizedSitePath,
         (string) $rawSitePath
@@ -784,7 +779,7 @@ function cms_insert_site(array|ServerRequestInterface|Site $sitedata): Error|str
      * @param string $sanitizedSiteStatus Site status after it has been sanitized
      * @param string $rawSiteStatus The site's status.
      */
-    $siteStatus = Filter::getInstance()->applyFilter(
+    $siteStatus = Devflow::$PHP->hook->filter->applyFilter(
         'pre_site_status',
         (string) $sanitizedSiteStatus,
         (string) $rawSiteStatus
@@ -831,7 +826,7 @@ function cms_insert_site(array|ServerRequestInterface|Site $sitedata): Error|str
      * @param bool     $update      Whether the site is being updated rather than created.
      * @param string|null $siteId   ID of the site to be updated, or NULL if the site is being created.
      */
-    $data = Filter::getInstance()->applyFilter(
+    $data = Devflow::$PHP->hook->filter->applyFilter(
         'cms_pre_insert_site_data',
         $data,
         $update,
@@ -932,7 +927,7 @@ function cms_insert_site(array|ServerRequestInterface|Site $sitedata): Error|str
          * @param string $siteId   Site ID.
          * @param Site $site       Site data object.
          */
-        Action::getInstance()->doAction('update_site', $siteId->toNative(), $site);
+        Devflow::$PHP->hook->action->doAction('update_site', $siteId->toNative(), $site);
 
         /** @var Site $siteAfter */
         $siteAfter = get_site_by('id', $siteId->toNative());
@@ -945,7 +940,7 @@ function cms_insert_site(array|ServerRequestInterface|Site $sitedata): Error|str
          * @param Site $siteAfter   Site object following the update.
          * @param Site $siteBefore  Site object before the update.
          */
-        Action::getInstance()->doAction('site_updated', $siteId->toNative(), $siteAfter, $siteBefore);
+        Devflow::$PHP->hook->action->doAction('site_updated', $siteId->toNative(), $siteAfter, $siteBefore);
     }
 
     /**
@@ -956,7 +951,7 @@ function cms_insert_site(array|ServerRequestInterface|Site $sitedata): Error|str
      * @param Site $site     Site object.
      * @param bool $update   Whether this is an existing site or a new site.
      */
-    Action::getInstance()->doAction('save_site', $siteId->toNative(), $site, $update);
+    Devflow::$PHP->hook->action->doAction('save_site', $siteId->toNative(), $site, $update);
 
     /**
      * Action hook triggered after site has been saved.
@@ -969,7 +964,7 @@ function cms_insert_site(array|ServerRequestInterface|Site $sitedata): Error|str
      * @param Site $site       Site object.
      * @param bool $update     Whether this is an existing site or a new site.
      */
-    Action::getInstance()->doAction("save_site_{$siteStatus}", $siteId->toNative(), $site, $update);
+    Devflow::$PHP->hook->action->doAction("save_site_{$siteStatus}", $siteId->toNative(), $site, $update);
 
     /**
      * Action hook triggered after site has been saved.
@@ -979,7 +974,7 @@ function cms_insert_site(array|ServerRequestInterface|Site $sitedata): Error|str
      * @param Site $site       Site object.
      * @param bool $update     Whether this is an existing site or a new site.
      */
-    Action::getInstance()->doAction('cms_after_insert_site_data', $siteId->toNative(), $site, $update);
+    Devflow::$PHP->hook->action->doAction('cms_after_insert_site_data', $siteId->toNative(), $site, $update);
 
     return $siteId->toNative();
 }
@@ -1109,7 +1104,7 @@ function cms_delete_site(string $siteId): Error|string
      * @param string $id      Site ID.
      * @param Site   $oldSite Data object of site to be deleted.
      */
-    Action::getInstance()->doAction('delete_site', $siteId, $oldSite);
+    Devflow::$PHP->hook->action->doAction('delete_site', $siteId, $oldSite);
 
     try {
         $command = new DeleteSiteCommand([
@@ -1137,7 +1132,7 @@ function cms_delete_site(string $siteId): Error|string
      * @param string $id    Site ID.
      * @param Site $oldSite Site object that was deleted.
      */
-    Action::getInstance()->doAction('deleted_site', $siteId, $oldSite);
+    Devflow::$PHP->hook->action->doAction('deleted_site', $siteId, $oldSite);
 
     SiteCachePsr16::clean($oldSite);
 
@@ -1215,7 +1210,7 @@ function cms_delete_site_user(string $userId, array $params = []): Error|bool
                  * @param string $userId  ID of user to be deleted.
                  * @param array $params   User and site parameters (assign_id, role and site_id).
                  */
-                Action::getInstance()->doAction('reassign_sites', $userId, $params);
+                Devflow::$PHP->hook->action->doAction('reassign_sites', $userId, $params);
             }
         }
     } else {
@@ -1241,7 +1236,7 @@ function cms_delete_site_user(string $userId, array $params = []): Error|bool
                  * @param string  $siteId Site ID.
                  * @param Site    $site   Site object that was deleted.
                  */
-                Action::getInstance()->doAction('deleted_site', $site->id, $site);
+                Devflow::$PHP->hook->action->doAction('deleted_site', $site->id, $site);
             }
         }
     }
@@ -1253,7 +1248,7 @@ function cms_delete_site_user(string $userId, array $params = []): Error|bool
      * @param string $userId ID of the user to delete.
      * @param array $params  User parameters (assign_id and role).
      */
-    Action::getInstance()->doAction('delete_site_user', $userId, $params);
+    Devflow::$PHP->hook->action->doAction('delete_site_user', $userId, $params);
 
     /**
      * Finally delete the user and metadata.
@@ -1297,7 +1292,7 @@ function cms_delete_site_user(string $userId, array $params = []): Error|bool
      * @param string $userId   ID of the user who was deleted.
      * @param array $params    User parameters (assign_id and role).
      */
-    Action::getInstance()->doAction('deleted_site_user', $userId, $params);
+    Devflow::$PHP->hook->action->doAction('deleted_site_user', $userId, $params);
 
     return true;
 }
@@ -1403,7 +1398,7 @@ function new_site_schema(string $siteId, Site $site, bool $update): bool|string
      * }
      * @param object $userdata   User object.
      */
-    $meta = Filter::getInstance()->applyFilter('new_site_usermeta', $meta, $userdata);
+    $meta = Devflow::$PHP->hook->filter->applyFilter('new_site_usermeta', $meta, $userdata);
     // Update user meta.
     foreach ($meta as $key => $value) {
         update_usermeta($userdata->id, $sitePrefix . $key, $value);
@@ -1430,7 +1425,7 @@ function cms_site_status_label(string $status): string
     /**
      * Filters the label result.
      */
-    return Filter::getInstance()->applyFilter('site_status_label', $label[$status], $status);
+    return Devflow::$PHP->hook->filter->applyFilter('site_status_label', $label[$status], $status);
 }
 
 /**
@@ -1510,7 +1505,7 @@ function get_site_name(string $siteId): string
      * @param string    $name The site's name.
      * @param string    $siteId The site ID.
      */
-    return Filter::getInstance()->applyFilter('site_name', $name, $siteId);
+    return Devflow::$PHP->hook->filter->applyFilter('site_name', $name, $siteId);
 }
 
 /**
@@ -1548,7 +1543,7 @@ function get_site_domain(string $siteId): string
      * @param string    $domain The site's domain.
      * @param string    $siteId The site ID.
      */
-    return Filter::getInstance()->applyFilter('site_domain', $domain, $siteId);
+    return Devflow::$PHP->hook->filter->applyFilter('site_domain', $domain, $siteId);
 }
 
 /**
@@ -1586,7 +1581,7 @@ function get_site_path(string $siteId): string
      * @param string    $path The site's path.
      * @param string    $siteId The site ID.
      */
-    return Filter::getInstance()->applyFilter('site_path', $path, $siteId);
+    return Devflow::$PHP->hook->filter->applyFilter('site_path', $path, $siteId);
 }
 
 /**
@@ -1624,7 +1619,7 @@ function get_site_owner(string $siteId): string
      * @param string    $owner The site's owner.
      * @param string    $siteId The site ID.
      */
-    return Filter::getInstance()->applyFilter('site_owner', $owner, $siteId);
+    return Devflow::$PHP->hook->filter->applyFilter('site_owner', $owner, $siteId);
 }
 
 /**
@@ -1662,7 +1657,7 @@ function get_site_status(string $siteId): string
      * @param string    $status The site's status.
      * @param string    $siteId The site ID.
      */
-    return Filter::getInstance()->applyFilter('site_status', $status, $siteId);
+    return Devflow::$PHP->hook->filter->applyFilter('site_status', $status, $siteId);
 }
 
 /**
@@ -1694,7 +1689,7 @@ function cms_unique_site_slug(string $originalSlug, string $originalTitle, strin
      * @param string $originalTitle The site's original title before slugified.
      * @param string $siteId        The site's unique id.
      */
-    return Filter::getInstance()->applyFilter(
+    return Devflow::$PHP->hook->filter->applyFilter(
         'cms_unique_site_slug',
         $siteSlug,
         $originalSlug,
@@ -1726,7 +1721,7 @@ function get_siteinfo(string $show = '', string $filter = 'raw'): string
         'timezone' => Options::factory()->read(optionKey: 'site_timezone'),
         'admin_email' => Options::factory()->read(optionKey: 'admin_email'),
         'locale' => Options::factory()->read(optionKey: 'site_locale'),
-        'release' => Devflow::inst()->release(),
+        'release' => Devflow::release(),
     ];
 
     $output = $show === '' ? $dispatch['sitename'] : $dispatch[$show];
@@ -1748,7 +1743,7 @@ function get_siteinfo(string $show = '', string $filter = 'raw'): string
              * @param mixed $output The URL returned by siteinfo().
              * @param mixed $show   Type of information requested.
              */
-            $output = Filter::getInstance()->applyFilter('siteinfo_url', $output, $show);
+            $output = Devflow::$PHP->hook->filter->applyFilter('siteinfo_url', $output, $show);
         } else {
             /**
              * Filters the site information returned by get_siteinfo().
@@ -1757,7 +1752,7 @@ function get_siteinfo(string $show = '', string $filter = 'raw'): string
              * @param mixed $output The requested non-URL site information.
              * @param mixed $show   Type of information requested.
              */
-            $output = Filter::getInstance()->applyFilter('siteinfo', $output, $show);
+            $output = Devflow::$PHP->hook->filter->applyFilter('siteinfo', $output, $show);
         }
     }
 
@@ -1806,7 +1801,7 @@ function switch_to_site(?string $siteKey = null): bool
     Registry::getInstance()->set('switched_stack', $stacked);
 
     if ($siteKey === $prevSiteKey) {
-        Action::getInstance()->doAction('switch_site', $siteKey, $prevSiteKey, 'switch');
+        Devflow::$PHP->hook->action->doAction('switch_site', $siteKey, $prevSiteKey, 'switch');
 
         Registry::getInstance()->set('switched', true);
 
@@ -1817,7 +1812,7 @@ function switch_to_site(?string $siteKey = null): bool
     Registry::getInstance()->set('tblPrefix', dfdb()->getSitePrefix());
     Registry::getInstance()->set('siteKey', $siteKey);
 
-    Action::getInstance()->doAction('switch_site', $siteKey, $prevSiteKey, 'switch');
+    Devflow::$PHP->hook->action->doAction('switch_site', $siteKey, $prevSiteKey, 'switch');
 
     Registry::getInstance()->set('switched', true);
 
@@ -1844,7 +1839,7 @@ function restore_current_site(): bool
     $prevSiteKey = get_current_site_key();
 
     if ($siteKey === $prevSiteKey) {
-        Action::getInstance()->doAction('switch_site', $siteKey, $prevSiteKey, 'restore');
+        Devflow::$PHP->hook->action->doAction('switch_site', $siteKey, $prevSiteKey, 'restore');
 
         // If we still have items in the switched stack, consider ourselves still 'switched'.
         Registry::getInstance()->set('switched', !empty($arrayStack));
@@ -1856,7 +1851,7 @@ function restore_current_site(): bool
     Registry::getInstance()->set('siteKey', $siteKey);
     Registry::getInstance()->set('tblPrefix', dfdb()->getSitePrefix());
 
-    Action::getInstance()->doAction('switch_site', $siteKey, $prevSiteKey, 'restore');
+    Devflow::$PHP->hook->action->doAction('switch_site', $siteKey, $prevSiteKey, 'restore');
 
     // If we still have items in the switched stack, consider ourselves still 'switched'.
     Registry::getInstance()->set('switched', !empty($arrayStack));

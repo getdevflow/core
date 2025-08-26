@@ -63,7 +63,7 @@ EOT
     protected function getCurrentRelease(): string
     {
         $updater = new Updater();
-        $updater->setCurrentVersion(Devflow::inst()->release());
+        $updater->setCurrentVersion(Devflow::release());
         $updater->setUpdateUrl(updateUrl: updater_server_url() . '/update-check');
 
         if ($updater->checkUpdate() !== false) {
@@ -72,7 +72,7 @@ EOT
             }
         }
 
-        return Devflow::inst()->release();
+        return Devflow::release();
     }
 
     protected function checkExternalFile($url): mixed
@@ -116,7 +116,7 @@ EOT
         $zip = new ZipArchive();
         $file = sprintf(updater_server_url() . '/release/%s.zip', $releaseValue);
 
-        if (version_compare(Devflow::inst()->release(), $releaseValue, '<')) {
+        if (version_compare(Devflow::release(), $releaseValue, '<')) {
             $remoteUpdateCheck = remote_file_exists(updater_server_url() . '/update-check/update.json');
             $zipFile = sprintf('%s.zip', $releaseValue);
             if ($remoteUpdateCheck && $this->checkExternalFile($file) === 200) {

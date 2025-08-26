@@ -19,8 +19,6 @@ use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\SimpleCache\InvalidArgumentException;
-use Qubus\EventDispatcher\ActionFilter\Action;
-use Qubus\EventDispatcher\ActionFilter\Filter;
 use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
 use Qubus\Exception\Http\Client\NotFoundException;
@@ -158,7 +156,7 @@ function ae(string $perm): string
  */
 function cms_authenticate(string $login, string $password, string $rememberme): ResponseInterface
 {
-    $dfdb = Devflow::inst()->dfdb;
+    $dfdb = dfdb();
 
     $request = new ServerRequest();
 
@@ -170,7 +168,7 @@ function cms_authenticate(string $login, string $password, string $rememberme): 
     $user = $dfdb->getRow($dfdb->prepare($sql, [$login, $login]), Database::ARRAY_A);
 
     if (is_false__($user)) {
-        Devflow::$APP->flash->error(
+        Devflow::$PHP->flash->error(
             sprintf(
                 t__(
                     msgid: 'Sorry, there was an error.',
@@ -189,14 +187,14 @@ function cms_authenticate(string $login, string $password, string $rememberme): 
      * @param array $user User data array.
      * @param string $rememberme Whether to remember the user.
      */
-    Filter::getInstance()->applyFilter('cms_auth_cookie', $user, $rememberme);
+    Devflow::$PHP->hook->filter->applyFilter('cms_auth_cookie', $user, $rememberme);
 
-    $redirectTo = Filter::getInstance()->applyFilter(
+    $redirectTo = Devflow::$PHP->hook->filter->applyFilter(
         'authenticate_redirect_to',
         $request->getParsedBody()['redirect_to'] ?? admin_url()
     );
 
-    Devflow::$APP->flash->success(
+    Devflow::$PHP->flash->success(
         sprintf(
             t__(
                 msgid: 'Login was successful. Welcome <strong>%s</strong> to the admin dashboard.',
@@ -230,7 +228,7 @@ function cms_authenticate_user(string $login, string $password, string $remember
 
     if (empty($login) || empty($password)) {
         if (empty($login)) {
-            Devflow::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 t__(
                     msgid: '<strong>ERROR</strong>: The username/email field is empty.',
                     domain: 'devflow'
@@ -240,7 +238,7 @@ function cms_authenticate_user(string $login, string $password, string $remember
         }
 
         if (empty($password)) {
-            Devflow::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 t__(
                     msgid: '<strong>ERROR</strong>: The password field is empty.',
                     domain: 'devflow'
@@ -254,7 +252,7 @@ function cms_authenticate_user(string $login, string $password, string $remember
         $user = get_user_by('email', $login);
 
         if (is_false__($user)) {
-            Devflow::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 t__(
                     msgid: '<strong>ERROR</strong>: Invalid email address.',
                     domain: 'devflow'
@@ -266,7 +264,7 @@ function cms_authenticate_user(string $login, string $password, string $remember
         $user = get_user_by('login', $login);
 
         if (is_false__($user)) {
-            Devflow::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 t__(
                     msgid: '<strong>ERROR</strong>: Invalid username.',
                     domain: 'devflow'
@@ -277,7 +275,7 @@ function cms_authenticate_user(string $login, string $password, string $remember
     }
 
     if (!Password::verify($password, $user->pass)) {
-        Devflow::$APP->flash->error(
+        Devflow::$PHP->flash->error(
             t__(
                 msgid: '<strong>ERROR</strong>: The password you entered is incorrect.',
                 domain: 'devflow'
@@ -294,7 +292,7 @@ function cms_authenticate_user(string $login, string $password, string $remember
      * @param string $password User's password.
      * @param string $rememberme Whether to remember the user.
      */
-    return Filter::getInstance()->applyFilter('cms_authenticate_user', $login, $password, $rememberme);
+    return Devflow::$PHP->hook->filter->applyFilter('cms_authenticate_user', $login, $password, $rememberme);
 }
 
 /**
@@ -319,7 +317,7 @@ function cms_set_auth_cookie(array $user, string $rememberme = ''): void
          *
          * @file App/Shared/Helpers/auth.php
          */
-        $expire = Filter::getInstance()->applyFilter(
+        $expire = Devflow::$PHP->hook->filter->applyFilter(
             'auth_cookie_expiration',
             Options::factory()->read('cookieexpire', 172800)
         );
@@ -329,7 +327,7 @@ function cms_set_auth_cookie(array $user, string $rememberme = ''): void
          *
          * @file App/Shared/Helpers/auth.php
          */
-        $expire = Filter::getInstance()->applyFilter(
+        $expire = Devflow::$PHP->hook->filter->applyFilter(
             'auth_cookie_expiration',
             config('cookies.lifetime') ?? 86400
         );
@@ -350,7 +348,7 @@ function cms_set_auth_cookie(array $user, string $rememberme = ''): void
      * @param array $authCookie Authentication cookie.
      * @param int   $expire  Duration in seconds the authentication cookie should be valid.
      */
-    Action::getInstance()->doAction('set_auth_cookie', $authCookie, $expire);
+    Devflow::$PHP->hook->action->doAction('set_auth_cookie', $authCookie, $expire);
 
     $cookies->setSecureCookie($authCookie);
 }
@@ -370,7 +368,7 @@ function cms_clear_auth_cookie(): void
      *
      * @file App/Shared/Helpers/auth.php
      */
-    Action::getInstance()->doAction('clear_auth_cookie');
+    Devflow::$PHP->hook->action->doAction('clear_auth_cookie');
 
     $vars1 = [];
     parse_str($cookies->get('USERCOOKIEID'), $vars1);
@@ -423,7 +421,7 @@ function cms_clear_auth_cookie(): void
  */
 function login_form_show_message(): void
 {
-    echo Filter::getInstance()->applyFilter('login_form_show_message', Devflow::$APP->flash->display());
+    echo Devflow::$PHP->hook->filter->applyFilter('login_form_show_message', Devflow::$PHP->flash->display());
 }
 
 /**

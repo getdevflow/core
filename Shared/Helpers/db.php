@@ -42,7 +42,6 @@ use PDOException;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Psr\SimpleCache\InvalidArgumentException;
-use Qubus\EventDispatcher\ActionFilter\Filter;
 use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
 use Qubus\Http\Session\SessionException;
@@ -81,14 +80,11 @@ function dfdb(): Database
  * @param string $type Type of array to request metadata for. (e.g. content, user, product).
  * @param string $id ID of the array to retrieve its subtype.
  * @return string The array subtype or an empty string if unspecified subtype.
- * @throws CommandPropertyNotFoundException
  * @throws ContainerExceptionInterface
  * @throws Exception
  * @throws InvalidArgumentException
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
- * @throws TypeException
- * @throws UnresolvableQueryHandlerException
  */
 function get_object_subtype(string $type, string $id): string
 {
@@ -124,7 +120,7 @@ function get_object_subtype(string $type, string $id): string
         $objectSubtype = 'product';
     }
 
-    return Filter::getInstance()->applyFilter("get_object_subtype_{$type}", $objectSubtype, $id);
+    return Devflow::$PHP->hook->filter->applyFilter("get_object_subtype_{$type}", $objectSubtype, $id);
 }
 
 /**
@@ -134,10 +130,9 @@ function get_object_subtype(string $type, string $id): string
  * @param string $title Text to be slugified.
  * @param string $table Table the text is saved to (i.e. content, contenttype, site, product)
  * @return string Slug.
- * @throws ContainerExceptionInterface
  * @throws Exception
- * @throws NotFoundExceptionInterface
  * @throws ReflectionException
+ * @throws TypeException
  */
 function cms_slugify(string $title, string $table): string
 {
@@ -237,6 +232,7 @@ function cms_slugify(string $title, string $table): string
  * @file App/Shared/Helpers/db.php
  * @return object[]
  * @throws ReflectionException
+ * @throws TypeException
  * @throws UnresolvableQueryHandlerException
  */
 function tinymce_link_list(): array
@@ -268,10 +264,9 @@ function tinymce_link_list(): array
  * @param string $contentTypeId Content Type id to check against.
  * @param string $slug Slug to search for.
  * @return bool Returns true if content type slug exists or false otherwise.
- * @throws ContainerExceptionInterface
  * @throws Exception
- * @throws NotFoundExceptionInterface
  * @throws ReflectionException
+ * @throws TypeException
  */
 function if_content_type_slug_exists(string $contentTypeId, string $slug): bool
 {
@@ -313,10 +308,9 @@ function if_content_type_slug_exists(string $contentTypeId, string $slug): bool
  * @param string $slug Slug to search for.
  * @param string $contentType The content type to filter.
  * @return bool Returns true if content slug exists or false otherwise.
- * @throws ContainerExceptionInterface
  * @throws Exception
- * @throws NotFoundExceptionInterface
  * @throws ReflectionException
+ * @throws TypeException
  */
 function if_content_slug_exists(string $contentId, string $slug, string $contentType): bool
 {
@@ -359,10 +353,9 @@ function if_content_slug_exists(string $contentId, string $slug, string $content
  * @param string $siteId Site id to check against.
  * @param string $slug Slug to search for.
  * @return bool Returns true if site slug exists or false otherwise.
- * @throws ContainerExceptionInterface
  * @throws Exception
- * @throws NotFoundExceptionInterface
  * @throws ReflectionException
+ * @throws TypeException
  */
 function if_site_slug_exists(string $siteId, string $slug): bool
 {
@@ -403,10 +396,9 @@ function if_site_slug_exists(string $siteId, string $slug): bool
  * @param string $productId Product id to check against.
  * @param string $slug Slug to search for.
  * @return bool Returns true if site slug exists or false otherwise.
- * @throws ContainerExceptionInterface
  * @throws Exception
- * @throws NotFoundExceptionInterface
  * @throws ReflectionException
+ * @throws TypeException
  */
 function if_product_slug_exists(string $productId, string $slug): bool
 {
@@ -446,10 +438,9 @@ function if_product_slug_exists(string $productId, string $slug): bool
  * @file App/Shared/Helpers/db.php
  * @param string $contentId Content id to check.
  * @return bool|array| False if content has no children or array of children if true.
- * @throws ContainerExceptionInterface
  * @throws Exception
- * @throws NotFoundExceptionInterface
  * @throws ReflectionException
+ * @throws TypeException
  */
 function is_content_parent(string $contentId): bool|array
 {
@@ -493,10 +484,9 @@ function is_content_parent(string $contentId): bool|array
  * @file App/Shared/Helpers/db.php
  * @param string $contentType Content Type slug to check for.
  * @return bool Returns true if content type exists or false otherwise.
- * @throws ContainerExceptionInterface
  * @throws Exception
- * @throws NotFoundExceptionInterface
  * @throws ReflectionException
+ * @throws TypeException
  */
 function if_content_type_exists(string $contentType): bool
 {
@@ -536,11 +526,10 @@ function if_content_type_exists(string $contentType): bool
  * @param string $userId ID of user being removed.
  * @param string $assignId ID of user to whom content will be assigned.
  * @return bool
- * @throws ContainerExceptionInterface
  * @throws Exception
- * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  * @throws SessionException
+ * @throws TypeException
  */
 function reassign_content(string $userId, string $assignId): bool
 {
@@ -579,7 +568,7 @@ function reassign_content(string $userId, string $assignId): bool
 
             return true;
         } catch (PDOException | \Exception $e) {
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 sprintf(
                     esc_html__(
                         string: 'Reassign content error: %s',
@@ -658,7 +647,7 @@ function reassign_sites(string $userId, array $params = []): bool
 
             return true;
         } catch (PDOException $e) {
-            Devflow::inst()::$APP->flash->error(
+            Devflow::$PHP->flash->error(
                 sprintf(
                     esc_html__(
                         string: 'Reassign site error: %s',
@@ -966,7 +955,7 @@ function cms_nodeq_login_details(): void
                 $message = process_email_html($message, esc_html__(string: 'New Account', domain: 'devflow'));
                 $headers[] = sprintf("From: %s <auto-reply@%s>", $siteName, $r['domain_name']);
                 $headers[] = 'Content-Type: text/html; charset="UTF-8"';
-                $headers[] = sprintf("X-Mailer: Devflow %s", Devflow::inst()->release());
+                $headers[] = sprintf("X-Mailer: Devflow %s", Devflow::release());
                 try {
                     mail(
                         $user->email,
@@ -978,7 +967,7 @@ function cms_nodeq_login_details(): void
                         $headers
                     );
                 } catch (\PHPMailer\PHPMailer\Exception $e) {
-                    Devflow::inst()::$APP->flash->error($e->getMessage());
+                    Devflow::$PHP->flash->error($e->getMessage());
                 }
 
                 $upd = $nodeq->where('_id', esc_html($r['_id']));
@@ -1069,7 +1058,7 @@ function cms_nodeq_reset_password(): void
                 $message = process_email_html($message, esc_html__(string: 'Password Reset', domain: 'devflow'));
                 $headers[] = sprintf("From: %s <auto-reply@%s>", $siteName, $r['domain_name']);
                 $headers[] = 'Content-Type: text/html; charset="UTF-8"';
-                $headers[] = sprintf("X-Mailer: Devflow %s", Devflow::inst()->release());
+                $headers[] = sprintf("X-Mailer: Devflow %s", Devflow::release());
                 try {
                     mail(
                         $user->email,
@@ -1081,7 +1070,7 @@ function cms_nodeq_reset_password(): void
                         $headers
                     );
                 } catch (\PHPMailer\PHPMailer\Exception $e) {
-                    Devflow::inst()::$APP->flash->error($e->getMessage());
+                    Devflow::$PHP->flash->error($e->getMessage());
                 }
 
                 $upd = $nodeq->where(

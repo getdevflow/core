@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Shared\Helpers;
 
+use App\Application\Devflow;
 use App\Shared\Services\Utils;
-use Qubus\EventDispatcher\ActionFilter\Filter;
 use Qubus\Exception\Exception;
 use Qubus\Http\Request;
 use ReflectionException;
@@ -74,7 +74,7 @@ function set_url_scheme(string $url, ?string $scheme = null): string
      * @param string|null $origScheme Scheme requested for the URL. One of 'http', 'https', 'login',
      *                                 'admin', 'relative', or null.
      */
-    return Filter::getInstance()->applyFilter('set_url_scheme', $url, $scheme, $origScheme);
+    return Devflow::$PHP->hook->filter->applyFilter('set_url_scheme', $url, $scheme, $origScheme);
 }
 
 /**
@@ -105,7 +105,7 @@ function add_query_arg(string $key, string $value, string $url): string
         $result .= '//' . $uri['host'];
     }
     if (isset($uri['port'])) {
-        $result .= Filter::getInstance()->applyFilter('query_arg_port', ':' . $uri['port']);
+        $result .= Devflow::$PHP->hook->filter->applyFilter('query_arg_port', ':' . $uri['port']);
     }
     if ($uri['path']) {
         $result .= $uri['path'];
@@ -163,7 +163,7 @@ function cms_site_url(string $path = '', ?string $scheme = null): string
      * @param string|null $scheme Scheme to give the site url context. Accepts 'http', 'https', 'login',
      *                            'admin', 'relative' or null.
      */
-    return Filter::getInstance()->applyFilter('site_url', $url, $path, $scheme);
+    return Devflow::$PHP->hook->filter->applyFilter('site_url', $url, $path, $scheme);
 }
 
 /**
@@ -195,7 +195,7 @@ function cms_admin_url(string $path = '', string $scheme = 'admin'): string
      * @param string $url    The complete admin area url including scheme and path before escaped.
      * @param string $path   Path relative to the admin area url. Blank string if no path is specified.
      */
-    return Filter::getInstance()->applyFilter('admin_url', $escUrl, $url, $path);
+    return Devflow::$PHP->hook->filter->applyFilter('admin_url', $escUrl, $url, $path);
 }
 
 /**
@@ -243,7 +243,7 @@ function cms_home_url(string $path = '', string $scheme = null): string
      * @param string|null $scheme  Scheme to give the site url context. Accepts 'http', 'https',
      *                             'relative' or null.
      */
-    return Filter::getInstance()->applyFilter('home_url', $escUrl, $url, $path, $origScheme);
+    return Devflow::$PHP->hook->filter->applyFilter('home_url', $escUrl, $url, $path, $origScheme);
 }
 
 /**
@@ -296,7 +296,7 @@ function cms_login_url(string $redirect = '', string $path = '', ?string $scheme
      * @param string|null $scheme  Scheme to give the login url context. Accepts 'http', 'https',
      *                             'relative' or null.
      */
-    return Filter::getInstance()->applyFilter('login_url', $loginUrl, $redirect, $path, $scheme);
+    return Devflow::$PHP->hook->filter->applyFilter('login_url', $loginUrl, $redirect, $path, $scheme);
 }
 
 /**
@@ -349,7 +349,7 @@ function cms_logout_url(string $redirect = '', string $path = '', ?string $schem
      * @param string|null $scheme  Scheme to give the logout url context. Accepts 'http', 'https',
      *                             'relative' or null.
      */
-    return Filter::getInstance()->applyFilter('logout_url', $logoutUrl, $redirect, $path, $scheme);
+    return Devflow::$PHP->hook->filter->applyFilter('logout_url', $logoutUrl, $redirect, $path, $scheme);
 }
 
 /**
@@ -491,7 +491,7 @@ function admin_login_url(string $redirect = '', string $path = '', ?string $sche
      * @param string|null $scheme Scheme to give the login url context. Accepts 'http', 'https',
      *                            'relative' or null.
      */
-    return Filter::getInstance()->applyFilter('admin_login_url', $loginUrl, $redirect, $path, $scheme);
+    return Devflow::$PHP->hook->filter->applyFilter('admin_login_url', $loginUrl, $redirect, $path, $scheme);
 }
 
 /**
@@ -544,5 +544,5 @@ function admin_logout_url(string $redirect = '', string $path = '', ?string $sch
      * @param string|null $scheme Scheme to give the logout url context. Accepts 'http', 'https',
      *                            'relative' or null.
      */
-    return Filter::getInstance()->applyFilter('admin_logout_url', $logoutUrl, $redirect, $path, $scheme);
+    return Devflow::$PHP->hook->filter->applyFilter('admin_logout_url', $logoutUrl, $redirect, $path, $scheme);
 }

@@ -15,15 +15,18 @@ use Psr\SimpleCache\InvalidArgumentException;
 use Qubus\Config\ConfigContainer;
 use Qubus\Dbal\Schema;
 use Qubus\Error\Error;
+use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
 use Qubus\Expressive\QueryBuilder;
 use ReflectionException;
 
+use function App\Shared\Helpers\is_multisite;
 use function array_key_exists;
 use function array_map;
+use function array_merge;
 use function array_shift;
 use function array_values;
-use function Codefy\Framework\Helpers\orm;
+use function Codefy\Framework\Helpers\qb;
 use function count;
 use function func_get_args;
 use function get_object_vars;
@@ -51,7 +54,7 @@ final class NativePdoDatabase implements Database
 
     protected ?Schema $schema = null;
 
-    protected ?string $connection = null;
+    protected ?string $connectionType = null;
 
     public array|false $lastResult;
 
@@ -61,7 +64,7 @@ final class NativePdoDatabase implements Database
 
     public string $prefix = '';
 
-    public string $siteKey = '';
+    public ?string $siteKey = null;
 
     public array $siteTables = [
         'option',
@@ -114,14 +117,14 @@ final class NativePdoDatabase implements Database
         protected PDO $pdo,
         protected ConfigContainer $configContainer,
     ) {
-        $this->connection = $this->configContainer->getConfigKey(key: 'database.default');
+        $this->connectionType = $this->configContainer->getConfigKey(key: 'database.default');
         $this->basePrefix = $this->configContainer->getConfigKey(
-            key: "database.connections.{$this->connection}.prefix"
+            key: "database.connections.{$this->connectionType}.prefix"
         );
 
         $this->siteKey = Registry::getInstance()->has(id: 'siteKey') ?
         Registry::getInstance()->get('siteKey') :
-        $this->basePrefix;
+        null;
 
         $this->sitePrefix = $this->siteKey ?? $this->basePrefix;
         $this->prefix = $this->sitePrefix;
@@ -474,7 +477,7 @@ final class NativePdoDatabase implements Database
     public function schema(): Schema
     {
         if ($this->schema === null) {
-            $this->schema = orm()->schema();
+            $this->schema = qb()->schema();
         }
 
         return $this->schema;
@@ -485,7 +488,7 @@ final class NativePdoDatabase implements Database
      */
     public function qb(): ?QueryBuilder
     {
-        return orm();
+        return qb();
     }
 
     /**
@@ -519,9 +522,10 @@ final class NativePdoDatabase implements Database
     /**
      * Sets the table prefix for Devflow tables.
      *
-     * @param ?string $prefix          Alphanumeric name for the new prefix.
+     * @param ?string $prefix Alphanumeric name for the new prefix.
      * @param bool $setTableNames Optional. Whether the table names, e.g. Database::$post, should be updated or not.
      * @return string|Error Old prefix or Error on error
+     * @throws TypeException
      */
     public function setPrefix(?string $prefix = null, bool $setTableNames = true): Error|string
     {
@@ -542,8 +546,8 @@ final class NativePdoDatabase implements Database
         $this->basePrefix = $prefix;
 
         if ($setTableNames) {
-            foreach ($this->tables('global') as $table => $prefixed_table) {
-                $this->{$table} = $prefixed_table;
+            foreach ($this->tables('global') as $table => $prefixedTable) {
+                $this->{$table} = $prefixedTable;
             }
 
             if (empty($this->siteKey)) {
@@ -552,8 +556,8 @@ final class NativePdoDatabase implements Database
 
             $this->sitePrefix = $this->getSitePrefix();
 
-            foreach ($this->tables('site') as $table => $prefixed_table) {
-                $this->{$table} = $prefixed_table;
+            foreach ($this->tables('site') as $table => $prefixedTable) {
+                $this->{$table} = $prefixedTable;
             }
         }
         return $oldPrefix;
@@ -564,6 +568,7 @@ final class NativePdoDatabase implements Database
      *
      * @param string $siteKey Site id to use.
      * @return string Previous site id.
+     * @throws TypeException
      */
     public function setSiteKey(string $siteKey): string
     {
@@ -584,16 +589,22 @@ final class NativePdoDatabase implements Database
      *
      * @param string|null $siteKey Optional.
      * @return string Site prefix.
+     * @throws TypeException
      */
     public function getSitePrefix(?string $siteKey = null): string
     {
-        if (null === $siteKey) {
-            $siteKey = $this->siteKey;
-        }
-        if ($this->connection === $siteKey) {
-            return $this->basePrefix;
+        if (is_multisite()) {
+            if (null === $siteKey) {
+                $siteKey = $this->siteKey;
+            }
+
+            if (is_multisite() && is_null__($siteKey)) {
+                return $this->basePrefix;
+            } else {
+                return $siteKey;
+            }
         } else {
-            return $siteKey;
+            return $this->basePrefix;
         }
     }
 
@@ -611,25 +622,32 @@ final class NativePdoDatabase implements Database
      * @param bool $prefix (Optional) Whether to include table prefixes. Default: true.
      * @param string|null $siteKey (Optional) The siteKey to prefix. Default: Database::siteKey
      * @return string[] Table names.
+     * @throws TypeException
      */
     public function tables(string $scope = 'all', bool $prefix = true, ?string $siteKey = null): array
     {
-        $dispatch = [
-            'all' => array_merge(
-                [
-                    $this->globalTables,
-                    $this->siteTables
-                ],
-                [
-                    $this->msGlobalTables
-                ]
-            ),
-            'site' => $this->siteTables,
-            'global' => array_merge($this->globalTables, $this->msGlobalTables),
-            'ms_global' => $this->msGlobalTables
-        ];
-
-        $tables = $scope === '' ? $dispatch['all'] : $dispatch[$scope];
+        switch ($scope) {
+            case 'all':
+                $tables = array_merge($this->globalTables, $this->siteTables);
+                if (is_multisite()) {
+                    $tables = array_merge($tables, $this->msGlobalTables);
+                }
+                break;
+            case 'site':
+                $tables = $this->siteTables;
+                break;
+            case 'global':
+                $tables = $this->globalTables;
+                if (is_multisite()) {
+                    $tables = array_merge($tables, $this->msGlobalTables);
+                }
+                break;
+            case 'ms_global':
+                $tables = $this->msGlobalTables;
+                break;
+            default:
+                return [];
+        }
 
         if ($prefix) {
             if (!is_null__($siteKey)) {
@@ -637,8 +655,9 @@ final class NativePdoDatabase implements Database
             }
             $sitePrefix = $this->getSitePrefix($siteKey);
             $basePrefix = $this->basePrefix;
+            $globalTables = array_merge($this->globalTables, $this->msGlobalTables);
             foreach ($tables as $k => $table) {
-                if (in_array($table, $this->globalTables)) {
+                if (in_array($table, $globalTables, true)) {
                     $tables[$table] = $basePrefix . $table;
                 } else {
                     $tables[$table] = $sitePrefix . $table;

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Shared\Helpers;
 
+use App\Application\Devflow;
 use App\Infrastructure\Services\Options;
 use Codefy\Framework\Codefy;
 use Gettext\Loader\MoLoader;
@@ -12,7 +13,6 @@ use Gettext\TranslatorFunctions;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Psr\SimpleCache\InvalidArgumentException;
-use Qubus\EventDispatcher\ActionFilter\Filter;
 use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
 use ReflectionException;
@@ -73,7 +73,7 @@ function load_devflow_textdomain(): bool
         /**
          * Filter .mo file path for loading translations for a specific plugin text domain.
          */
-        $mofile = Filter::getInstance()->applyFilter('load_plugin_textdomain_mofile', $path, $domain);
+        $mofile = Devflow::$PHP->hook->filter->applyFilter('load_plugin_textdomain_mofile', $path, $domain);
         if (in_array($info['className'], array_column(active_plugins(), 'plugin_classname'))) {
             if (file_exists($path)) {
                 $translations[] = $loader->loadFile($mofile)->setDomain($domain);
@@ -90,7 +90,7 @@ function load_devflow_textdomain(): bool
         /**
          * Filter .mo file path for loading translations for a specific plugin text domain.
          */
-        $mofile = Filter::getInstance()->applyFilter('load_theme_textdomain_mofile', $path, $domain);
+        $mofile = Devflow::$PHP->hook->filter->applyFilter('load_theme_textdomain_mofile', $path, $domain);
         //if ($info['className'] === get_theme()) {
         if (file_exists($path)) {
             $translations[] = $loader->loadFile($mofile)->setDomain($domain);
@@ -100,7 +100,7 @@ function load_devflow_textdomain(): bool
     /**
      * Filter .mo file path for loading translations for the core text domain.
      */
-    $mofile = Filter::getInstance()->applyFilter(
+    $mofile = Devflow::$PHP->hook->filter->applyFilter(
         'load_core_textdomain_mofile',
         base_path(sprintf('locale/devflow-%s.mo', $locale)),
         $domain = 'devflow'
@@ -129,5 +129,5 @@ function load_core_locale(): string
 {
     $option = Options::factory();
     $locale = $option->read(optionKey: 'site_locale', default: config(key: 'app.locale'));
-    return Filter::getInstance()->applyFilter('core_locale', $locale);
+    return Devflow::$PHP->hook->filter->applyFilter('core_locale', $locale);
 }

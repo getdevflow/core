@@ -7,13 +7,13 @@ namespace App\Infrastructure\Http\Controllers;
 use App\Application\Devflow;
 use App\Domain\User\Model\User;
 use App\Infrastructure\Persistence\Database;
-use App\Infrastructure\Services\CmsUserSession;
 use App\Infrastructure\Services\NativePhpCookies;
 use App\Infrastructure\Services\Options;
 use App\Infrastructure\Services\UserAuth;
 use Codefy\CommandBus\Exceptions\CommandCouldNotBeHandledException;
 use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
 use Codefy\CommandBus\Exceptions\UnresolvableCommandHandlerException;
+use Codefy\Framework\Auth\UserSession;
 use Codefy\Framework\Factory\FileLoggerFactory;
 use Codefy\Framework\Http\BaseController;
 use Codefy\QueryBus\UnresolvableQueryHandlerException;
@@ -641,8 +641,8 @@ final class AdminUserController extends BaseController
             ];
             $session = $this->sessionService->makeSession($request);
 
-            /** @var CmsUserSession $user */
-            $user = $session->get(type: CmsUserSession::class);
+            /** @var UserSession $user */
+            $user = $session->get(type: UserSession::class);
             $user
                 ->withToken(token: get_user_value($userId, 'token'));
 
@@ -743,8 +743,8 @@ final class AdminUserController extends BaseController
             ];
             $session = $this->sessionService->makeSession($request);
 
-            /** @var CmsUserSession $user */
-            $user = $session->get(type: CmsUserSession::class);
+            /** @var UserSession $user */
+            $user = $session->get(type: UserSession::class);
             $user
                 ->withToken(token: get_user_value($userId, 'token'));
 

@@ -16,8 +16,6 @@ use PDOException;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Psr\SimpleCache\InvalidArgumentException;
-use Qubus\EventDispatcher\ActionFilter\Action;
-use Qubus\EventDispatcher\ActionFilter\Filter;
 use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
 use Qubus\View\Renderer;
@@ -62,7 +60,7 @@ function get_theme(): string
      *
      * @param string $theme Current theme's directory name.
      */
-    return Filter::getInstance()->applyFilter('theme', $siteTheme);
+    return Devflow::$PHP->hook->filter->applyFilter('theme', $siteTheme);
 }
 
 /**
@@ -129,14 +127,14 @@ function theme_url(string $path = '', string $theme = ''): string
      * @param string $theme   The theme file path to be relative to. Blank string if no theme
      *                        is specified.
      */
-    return Filter::getInstance()->applyFilter('themes_url', $url, $path, $theme);
+    return Devflow::$PHP->hook->filter->applyFilter('themes_url', $url, $path, $theme);
 }
 
 /**
  * Returns theme directory URI.
  *
  * @file App/Shared/Helpers/theme.php
- * @uses \Qubus\EventDispatcher\ActionFilter\Filter::getInstance()->applyFilter() Calls 'theme_directory_uri' filter.
+ * @uses \Qubus\EventDispatcher\ActionFilter\Devflow::$PHP->hook->filter->applyFilter() Calls 'theme_directory_uri' filter.
  * @return string Devflow theme directory uri.
  * @throws ContainerExceptionInterface
  * @throws Exception
@@ -153,14 +151,14 @@ function theme_directory_uri(): string
     $theme = str_replace('%2F', '/', rawurlencode(theme_name()));
     $themeRootUri = theme_url();
     $themeDirUri = $themeRootUri . $theme . '/';
-    return Filter::getInstance()->applyFilter('theme_directory_uri', $themeDirUri, $theme, $themeRootUri);
+    return Devflow::$PHP->hook->filter->applyFilter('theme_directory_uri', $themeDirUri, $theme, $themeRootUri);
 }
 
 /**
  * Returns javascript directory uri.
  *
  * @file App/Shared/Helpers/theme.php
- * @uses \Qubus\EventDispatcher\ActionFilter\Filter::getInstance()->applyFilter() Calls 'javascript_directory_uri' filter.
+ * @uses \Qubus\EventDispatcher\ActionFilter\Devflow::$PHP->hook->filter->applyFilter() Calls 'javascript_directory_uri' filter.
  * @return string Devflow javascript url.
  * @throws ContainerExceptionInterface
  * @throws Exception
@@ -176,7 +174,7 @@ function javascript_directory_uri(): string
     $theme = str_replace('%2F', '/', rawurlencode(theme_name()));
     $javascriptRootUri = theme_url();
     $javascriptDirUri = $javascriptRootUri . $theme . '/assets/js/';
-    return Filter::getInstance()->applyFilter(
+    return Devflow::$PHP->hook->filter->applyFilter(
         'javascript_directory_uri',
         $javascriptDirUri,
         $theme,
@@ -217,14 +215,14 @@ function theme_root(?string $filename = ''): string
      *
      * @param string $themeRoot Absolute path to themes' directory.
      */
-    return Filter::getInstance()->applyFilter('theme_root', $themeRoot);
+    return Devflow::$PHP->hook->filter->applyFilter('theme_root', $themeRoot);
 }
 
 /**
  * Retrieve less directory uri.
  *
  * @file App/Shared/Helpers/theme.php
- * @uses \Qubus\EventDispatcher\ActionFilter\Filter::getInstance()->applyFilter() Calls 'less_directory_uri' filter.
+ * @uses \Qubus\EventDispatcher\ActionFilter\Devflow::$PHP->hook->filter->applyFilter() Calls 'less_directory_uri' filter.
  * @return string Devflow less url.
  * @throws ContainerExceptionInterface
  * @throws Exception
@@ -240,7 +238,7 @@ function less_directory_uri(): string
     $theme = str_replace('%2F', '/', rawurlencode(theme_name()));
     $lessRootUri = theme_url();
     $lessDirUri = $lessRootUri . $theme . '/assets/less/';
-    return Filter::getInstance()->applyFilter('less_directory_uri', $lessDirUri, $theme, $lessRootUri);
+    return Devflow::$PHP->hook->filter->applyFilter('less_directory_uri', $lessDirUri, $theme, $lessRootUri);
 }
 
 /**
@@ -266,14 +264,14 @@ function css_directory(): string
      * @param string $style     Directory name of the active theme.
      * @param string $themeRoot Absolute path to themes directory.
      */
-    return Filter::getInstance()->applyFilter('stylesheet_directory', $styleDir, $style, $themeRoot);
+    return Devflow::$PHP->hook->filter->applyFilter('stylesheet_directory', $styleDir, $style, $themeRoot);
 }
 
 /**
  * Return css directory uri.
  *
  * @file App/Shared/Helpers/theme.php
- * @uses \Qubus\EventDispatcher\ActionFilter\Filter::getInstance()->applyFilter() Calls 'css_directory_uri' filter.
+ * @uses \Qubus\EventDispatcher\ActionFilter\Devflow::$PHP->hook->filter->applyFilter() Calls 'css_directory_uri' filter.
  * @return string Devflow css url.
  * @throws ContainerExceptionInterface
  * @throws Exception
@@ -289,14 +287,14 @@ function css_directory_uri(): string
     $theme = str_replace('%2F', '/', rawurlencode(theme_name()));
     $cssRootUri = theme_url();
     $cssDirUri = $cssRootUri . $theme . '/assets/css/';
-    return Filter::getInstance()->applyFilter('css_directory_uri', $cssDirUri, $theme, $cssRootUri);
+    return Devflow::$PHP->hook->filter->applyFilter('css_directory_uri', $cssDirUri, $theme, $cssRootUri);
 }
 
 /**
  * Retrieve image directory uri.
  *
  * @file App/Shared/Helpers/theme.php
- * @uses \Qubus\EventDispatcher\ActionFilter\Filter::getInstance()->applyFilter() Calls 'image_directory_uri' filter.
+ * @uses \Qubus\EventDispatcher\ActionFilter\Devflow::$PHP->hook->filter->applyFilter() Calls 'image_directory_uri' filter.
  * @return string Devflow image url.
  * @throws ContainerExceptionInterface
  * @throws Exception
@@ -312,7 +310,7 @@ function image_directory_uri(): string
     $theme = str_replace('%2F', '/', rawurlencode(theme_name()));
     $imageRootUri = theme_url();
     $imageDirUri = $imageRootUri . $theme . '/assets/images/';
-    return Filter::getInstance()->applyFilter('image_directory_uri', $imageDirUri, $theme, $imageRootUri);
+    return Devflow::$PHP->hook->filter->applyFilter('image_directory_uri', $imageDirUri, $theme, $imageRootUri);
 }
 
 /**
@@ -451,7 +449,7 @@ function load_active_theme(): void
          *
          * @param $string $plugin Class name of the plugin that was loaded.
          */
-        Action::getInstance()->doAction('theme_active', $activeTheme);
+        Devflow::$PHP->hook->action->doAction('theme_active', $activeTheme);
     }
 }
 

@@ -25,7 +25,7 @@ final class UpdaterCheckCommand extends ConsoleCommand
     public function handle(): int
     {
         $updater = new Updater();
-        $updater->setCurrentVersion(Devflow::inst()->release());
+        $updater->setCurrentVersion(Devflow::release());
         $updater->setUpdateUrl(updateUrl: updater_server_url() . '/update-check');
 
         if ($updater->checkUpdate() !== false) {
@@ -37,7 +37,7 @@ final class UpdaterCheckCommand extends ConsoleCommand
             } else {
                 $this->terminalInfo(sprintf(
                     'Devflow %s is at the latest release.',
-                    Devflow::inst()->release()
+                    Devflow::release()
                 ));
             }
         }

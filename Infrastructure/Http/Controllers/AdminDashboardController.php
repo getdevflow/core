@@ -7,6 +7,7 @@ namespace App\Infrastructure\Http\Controllers;
 use App\Application\Devflow;
 use App\Infrastructure\Persistence\Database;
 use App\Infrastructure\Services\UserAuth;
+use App\Shared\Services\ItemPoolObjectCacheFactory;
 use App\Shared\Services\SimpleCacheObjectCacheFactory;
 use Codefy\Framework\Http\BaseController;
 use Codefy\QueryBus\UnresolvableQueryHandlerException;
@@ -118,24 +119,33 @@ final class AdminDashboardController extends BaseController
             );
         }
 
+        $namespaces = [
+            $this->dfdb->prefix . 'content',
+            $this->dfdb->prefix . 'contentslug',
+            $this->dfdb->prefix . 'contenttype',
+            $this->dfdb->prefix . 'contentmeta',
+            $this->dfdb->prefix . 'products',
+            $this->dfdb->prefix . 'productslug',
+            $this->dfdb->prefix . 'productsku',
+            $this->dfdb->prefix . 'productmeta',
+            'useremail',
+            'userlogin',
+            'users',
+            'usertoken',
+            'sites',
+            'sitekey',
+            'siteslug',
+            $this->dfdb->prefix . 'options',
+            $this->dfdb->prefix . 'database'
+        ];
+
         if (true === SimpleCacheObjectCacheFactory::make(namespace: $this->dfdb->prefix . 'usermeta')->clear()) {
-            SimpleCacheObjectCacheFactory::make(namespace: $this->dfdb->prefix . 'content')->clear();
-            SimpleCacheObjectCacheFactory::make(namespace: $this->dfdb->prefix . 'contentslug')->clear();
-            SimpleCacheObjectCacheFactory::make(namespace: $this->dfdb->prefix . 'contenttype')->clear();
-            SimpleCacheObjectCacheFactory::make(namespace: $this->dfdb->prefix . 'contentmeta')->clear();
-            SimpleCacheObjectCacheFactory::make(namespace: $this->dfdb->prefix . 'products')->clear();
-            SimpleCacheObjectCacheFactory::make(namespace: $this->dfdb->prefix . 'productslug')->clear();
-            SimpleCacheObjectCacheFactory::make(namespace: $this->dfdb->prefix . 'productsku')->clear();
-            SimpleCacheObjectCacheFactory::make(namespace: $this->dfdb->prefix . 'productmeta')->clear();
-            SimpleCacheObjectCacheFactory::make(namespace: 'useremail')->clear();
-            SimpleCacheObjectCacheFactory::make(namespace: 'userlogin')->clear();
-            SimpleCacheObjectCacheFactory::make(namespace: 'users')->clear();
-            SimpleCacheObjectCacheFactory::make(namespace: 'usertoken')->clear();
-            SimpleCacheObjectCacheFactory::make(namespace: 'sites')->clear();
-            SimpleCacheObjectCacheFactory::make(namespace: 'sitekey')->clear();
-            SimpleCacheObjectCacheFactory::make(namespace: 'siteslug')->clear();
-            SimpleCacheObjectCacheFactory::make(namespace: $this->dfdb->prefix . 'options')->clear();
-            SimpleCacheObjectCacheFactory::make(namespace: $this->dfdb->prefix . 'database')->clear();
+            ItemPoolObjectCacheFactory::make()->clear();
+
+            foreach ($namespaces as $namespace) {
+                SimpleCacheObjectCacheFactory::make(namespace: $namespace)->clear();
+            }
+
             Devflow::$PHP->flash->success(
                 esc_html__(string: 'Cache flushed successfully.', domain: 'devflow')
             );
