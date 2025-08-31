@@ -68,7 +68,7 @@ EOT
 
         if ($updater->checkUpdate() !== false) {
             if ($updater->newVersionAvailable()) {
-                return $updater->getLatestVersion();
+                return $updater->latestVersion;
             }
         }
 

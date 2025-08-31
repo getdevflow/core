@@ -6,7 +6,6 @@ namespace App\Infrastructure\Services;
 
 use App\Application\Devflow;
 use App\Shared\Services\SimpleCacheObjectCacheFactory;
-use Codefy\Framework\Codefy;
 use Codefy\Framework\Factory\FileLoggerFactory;
 use Composer\Semver\Comparator;
 use Psr\Container\ContainerExceptionInterface;
@@ -14,6 +13,7 @@ use Psr\Container\NotFoundExceptionInterface;
 use Psr\Log\LoggerInterface;
 use Psr\SimpleCache\CacheInterface;
 use Psr\SimpleCache\InvalidArgumentException;
+use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
 use ReflectionException;
 use RuntimeException;
@@ -66,7 +66,9 @@ use const FILTER_VALIDATE_URL;
 
 final class Updater
 {
-    private ?string $latestVersion = null;
+    public ?string $latestVersion = null {
+        get => $this->latestVersion;
+    }
 
     private array $updates = [];
 
@@ -74,7 +76,9 @@ final class Updater
 
     private ?LoggerInterface $log = null;
 
-    private array $simulationResults = [];
+    private array $simulationResults = [] {
+        get => $this->simulationResults;
+    }
 
     private string $tempDir = '';
 
@@ -94,7 +98,7 @@ final class Updater
 
     protected string $updateUrl = 'https://example.com/updates/';
 
-    protected string $updateFile = 'update.json';
+    protected string $updateFile = 'releases.json';
 
     protected ?string $currentVersion = null;
 
@@ -127,6 +131,7 @@ final class Updater
      * @throws ReflectionException
      * @throws ContainerExceptionInterface
      * @throws NotFoundExceptionInterface
+     * @throws TypeException
      */
     public function __construct(?string $tempDir = null, ?string $installDir = null, int $maxExecutionTime = 60)
     {
@@ -309,16 +314,6 @@ final class Updater
     }
 
     /**
-     * Get the name of the latest version.
-     *
-     * @return string
-     */
-    public function getLatestVersion(): string
-    {
-        return $this->latestVersion;
-    }
-
-    /**
      * Get an array of versions which will be installed.
      *
      * @return array
@@ -332,16 +327,6 @@ final class Updater
         }
 
         return [];
-    }
-
-    /**
-     * Get the results of the last simulation.
-     *
-     * @return array
-     */
-    public function getSimulationResults(): array
-    {
-        return $this->simulationResults;
     }
 
     /**
@@ -466,15 +451,18 @@ final class Updater
         }
 
         // Check for latest version
-        foreach ($versions as $version => $updateUrl) {
-            if (Comparator::greaterThan($version, $this->currentVersion)) {
-                if (Comparator::greaterThan($version, $this->latestVersion)) {
-                    $this->latestVersion = $version;
+        foreach ($versions['releases'] as $parameter) {
+            $greaterThanEqualTo = Comparator::greaterThanOrEqualTo(Devflow::$PHP::MIN_PHP_VERSION, $parameter->min_php);
+
+            if (Comparator::greaterThan($parameter->version, $this->currentVersion)) {
+                if (Comparator::greaterThan($parameter->version, $this->latestVersion) && $greaterThanEqualTo) {
+                    $this->latestVersion = $parameter->version;
                 }
 
                 $this->updates[] = [
-                    'version' => $version,
-                    'url'     => $updateUrl,
+                    'version' => $parameter->version,
+                    'min_php' => $parameter->min_php,
+                    'url'     => $parameter->zip_url,
                 ];
             }
         }

@@ -32,7 +32,7 @@ final class UpdaterCheckCommand extends ConsoleCommand
             if ($updater->newVersionAvailable()) {
                 $this->terminalInfo(sprintf(
                     'Release %s is available',
-                    $updater->getLatestVersion()
+                    $updater->latestVersion
                 ));
             } else {
                 $this->terminalInfo(sprintf(
