@@ -12,8 +12,6 @@ use Codefy\Framework\Application;
 use Codefy\Framework\Factory\FileLoggerFactory;
 use Exception;
 use PDOException;
-use Psr\Container\ContainerExceptionInterface;
-use Psr\Container\NotFoundExceptionInterface;
 use Qubus\Exception\Data\TypeException;
 use Qubus\ValueObjects\Identity\Ulid;
 use Qubus\View\Renderer;
@@ -28,6 +26,7 @@ use function is_string;
 use function ltrim;
 use function preg_quote;
 use function preg_replace;
+use function Qubus\Security\Helpers\__observer;
 use function Qubus\Support\Helpers\add_trailing_slash;
 use function Qubus\Support\Helpers\is_false__;
 use function sprintf;
@@ -66,7 +65,7 @@ function plugin_basename(string $filename): string
 function register_activation_hook(string $filename, mixed $function): void
 {
     $pluginName = plugin_basename($filename);
-    Devflow::$PHP->hook->action->addAction(hook: "activate_{$pluginName}", callback: $function);
+    __observer()->action->addAction(hook: "activate_{$pluginName}", callback: $function);
 }
 
 /**
@@ -81,7 +80,7 @@ function register_activation_hook(string $filename, mixed $function): void
 function register_deactivation_hook(string $filename, mixed $function): void
 {
     $pluginName = plugin_basename($filename);
-    Devflow::$PHP->hook->action->addAction(hook: "deactivate_{$pluginName}", callback: $function);
+    __observer()->action->addAction(hook: "deactivate_{$pluginName}", callback: $function);
 }
 
 /**
@@ -223,7 +222,7 @@ function load_active_plugins(): void
              *
              * @param $string $plugin Class name of the plugin that was loaded.
              */
-            Devflow::$PHP->hook->action->doAction('plugin_loaded', $plugin->plugin_classname);
+            __observer()->action->doAction('plugin_loaded', $plugin->plugin_classname);
         }
     }
 }
@@ -233,8 +232,8 @@ function load_active_plugins(): void
  *
  * Defaults to the plugins directory URL if no arguments are supplied.
  *
- * @param string $path  Optional. Extra path appended to the end of the URL, including
- *                      the relative directory if $plugin is supplied. Default empty.
+ * @param string $path   Optional. Extra path appended to the end of the URL, including
+ *                       the relative directory if $plugin is supplied. Default empty.
  * @param string $plugin Optional. A full path to a file inside a plugin or mu-plugin.
  *                       The URL will be relative to its directory. Default empty.
  *                       Typically, this is done by passing `__FILE__` as the argument.
@@ -271,7 +270,7 @@ function plugin_url(string $path = '', string $plugin = ''): string
      * @param string $plugin  The plugin file path to be relative to. Blank string if no plugin
      *                        is specified.
      */
-    return Devflow::$PHP->hook->filter->applyFilter('plugins_url', $url, $path, $plugin);
+    return __observer()->filter->applyFilter('plugin.url', $url, $path, $plugin);
 }
 
 /**
@@ -285,7 +284,7 @@ function plugin_url(string $path = '', string $plugin = ''): string
 function plugin_dir_url(string $file): string
 {
     $url = add_trailing_slash(plugin_url('', $file));
-    return Devflow::$PHP->hook->filter->applyFilter('plugin_dir_url', $url, $file);
+    return __observer()->filter->applyFilter('plugin.dir.url', $url, $file);
 }
 
 /**

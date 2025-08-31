@@ -6,7 +6,6 @@ namespace App\Shared\Helpers;
 
 use App\Application\Devflow;
 use App\Infrastructure\Services\Options;
-use Codefy\Framework\Codefy;
 use Gettext\Loader\MoLoader;
 use Gettext\Translator;
 use Gettext\TranslatorFunctions;
@@ -24,6 +23,7 @@ use function Codefy\Framework\Helpers\public_path;
 use function file_exists;
 use function file_get_contents;
 use function in_array;
+use function Qubus\Security\Helpers\__observer;
 use function sprintf;
 
 /**
@@ -69,11 +69,11 @@ function load_devflow_textdomain(): bool
         // Locale domain
         $domain = $info['id'];
         // Absolute path to the .mo file.
-        $path = $info['path'] . 'locale' . Codefy::$PHP::DS . $domain . '-' . $locale . '.mo';
+        $path = $info['path'] . 'locale' . Devflow::$PHP::DS . $domain . '-' . $locale . '.mo';
         /**
          * Filter .mo file path for loading translations for a specific plugin text domain.
          */
-        $mofile = Devflow::$PHP->hook->filter->applyFilter('load_plugin_textdomain_mofile', $path, $domain);
+        $mofile = __observer()->filter->applyFilter('load.plugin.textdomain.mofile', $path, $domain);
         if (in_array($info['className'], array_column(active_plugins(), 'plugin_classname'))) {
             if (file_exists($path)) {
                 $translations[] = $loader->loadFile($mofile)->setDomain($domain);
@@ -86,22 +86,20 @@ function load_devflow_textdomain(): bool
         // Locale domain
         $domain = $info['id'];
         // Absolute path to the .mo file.
-        $path = $info['path'] . 'locale' . Codefy::$PHP::DS . $domain . '-' . $locale . '.mo';
+        $path = $info['path'] . 'locale' . Devflow::$PHP::DS . $domain . '-' . $locale . '.mo';
         /**
          * Filter .mo file path for loading translations for a specific plugin text domain.
          */
-        $mofile = Devflow::$PHP->hook->filter->applyFilter('load_theme_textdomain_mofile', $path, $domain);
-        //if ($info['className'] === get_theme()) {
+        $mofile = __observer()->filter->applyFilter('load.theme.textdomain.mofile', $path, $domain);
         if (file_exists($path)) {
             $translations[] = $loader->loadFile($mofile)->setDomain($domain);
         }
-        //}
     }
     /**
      * Filter .mo file path for loading translations for the core text domain.
      */
-    $mofile = Devflow::$PHP->hook->filter->applyFilter(
-        'load_core_textdomain_mofile',
+    $mofile = __observer()->filter->applyFilter(
+        'load.core.textdomain.mofile',
         base_path(sprintf('locale/devflow-%s.mo', $locale)),
         $domain = 'devflow'
     );
@@ -129,5 +127,5 @@ function load_core_locale(): string
 {
     $option = Options::factory();
     $locale = $option->read(optionKey: 'site_locale', default: config(key: 'app.locale'));
-    return Devflow::$PHP->hook->filter->applyFilter('core_locale', $locale);
+    return __observer()->filter->applyFilter('core.locale', $locale);
 }

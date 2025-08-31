@@ -57,6 +57,7 @@ use function Codefy\Framework\Helpers\mail;
 use function Codefy\Framework\Helpers\storage_path;
 use function count;
 use function md5;
+use function Qubus\Security\Helpers\__observer;
 use function Qubus\Security\Helpers\esc_html;
 use function Qubus\Security\Helpers\esc_html__;
 use function Qubus\Support\Helpers\is_false__;
@@ -120,7 +121,7 @@ function get_object_subtype(string $type, string $id): string
         $objectSubtype = 'product';
     }
 
-    return Devflow::$PHP->hook->filter->applyFilter("get_object_subtype_{$type}", $objectSubtype, $id);
+    return __observer()->filter->applyFilter("get.object.subtype.{$type}", $objectSubtype, $id);
 }
 
 /**
@@ -1120,7 +1121,7 @@ function cms_nodeq_reset_password(): void
  * @throws UnresolvableQueryHandlerException
  * @throws TypeException
  */
-function cms_collection(?string $value = null): Collection
+function collection(?string $value = null): Collection
 {
     $array = match ($value) {
         'user','users' => get_all_users(),

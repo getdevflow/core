@@ -18,6 +18,7 @@ use function App\Shared\Helpers\get_user_timezone;
 use function App\Shared\Helpers\load_active_plugins;
 use function App\Shared\Helpers\load_active_theme;
 use function date_default_timezone_set;
+use function Qubus\Security\Helpers\__observer;
 use function Qubus\Security\Helpers\esc_html__;
 use function sprintf;
 
@@ -50,7 +51,7 @@ final class CmsHelperServiceProvider extends CodefyServiceProvider
             /**
              * Fires before the site's theme is loaded.
              */
-            Devflow::$PHP->hook->action->doAction('before_setup_theme');
+            __observer()->action->doAction('before_setup_theme');
 
             load_active_plugins();
             load_active_theme();
@@ -63,69 +64,71 @@ final class CmsHelperServiceProvider extends CodefyServiceProvider
          * An action called to add the plugin's link
          * to the menu structure.
          */
-        Devflow::$PHP->hook->action->doAction('admin_menu');
+        __observer()->action->doAction('admin_menu');
         /**
          * Registers & enqueues javascript to be printed in frontend footer section.
          */
-        Devflow::$PHP->hook->action->doAction('enqueue_js');
+        __observer()->action->doAction('enqueue_js');
         /**
          * Prints scripts and/or data before the ending body tag
          * of the front end.
          */
-        Devflow::$PHP->hook->action->doAction('cms_footer');
+        __observer()->action->doAction('cms_footer');
         /**
          * Default actions and filters.
          */
-        Devflow::$PHP->hook->action->addAction('login_form_top', 'App\Shared\Helpers\cms_login_form_show_message', 5);
-        Devflow::$PHP->hook->action->addAction('admin_notices', 'App\Shared\Helpers\cms_dev_mode', 5);
-        Devflow::$PHP->hook->action->addAction('admin_notices', 'App\Shared\Helpers\show_update_message', 5);
-        Devflow::$PHP->hook->action->addAction('save_site', 'App\Shared\Helpers\new_site_schema', 5, 3);
-        Devflow::$PHP->hook->action->addAction('save_site', 'App\Shared\Helpers\create_site_directories', 5, 3);
-        Devflow::$PHP->hook->action->addAction('deleted_site', 'App\Shared\Helpers\delete_site_usermeta', 5, 2);
-        Devflow::$PHP->hook->action->addAction('deleted_site', 'App\Shared\Helpers\delete_site_tables', 5, 2);
-        Devflow::$PHP->hook->action->addAction('deleted_site', 'App\Shared\Helpers\delete_site_directories', 5, 2);
-        Devflow::$PHP->hook->action->addAction(
+        __observer()->action->addAction('cms_admin_head', 'App\Shared\Helpers\admin_enqueue_head', 5);
+        __observer()->action->addAction('cms_admin_footer', 'App\Shared\Helpers\admin_enqueue_footer', 5);
+        __observer()->action->addAction('login_form_top', 'App\Shared\Helpers\cms_login_form_show_message', 5);
+        __observer()->action->addAction('admin_notices', 'App\Shared\Helpers\cms_dev_mode', 5);
+        __observer()->action->addAction('admin_notices', 'App\Shared\Helpers\show_update_message', 5);
+        __observer()->action->addAction('save_site', 'App\Shared\Helpers\new_site_schema', 5, 3);
+        __observer()->action->addAction('save_site', 'App\Shared\Helpers\create_site_directories', 5, 3);
+        __observer()->action->addAction('deleted_site', 'App\Shared\Helpers\delete_site_usermeta', 5, 2);
+        __observer()->action->addAction('deleted_site', 'App\Shared\Helpers\delete_site_tables', 5, 2);
+        __observer()->action->addAction('deleted_site', 'App\Shared\Helpers\delete_site_directories', 5, 2);
+        __observer()->action->addAction(
             'reset_password_route',
             'App\Shared\Helpers\send_reset_password_email',
             5,
             2
         );
-        Devflow::$PHP->hook->action->addAction('reassign_content', 'App\Shared\Helpers\reassign_content', 5, 2);
-        Devflow::$PHP->hook->action->addAction('reassign_sites', 'App\Shared\Helpers\reassign_sites', 5, 2);
-        Devflow::$PHP->hook->action->addAction(
+        __observer()->action->addAction('reassign_content', 'App\Shared\Helpers\reassign_content', 5, 2);
+        __observer()->action->addAction('reassign_sites', 'App\Shared\Helpers\reassign_sites', 5, 2);
+        __observer()->action->addAction(
             'password_change_email',
             'App\Shared\Helpers\send_password_change_email',
             5,
             3
         );
-        Devflow::$PHP->hook->action->addAction(
+        __observer()->action->addAction(
             'email_change_email',
             'App\Shared\Helpers\send_email_change_email',
             5,
             2
         );
-        Devflow::$PHP->hook->action->addAction('before_router_login', 'App\Shared\Helpers\does_site_exist', 6);
-        Devflow::$PHP->hook->action->addAction('enqueue_cms_editor', 'App\Shared\Helpers\cms_editor', 5);
-        Devflow::$PHP->hook->action->addAction('flush_cache', 'App\Shared\Helpers\populate_usermeta_cache', 5);
-        Devflow::$PHP->hook->action->addAction('login_init', 'App\Shared\Helpers\populate_usermeta_cache', 5);
-        Devflow::$PHP->hook->action->addAction('update_user_init', 'App\Shared\Helpers\populate_usermeta_cache', 5);
-        Devflow::$PHP->hook->action->addAction('flush_cache', 'App\Shared\Helpers\populate_contentmeta_cache', 5);
-        Devflow::$PHP->hook->action->addAction('update_post_init', 'App\Shared\Helpers\populate_contentmeta_cache', 5);
-        Devflow::$PHP->hook->action->addAction('flush_cache', 'App\Shared\Helpers\populate_options_cache', 5);
-        Devflow::$PHP->hook->action->addAction('maintenance_mode', 'App\Shared\Helpers\cms_maintenance_mode', 1);
-        Devflow::$PHP->hook->action->addAction('cms_logout', 'App\Shared\Helpers\renew_csrf_session', 5, 2);
-        Devflow::$PHP->hook->filter->addFilter('the_body', [Parsecode::getInstance(), 'autop']);
-        Devflow::$PHP->hook->filter->addFilter('the_body', [Parsecode::getInstance(), 'unAutop']);
-        Devflow::$PHP->hook->filter->addFilter('the_body', [Parsecode::getInstance(), 'doParsecode'], 5);
-        Devflow::$PHP->hook->filter->addFilter(
-            'the_body',
+        __observer()->action->addAction('before_router_login', 'App\Shared\Helpers\does_site_exist', 6);
+        __observer()->action->addAction('enqueue_cms_editor', 'App\Shared\Helpers\cms_editor', 5);
+        __observer()->action->addAction('flush_cache', 'App\Shared\Helpers\populate_usermeta_cache', 5);
+        __observer()->action->addAction('login_init', 'App\Shared\Helpers\populate_usermeta_cache', 5);
+        __observer()->action->addAction('update_user_init', 'App\Shared\Helpers\populate_usermeta_cache', 5);
+        __observer()->action->addAction('flush_cache', 'App\Shared\Helpers\populate_contentmeta_cache', 5);
+        __observer()->action->addAction('update_post_init', 'App\Shared\Helpers\populate_contentmeta_cache', 5);
+        __observer()->action->addAction('flush_cache', 'App\Shared\Helpers\populate_options_cache', 5);
+        __observer()->action->addAction('maintenance_mode', 'App\Shared\Helpers\cms_maintenance_mode', 1);
+        __observer()->action->addAction('cms_logout', 'App\Shared\Helpers\renew_csrf_session', 5, 2);
+        __observer()->filter->addFilter('the.body', [Parsecode::getInstance(), 'autop']);
+        __observer()->filter->addFilter('the.body', [Parsecode::getInstance(), 'unAutop']);
+        __observer()->filter->addFilter('the.body', [Parsecode::getInstance(), 'doParsecode'], 5);
+        __observer()->filter->addFilter(
+            'the.body',
             'App\Shared\Helpers\cms_encode_email',
             $this->codefy->configContainer->getConfigKey(key: 'cms.eae_filter_priority')
         );
-        Devflow::$PHP->hook->filter->addFilter('cms_authenticate_user', '\App\Shared\Helpers\cms_authenticate', 5, 3);
-        Devflow::$PHP->hook->filter->addFilter('cms_auth_cookie', '\App\Shared\Helpers\cms_set_auth_cookie', 5, 2);
+        __observer()->filter->addFilter('cms.authenticate.user', '\App\Shared\Helpers\cms_authenticate', 5, 3);
+        __observer()->filter->addFilter('cms.auth.cookie', '\App\Shared\Helpers\cms_set_auth_cookie', 5, 2);
 
-        Devflow::$PHP->hook->filter->addFilter(
+        __observer()->filter->addFilter(
             'mail.xmailer',
             fn() => sprintf(esc_html__(string: 'Devflow %s', domain: 'devflow'), Devflow::release()),
             10,
@@ -133,14 +136,14 @@ final class CmsHelperServiceProvider extends CodefyServiceProvider
         /**
          * Fires once activated plugins have loaded.
          */
-        Devflow::$PHP->hook->action->doAction('plugins_loaded');
+        __observer()->action->doAction('plugins_loaded');
         /**
          * Fires once the activated them has loaded.
          */
-        Devflow::$PHP->hook->action->doAction('theme_loaded');
+        __observer()->action->doAction('theme_loaded');
         /**
          * Fires after the site's theme is loaded.
          */
-        Devflow::$PHP->hook->action->doAction('after_setup_theme');
+        __observer()->action->doAction('after_setup_theme');
     }
 }

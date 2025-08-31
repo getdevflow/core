@@ -16,9 +16,13 @@ use function usort;
 
 final class ListUtil
 {
-    private array $input = [];
+    private array $input = [] {
+        &get => $this->input;
+    }
 
-    private array $output = [];
+    private array $output = [] {
+        &get => $this->output;
+    }
 
     /**
      * Temporary arguments for sorting.
@@ -28,26 +32,6 @@ final class ListUtil
     public function __construct($input)
     {
         $this->output = $this->input = $input;
-    }
-
-    /**
-     * Returns the original input array.
-     *
-     * @return array The input array.
-     */
-    public function getInput(): array
-    {
-        return $this->input;
-    }
-
-    /**
-     * Returns the output array.
-     *
-     * @return array The output array.
-     */
-    public function getOutput(): array
-    {
-        return $this->output;
     }
 
     /**
@@ -113,7 +97,7 @@ final class ListUtil
      *               corresponding to `$indexKey`. If `$indexKey` is null, array keys from the original
      *               `$list` will be preserved in the results.
      */
-    public function pluck(int|string $field, int|string $indexKey = null): array
+    public function pluck(int|string $field, int|string|null $indexKey = null): array
     {
         $newlist = [];
 

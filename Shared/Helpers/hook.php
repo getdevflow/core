@@ -30,6 +30,7 @@ use function in_array;
 use function mt_rand;
 use function ord;
 use function preg_replace_callback;
+use function Qubus\Security\Helpers\__observer;
 use function Qubus\Security\Helpers\esc_html;
 use function Qubus\Security\Helpers\esc_html__;
 use function Qubus\Security\Helpers\t__;
@@ -45,7 +46,7 @@ use function substr;
  */
 function has_filter(string $hook): bool
 {
-    return in_array($hook, Devflow::$PHP->hook->filter->getHooks());
+    return in_array($hook, __observer()->filter->getHooks());
 }
 
 /**
@@ -60,7 +61,7 @@ function has_filter(string $hook): bool
  */
 function sanitize_meta(string $metaKey, mixed $metaValue, string $arrayType, string $arraySubtype = ''): mixed
 {
-    if (!empty($arraySubtype) && has_filter("sanitize_{$arrayType}_meta_{$metaKey}_for_{$arraySubtype}")) {
+    if (!empty($arraySubtype) && has_filter("sanitize.{$arrayType}.meta.{$metaKey}.for.{$arraySubtype}")) {
         /**
          * Filters the sanitization of a specific meta key of a specific meta type and subtype.
          *
@@ -74,8 +75,8 @@ function sanitize_meta(string $metaKey, mixed $metaValue, string $arrayType, str
          * @param string $arrayType    Object type.
          * @param string $arraySubtype Object subtype.
          */
-        return Devflow::$PHP->hook->filter->applyFilter(
-            "sanitize_{$arrayType}_meta_{$metaKey}_for_{$arraySubtype}",
+        return __observer()->filter->applyFilter(
+            "sanitize.{$arrayType}.meta.{$metaKey}.for.{$arraySubtype}",
             $metaValue,
             $metaKey,
             $arrayType,
@@ -95,8 +96,8 @@ function sanitize_meta(string $metaKey, mixed $metaValue, string $arrayType, str
      * @param string $metaKey   Meta key.
      * @param string $arrayType Object type.
      */
-    return Devflow::$PHP->hook->filter->applyFilter(
-        "sanitize_{$arrayType}_meta_{$metaKey}",
+    return __observer()->filter->applyFilter(
+        "sanitize.{$arrayType}.meta.{$metaKey}",
         $metaValue,
         $metaKey,
         $arrayType
@@ -119,7 +120,7 @@ function cms_admin_copyright_footer()
     Devflow::release() . "\n";
     $copyright .= '<!--  End Copyright Line -->' . "\n";
 
-    return Devflow::$PHP->hook->filter->applyFilter('admin_copyright_footer', $copyright);
+    return __observer()->filter->applyFilter('admin.copyright.footer', $copyright);
 }
 
 /**
@@ -132,7 +133,7 @@ function cms_admin_copyright_footer()
 function get_logo_large(): string
 {
     $logo = '<strong>' . esc_html('Dev') . '</strong>' . esc_html('flow');
-    return Devflow::$PHP->hook->filter->applyFilter('logo_large', $logo);
+    return __observer()->filter->applyFilter('logo.large', $logo);
 }
 
 /**
@@ -145,7 +146,7 @@ function get_logo_large(): string
 function get_logo_mini(): string
 {
     $logo = '<strong>' . esc_html('Dev') . '</strong>' . esc_html('flow');
-    return Devflow::$PHP->hook->filter->applyFilter('logo_mini', $logo);
+    return __observer()->filter->applyFilter('logo.mini', $logo);
 }
 
 /**
@@ -163,7 +164,7 @@ function public_site_url(string $path = ''): string
 {
     $siteKey = Registry::getInstance()->get('siteKey');
     $url = site_url('sites/' . $siteKey . '/' . $path);
-    return Devflow::$PHP->hook->filter->applyFilter("public_site_url_{$siteKey}", $url);
+    return __observer()->filter->applyFilter("public.site.url.{$siteKey}", $url);
 }
 
 /**
@@ -181,7 +182,7 @@ function public_site_upload_url(string $path = ''): string
 {
     $siteKey = Registry::getInstance()->get('siteKey');
     $url = public_site_url('uploads/' . $path);
-    return Devflow::$PHP->hook->filter->applyFilter("public_site_upload_url_{$siteKey}", $url);
+    return __observer()->filter->applyFilter("public.site.upload.url.{$siteKey}", $url);
 }
 
 /**
@@ -200,20 +201,20 @@ function public_site_upload_url(string $path = ''): string
 function cms_encode_email(string $string): string
 {
     // abort if $string doesn't contain a @-sign
-    if (Devflow::$PHP->hook->filter->applyFilter('encode_email_at_sign_check', true)) {
+    if (__observer()->filter->applyFilter('encode.email.at.sign.check', true)) {
         if (!str_contains($string, '@')) {
             return $string;
         }
     }
 
     // override encoding function with the 'encode_email_method' filter
-    $method = Devflow::$PHP->hook->filter->applyFilter(
-        'encode_email_method',
+    $method = __observer()->filter->applyFilter(
+        'encode.email.method',
         '\App\Shared\Helpers\cms_encode_email_str'
     );
 
     // override regex pattern with the 'encode_email_regexp' filter
-    $regexp = Devflow::$PHP->hook->filter->applyFilter('encode_email_regexp', '{
+    $regexp = __observer()->filter->applyFilter('encode.email.regexp', '{
 			(?:mailto:)?
 			(?:
 				[-!#$%&*+/=?^_`.{|}~\w\x80-\xFF]+
@@ -286,7 +287,7 @@ function cms_encode_email_str(string $string): string
  * @throws ReflectionException
  * @throws UnresolvableQueryHandlerException
  */
-function cms_editor(string $selector = null): void
+function cms_editor(?string $selector = null): void
 {
     cms_enqueue_js('default', '//cdnjs.cloudflare.com/ajax/libs/tinymce/4.9.11/tinymce.min.js');
 
@@ -300,7 +301,7 @@ function cms_editor(string $selector = null): void
      * Filters the default theme for TinyMCE.
      * @param string $theme Theme used for TinyMCE.
      */
-    $mceTheme = Devflow::$PHP->hook->filter->applyFilter('tiny_mce_theme', 'modern');
+    $mceTheme = __observer()->filter->applyFilter('tiny.mce.theme', 'modern');
 
     $plugins = [
             'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview', 'anchor',
@@ -311,7 +312,7 @@ function cms_editor(string $selector = null): void
      * Filters the list of default TinyMCE plugins.
      * @param array $plugins An array of default TinyMCE plugins.
      */
-    $mcePlugins = Devflow::$PHP->hook->filter->applyFilter('tiny_mce_plugins', $plugins);
+    $mcePlugins = __observer()->filter->applyFilter('tiny.mce.plugins', $plugins);
 
     $mceButtons = [
         'undo',
@@ -339,29 +340,29 @@ function cms_editor(string $selector = null): void
      * @param array  $buttons      First-row list of buttons.
      * @param string $mceSelector  Unique editor identifier, e.g. 'textarea'.
      */
-    $mceButtons1 = Devflow::$PHP->hook->filter->applyFilter('tiny_mce_buttons_1', $mceButtons, $mceSelector);
+    $mceButtons1 = __observer()->filter->applyFilter('tiny.mce.buttons.1', $mceButtons, $mceSelector);
     /**
      * Filters the second-row list of TinyMCE buttons.
      *
      * @param array  $buttons      First-row list of buttons.
      * @param string $mceSelector  Unique editor identifier, e.g. 'textarea'.
      */
-    $mceButtons2 = Devflow::$PHP->hook->filter->applyFilter('tiny_mce_buttons_2', [], $mceSelector);
+    $mceButtons2 = __observer()->filter->applyFilter('tiny.mce.buttons.2', [], $mceSelector);
     /**
      * Filters the third-row list of TinyMCE buttons.
      *
      * @param array  $buttons      First-row list of buttons.
      * @param string $mceSelector  Unique editor identifier, e.g. 'textarea'.
      */
-    $mceButtons3 = Devflow::$PHP->hook->filter->applyFilter('tiny_mce_buttons_3', [], $mceSelector);
+    $mceButtons3 = __observer()->filter->applyFilter('tiny.mce.buttons.3', [], $mceSelector);
     /**
      * Filters the default stylesheets.
      *
      * @param array  $css          CSS stylesheets to include.
      * @param string $mceSelector  Unique editor identifier, e.g. 'textarea'.
      */
-    $mceCss = Devflow::$PHP->hook->filter->applyFilter(
-        'tiny_mce_css',
+    $mceCss = __observer()->filter->applyFilter(
+        'tiny.mce.css',
         [
             '//fonts.googleapis.com/css?family=Lato:300,300i,400,400i',
             site_url('static/assets/css/tinymce.css')
@@ -372,7 +373,7 @@ function cms_editor(string $selector = null): void
     /**
      * Fires immediately before TinyMCE is printed.
      */
-    Devflow::$PHP->hook->action->doAction('before_cms_tiny_mce'); ?>
+    __observer()->action->doAction('before_cms_tiny_mce'); ?>
     <script type="text/javascript">
         tinymce.init({
             selector: "<?= $mceSelector; ?>",
@@ -438,7 +439,7 @@ function cms_editor(string $selector = null): void
      *
      * @file App/Shared/Helpers/hook.php
      */
-    Devflow::$PHP->hook->action->doAction('after_cms_tiny_mce');
+    __observer()->action->doAction('after_cms_tiny_mce');
 }
 
 /**
@@ -467,7 +468,7 @@ function cms_optimized_image_upload(string $image): ?string
     if (!file_exists($newFilename)) {
         _cms_image_optimizer($rawFilename, $newFilename);
     }
-    return Devflow::$PHP->hook->filter->applyFilter('optimized_image', $newFilename, $image, $rawFilename);
+    return __observer()->filter->applyFilter('optimized.image', $newFilename, $image, $rawFilename);
 }
 
 /**
@@ -489,7 +490,6 @@ function admin_dashboard_js(): void
  * @param string|null $charset
  * @return mixed
  * @throws Exception
- * @throws ReflectionException
  */
 function cms_charset(?string $charset = null): mixed
 {
@@ -534,7 +534,7 @@ function cms_charset(?string $charset = null): mixed
         </option>
         <option value="GB18030"' . selected($charset, 'GB18030', false) . '>GB18030</option>
         </select>';
-    return Devflow::$PHP->hook->filter->applyFilter('charset', $select, $charset);
+    return __observer()->filter->applyFilter('charset', $select, $charset);
 }
 
 /**
@@ -586,7 +586,7 @@ function get_auth_screen_logo(): string
      *
      * @var string $logo The auth logo.
      */
-    $logo = Devflow::$PHP->hook->filter->applyFilter('auth_logo', $authLogo);
+    $logo = __observer()->filter->applyFilter('auth.logo', $authLogo);
     return '<img src="' . $logo . '" alt="auth-logo" title="auth-logo">';
 }
 
@@ -599,14 +599,13 @@ function get_auth_screen_logo(): string
  * @param string $class Class to add to `<img>` element.
  * @return string `<img>` tag for user's avatar or default otherwise.
  * @throws Exception
- * @throws ReflectionException
  */
 function get_user_avatar(string $email, int $s = 80, string $class = ''): string
 {
     $avatar = '<img src="' . Gravatar::image($email, $s)->url() .
     '" class="' . $class . '" alt="' . $email . '" />';
 
-    return Devflow::$PHP->hook->filter->applyFilter('user_avatar', $avatar, $email, $s, $class);
+    return __observer()->filter->applyFilter('user.avatar', $avatar, $email, $s, $class);
 }
 
 /**
@@ -616,13 +615,12 @@ function get_user_avatar(string $email, int $s = 80, string $class = ''): string
  * @param string $email Email address of user.
  * @return string The url of the avatar that was found, or default if not found.
  * @throws Exception
- * @throws ReflectionException
  */
 function get_user_avatar_url(string $email): string
 {
     $avatar = Gravatar::image($email)->url();
 
-    return Devflow::$PHP->hook->filter->applyFilter('user_avatar_url', $avatar, $email);
+    return __observer()->filter->applyFilter('user.avatar.url', $avatar, $email);
 }
 
 
@@ -707,7 +705,7 @@ function cms_upload_image()
                     });
                 });
             </script>';
-    return Devflow::$PHP->hook->filter->applyFilter('cms_upload_image', $elfinder);
+    return __observer()->filter->applyFilter('cms.upload.image', $elfinder);
 }
 
 /**
@@ -719,7 +717,6 @@ function cms_upload_image()
  * @param string $operator Operand use to compare current and latest release values.
  * @return bool
  * @throws Exception
- * @throws ReflectionException
  */
 function compare_releases(string $current, string $latest, string $operator = '>'): bool
 {
@@ -730,7 +727,7 @@ function compare_releases(string $current, string $latest, string $operator = '>
      * @file App/Shared/Helpers/hook.php
      * @param bool|int $phpFunction PHP function for comparing two release values.
      */
-    $release = Devflow::$PHP->hook->filter->applyFilter('compare_releases', $phpFunction);
+    $release = __observer()->filter->applyFilter('compare.releases', $phpFunction);
 
     if ($release) {
         return (bool) $latest;
@@ -747,7 +744,6 @@ function compare_releases(string $current, string $latest, string $operator = '>
  * @param string $url URL of resource/website.
  * @return int HTTP response code.
  * @throws Exception
- * @throws ReflectionException
  */
 function get_http_response_code(string $url): int
 {
@@ -759,7 +755,7 @@ function get_http_response_code(string $url): int
      * @file App/Shared/Helpers/hook.php
      * @param int $status The http response code from external resource.
      */
-    return Devflow::$PHP->hook->filter->applyFilter('http_response_code', (int) $status);
+    return __observer()->filter->applyFilter('http.response.code', (int) $status);
 }
 
 /**
@@ -806,18 +802,17 @@ function renew_csrf_session(SessionService $sessionService, ServerRequest $reque
  * @access private
  * @file App/Shared/Helpers/hook.php
  * @throws Exception
- * @throws ReflectionException
  */
 function admin_head(): void
 {
     /**
      * Registers & enqueues a stylesheet to be printed in backend head section.
      */
-    Devflow::$PHP->hook->action->doAction('enqueue_admin_css');
+    __observer()->action->doAction('enqueue_admin_css');
     /**
      * Fires in head section of all admin screens.
      */
-    Devflow::$PHP->hook->action->doAction('cms_admin_head');
+    __observer()->action->doAction('cms_admin_head');
 }
 
 /**
@@ -826,18 +821,17 @@ function admin_head(): void
  * @access private
  * @file App/Shared/Helpers/hook.php
  * @throws Exception
- * @throws ReflectionException
  */
 function cms_head(): void
 {
     /**
      * Registers & enqueues a stylesheet to be printed in frontend head section.
      */
-    Devflow::$PHP->hook->action->doAction('enqueue_css');
+    __observer()->action->doAction('enqueue_css');
     /**
      * Prints scripts and/or data in the head of the front end.
      */
-    Devflow::$PHP->hook->action->doAction('cms_head');
+    __observer()->action->doAction('cms_head');
 }
 
 /**
@@ -846,18 +840,17 @@ function cms_head(): void
  * @access private
  * @file App/Shared/Helpers/hook.php
  * @throws Exception
- * @throws ReflectionException
  */
 function admin_footer(): void
 {
     /**
      * Registers & enqueues javascript to be printed in backend footer section.
      */
-    Devflow::$PHP->hook->action->doAction('enqueue_admin_js');
+    __observer()->action->doAction('enqueue_admin_js');
     /**
      * Prints scripts and/or data before the ending body tag of the backend.
      */
-    Devflow::$PHP->hook->action->doAction('cms_admin_footer');
+    __observer()->action->doAction('cms_admin_footer');
 }
 
 /**
@@ -866,17 +859,58 @@ function admin_footer(): void
  * @access private
  * @file App/Shared/Helpers/hook.php
  * @throws Exception
- * @throws ReflectionException
  */
 function cms_footer(): void
 {
     /**
      * Registers & enqueues javascript to be printed in frontend footer section.
      */
-    Devflow::$PHP->hook->action->doAction('enqueue_js');
+    __observer()->action->doAction('enqueue_js');
     /**
      * Prints scripts and/or data before the ending body tag
      * of the front end.
      */
-    Devflow::$PHP->hook->action->doAction('cms_footer');
+    __observer()->action->doAction('cms_footer');
+}
+
+/**
+ * @access private
+ * @throws Exception
+ */
+function admin_enqueue_head(): void
+{
+    cms_enqueue_js(config: 'default', asset: 'jquery-ui');
+    cms_enqueue_js(
+        config: 'default',
+        asset: '//cdnjs.cloudflare.com/ajax/libs/jQuery-slimScroll/1.3.8/jquery.slimscroll.min.js'
+    );
+
+    cms_enqueue_css(config: 'default', asset: 'admin-styles.css');
+}
+
+/**
+ * @access private
+ * @throws Exception
+ */
+function admin_enqueue_footer(): void
+{
+    cms_enqueue_js(config: 'default', asset: 'bootstrap/bootstrap.min.js');
+    cms_enqueue_js(config: 'default', asset: 'plugins/bootstrap-validator/validator.js');
+    cms_enqueue_js(config: 'default', asset: '//cdnjs.cloudflare.com/ajax/libs/admin-lte/2.3.7/js/app.min.js');
+    cms_enqueue_js(config: 'default', asset: 'switchery-js');
+    cms_enqueue_js(config: 'default', asset: 'select2-js');
+    cms_enqueue_js(config: 'default', asset: 'daterangepicker/moment.min.js');
+    cms_enqueue_js(
+        config: 'default',
+        asset: '//cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.47/js/bootstrap-datetimepicker.min.js'
+    );
+    cms_enqueue_js(config: 'default', asset: 'pages/datetime.js');
+    cms_enqueue_js(config: 'default', asset: 'iCheck/icheck.min.js');
+    cms_enqueue_js(config: 'default', asset: 'pages/iCheck.js');
+    cms_enqueue_js(
+        config: 'default',
+        asset: '//cdnjs.cloudflare.com/ajax/libs/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js'
+    );
+    cms_enqueue_js(config: 'default', asset: 'demo.js');
+    cms_enqueue_js(config: 'default', asset: 'datatables-js');
 }

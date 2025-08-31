@@ -13,8 +13,6 @@ use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Psr\SimpleCache\CacheInterface;
 use Psr\SimpleCache\InvalidArgumentException;
-use Qubus\EventDispatcher\ActionFilter\Action;
-use Qubus\EventDispatcher\ActionFilter\Filter;
 use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
 use Qubus\ValueObjects\Identity\Ulid;
@@ -31,7 +29,7 @@ use function implode;
 use function is_array;
 use function is_string;
 use function md5;
-use function Qubus\Security\Helpers\unslash;
+use function Qubus\Security\Helpers\__observer;
 use function Qubus\Support\Helpers\is_false__;
 use function Qubus\Support\Helpers\is_null__;
 use function Qubus\Support\Helpers\is_true__;
@@ -105,7 +103,7 @@ final class MetaData
          * @param string        $metaKey   Optional. Meta key.
          * @param bool          $single     Whether to return only the first value of the specified $metaKey.
          */
-        $check = Filter::getInstance()->applyFilter("get_{$metaType}_metadata", null, $metaTypeId, $metaKey, $single);
+        $check = __observer()->filter->applyFilter("get.{$metaType}.metadata", null, $metaTypeId, $metaKey, $single);
         if ('' !== $check) {
             return $single && is_array($check) ? $check[0] : $check;
         }
@@ -166,12 +164,9 @@ final class MetaData
         $metaSubtype = get_object_subtype($metaType, $metaTypeId);
 
         $column = Sanitizer::key(key: sprintf('%s_id', $metaType));
-
-        // expected_slashed ($metaKey)
+        
         $rawMetaKey = $metaKey;
-        //$metaKey     = unslash(value: (string) $metaKey);
         $passedValue = $metaValue;
-        //$metaValue   = unslash(value: (string) $metaValue);
         $metaValue = sanitize_meta($metaKey, $metaValue, $metaType, $metaSubtype);
 
         /**
@@ -189,8 +184,8 @@ final class MetaData
          *                              metadata entries with the specified value.
          *                              Otherwise, update all entries.
          */
-        $check = Filter::getInstance()->applyFilter(
-            "update_{$metaType}_metadata",
+        $check = __observer()->filter->applyFilter(
+            "update.{$metaType}.metadata",
             null,
             $metaTypeId,
             $metaKey,
@@ -244,7 +239,7 @@ final class MetaData
              * @param string $metaKey   Meta key.
              * @param mixed  $_metaValue Meta value.
              */
-            Action::getInstance()->doAction("update_{$metaType}meta", $metaId, $metaTypeId, $metaKey, $_metaValue);
+            __observer()->action->doAction("update_{$metaType}meta", $metaId, $metaTypeId, $metaKey, $_metaValue);
         }
 
         if (! empty($prevValue)) {
@@ -312,7 +307,7 @@ final class MetaData
              * @param string $metaKey   Meta key.
              * @param mixed  $_metaValue Meta value.
              */
-            Action::getInstance()->doAction(
+            __observer()->action->doAction(
                 "updated_{$metaType}meta",
                 $metaId,
                 $metaTypeId,
@@ -334,14 +329,12 @@ final class MetaData
      * @param bool $unique Whether the specified meta key should be unique
      *                     for the array. Optional. Default false.
      * @return false|string The meta ID on success, false on failure.
-     * @throws CommandPropertyNotFoundException
      * @throws ContainerExceptionInterface
      * @throws Exception
      * @throws InvalidArgumentException
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
      * @throws TypeException
-     * @throws UnresolvableQueryHandlerException
      * @throws \Exception
      */
     public function create(
@@ -365,9 +358,6 @@ final class MetaData
 
         $column = Sanitizer::key(key: sprintf('%s_id', $metaType));
 
-        // expected_slashed ($metaKey)
-        //$metaKey = unslash(value: (string) $metaKey);
-        //$metaValue = unslash(value: (string) $metaValue);
         $metaValue = sanitize_meta($metaKey, $metaValue, $metaType, $metaSubtype);
 
         /**
@@ -384,8 +374,8 @@ final class MetaData
          * @param bool      $unique    Whether the specified meta key should be unique
          *                             for the array. Optional. Default false.
          */
-        $check = Filter::getInstance()->applyFilter(
-            "add_{$metaType}_metadata",
+        $check = __observer()->filter->applyFilter(
+            "add.{$metaType}.metadata",
             null,
             $metaTypeId,
             $metaKey,
@@ -426,7 +416,7 @@ final class MetaData
          * @param string $metaKey   Meta key.
          * @param mixed  $metaValue Meta value.
          */
-        Action::getInstance()->doAction("add_{$metaType}meta", $metaTypeId, $metaKey, $_metaValue);
+        __observer()->action->doAction("add_{$metaType}meta", $metaTypeId, $metaKey, $_metaValue);
 
         try {
             $result = $this->dfdb->qb()->transactional(function () use (
@@ -472,7 +462,7 @@ final class MetaData
          * @param string $metaKey   Meta key.
          * @param mixed  $metaValue Meta value.
          */
-        Action::getInstance()->doAction("added_{$metaType}meta", $mid, $metaTypeId, $metaKey, $_metaValue);
+        __observer()->action->doAction("added_{$metaType}meta", $mid, $metaTypeId, $metaKey, $_metaValue);
 
         return $mid;
     }
@@ -530,8 +520,8 @@ final class MetaData
          *                              for all arrays, ignoring the specified $metaTypeId.
          *                              Default false.
          */
-        $check = Filter::getInstance()->applyFilter(
-            "delete_{$metaType}_metadata",
+        $check = __observer()->filter->applyFilter(
+            "delete.{$metaType}.metadata",
             null,
             $metaTypeId,
             $metaKey,
@@ -610,12 +600,12 @@ final class MetaData
          * The dynamic portion of the hook, `$metaType`, refers to the meta
          * array type (content or user).
          *
-         * @param array  $metaIds   An array of metadata entry IDs to delete.
-         * @param string $metaTypeId  Array ID.
-         * @param string $metaKey   Meta key.
-         * @param mixed  $metaValue Meta value.
+         * @param array  $metaIds    An array of metadata entry IDs to delete.
+         * @param string $metaTypeId Array ID.
+         * @param string $metaKey    Meta key.
+         * @param mixed  $metaValue  Meta value.
          */
-        Action::getInstance()->doAction("delete_{$metaType}meta", $metaIds, $metaTypeId, $metaKey, $_metaValue);
+        __observer()->action->doAction("delete_{$metaType}meta", $metaIds, $metaTypeId, $metaKey, $_metaValue);
 
         $query = $this->dfdb->prepare(
             query: sprintf("DELETE FROM %s WHERE meta_id IN(?)", $table),
@@ -654,7 +644,7 @@ final class MetaData
          * @param string $metaKey   Meta key.
          * @param mixed  $metaValue Meta value.
          */
-        Action::getInstance()->doAction("deleted_{$metaType}meta", $metaIds, $metaTypeId, $metaKey, $_metaValue);
+        __observer()->action->doAction("deleted_{$metaType}meta", $metaIds, $metaTypeId, $metaKey, $_metaValue);
 
         return true;
     }
@@ -672,7 +662,7 @@ final class MetaData
      */
     public function exists(string $metaType, string $metaTypeId, string $metaKey): bool
     {
-        $check = Filter::getInstance()->applyFilter("get_{$metaType}_metadata", null, $metaTypeId, $metaKey, true);
+        $check = __observer()->filter->applyFilter("get.{$metaType}.metadata", null, $metaTypeId, $metaKey, true);
         if ('' !== $check) {
             return (bool) $check;
         }
@@ -717,7 +707,7 @@ final class MetaData
          * @param mixed  $value   The value get_metadata_by_mid() should return.
          * @param string $metaId  Meta ID.
          */
-        $check = Filter::getInstance()->applyFilter("get_{$metaType}_metadata_by_mid", null, $metaId);
+        $check = __observer()->filter->applyFilter("get.{$metaType}.metadata.by.mid", null, $metaId);
         if ('' !== $check) {
             return $check;
         }
@@ -754,14 +744,12 @@ final class MetaData
      * @param string $metaValue Metadata value
      * @param false|string $metaKey Optional, you can provide a meta key to update it
      * @return bool True on successful update, false on failure.
-     * @throws CommandPropertyNotFoundException
      * @throws ContainerExceptionInterface
      * @throws Exception
      * @throws InvalidArgumentException
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
      * @throws TypeException
-     * @throws UnresolvableQueryHandlerException
      */
     public function updateByMid(
         string $metaType,
@@ -788,8 +776,8 @@ final class MetaData
          * @param mixed       $metaValue Meta value. Must be serializable if non-scalar.
          * @param string|bool $metaKey   Meta key, if provided.
          */
-        $check = Filter::getInstance()->applyFilter(
-            "update_{$metaType}_metadata_by_mid",
+        $check = __observer()->filter->applyFilter(
+            "update.{$metaType}.metadata.by.mid",
             null,
             $metaId,
             $metaValue,
@@ -819,7 +807,7 @@ final class MetaData
             $metaValue = sanitize_meta($metaKey, $metaValue, $metaType, $metaSubtype);
             $metaValue = maybe_serialize($metaValue);
 
-            Action::getInstance()->doAction("update_{$metaType}meta", $metaId, $metaTypeId, $metaKey, $_metaValue);
+            __observer()->action->doAction("update_{$metaType}meta", $metaId, $metaTypeId, $metaKey, $_metaValue);
 
             // Run the update query.
             try {
@@ -850,7 +838,7 @@ final class MetaData
             // Clear the caches.
             $this->cache->delete(md5($metaTypeId));
 
-            Action::getInstance()->doAction("updated_{$metaType}meta", $metaId, $metaTypeId, $metaKey, $_metaValue);
+            __observer()->action->doAction("updated_{$metaType}meta", $metaId, $metaTypeId, $metaKey, $_metaValue);
 
             return true;
         }
@@ -869,6 +857,7 @@ final class MetaData
      * @throws InvalidArgumentException
      * @throws ReflectionException
      * @throws TypeException
+     * @throws \Exception
      */
     public function deleteByMid(string $metaType, string $metaId): bool
     {
@@ -889,7 +878,7 @@ final class MetaData
          * @param null|bool $delete  Whether to allow metadata deletion of the given type.
          * @param string    $metaId  Meta ID.
          */
-        $check = Filter::getInstance()->applyFilter("delete_{$metaType}_metadata_by_mid", null, $metaId);
+        $check = __observer()->filter->applyFilter("delete.{$metaType}.metadata.by.mid", null, $metaId);
         if ('' !== $check) {
             return (bool) $check;
         }
@@ -898,7 +887,7 @@ final class MetaData
         if ($meta = $this->readByMid($metaType, $metaId)) {
             $metaTypeId = $meta[$column];
 
-            Action::getInstance()->doAction(
+            __observer()->action->doAction(
                 "delete_{$metaType}meta",
                 (array) $metaId,
                 $metaTypeId,
@@ -927,7 +916,7 @@ final class MetaData
             // Clear the caches.
             $this->cache->delete(md5($metaTypeId));
 
-            Action::getInstance()->doAction(
+            __observer()->action->doAction(
                 "deleted_{$metaType}meta",
                 (array) $metaId,
                 $metaTypeId,
@@ -977,7 +966,7 @@ final class MetaData
          * @param mixed $check    Whether to allow updating the meta cache of the given type.
          * @param array $metaTypeIds Array of object IDs to update the meta cache for.
          */
-        $check = Filter::getInstance()->applyFilter("update_{$metaType}_metadata_cache", null, $metaTypeIds);
+        $check = __observer()->filter->applyFilter("update.{$metaType}.metadata.cache", null, $metaTypeIds);
         if ('' !== $check) {
             return (bool) $check;
         }

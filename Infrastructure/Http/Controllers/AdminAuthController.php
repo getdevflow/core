@@ -37,6 +37,7 @@ use function App\Shared\Helpers\login_url;
 use function App\Shared\Helpers\site_url;
 use function Codefy\Framework\Helpers\config;
 use function Qubus\Error\Helpers\is_error;
+use function Qubus\Security\Helpers\__observer;
 use function Qubus\Security\Helpers\t__;
 use function Qubus\Support\Helpers\is_false__;
 
@@ -63,8 +64,8 @@ final class AdminAuthController extends BaseController
             /**
              * Filters where the admin should be redirected after successful login.
              */
-            $loginLink = Filter::getInstance()->applyFilter(
-                'admin_login_redirect',
+            $loginLink = __observer()->filter->applyFilter(
+                'admin.login.redirect',
                 admin_url()
             );
 
@@ -80,7 +81,7 @@ final class AdminAuthController extends BaseController
              * @param $sessionService SessionService
              * @param $request ServerRequest
              */
-            Action::getInstance()->doAction('login_init', $this->sessionService, $request);
+            __observer()->action->doAction('login_init', $this->sessionService, $request);
 
             return $this->redirect($loginLink);
         } catch (
@@ -143,13 +144,13 @@ final class AdminAuthController extends BaseController
             isset($request->getServerParams()['HTTP_REFERER']) &&
                 !str_contains($request->getServerParams()['HTTP_REFERER'], 'admin')
         ) {
-            $redirectLink = Filter::getInstance()->applyFilter(
-                'user_logout_redirect',
+            $redirectLink = __observer()->filter->applyFilter(
+                'user.logout.redirect',
                 login_url()
             );
         } else {
-            $redirectLink = Filter::getInstance()->applyFilter(
-                'admin_logout_redirect',
+            $redirectLink = __observer()->filter->applyFilter(
+                'admin.logout.redirect',
                 admin_url()
             );
         }
@@ -172,7 +173,7 @@ final class AdminAuthController extends BaseController
          * @param $sessionService SessionService
          * @param $request ServerRequest
          */
-        Action::getInstance()->doAction('cms_logout', $this->sessionService, $request);
+        __observer()->action->doAction('cms_logout', $this->sessionService, $request);
 
         return $this->redirect($this->router->url(name: 'admin.login'));
     }
@@ -183,6 +184,7 @@ final class AdminAuthController extends BaseController
      * @throws InvalidArgumentException
      * @throws SessionException
      * @throws ReflectionException
+     * @throws TypeException
      */
     public function resetPasswordChange(ServerRequest $request): ResponseInterface
     {
@@ -198,7 +200,7 @@ final class AdminAuthController extends BaseController
 
             if ('' !== $user->id) {
                 $password = generate_random_password(config(key: 'cms.password_length'));
-                $_user = (new User($this->dfdb))->findBy(field: 'email', value: $user->email);
+                $_user = new User($this->dfdb)->findBy(field: 'email', value: $user->email);
 
                 foreach ($user->toArray() as $key => $value) {
                     unset($_user->pass);

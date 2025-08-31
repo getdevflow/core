@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Shared\Helpers;
 
 use App\Application\Devflow;
@@ -30,6 +32,7 @@ use function dirname;
 use function glob;
 use function is_string;
 use function ltrim;
+use function Qubus\Security\Helpers\__observer;
 use function Qubus\Support\Helpers\add_trailing_slash;
 use function Qubus\Support\Helpers\is_false__;
 use function Qubus\Support\Helpers\is_null__;
@@ -60,7 +63,7 @@ function get_theme(): string
      *
      * @param string $theme Current theme's directory name.
      */
-    return Devflow::$PHP->hook->filter->applyFilter('theme', $siteTheme);
+    return __observer()->filter->applyFilter('theme', $siteTheme);
 }
 
 /**
@@ -127,14 +130,14 @@ function theme_url(string $path = '', string $theme = ''): string
      * @param string $theme   The theme file path to be relative to. Blank string if no theme
      *                        is specified.
      */
-    return Devflow::$PHP->hook->filter->applyFilter('themes_url', $url, $path, $theme);
+    return __observer()->filter->applyFilter('theme.url', $url, $path, $theme);
 }
 
 /**
  * Returns theme directory URI.
  *
  * @file App/Shared/Helpers/theme.php
- * @uses \Qubus\EventDispatcher\ActionFilter\Devflow::$PHP->hook->filter->applyFilter() Calls 'theme_directory_uri' filter.
+ * @uses \Qubus\EventDispatcher\ActionFilter\__observer()->filter->applyFilter() Calls 'theme_directory_uri' filter.
  * @return string Devflow theme directory uri.
  * @throws ContainerExceptionInterface
  * @throws Exception
@@ -151,14 +154,14 @@ function theme_directory_uri(): string
     $theme = str_replace('%2F', '/', rawurlencode(theme_name()));
     $themeRootUri = theme_url();
     $themeDirUri = $themeRootUri . $theme . '/';
-    return Devflow::$PHP->hook->filter->applyFilter('theme_directory_uri', $themeDirUri, $theme, $themeRootUri);
+    return __observer()->filter->applyFilter('theme.directory.uri', $themeDirUri, $theme, $themeRootUri);
 }
 
 /**
  * Returns javascript directory uri.
  *
  * @file App/Shared/Helpers/theme.php
- * @uses \Qubus\EventDispatcher\ActionFilter\Devflow::$PHP->hook->filter->applyFilter() Calls 'javascript_directory_uri' filter.
+ * @uses \Qubus\EventDispatcher\ActionFilter\__observer()->filter->applyFilter() Calls 'javascript_directory_uri' filter.
  * @return string Devflow javascript url.
  * @throws ContainerExceptionInterface
  * @throws Exception
@@ -174,8 +177,8 @@ function javascript_directory_uri(): string
     $theme = str_replace('%2F', '/', rawurlencode(theme_name()));
     $javascriptRootUri = theme_url();
     $javascriptDirUri = $javascriptRootUri . $theme . '/assets/js/';
-    return Devflow::$PHP->hook->filter->applyFilter(
-        'javascript_directory_uri',
+    return __observer()->filter->applyFilter(
+        'javascript.directory.uri',
         $javascriptDirUri,
         $theme,
         $javascriptRootUri
@@ -198,7 +201,6 @@ function raw_theme_root(string $pathOrFilename): string
  * @param string|null $filename The filename of the theme (__FILE__).
  * @return string The filesystem path of the directory that contains the theme.
  * @throws Exception
- * @throws ReflectionException
  */
 function theme_root(?string $filename = ''): string
 {
@@ -215,14 +217,14 @@ function theme_root(?string $filename = ''): string
      *
      * @param string $themeRoot Absolute path to themes' directory.
      */
-    return Devflow::$PHP->hook->filter->applyFilter('theme_root', $themeRoot);
+    return __observer()->filter->applyFilter('theme.root', $themeRoot);
 }
 
 /**
  * Retrieve less directory uri.
  *
  * @file App/Shared/Helpers/theme.php
- * @uses \Qubus\EventDispatcher\ActionFilter\Devflow::$PHP->hook->filter->applyFilter() Calls 'less_directory_uri' filter.
+ * @uses \Qubus\EventDispatcher\ActionFilter\__observer()->filter->applyFilter() Calls 'less_directory_uri' filter.
  * @return string Devflow less url.
  * @throws ContainerExceptionInterface
  * @throws Exception
@@ -238,7 +240,7 @@ function less_directory_uri(): string
     $theme = str_replace('%2F', '/', rawurlencode(theme_name()));
     $lessRootUri = theme_url();
     $lessDirUri = $lessRootUri . $theme . '/assets/less/';
-    return Devflow::$PHP->hook->filter->applyFilter('less_directory_uri', $lessDirUri, $theme, $lessRootUri);
+    return __observer()->filter->applyFilter('less.directory.uri', $lessDirUri, $theme, $lessRootUri);
 }
 
 /**
@@ -264,14 +266,14 @@ function css_directory(): string
      * @param string $style     Directory name of the active theme.
      * @param string $themeRoot Absolute path to themes directory.
      */
-    return Devflow::$PHP->hook->filter->applyFilter('stylesheet_directory', $styleDir, $style, $themeRoot);
+    return __observer()->filter->applyFilter('stylesheet.directory', $styleDir, $style, $themeRoot);
 }
 
 /**
  * Return css directory uri.
  *
  * @file App/Shared/Helpers/theme.php
- * @uses \Qubus\EventDispatcher\ActionFilter\Devflow::$PHP->hook->filter->applyFilter() Calls 'css_directory_uri' filter.
+ * @uses \Qubus\EventDispatcher\ActionFilter\__observer()->filter->applyFilter() Calls 'css_directory_uri' filter.
  * @return string Devflow css url.
  * @throws ContainerExceptionInterface
  * @throws Exception
@@ -287,14 +289,14 @@ function css_directory_uri(): string
     $theme = str_replace('%2F', '/', rawurlencode(theme_name()));
     $cssRootUri = theme_url();
     $cssDirUri = $cssRootUri . $theme . '/assets/css/';
-    return Devflow::$PHP->hook->filter->applyFilter('css_directory_uri', $cssDirUri, $theme, $cssRootUri);
+    return __observer()->filter->applyFilter('css.directory.uri', $cssDirUri, $theme, $cssRootUri);
 }
 
 /**
  * Retrieve image directory uri.
  *
  * @file App/Shared/Helpers/theme.php
- * @uses \Qubus\EventDispatcher\ActionFilter\Devflow::$PHP->hook->filter->applyFilter() Calls 'image_directory_uri' filter.
+ * @uses \Qubus\EventDispatcher\ActionFilter\__observer()->filter->applyFilter() Calls 'image_directory_uri' filter.
  * @return string Devflow image url.
  * @throws ContainerExceptionInterface
  * @throws Exception
@@ -310,7 +312,7 @@ function image_directory_uri(): string
     $theme = str_replace('%2F', '/', rawurlencode(theme_name()));
     $imageRootUri = theme_url();
     $imageDirUri = $imageRootUri . $theme . '/assets/images/';
-    return Devflow::$PHP->hook->filter->applyFilter('image_directory_uri', $imageDirUri, $theme, $imageRootUri);
+    return __observer()->filter->applyFilter('image.directory.uri', $imageDirUri, $theme, $imageRootUri);
 }
 
 /**
@@ -449,7 +451,7 @@ function load_active_theme(): void
          *
          * @param $string $plugin Class name of the plugin that was loaded.
          */
-        Devflow::$PHP->hook->action->doAction('theme_active', $activeTheme);
+        __observer()->action->doAction('theme_active', $activeTheme);
     }
 }
 
@@ -647,7 +649,6 @@ function content_published_time(): string
  * @return string
  * @throws Exception
  * @throws InvalidArgumentException
- * @throws ReflectionException
  */
 function content_published_datetime(): string
 {
@@ -884,7 +885,6 @@ function product_published_time(): ?string
  *
  * @return string|null
  * @throws Exception
- * @throws ReflectionException
  */
 function product_published_datetime(): ?string
 {

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Shared\Helpers;
 
-use App\Application\Devflow;
 use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
 use Codefy\QueryBus\UnresolvableQueryHandlerException;
 use Psr\Container\ContainerExceptionInterface;
@@ -14,6 +13,7 @@ use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
 use ReflectionException;
 
+use function Qubus\Security\Helpers\__observer;
 use function Qubus\Support\Helpers\add_trailing_slash;
 
 /**
@@ -69,7 +69,7 @@ function add_admin_submenu(
      *
      * @param string $menu The menu to return.
      */
-    return Devflow::$PHP->hook->filter->applyFilter("admin_submenu_{$location}_{$menuRoute}", $menu);
+    return __observer()->filter->applyFilter("admin.submenu.{$location}.{$menuRoute}", $menu);
 }
 
 /**

@@ -154,7 +154,7 @@ final class AdminContentController extends BaseController
                     'title' => sprintf(esc_html__('Create %s Content', domain: 'devflow'), $getContentType->title),
                     'type' => $getContentType,
                     'request' => $request->getParsedBody(),
-                    'form' => (new ContentForm())->buildForm($request->getParsedBody(), $getContentType->slug, null),
+                    'form' => new ContentForm()->buildForm($request->getParsedBody(), $getContentType->slug, null),
                 ]
             );
         } catch (

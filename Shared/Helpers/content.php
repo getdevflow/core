@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Shared\Helpers;
 
-use App\Application\Devflow;
 use App\Domain\Content\Command\UpdateContentStatusCommand;
 use App\Domain\Content\Model\Content;
 use App\Domain\Content\Command\CreateContentCommand;
@@ -52,6 +51,7 @@ use function array_map;
 use function Codefy\Framework\Helpers\config;
 use function is_array;
 use function preg_split;
+use function Qubus\Security\Helpers\__observer;
 use function Qubus\Security\Helpers\esc_html__;
 use function Qubus\Security\Helpers\unslash;
 use function Qubus\Support\Helpers\concat_ws;
@@ -130,8 +130,8 @@ function get_content_by_type_and_id(string $contentTypeSlug, string $contentId):
     $enquirer = new Enquire(bus: new SynchronousQueryBus($resolver));
 
     $query = new FindContentByTypeAndIdQuery([
-            'contentType' => new StringLiteral($contentTypeSlug),
-            'contentId' => ContentId::fromString($contentId),
+        'contentType' => new StringLiteral($contentTypeSlug),
+        'contentId' => ContentId::fromString($contentId),
     ]);
 
     $results = $enquirer->execute($query);
@@ -210,7 +210,7 @@ function get_content_datetime(?string $content = null): string
      * @param string $datetime  The content's datetime.
      * @param string $contentId Content id or content object.
      */
-    return Devflow::$PHP->hook->filter->applyFilter('content_datetime', $datetime, $content);
+    return __observer()->filter->applyFilter('content.datetime', $datetime, $content);
 }
 
 /**
@@ -249,7 +249,7 @@ function get_content_modified(string $contentId): string
      * @param string $format   Format to return datetime string.
      * @param string $contentId Content id or content object.
      */
-    return Devflow::$PHP->hook->filter->applyFilter('content_modified', $modified, $format, $content);
+    return __observer()->filter->applyFilter('content.modified', $modified, $format, $content);
 }
 
 /**
@@ -284,7 +284,7 @@ function get_content_body(string $contentId): string
      * @param string $body    The content's body.
      * @param string $content Content object.
      */
-    return Devflow::$PHP->hook->filter->applyFilter('content_body', $body, $content);
+    return __observer()->filter->applyFilter('content.body', $body, $content);
 }
 
 /**
@@ -323,7 +323,7 @@ function get_content_contenttype_name(string $contentId): false|string
      * @param string $contentTypeName The content's content_type name.
      * @param string $content         Content object.
      */
-    return Devflow::$PHP->hook->filter->applyFilter('content_contenttype_name', $contentTypeName, $content);
+    return __observer()->filter->applyFilter('content.contenttype.name', $contentTypeName, $content);
 }
 
 /**
@@ -351,7 +351,7 @@ function get_content_contenttype_link(string $contentId): string
      * @param string $link      The content's content_type link.
      * @param string $contentId Content id.
      */
-    return Devflow::$PHP->hook->filter->applyFilter('content_contenttype_link', $link, $contentId);
+    return __observer()->filter->applyFilter('content.contenttype.link', $link, $contentId);
 }
 
 /**
@@ -386,7 +386,7 @@ function get_content_title(string $contentId): string
      * @param string $title The content's title.
      * @param string $content  Content object.
      */
-    return Devflow::$PHP->hook->filter->applyFilter('content_title', $title, $content);
+    return __observer()->filter->applyFilter('content.title', $title, $content);
 }
 
 /**
@@ -421,7 +421,7 @@ function get_content_slug(string $contentId): string
      * @param string $slug The content's slug.
      * @param string $content   Content object.
      */
-    return Devflow::$PHP->hook->filter->applyFilter('content_slug', $slug, $content);
+    return __observer()->filter->applyFilter('content.slug', $slug, $content);
 }
 
 /**
@@ -456,8 +456,8 @@ function get_content_relative_url(string $contentId): string
      * @param string $relativeUrl The content's relative url.
      * @param string $content   The content object.
      */
-    return Devflow::$PHP->hook->filter->applyFilter(
-        "{$content->type}_relative_url",
+    return __observer()->filter->applyFilter(
+        "{$content->type}.relative.url",
         $relativeUrl,
         $content
     );
@@ -495,7 +495,7 @@ function get_permalink(string $contentId): string
      * @param string $link The content's link.
      * @param object $content Content object.
      */
-    return Devflow::$PHP->hook->filter->applyFilter("{$content->type}_link", $link, $content);
+    return __observer()->filter->applyFilter("{$content->type}.link", $link, $content);
 }
 
 /**
@@ -511,8 +511,12 @@ function get_permalink(string $contentId): string
  * @throws ReflectionException
  * @throws UnresolvableQueryHandlerException|TypeException
  */
-function get_all_content(?string $contentType = null, int $limit = 0, int $offset = null, string $status = 'all'): array
-{
+function get_all_content(
+    ?string $contentType = null,
+    int $limit = 0,
+    ?int $offset = null,
+    string $status = 'all'
+): array {
     return get_all_content_with_filters($contentType, $limit, $offset, $status);
 }
 
@@ -790,7 +794,7 @@ function get_content_author_id(string $contentId): false|string
      * @param string $authorId The content's author id.
      * @param object $content Content object.
      */
-    return Devflow::$PHP->hook->filter->applyFilter('content_author_id', $authorId, $content);
+    return __observer()->filter->applyFilter('content.author.id', $authorId, $content);
 }
 
 /**
@@ -826,7 +830,7 @@ function get_content_author(string $contentId, bool $reverse = false): false|str
      * @param string $author The content's author.
      * @param object   $content Content object.
      */
-    return Devflow::$PHP->hook->filter->applyFilter('content_author', $author, $content);
+    return __observer()->filter->applyFilter('content.author', $author, $content);
 }
 
 /**
@@ -861,7 +865,7 @@ function get_content_status(string $contentId): false|string
      * @param string $status The content's status.
      * @param Content   $content Content object.
      */
-    return Devflow::$PHP->hook->filter->applyFilter('content_status', $status, $content);
+    return __observer()->filter->applyFilter('content.status', $status, $content);
 }
 
 /**
@@ -950,7 +954,7 @@ function get_content_created_date(
      *                       Accepts 'G', 'U', or php date format. Default 'U'.
      * @param bool   $gmt    Whether to retrieve the GMT date. Default false.
      */
-    return Devflow::$PHP->hook->filter->applyFilter('get_content_created_date', $theDate, $format, $gmt);
+    return __observer()->filter->applyFilter('get.content.created.date', $theDate, $format, $gmt);
 }
 
 /**
@@ -999,7 +1003,7 @@ function the_created_date(string $contentId, string $format = ''): string
      *                           in 'date_format' option. Default empty.
      * @param Content  $content  Content object.
      */
-    return Devflow::$PHP->hook->filter->applyFilter('content_created_date', $theDate, $format, $content);
+    return __observer()->filter->applyFilter('content.created.date', $theDate, $format, $content);
 }
 
 /**
@@ -1059,7 +1063,7 @@ function get_content_created_time(
      *                         Accepts 'G', 'U', or php date format. Default 'U'.
      * @param bool   $gmt      Whether to retrieve the GMT time. Default false.
      */
-    return Devflow::$PHP->hook->filter->applyFilter('get_content_created_time', $theTime, $format, $gmt);
+    return __observer()->filter->applyFilter('get.content.created.time', $theTime, $format, $gmt);
 }
 
 /**
@@ -1112,7 +1116,7 @@ function the_created_time(string $contentId, string $format = ''): string
      *                           in 'time_format' option. Default empty.
      * @param object    $content Content object.
      */
-    return Devflow::$PHP->hook->filter->applyFilter('content_created_time', $theTime, $format, $content);
+    return __observer()->filter->applyFilter('content.created.time', $theTime, $format, $content);
 }
 
 /**
@@ -1169,7 +1173,7 @@ function get_content_published_date(
      *                     Accepts 'G', 'U', or php date format. Default 'U'.
      * @param bool   $gmt  Whether to retrieve the GMT date. Default false.
      */
-    return Devflow::$PHP->hook->filter->applyFilter('get_content_published_date', $theDate, $format, $gmt);
+    return __observer()->filter->applyFilter('get.content.published.date', $theDate, $format, $gmt);
 }
 
 /**
@@ -1222,7 +1226,7 @@ function the_published_date(string $contentId, string $format = ''): string
      *                            in 'date_format' option. Default empty.
      * @param object    $content  Content object.
      */
-    return Devflow::$PHP->hook->filter->applyFilter('content_published_date', $theDate, $format, $content);
+    return __observer()->filter->applyFilter('content.published.date', $theDate, $format, $content);
 }
 
 /**
@@ -1279,7 +1283,7 @@ function get_content_published_time(
      *                         Accepts 'G', 'U', or php date format. Default 'U'.
      * @param bool   $gmt      Whether to retrieve the GMT time. Default false.
      */
-    return Devflow::$PHP->hook->filter->applyFilter('get_content_published_time', $theTime, $format, $gmt);
+    return __observer()->filter->applyFilter('get.content.published.time', $theTime, $format, $gmt);
 }
 
 /**
@@ -1331,7 +1335,7 @@ function the_published_time(string $contentId, string $format = ''): string
      *                            in 'time_format' option. Default empty.
      * @param object    $content  Content object.
      */
-    return Devflow::$PHP->hook->filter->applyFilter('content_published_time', $theTime, $format, $content);
+    return __observer()->filter->applyFilter('content.published.time', $theTime, $format, $content);
 }
 
 /**
@@ -1388,7 +1392,7 @@ function get_content_modified_date(
      *                        Accepts 'G', 'U', or php date format. Default 'U'.
      * @param bool   $gmt     Whether to retrieve the GMT date. Default false.
      */
-    return Devflow::$PHP->hook->filter->applyFilter('get_content_modified_date', $theDate, $format, $gmt);
+    return __observer()->filter->applyFilter('get.content.modified.date', $theDate, $format, $gmt);
 }
 
 /**
@@ -1441,7 +1445,7 @@ function the_modified_date(string $contentId, string $format = ''): string
      *                           in 'date_format' option. Default empty.
      * @param object    $content Content object.
      */
-    return Devflow::$PHP->hook->filter->applyFilter('content_modified_date', $theDate, $format, $content);
+    return __observer()->filter->applyFilter('content.modified.date', $theDate, $format, $content);
 }
 
 /**
@@ -1498,7 +1502,7 @@ function get_content_modified_time(
      *                         Accepts 'G', 'U', or php date format. Default 'U'.
      * @param bool   $gmt      Whether to retrieve the GMT time. Default false.
      */
-    return Devflow::$PHP->hook->filter->applyFilter('get_content_modified_time', $theTime, $format, $gmt);
+    return __observer()->filter->applyFilter('get.content.modified.time', $theTime, $format, $gmt);
 }
 
 /**
@@ -1551,7 +1555,7 @@ function the_modified_time(string $contentId, string $format = ''): string
      *                           in 'time_format' option. Default empty.
      * @param object    $content Content object.
      */
-    return Devflow::$PHP->hook->filter->applyFilter('content_modified_time', $theTime, $format, $content);
+    return __observer()->filter->applyFilter('content.modified.time', $theTime, $format, $content);
 }
 
 /**
@@ -1587,7 +1591,7 @@ function get_content_content_type_id(string $contentId): string
      * @param string $contentTypeId The content's content_type id.
      * @param string $contentId  The content ID.
      */
-    return Devflow::$PHP->hook->filter->applyFilter('content_content_type_id', $contentTypeId, $contentId);
+    return __observer()->filter->applyFilter('content.content.type.id', $contentTypeId, $contentId);
 }
 
 /**
@@ -1622,7 +1626,7 @@ function get_content_contenttype(string $contentId): string
      * @param string   $contenttype  The content's content_type.
      * @param string   $contentId    The content ID.
      */
-    return Devflow::$PHP->hook->filter->applyFilter('content_content_type', $contenttype, $contentId);
+    return __observer()->filter->applyFilter('content.content.type', $contenttype, $contentId);
 }
 
 /**
@@ -1661,7 +1665,7 @@ function get_content_parent_id(string $contentId): string
      * @param string $parentId  The content's parent id.
      * @param string $contentId The content ID.
      */
-    return Devflow::$PHP->hook->filter->applyFilter('content_parent_id', $parentId, $contentId);
+    return __observer()->filter->applyFilter('content.parent.id', $parentId, $contentId);
 }
 
 /**
@@ -1696,7 +1700,7 @@ function get_content_parent(string $contentId): string
      * @param string $parent    The content's parent.
      * @param string $contentId The content ID.
      */
-    return Devflow::$PHP->hook->filter->applyFilter('content_parent', $parent, $contentId);
+    return __observer()->filter->applyFilter('content.parent', $parent, $contentId);
 }
 
 /**
@@ -1731,7 +1735,7 @@ function get_content_sidebar(string $contentId): int
      * @param int    $sidebar   The content's sidebar option.
      * @param string $contentId The content ID.
      */
-    return Devflow::$PHP->hook->filter->applyFilter('content_sidebar', (int) $sidebar, $contentId);
+    return __observer()->filter->applyFilter('content.sidebar', (int) $sidebar, $contentId);
 }
 
 /**
@@ -1766,7 +1770,7 @@ function get_content_show_in_menu(string $contentId): int
      * @param int    $menu      The content's show in menu option.
      * @param string $contentId The content ID.
      */
-    return Devflow::$PHP->hook->filter->applyFilter('content_show_in_menu', (int) $menu, $contentId);
+    return __observer()->filter->applyFilter('content.show.in.menu', (int) $menu, $contentId);
 }
 
 /**
@@ -1800,7 +1804,7 @@ function get_content_show_in_search(string $contentId): int
      * @param int    $search    The content's show in search option.
      * @param string $contentId The content ID.
      */
-    return Devflow::$PHP->hook->filter->applyFilter('content_show_in_search', (int) $search, $contentId);
+    return __observer()->filter->applyFilter('content.show.in.search', (int) $search, $contentId);
 }
 
 /**
@@ -1812,9 +1816,7 @@ function get_content_show_in_search(string $contentId): int
  * @param string|null $contentId Unique content id or null.
  * @param string|null $contentType Content type of content.
  * @return string Unique content slug.
- * @throws ContainerExceptionInterface
  * @throws Exception
- * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  */
 function cms_unique_content_slug(
@@ -1840,8 +1842,8 @@ function cms_unique_content_slug(
      * @param string    $contentId     The content's unique id.
      * @param string    $contentType   The content's content type.
      */
-    return Devflow::$PHP->hook->filter->applyFilter(
-        'cms_unique_content_slug',
+    return __observer()->filter->applyFilter(
+        'cms.unique.content.slug',
         $contentSlug,
         $originalSlug,
         $originalTitle,
@@ -1931,7 +1933,7 @@ function cms_insert_content(array|ServerRequestInterface|Content $contentdata): 
          * @param string $contentId      The content's content_id.
          * @param bool   $update         Whether this is an existing content or a new content.
          */
-        Devflow::$PHP->hook->action->doAction(
+        __observer()->action->doAction(
             'content_previous_status',
             $previousStatus,
             $contentId->toNative(),
@@ -1954,7 +1956,7 @@ function cms_insert_content(array|ServerRequestInterface|Content $contentdata): 
          * @param string $contentId      The content's content_id.
          * @param bool   $update         Whether this is an existing content or a new content.
          */
-        Devflow::$PHP->hook->action->doAction(
+        __observer()->action->doAction(
             'content_previous_status',
             $previousStatus,
             $contentId->toNative(),
@@ -1986,8 +1988,8 @@ function cms_insert_content(array|ServerRequestInterface|Content $contentdata): 
      * @param string $sanitizedContentType Content type after it has been sanitized.
      * @param string $rawContentType The content's content type.
      */
-    $contentType = Devflow::$PHP->hook->filter->applyFilter(
-        'pre_content_type',
+    $contentType = __observer()->filter->applyFilter(
+        'pre.content.type',
         $sanitizedContentType,
         $rawContentType
     );
@@ -2001,8 +2003,8 @@ function cms_insert_content(array|ServerRequestInterface|Content $contentdata): 
      * @param string $sanitizedContentTitle Content title after it has been sanitized.
      * @param string $rawContentTitle The content's title.
      */
-    $contentTitle = Devflow::$PHP->hook->filter->applyFilter(
-        'pre_content_title',
+    $contentTitle = __observer()->filter->applyFilter(
+        'pre.content.title',
         (string) $sanitizedContentTitle,
         (string) $rawContentTitle
     );
@@ -2036,8 +2038,8 @@ function cms_insert_content(array|ServerRequestInterface|Content $contentdata): 
      * @param string $sanitizedContentSlug Content slug after it has been sanitized.
      * @param string $rawContentSlug The content's slug.
      */
-    $contentSlug = Devflow::$PHP->hook->filter->applyFilter(
-        'pre_content_slug',
+    $contentSlug = __observer()->filter->applyFilter(
+        'pre.content.slug',
         (string) $sanitizedContentSlug,
         (string) $rawContentSlug
     );
@@ -2049,8 +2051,8 @@ function cms_insert_content(array|ServerRequestInterface|Content $contentdata): 
      *
      * @param string $rawContentSlug The content's slug.
      */
-    $contentBody = Devflow::$PHP->hook->filter->applyFilter(
-        'pre_content_body',
+    $contentBody = __observer()->filter->applyFilter(
+        'pre.content.body',
         $rawContentBody
     );
     $content->body = $contentBody;
@@ -2078,8 +2080,8 @@ function cms_insert_content(array|ServerRequestInterface|Content $contentdata): 
      * @param string $sanitizedContentParent Content parent after it has been sanitized.
      * @param string $rawContentParent The content's parent.
      */
-    $contentParent = Devflow::$PHP->hook->filter->applyFilter(
-        'pre_content_parent',
+    $contentParent = __observer()->filter->applyFilter(
+        'pre.content.parent',
         $sanitizedContentParent,
         $rawContentParent
     );
@@ -2093,8 +2095,8 @@ function cms_insert_content(array|ServerRequestInterface|Content $contentdata): 
      * @param int $sanitizedContentSidebar Content sidebar after it has been sanitized.
      * @param int $rawContentSidebar The content's sidebar.
      */
-    $contentSidebar = Devflow::$PHP->hook->filter->applyFilter(
-        'pre_content_sidebar',
+    $contentSidebar = __observer()->filter->applyFilter(
+        'pre.content.sidebar',
         $sanitizedContentSidebar,
         $rawContentSidebar
     );
@@ -2108,8 +2110,8 @@ function cms_insert_content(array|ServerRequestInterface|Content $contentdata): 
      * @param string $sanitizedContentShowInMenu Content show in menu after it has been sanitized.
      * @param int $rawContentShowInMenu The content's show in menu.
      */
-    $contentShowInMenu = Devflow::$PHP->hook->filter->applyFilter(
-        'pre_content_show_in_menu',
+    $contentShowInMenu = __observer()->filter->applyFilter(
+        'pre.content.show.in.menu',
         $sanitizedContentShowInMenu,
         $rawContentShowInMenu
     );
@@ -2123,8 +2125,8 @@ function cms_insert_content(array|ServerRequestInterface|Content $contentdata): 
      * @param int $sanitizedContentShowInSearch Content show in search after it has been sanitized.
      * @param int $rawContentShowInSearch The content's show in search.
      */
-    $contentShowInSearch = Devflow::$PHP->hook->filter->applyFilter(
-        'pre_content_show_in_search',
+    $contentShowInSearch = __observer()->filter->applyFilter(
+        'pre.content.show.in.search',
         $sanitizedContentShowInSearch,
         $rawContentShowInSearch
     );
@@ -2138,8 +2140,8 @@ function cms_insert_content(array|ServerRequestInterface|Content $contentdata): 
      * @param string $sanitizedContentFeaturedImage Content featured image after it has been sanitized.
      * @param string $rawContentFeaturedImage The content's featured image.
      */
-    $contentFeaturedImage = Devflow::$PHP->hook->filter->applyFilter(
-        'pre_content_featured_image',
+    $contentFeaturedImage = __observer()->filter->applyFilter(
+        'pre.content.featured.image',
         (string) $sanitizedContentFeaturedImage,
         (string) $rawContentFeaturedImage
     );
@@ -2153,8 +2155,8 @@ function cms_insert_content(array|ServerRequestInterface|Content $contentdata): 
      * @param string $sanitizedContentStatus Content status after it has been sanitized.
      * @param string $rawContentStatus The content's status.
      */
-    $contentStatus = Devflow::$PHP->hook->filter->applyFilter(
-        'pre_content_status',
+    $contentStatus = __observer()->filter->applyFilter(
+        'pre.content.status',
         (string) $sanitizedContentStatus,
         (string) $rawContentStatus
     );
@@ -2167,14 +2169,14 @@ function cms_insert_content(array|ServerRequestInterface|Content $contentdata): 
      * @param array $contentdata   Array of content data.
      */
     $maybeNull = !$contentTitle && !$contentBody;
-    if (Devflow::$PHP->hook->filter->applyFilter('cms_insert_empty_content', $maybeNull, $contentdata)) {
+    if (__observer()->filter->applyFilter('cms.insert.empty.content', $maybeNull, $contentdata)) {
         return new ContentError(message: esc_html__(string: 'The title and content are null.', domain: 'devflow'));
     }
 
     if (!$update) {
         if (empty($contentdata['published']) || php_like('%0000-00-00 00:00', $contentdata['published'])) {
-            $contentPublished = (new DateTime('now', get_user_timezone()))->getDateTime();
-            $contentPublishedGmt = (new DateTime('now', 'GMT'))->getDateTime();
+            $contentPublished = new DateTime('now', get_user_timezone())->getDateTime();
+            $contentPublishedGmt = new DateTime('now', 'GMT')->getDateTime();
             $contentCreated = $contentPublished;
             $contentCreatedGmt = $contentPublishedGmt;
         } else {
@@ -2271,8 +2273,8 @@ function cms_insert_content(array|ServerRequestInterface|Content $contentdata): 
      * @param bool     $update Whether the content is being updated rather than created.
      * @param string|null $id  ID of the content to be updated, or NULL if the content is being created.
      */
-    Devflow::$PHP->hook->filter->applyFilter(
-        'cms_before_insert_content_data',
+    __observer()->filter->applyFilter(
+        'cms.before.insert.content.data',
         $contentData,
         $update,
         $update ? $contentBefore->id : $contentId,
@@ -2289,7 +2291,7 @@ function cms_insert_content(array|ServerRequestInterface|Content $contentdata): 
          *
          * @param Content $content Content object.
          */
-        Devflow::$PHP->hook->action->doAction('pre_content_insert', $content);
+        __observer()->action->doAction('pre_content_insert', $content);
 
         try {
             $command = new CreateContentCommand([
@@ -2338,7 +2340,7 @@ function cms_insert_content(array|ServerRequestInterface|Content $contentdata): 
          * @param string  $contentId Content id.
          * @param content $content   Content object.
          */
-        Devflow::$PHP->hook->action->doAction('pre_content_update', $contentId, $content);
+        __observer()->action->doAction('pre_content_update', $contentId, $content);
 
         try {
             $command = new UpdateContentCommand([
@@ -2399,7 +2401,7 @@ function cms_insert_content(array|ServerRequestInterface|Content $contentdata): 
          * @param string $contentId Content id.
          * @param array  $content   Content object.
          */
-        Devflow::$PHP->hook->action->doAction('update_content', $contentId, $content);
+        __observer()->action->doAction('update_content', $contentId, $content);
         /** @var Content $contentAfter */
         $contentAfter = get_content_by_id($contentId->toNative());
         /**
@@ -2409,14 +2411,14 @@ function cms_insert_content(array|ServerRequestInterface|Content $contentdata): 
          * @param object $contentAfter   Content object following the update.
          * @param object $contentBefore  Content object before the update.
          */
-        Devflow::$PHP->hook->action->doAction('content_updated', $contentId->toNative(), $contentAfter, $contentBefore);
+        __observer()->action->doAction('content_updated', $contentId->toNative(), $contentAfter, $contentBefore);
     } else {
         /**
          * Action hook triggered after content is created.
          *
          * @param array $content Content object.
          */
-        Devflow::$PHP->hook->action->doAction('create_content', $content);
+        __observer()->action->doAction('create_content', $content);
     }
 
     /**
@@ -2429,7 +2431,7 @@ function cms_insert_content(array|ServerRequestInterface|Content $contentdata): 
      * @param array $content    Content object.
      * @param bool  $update     Whether this is an existing content or a new content.
      */
-    Devflow::$PHP->hook->action->doAction("save_content_{$contentType}", $contentId->toNative(), $content, $update);
+    __observer()->action->doAction("save_content_{$contentType}", $contentId->toNative(), $content, $update);
 
     /**
      * Action hook triggered after content has been saved.
@@ -2441,7 +2443,7 @@ function cms_insert_content(array|ServerRequestInterface|Content $contentdata): 
      * @param array  $content   Content object.
      * @param bool   $update    Whether this is existing content or new content.
      */
-    Devflow::$PHP->hook->action->doAction(
+    __observer()->action->doAction(
         "save_content_{$contentType}_{$contentStatus}",
         $contentId->toNative(),
         $content,
@@ -2455,7 +2457,7 @@ function cms_insert_content(array|ServerRequestInterface|Content $contentdata): 
      * @param object $content   Content object.
      * @param bool   $update    Whether this is existing content or new content.
      */
-    Devflow::$PHP->hook->action->doAction('cms_after_insert_content_data', $contentId->toNative(), $content, $update);
+    __observer()->action->doAction('cms_after_insert_content_data', $contentId->toNative(), $content, $update);
 
     return $contentId->toNative();
 }
@@ -2536,7 +2538,7 @@ function cms_delete_content(string $contentId): Content|bool
      *
      * @param string $contentId Content id.
      */
-    Devflow::$PHP->hook->action->doAction('before_delete_content', $contentId);
+    __observer()->action->doAction('before_delete_content', $contentId);
 
     if (is_content_parent($contentId)) {
         foreach (is_content_parent($contentId) as $parent) {
@@ -2576,7 +2578,7 @@ function cms_delete_content(string $contentId): Content|bool
      *
      * @param string $contentId Content ID.
      */
-    Devflow::$PHP->hook->action->doAction('delete_content', $contentId);
+    __observer()->action->doAction('delete_content', $contentId);
 
     try {
         $command = new DeleteContentCommand([
@@ -2602,7 +2604,7 @@ function cms_delete_content(string $contentId): Content|bool
      *
      * @param string $contentId Content id.
      */
-    Devflow::$PHP->hook->action->doAction('deleted_content', $contentId);
+    __observer()->action->doAction('deleted_content', $contentId);
 
     if (is_content_parent($contentId)) {
         foreach (is_content_parent($contentId) as $children) {
@@ -2615,7 +2617,7 @@ function cms_delete_content(string $contentId): Content|bool
      *
      * @param string $contentId Content id.
      */
-    Devflow::$PHP->hook->action->doAction('after_delete_content', $contentId);
+    __observer()->action->doAction('after_delete_content', $contentId);
 
     return $content;
 }
@@ -2626,9 +2628,7 @@ function cms_delete_content(string $contentId): Content|bool
  * @file App/Shared/Helpers/content.php
  * @param string $slug Content type slug.
  * @return int Number of content rows based on content type.
- * @throws ContainerExceptionInterface
  * @throws Exception
- * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  */
 function number_content_by_type(string $slug): int
@@ -2667,7 +2667,7 @@ function number_content_by_type(string $slug): int
  * @throws ReflectionException
  * @throws UnresolvableQueryHandlerException|TypeException
  */
-function get_content_parent_dropdown_list(string $parentId = null, string $contentId = ''): void
+function get_content_parent_dropdown_list(?string $parentId = null, string $contentId = ''): void
 {
     $resolver = new NativeQueryHandlerResolver(
         container: ContainerFactory::make(config: config(key: 'querybus.aliases'))
@@ -2744,7 +2744,7 @@ function get_content_class(string $contentId, string|array $class = ''): array
      * @param array $class   An array of additional css class names.
      * @param string $contentId Content id of the current content.
      */
-    $classes = Devflow::$PHP->hook->filter->applyFilter('content_class', $classes, $class, $content->id);
+    $classes = __observer()->filter->applyFilter('content.class', $classes, $class, $content->id);
 
     return array_unique($classes);
 }
@@ -2780,7 +2780,7 @@ function the_permalink(string|Content|ContentId $content): string
      * @param string         $permalink The permalink for the current content.
      * @param string|Content $content   Content object or id.
      */
-    return Devflow::$PHP->hook->filter->applyFilter('the_permalink', get_permalink($content), $content);
+    return __observer()->filter->applyFilter('the.permalink', get_permalink($content), $content);
 }
 
 /**
@@ -2808,7 +2808,7 @@ function the_body(string|Content|ContentId $content): string
     }
 
     $contentBody = get_content_body($content);
-    $contentBody = Devflow::$PHP->hook->filter->applyFilter('the_body', $contentBody);
+    $contentBody = __observer()->filter->applyFilter('the.body', $contentBody);
     $contentBody = str_replace(']]>', ']]&gt;', $contentBody);
     return $contentBody;
 }
@@ -2845,7 +2845,7 @@ function the_meta(string|Content|ContentId $content, string $key): string
      * @param mixed  $theMeta Content meta value.
      * @param string $key     Content meta key.
      */
-    return Devflow::$PHP->hook->filter->applyFilter('the_meta', $theMeta, $key);
+    return __observer()->filter->applyFilter('the.meta', $theMeta, $key);
 }
 
 /**
@@ -2879,7 +2879,7 @@ function the_title(string|Content|ContentId $content): string
      * @file App/Shared/Helpers/content.php
      * @param mixed  $theTitle Content title.
      */
-    return Devflow::$PHP->hook->filter->applyFilter('the_title', $theTitle);
+    return __observer()->filter->applyFilter('the.title', $theTitle);
 }
 
 /**

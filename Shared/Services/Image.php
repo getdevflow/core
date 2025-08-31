@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace App\Shared\Services;
 
-use Codefy\Framework\Codefy;
+use App\Application\Devflow;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
-use Qubus\Exception\Exception;
 use ReflectionException;
 use Spatie\Image\Exceptions\CouldNotLoadImage;
 
@@ -74,7 +73,6 @@ final class Image
      * @return bool|Image
      * @throws ContainerExceptionInterface
      * @throws NotFoundExceptionInterface
-     * @throws Exception
      * @throws ReflectionException
      * @throws CouldNotLoadImage
      */
@@ -82,7 +80,7 @@ final class Image
     {
         $defaults = [
             'image_source' => null,
-            'image_destination' => site_path('uploads' . Codefy::$PHP::DS . 'new_image.png'),
+            'image_destination' => site_path('uploads' . Devflow::$PHP::DS . 'new_image.png'),
             'image_sepia' => false,
             'image_blur' => 0,
             'image_original' => false,

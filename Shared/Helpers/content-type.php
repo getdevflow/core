@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Shared\Helpers;
 
-use App\Application\Devflow;
 use App\Domain\ContentType\Model\ContentType;
 use App\Domain\ContentType\Query\FindContentTypeByIdQuery;
 use App\Domain\ContentType\Query\FindContentTypesQuery;
@@ -38,6 +37,7 @@ use Qubus\ValueObjects\StringLiteral\StringLiteral;
 use ReflectionException;
 
 use function Codefy\Framework\Helpers\config;
+use function Qubus\Security\Helpers\__observer;
 use function Qubus\Security\Helpers\esc_html__;
 use function Qubus\Security\Helpers\esc_url;
 use function Qubus\Support\Helpers\is_false__;
@@ -109,7 +109,7 @@ function get_content_type_title(string $contentTypeId): string
      * @param string    $title The content_type's title.
      * @param string    $contentTypeId The content_type id.
      */
-    return Devflow::$PHP->hook->filter->applyFilter('content_type_title', $title, $contentTypeId);
+    return __observer()->filter->applyFilter('content.type.title', $title, $contentTypeId);
 }
 
 /**
@@ -144,7 +144,7 @@ function get_content_type_slug(string $contentTypeId): string
      * @param string    $slug The content_type's slug.
      * @param string    $contentTypeId The content_type id.
      */
-    return Devflow::$PHP->hook->filter->applyFilter('content_type_slug', $slug, $contentTypeId);
+    return __observer()->filter->applyFilter('content.type.slug', $slug, $contentTypeId);
 }
 
 /**
@@ -179,7 +179,7 @@ function get_content_type_description(string $contentTypeId): string
      * @param string    $description The content_type's description.
      * @param string    $contentTypeId The content_type id.
      */
-    return Devflow::$PHP->hook->filter->applyFilter('content_type_description', $description, $contentTypeId);
+    return __observer()->filter->applyFilter('content.type.description', $description, $contentTypeId);
 }
 
 /**
@@ -207,7 +207,7 @@ function get_content_type_permalink(string $contentTypeId): string
      * @param string    $link The content_type's permalink.
      * @param string    $contentTypeId The content_type id.
      */
-    return Devflow::$PHP->hook->filter->applyFilter('content_type_permalink', $link, $contentTypeId);
+    return __observer()->filter->applyFilter('content.type.permalink', $link, $contentTypeId);
 }
 
 /**
@@ -243,8 +243,8 @@ function cms_unique_content_type_slug(
      * @param string    $originalTitle   The content_type's original title before slugified.
      * @param string    $contentTypeId   The content_type's unique id.
      */
-    return Devflow::$PHP->hook->filter->applyFilter(
-        'cms_unique_content_type_slug',
+    return __observer()->filter->applyFilter(
+        'cms.unique.content.type.slug',
         $contentTypeSlug,
         $originalSlug,
         $originalTitle,
@@ -299,7 +299,7 @@ function cms_insert_content_type(array|ServerRequestInterface|ContentType $conte
          * @param string  $contentTypeId  The content_type's content_type_id.
          * @param bool    $update         Whether this is an existing content_type or a new content_type.
          */
-        Devflow::$PHP->hook->action->doAction('content_type_previous_slug', $previousSlug, $contentTypeId, $update);
+        __observer()->action->doAction('content_type_previous_slug', $previousSlug, $contentTypeId, $update);
 
         /**
          * Create new content_type object.
@@ -322,7 +322,7 @@ function cms_insert_content_type(array|ServerRequestInterface|ContentType $conte
          * @param string  $contentTypeId  The content_type's content_type_id.
          * @param bool    $update         Whether this is an existing content_type or a new content_type.
          */
-        Devflow::$PHP->hook->action->doAction(
+        __observer()->action->doAction(
             'content_type_previous_slug',
             $previousSlug,
             $contentTypeId->toNative(),
@@ -394,7 +394,7 @@ function cms_insert_content_type(array|ServerRequestInterface|ContentType $conte
          * @param string   $contentTypeId    Content Type id.
          * @param object   $contentType      Content Type object.
          */
-        Devflow::$PHP->hook->action->doAction('update_content_type', $contentTypeId->toNative(), $contentType);
+        __observer()->action->doAction('update_content_type', $contentTypeId->toNative(), $contentType);
         /** @var ContentType $contentTypeAfter */
         $contentTypeAfter = get_content_type_by('id', $contentTypeId->toNative());
 
@@ -406,7 +406,7 @@ function cms_insert_content_type(array|ServerRequestInterface|ContentType $conte
          * @param object    $contentTypeAfter   Content Type object following the update.
          * @param object    $contentTypeBefore  Content Type object before the update.
          */
-        Devflow::$PHP->hook->action->doAction(
+        __observer()->action->doAction(
             'content_type_updated',
             $contentTypeId->toNative(),
             $contentTypeAfter,
@@ -422,7 +422,7 @@ function cms_insert_content_type(array|ServerRequestInterface|ContentType $conte
      * @param array  $contentType    Content Type object.
      * @param bool   $update         Whether this is an existing content_type or a new content_type.
      */
-    Devflow::$PHP->hook->action->doAction(
+    __observer()->action->doAction(
         'cms_after_insert_content_type_data',
         $contentTypeId->toNative(),
         $contentType,
@@ -503,7 +503,7 @@ function cms_delete_content_type(string $contentTypeId): false|string|Error
      * @file App/Shared/Helpers/content-type.php
      * @param string $contentTypeId ContentType id.
      */
-    Devflow::$PHP->hook->action->doAction('before_delete_content_type', $contentTypeId);
+    __observer()->action->doAction('before_delete_content_type', $contentTypeId);
 
     /**
      * Action hook fires immediately before a content_type is deleted from the
@@ -512,7 +512,7 @@ function cms_delete_content_type(string $contentTypeId): false|string|Error
      * @file App/Shared/Helpers/content-type.php
      * @param string $contentTypeId ContentType ID.
      */
-    Devflow::$PHP->hook->action->doAction('delete_content_type', $contentTypeId);
+    __observer()->action->doAction('delete_content_type', $contentTypeId);
 
     $resolver = new NativeCommandHandlerResolver(
         container: ContainerFactory::make(config: config(key: 'commandbus.container'))
@@ -553,7 +553,7 @@ function cms_delete_content_type(string $contentTypeId): false|string|Error
      * @file App/Shared/Helpers/content-type.php
      * @param string $contentTypeId ContentType id.
      */
-    Devflow::$PHP->hook->action->doAction('deleted_content_type', $contentTypeId);
+    __observer()->action->doAction('deleted_content_type', $contentTypeId);
 
     /**
      * Action hook fires after a content_type is deleted.
@@ -561,7 +561,7 @@ function cms_delete_content_type(string $contentTypeId): false|string|Error
      * @file App/Shared/Helpers/content-type.php
      * @param string $contentTypeId ContentType id.
      */
-    Devflow::$PHP->hook->action->doAction('after_delete_contenttype', $contentTypeId);
+    __observer()->action->doAction('after_delete_contenttype', $contentTypeId);
 
     return $contenttype->id;
 }

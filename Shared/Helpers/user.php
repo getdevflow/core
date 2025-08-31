@@ -61,6 +61,7 @@ use function Codefy\Framework\Helpers\config;
 use function Codefy\Framework\Helpers\mail;
 use function Codefy\Framework\Helpers\storage_path;
 use function in_array;
+use function Qubus\Security\Helpers\__observer;
 use function Qubus\Security\Helpers\esc_html;
 use function Qubus\Security\Helpers\esc_html__;
 use function Qubus\Security\Helpers\t__;
@@ -224,7 +225,7 @@ function get_name(string $id, bool $reverse = false): string
         $_name = $name->lname . ', ' . $name->fname;
     }
 
-    return Devflow::$PHP->hook->filter->applyFilter('get_name', $_name);
+    return __observer()->filter->applyFilter('get.name', $_name);
 }
 
 /**
@@ -255,7 +256,7 @@ function get_initials(string $id, int $initials = 2): string
         $_initials = $name->lname . ', ' . mb_substr($name->fname, 0, 1, 'UTF-8') . '.';
     }
 
-    return Devflow::$PHP->hook->filter->applyFilter('get_initials', $_initials);
+    return __observer()->filter->applyFilter('get.initials', $_initials);
 }
 
 /**
@@ -308,7 +309,7 @@ function username_exists(string $username): false|string
      * @param string|false $userId  The user's user_id on success or false on failure.
      * @param string    $username   Username to check.
      */
-    return Devflow::$PHP->hook->filter->applyFilter('username_exists', $userId, $username);
+    return __observer()->filter->applyFilter('username.exists', $userId, $username);
 }
 
 /**
@@ -319,9 +320,7 @@ function username_exists(string $username): false|string
  * @file App/Shared/Helpers/user.php
  * @param string $email Email to check.
  * @return string|false The user's ID on success or false on failure.
- * @throws ContainerExceptionInterface
  * @throws Exception
- * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  */
 function email_exists(string $email): false|string
@@ -342,7 +341,7 @@ function email_exists(string $email): false|string
      * @param string|false $userId The user's user_id on success, and false on failure.
      * @param string       $email  Email to check.
      */
-    return Devflow::$PHP->hook->filter->applyFilter('email_exists', $userId, $email);
+    return __observer()->filter->applyFilter('email.exists', $userId, $email);
 }
 
 /**
@@ -352,7 +351,6 @@ function email_exists(string $email): false|string
  * @param string $status
  * @return array User's status
  * @throws Exception
- * @throws ReflectionException
  */
 function user_status_label(string $status): array
 {
@@ -380,7 +378,7 @@ function user_status_label(string $status): array
      *
      * @param array $label User's label.
      */
-    return Devflow::$PHP->hook->filter->applyFilter('user_status_label', $label[$status], $status);
+    return __observer()->filter->applyFilter('user.status.label', $label[$status], $status);
 }
 
 /**
@@ -639,7 +637,7 @@ function get_user_option(string $option, string $userId = ''): false|string
      * @param string $option Name of the option being retrieved.
      * @param string $userId ID of the user whose option is being retrieved.
      */
-    return Devflow::$PHP->hook->filter->applyFilter("get_user_option_{$option}", $result, $option, $userId);
+    return __observer()->filter->applyFilter("get.user.option_{$option}", $result, $option, $userId);
 }
 
 /**
@@ -815,8 +813,8 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
      * @param string $sanitizedUserLogin Username after it has been sanitized.
      * @param string $rawUserLogin The user's login.
      */
-    $preUserLogin = Devflow::$PHP->hook->filter->applyFilter(
-        'pre_user_login',
+    $preUserLogin = __observer()->filter->applyFilter(
+        'pre.user.login',
         (string) $sanitizedUserLogin,
         (string) $rawUserLogin
     );
@@ -852,7 +850,7 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
      * @file App/Shared/Helpers/user.php
      * @param array $usernames Array of blacklisted usernames.
      */
-    $illegalLogins = (array) Devflow::$PHP->hook->filter->applyFilter('illegal_user_logins', blacklisted_usernames());
+    $illegalLogins = (array) __observer()->filter->applyFilter('illegal.user.logins', blacklisted_usernames());
 
     if (in_array(strtolower($userLogin), array_map('\strtolower', $illegalLogins))) {
         return new UserError(
@@ -877,8 +875,8 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
      * @param string $sanitizedUserEmail User email after it has been sanitized
      * @param string $rawUserEmail The user's email.
      */
-    $userEmail = Devflow::$PHP->hook->filter->applyFilter(
-        'pre_user_email',
+    $userEmail = __observer()->filter->applyFilter(
+        'pre.user.email',
         (string) $sanitizedUserEmail,
         (string) $rawUserEmail
     );
@@ -912,8 +910,8 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
      * @param string $sanitizedUserFname User first name after it has been sanitized.
      * @param string $rawUserFname The user's first name.
      */
-    $userFname = Devflow::$PHP->hook->filter->applyFilter(
-        'pre_user_fname',
+    $userFname = __observer()->filter->applyFilter(
+        'pre.user.fname',
         (string) $sanitizedUserFname,
         (string) $rawUserFname
     );
@@ -927,8 +925,8 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
      * @param string $sanitizedUserMname User middlename after it has been sanitized.
      * @param string $rawUserMname The user's middle name.
      */
-    $userMname = Devflow::$PHP->hook->filter->applyFilter(
-        'pre_user_mname',
+    $userMname = __observer()->filter->applyFilter(
+        'pre.user.mname',
         (string) $sanitizedUserMname,
         (string) $rawUserMname
     );
@@ -942,8 +940,8 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
      * @param string $sanitizedUserLname User last name after it has been sanitized.
      * @param string $rawUserLname The user's last name.
      */
-    $userLname = Devflow::$PHP->hook->filter->applyFilter(
-        'pre_user_lname',
+    $userLname = __observer()->filter->applyFilter(
+        'pre.user.lname',
         (string) $sanitizedUserLname,
         (string) $rawUserLname
     );
@@ -957,8 +955,8 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
      * @param string $sanitizedUserBio User bio after it has been sanitized.
      * @param string $rawUserBio The user's bio.
      */
-    $meta['bio'] = Devflow::$PHP->hook->filter->applyFilter(
-        'pre_user_bio',
+    $meta['bio'] = __observer()->filter->applyFilter(
+        'pre.user.bio',
         (string) $sanitizedUserBio,
         (string) $rawUserBio
     );
@@ -972,8 +970,8 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
      * @param string $sanitizedUserTimezone User timezone after it has been sanitized.
      * @param string $rawUserTimezone The user's timezone.
      */
-    $userTimezone = Devflow::$PHP->hook->filter->applyFilter(
-        'pre_user_timezone',
+    $userTimezone = __observer()->filter->applyFilter(
+        'pre.user.timezone',
         (string) $sanitizedUserTimezone,
         (string) $rawUserTimezone
     );
@@ -987,8 +985,8 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
      * @param string $sanitizedUserDateFormat User date format after it has been sanitized.
      * @param string $rawUserDateFormat The user's date format.
      */
-    $userDateFormat = Devflow::$PHP->hook->filter->applyFilter(
-        'pre_user_date_format',
+    $userDateFormat = __observer()->filter->applyFilter(
+        'pre.user.date.format',
         (string) $sanitizedUserDateFormat,
         (string) $rawUserDateFormat
     );
@@ -1002,8 +1000,8 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
      * @param string $sanitizedUserTimeFormat User time format after it has been sanitized.
      * @param string $rawUserTimeFormat The user's time format.
      */
-    $userTimeFormat = Devflow::$PHP->hook->filter->applyFilter(
-        'pre_user_time_format',
+    $userTimeFormat = __observer()->filter->applyFilter(
+        'pre.user.time.format',
         (string) $sanitizedUserTimeFormat,
         (string) $rawUserTimeFormat
     );
@@ -1017,8 +1015,8 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
      * @param string $sanitizedUserLocale User locale after it has been sanitized.
      * @param string $rawUserLocale       The user's locale.
      */
-    $userLocale = Devflow::$PHP->hook->filter->applyFilter(
-        'pre_user_locale',
+    $userLocale = __observer()->filter->applyFilter(
+        'pre.user.locale',
         (string) $sanitizedUserLocale,
         (string) $rawUserLocale
     );
@@ -1032,8 +1030,8 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
      * @param string $sanitizedUserStatus User status after it has been sanitized.
      * @param string $rawUserStatus The user's status.
      */
-    $meta['status'] = Devflow::$PHP->hook->filter->applyFilter(
-        'pre_user_status',
+    $meta['status'] = __observer()->filter->applyFilter(
+        'pre.user.status',
         (string) $sanitizedUserStatus,
         (string) $rawUserStatus
     );
@@ -1102,8 +1100,8 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
      * @param bool     $update Whether the user is being updated rather than created.
      * @param string|null $userID ID of the user to be updated, or NULL if the user is being created.
      */
-    $userdata = Devflow::$PHP->hook->filter->applyFilter(
-        'pre_cms_insert_user_data',
+    $userdata = __observer()->filter->applyFilter(
+        'pre.cms.insert.user.data',
         $userdata,
         $update,
         $update ? $userId->toNative() : null
@@ -1126,7 +1124,7 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
      * @param object $user  User object.
      * @param bool $update  Whether the user is being updated rather than created.
      */
-    $meta = Devflow::$PHP->hook->filter->applyFilter('insert_usermeta', $meta, $user, $update);
+    $meta = __observer()->filter->applyFilter('insert.usermeta', $meta, $user, $update);
 
     $resolver = new NativeCommandHandlerResolver(
         container: ContainerFactory::make(config: config(key: 'commandbus.container'))
@@ -1205,7 +1203,7 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
          * @param string $userId    User ID.
          * @param User $oldUserData Object containing user's data prior to update.
          */
-        Devflow::$PHP->hook->action->doAction('profile_update', $userId->toNative(), $oldUserData);
+        __observer()->action->doAction('profile_update', $userId->toNative(), $oldUserData);
     } else {
         /**
          * Fires immediately after a new user is registered.
@@ -1213,7 +1211,7 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
          * @file App/Shared/Helpers/user.php
          * @param string $userId User ID.
          */
-        Devflow::$PHP->hook->action->doAction('user_register', $userId->toNative());
+        __observer()->action->doAction('user_register', $userId->toNative());
     }
 
     return $userId->toNative();
@@ -1294,8 +1292,8 @@ function cms_update_user(array|ServerRequestInterface|User $userdata): string|Us
          * @param array $userdata The updated user array.
          *
          */
-        $sendPasswordChangeEmail = Devflow::$PHP->hook->filter->applyFilter(
-            'send_password_change_email',
+        $sendPasswordChangeEmail = __observer()->filter->applyFilter(
+            'send.password.change.email',
             true,
             $user,
             $userdata
@@ -1314,8 +1312,8 @@ function cms_update_user(array|ServerRequestInterface|User $userdata): string|Us
          * @param array $userdata The updated user array.
          *
          */
-        $sendEmailChangeEmail = Devflow::$PHP->hook->filter->applyFilter(
-            'send_email_change_email',
+        $sendEmailChangeEmail = __observer()->filter->applyFilter(
+            'send.email.change.email',
             true,
             $user,
             $userdata
@@ -1336,7 +1334,7 @@ function cms_update_user(array|ServerRequestInterface|User $userdata): string|Us
              * @param string $plaintextPass Plaintext password before hashing.
              * @param array  $userdata      The updated user array.
              */
-            Devflow::$PHP->hook->action->doAction('password_change_email', $user, $plaintextPass, $userdata);
+            __observer()->action->doAction('password_change_email', $user, $plaintextPass, $userdata);
         }
 
         if (!empty($sendEmailChangeEmail)) {
@@ -1347,7 +1345,7 @@ function cms_update_user(array|ServerRequestInterface|User $userdata): string|Us
              * @param array $user     The original user array before changes.
              * @param array $userdata The updated user array.
              */
-            Devflow::$PHP->hook->action->doAction('email_change_email', $user, $userdata);
+            __observer()->action->doAction('email_change_email', $user, $userdata);
         }
     }
 
@@ -1416,7 +1414,7 @@ function cms_delete_user(string $userId, ?string $assignId = null): bool
          * @param string $assignId ID of user to reassign content to.
          *                         Default: NULL.
          */
-        Devflow::$PHP->hook->action->doAction('reassign_content', $userId, $assignId);
+        __observer()->action->doAction('reassign_content', $userId, $assignId);
     }
 
     /**
@@ -1427,7 +1425,7 @@ function cms_delete_user(string $userId, ?string $assignId = null): bool
      * @param string|null $reassign ID of the user to reassign posts to.
      *                              Default: NULL.
      */
-    Devflow::$PHP->hook->action->doAction('cms_delete_user', $userId, $assignId);
+    __observer()->action->doAction('cms_delete_user', $userId, $assignId);
 
     try {
         $resolver = new NativeCommandHandlerResolver(
@@ -1471,7 +1469,7 @@ function cms_delete_user(string $userId, ?string $assignId = null): bool
      * @param string $userId   ID of the user who was deleted.
      * @param string $assignId ID of the user to whom posts were assigned. Default: null.
      */
-    Devflow::$PHP->hook->action->doAction('deleted_user', $userId, $assignId);
+    __observer()->action->doAction('deleted_user', $userId, $assignId);
 
     return true;
 }
@@ -1885,7 +1883,7 @@ function blacklisted_usernames(): array
         'www3', 'www4', 'you', 'yourname', 'yourusername', 'zlib'
     ];
 
-    return Devflow::$PHP->hook->filter->applyFilter('blacklisted_usernames', $blacklist);
+    return __observer()->filter->applyFilter('blacklisted_usernames', $blacklist);
 }
 
 /**
@@ -2064,7 +2062,7 @@ function get_user_datetime_format(): string
 {
     $dateFormat = get_user_date_format();
     $timeFormat = get_user_time_format();
-    return Devflow::$PHP->hook->filter->applyFilter(
+    return __observer()->filter->applyFilter(
         'user_datetime_format',
         concat_ws($dateFormat, $timeFormat, ' '),
         $timeFormat,

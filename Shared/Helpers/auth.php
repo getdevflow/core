@@ -32,6 +32,7 @@ use function file_exists;
 use function filter_var;
 use function parse_str;
 use function Qubus\Routing\Helpers\redirect;
+use function Qubus\Security\Helpers\__observer;
 use function Qubus\Security\Helpers\esc_html;
 use function Qubus\Security\Helpers\t__;
 use function Qubus\Support\Helpers\is_false__;
@@ -187,10 +188,10 @@ function cms_authenticate(string $login, string $password, string $rememberme): 
      * @param array $user User data array.
      * @param string $rememberme Whether to remember the user.
      */
-    Devflow::$PHP->hook->filter->applyFilter('cms_auth_cookie', $user, $rememberme);
+    __observer()->filter->applyFilter('cms.auth.cookie', $user, $rememberme);
 
-    $redirectTo = Devflow::$PHP->hook->filter->applyFilter(
-        'authenticate_redirect_to',
+    $redirectTo = __observer()->filter->applyFilter(
+        'authenticate.redirect.to',
         $request->getParsedBody()['redirect_to'] ?? admin_url()
     );
 
@@ -292,7 +293,7 @@ function cms_authenticate_user(string $login, string $password, string $remember
      * @param string $password User's password.
      * @param string $rememberme Whether to remember the user.
      */
-    return Devflow::$PHP->hook->filter->applyFilter('cms_authenticate_user', $login, $password, $rememberme);
+    return __observer()->filter->applyFilter('cms.authenticate.user', $login, $password, $rememberme);
 }
 
 /**
@@ -317,8 +318,8 @@ function cms_set_auth_cookie(array $user, string $rememberme = ''): void
          *
          * @file App/Shared/Helpers/auth.php
          */
-        $expire = Devflow::$PHP->hook->filter->applyFilter(
-            'auth_cookie_expiration',
+        $expire = __observer()->filter->applyFilter(
+            'auth.cookie.expiration',
             Options::factory()->read('cookieexpire', 172800)
         );
     } else {
@@ -327,8 +328,8 @@ function cms_set_auth_cookie(array $user, string $rememberme = ''): void
          *
          * @file App/Shared/Helpers/auth.php
          */
-        $expire = Devflow::$PHP->hook->filter->applyFilter(
-            'auth_cookie_expiration',
+        $expire = __observer()->filter->applyFilter(
+            'auth.cookie.expiration',
             config('cookies.lifetime') ?? 86400
         );
     }
@@ -348,7 +349,7 @@ function cms_set_auth_cookie(array $user, string $rememberme = ''): void
      * @param array $authCookie Authentication cookie.
      * @param int   $expire  Duration in seconds the authentication cookie should be valid.
      */
-    Devflow::$PHP->hook->action->doAction('set_auth_cookie', $authCookie, $expire);
+    __observer()->action->doAction('set_auth_cookie', $authCookie, $expire);
 
     $cookies->setSecureCookie($authCookie);
 }
@@ -368,7 +369,7 @@ function cms_clear_auth_cookie(): void
      *
      * @file App/Shared/Helpers/auth.php
      */
-    Devflow::$PHP->hook->action->doAction('clear_auth_cookie');
+    __observer()->action->doAction('clear_auth_cookie');
 
     $vars1 = [];
     parse_str($cookies->get('USERCOOKIEID'), $vars1);
@@ -421,7 +422,7 @@ function cms_clear_auth_cookie(): void
  */
 function login_form_show_message(): void
 {
-    echo Devflow::$PHP->hook->filter->applyFilter('login_form_show_message', Devflow::$PHP->flash->display());
+    echo __observer()->filter->applyFilter('login.form.show.message', Devflow::$PHP->flash->display());
 }
 
 /**

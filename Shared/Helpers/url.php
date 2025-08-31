@@ -4,11 +4,9 @@ declare(strict_types=1);
 
 namespace App\Shared\Helpers;
 
-use App\Application\Devflow;
 use App\Shared\Services\Utils;
 use Qubus\Exception\Exception;
 use Qubus\Http\Request;
-use ReflectionException;
 
 use function Codefy\Framework\Helpers\config;
 use function filter_var;
@@ -19,6 +17,7 @@ use function ltrim;
 use function parse_str;
 use function parse_url;
 use function preg_replace;
+use function Qubus\Security\Helpers\__observer;
 use function Qubus\Security\Helpers\esc_url;
 use function Qubus\Support\Helpers\concat_ws;
 use function sprintf;
@@ -36,7 +35,6 @@ use const PHP_URL_SCHEME;
  * @param string|null $scheme Optional. Scheme to give $url. Currently, 'http', 'https', 'login',
  *                            'admin', 'relative', 'rest' or null. Default null.
  * @return string $url URL with chosen scheme.
- * @throws ReflectionException
  * @throws Exception
  */
 function set_url_scheme(string $url, ?string $scheme = null): string
@@ -74,7 +72,7 @@ function set_url_scheme(string $url, ?string $scheme = null): string
      * @param string|null $origScheme Scheme requested for the URL. One of 'http', 'https', 'login',
      *                                 'admin', 'relative', or null.
      */
-    return Devflow::$PHP->hook->filter->applyFilter('set_url_scheme', $url, $scheme, $origScheme);
+    return __observer()->filter->applyFilter('set.url.scheme', $url, $scheme, $origScheme);
 }
 
 /**
@@ -88,7 +86,6 @@ function set_url_scheme(string $url, ?string $scheme = null): string
  * @param string $url A URL to act upon.
  * @return string Returns modified url query string.
  * @throws Exception
- * @throws ReflectionException
  */
 function add_query_arg(string $key, string $value, string $url): string
 {
@@ -105,7 +102,7 @@ function add_query_arg(string $key, string $value, string $url): string
         $result .= '//' . $uri['host'];
     }
     if (isset($uri['port'])) {
-        $result .= Devflow::$PHP->hook->filter->applyFilter('query_arg_port', ':' . $uri['port']);
+        $result .= __observer()->filter->applyFilter('query.arg.port', ':' . $uri['port']);
     }
     if ($uri['path']) {
         $result .= $uri['path'];
@@ -143,7 +140,6 @@ function url(?string $path = null): string
  *                       Default null.
  * @return string Site url link.
  * @throws Exception
- * @throws ReflectionException
  */
 function cms_site_url(string $path = '', ?string $scheme = null): string
 {
@@ -163,7 +159,7 @@ function cms_site_url(string $path = '', ?string $scheme = null): string
      * @param string|null $scheme Scheme to give the site url context. Accepts 'http', 'https', 'login',
      *                            'admin', 'relative' or null.
      */
-    return Devflow::$PHP->hook->filter->applyFilter('site_url', $url, $path, $scheme);
+    return __observer()->filter->applyFilter('site.url', $url, $path, $scheme);
 }
 
 /**
@@ -175,7 +171,6 @@ function cms_site_url(string $path = '', ?string $scheme = null): string
  *                       to force those schemes. Default 'admin'.
  * @return string Admin url link with optional path appended.
  * @throws Exception
- * @throws ReflectionException
  */
 function cms_admin_url(string $path = '', string $scheme = 'admin'): string
 {
@@ -195,7 +190,7 @@ function cms_admin_url(string $path = '', string $scheme = 'admin'): string
      * @param string $url    The complete admin area url including scheme and path before escaped.
      * @param string $path   Path relative to the admin area url. Blank string if no path is specified.
      */
-    return Devflow::$PHP->hook->filter->applyFilter('admin_url', $escUrl, $url, $path);
+    return __observer()->filter->applyFilter('admin.url', $escUrl, $url, $path);
 }
 
 /**
@@ -210,9 +205,8 @@ function cms_admin_url(string $path = '', string $scheme = 'admin'): string
  *                            'http', 'https', 'relative', or null. Default null.
  * @return string Home url link with optional path appended.
  * @throws Exception
- * @throws ReflectionException
  */
-function cms_home_url(string $path = '', string $scheme = null): string
+function cms_home_url(string $path = '', ?string $scheme = null): string
 {
     $origScheme = $scheme;
     $uri = url(path: '/');
@@ -243,7 +237,7 @@ function cms_home_url(string $path = '', string $scheme = null): string
      * @param string|null $scheme  Scheme to give the site url context. Accepts 'http', 'https',
      *                             'relative' or null.
      */
-    return Devflow::$PHP->hook->filter->applyFilter('home_url', $escUrl, $url, $path, $origScheme);
+    return __observer()->filter->applyFilter('home.url', $escUrl, $url, $path, $origScheme);
 }
 
 /**
@@ -256,10 +250,11 @@ function cms_home_url(string $path = '', string $scheme = null): string
  *                             'http', 'https', 'relative', or null. Default 'login'.
  * @return string Returns the login url.
  * @throws Exception
- * @throws ReflectionException
  */
 function cms_login_url(string $redirect = '', string $path = '', ?string $scheme = 'login'): string
 {
+    $loginUrl = '';
+
     $url = cms_site_url('login/', $scheme);
 
     if ($path && is_string($path)) {
@@ -296,7 +291,7 @@ function cms_login_url(string $redirect = '', string $path = '', ?string $scheme
      * @param string|null $scheme  Scheme to give the login url context. Accepts 'http', 'https',
      *                             'relative' or null.
      */
-    return Devflow::$PHP->hook->filter->applyFilter('login_url', $loginUrl, $redirect, $path, $scheme);
+    return __observer()->filter->applyFilter('login.url', $loginUrl, $redirect, $path, $scheme);
 }
 
 /**
@@ -309,10 +304,11 @@ function cms_login_url(string $redirect = '', string $path = '', ?string $scheme
  *                             'http', 'https', 'relative', or null. Default 'logout'.
  * @return string Returns the logout url.
  * @throws Exception
- * @throws ReflectionException
  */
 function cms_logout_url(string $redirect = '', string $path = '', ?string $scheme = 'logout'): string
 {
+    $logoutUrl = '';
+
     $url = cms_site_url('logout/', $scheme);
 
     if ($path && is_string($path)) {
@@ -349,7 +345,7 @@ function cms_logout_url(string $redirect = '', string $path = '', ?string $schem
      * @param string|null $scheme  Scheme to give the logout url context. Accepts 'http', 'https',
      *                             'relative' or null.
      */
-    return Devflow::$PHP->hook->filter->applyFilter('logout_url', $logoutUrl, $redirect, $path, $scheme);
+    return __observer()->filter->applyFilter('logout.url', $logoutUrl, $redirect, $path, $scheme);
 }
 
 /**
@@ -365,7 +361,6 @@ function cms_logout_url(string $redirect = '', string $path = '', ?string $schem
  *                        Default null.
  * @return string Site url link.
  * @throws Exception
- * @throws ReflectionException
  */
 function site_url(string $path = '', ?string $scheme = null): string
 {
@@ -381,7 +376,6 @@ function site_url(string $path = '', ?string $scheme = null): string
  *                        to force those schemes. Default 'admin'.
  * @return string Admin url link with optional path appended.
  * @throws Exception
- * @throws ReflectionException
  */
 function admin_url(string $path = '', string $scheme = 'admin'): string
 {
@@ -400,7 +394,6 @@ function admin_url(string $path = '', string $scheme = 'admin'): string
  *                             'http', 'https', 'relative', or null. Default null.
  * @return string Home url link with optional path appended.
  * @throws Exception
- * @throws ReflectionException
  */
 function home_url(string $path = '', ?string $scheme = null): string
 {
@@ -417,7 +410,6 @@ function home_url(string $path = '', ?string $scheme = null): string
  *                             'http', 'https', 'relative', or null. Default 'login'.
  * @return string Returns the login url.
  * @throws Exception
- * @throws ReflectionException
  */
 function login_url(string $redirect = '', string $path = '', ?string $scheme = 'login'): string
 {
@@ -434,7 +426,6 @@ function login_url(string $redirect = '', string $path = '', ?string $scheme = '
  *                             'http', 'https', 'relative', or null. Default 'logout'.
  * @return string Returns the logout url.
  * @throws Exception
- * @throws ReflectionException
  */
 function logout_url(string $redirect = '', string $path = '', ?string $scheme = 'logout'): string
 {
@@ -451,11 +442,12 @@ function logout_url(string $redirect = '', string $path = '', ?string $scheme = 
  *                             'http', 'https', 'relative', or null. Default 'login'.
  * @return string Returns the login url.
  * @throws Exception
- * @throws ReflectionException
  */
 function admin_login_url(string $redirect = '', string $path = '', ?string $scheme = 'login'): string
 {
-    $url = cms_site_url(sprintf('admin%s', config(key: 'auth.login_route')), $scheme);
+    $loginUrl = '';
+
+    $url = cms_site_url(sprintf('admin/%s/', config(key: 'auth.login_route')), $scheme);
 
     if ($path && is_string($path)) {
         $url .= ltrim($path, '/');
@@ -491,7 +483,7 @@ function admin_login_url(string $redirect = '', string $path = '', ?string $sche
      * @param string|null $scheme Scheme to give the login url context. Accepts 'http', 'https',
      *                            'relative' or null.
      */
-    return Devflow::$PHP->hook->filter->applyFilter('admin_login_url', $loginUrl, $redirect, $path, $scheme);
+    return __observer()->filter->applyFilter('admin.login.url', $loginUrl, $redirect, $path, $scheme);
 }
 
 /**
@@ -504,10 +496,11 @@ function admin_login_url(string $redirect = '', string $path = '', ?string $sche
  *                             'http', 'https', 'relative', or null. Default 'logout'.
  * @return string Returns the logout url.
  * @throws Exception
- * @throws ReflectionException
  */
 function admin_logout_url(string $redirect = '', string $path = '', ?string $scheme = 'login'): string
 {
+    $logoutUrl = '';
+
     $url = cms_site_url('admin/logout/', $scheme);
 
     if ($path && is_string($path)) {
@@ -544,5 +537,5 @@ function admin_logout_url(string $redirect = '', string $path = '', ?string $sch
      * @param string|null $scheme Scheme to give the logout url context. Accepts 'http', 'https',
      *                            'relative' or null.
      */
-    return Devflow::$PHP->hook->filter->applyFilter('admin_logout_url', $logoutUrl, $redirect, $path, $scheme);
+    return __observer()->filter->applyFilter('admin.logout.url', $logoutUrl, $redirect, $path, $scheme);
 }

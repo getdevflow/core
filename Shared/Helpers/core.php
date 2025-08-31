@@ -21,6 +21,7 @@ use Defuse\Crypto\Exception\BadFormatException;
 use Defuse\Crypto\Exception\EnvironmentIsBrokenException;
 use Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException;
 use Defuse\Crypto\Key;
+use Deprecated;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Psr\SimpleCache\InvalidArgumentException;
@@ -76,6 +77,7 @@ use function preg_quote;
 use function preg_replace;
 use function preg_replace_callback;
 use function preg_split;
+use function Qubus\Security\Helpers\__observer;
 use function Qubus\Security\Helpers\t__;
 use function Qubus\Support\Helpers\php_like;
 use function Qubus\Support\Helpers\remove_trailing_slash;
@@ -108,94 +110,99 @@ use const PATHINFO_FILENAME;
  * Turn all URLs into clickable links.
  *
  * @file App/Shared/Helpers/core.php
- * @param string $value
- * @param array  $protocols  http/https, ftp, mail, twitter
- * @param array  $attributes
+ * @param string                $value      Input text.
+ * @param list<string>          $protocols  Supported protocols, e.g. ['http', 'https', 'mail', 'x'].
+ * @param array<string,string>  $attributes Extra HTML attributes to add to generated <a> tags.
  * @return string
  */
 function make_clickable(string $value, array $protocols = ['http', 'mail'], array $attributes = []): string
 {
-    // Link attributes
+    // Build safe attribute string
     $attr = '';
     foreach ($attributes as $key => $val) {
-        $attr = ' ' . $key . '="' . htmlentities($val) . '"';
+        $key = htmlspecialchars((string)$key, ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5, 'UTF-8');
+        $val = htmlspecialchars((string)$val, ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5, 'UTF-8');
+        $attr .= " {$key}=\"{$val}\"";
     }
 
     $links = [];
 
-    // Extract existing links and tags
-    $value = preg_replace_callback('~(<a .*?>.*?</a>|<.*?>)~i', function ($match) use (&$links) {
-        return '<' . array_push($links, $match[1]) . '>';
-    }, $value);
+    // Temporarily replace existing links/tags to avoid double-wrapping
+    $value = preg_replace_callback(
+        '~(<a [^>]+>.*?</a>|<[^>]+>)~i',
+        static fn($m) => '<' . array_push($links, $m[1]) . '>',
+        $value
+    ) ?? $value;
 
-    // Extract text links for each protocol
-    foreach ((array) $protocols as $protocol) {
+    foreach ($protocols as $protocol) {
         $value = match ($protocol) {
-            'http', 'https' => preg_replace_callback(
-                '~(?:(https?)://([^\s<]+)|(www\.[^\s<]+?\.[^\s<]+))(?<![\.,:])~i',
-                function ($match) use ($protocol, &$links, $attr) {
-                    if ($match[1]) {
-                        $protocol = $match[1];
-                    }
-                    $link = $match[2] ?: $match[3];
+            'http', 'https' =>
+            preg_replace_callback(
+                '~(?:(?P<scheme>https?)://(?P<url>[^\s<]+)|(?P<www>www\.[^\s<]+?\.[^\s<]+))(?<![\.,:])~i',
+                static function ($m) use (&$links, $attr) {
+                    $scheme = $m['scheme'] ?: 'http';
+                    $url    = $m['url'] ?: $m['www'];
+                    $safe   = htmlspecialchars($url, ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5, 'UTF-8');
                     return '<' . array_push(
                         $links,
-                                    "<a $attr href=\"$protocol://$link\">$link</a>"
-                    ) . '>';
-                },
-                    $value
-            ),
-            'mail' => preg_replace_callback(
-                '~([^\s<]+?@[^\s<]+?\.[^\s<]+)(?<![\.,:])~',
-                function ($match) use (&$links, $attr) {
-                    return '<' . array_push(
-                        $links,
-                                    "<a $attr href=\"mailto:{$match[1]}\">{$match[1]}</a>"
-                    ) . '>';
-                },
-                    $value
-            ),
-            'twitter' => preg_replace_callback(
-                '~(?<!\w)[@#](\w++)~',
-                function ($match) use (&$links, $attr) {
-                    return '<' . array_push(
-                        $links,
-                                    "<a $attr href=\"https://x.com/" . ($match[0][0] == '@'
-                                            ? ''
-                                            : 'search/%23') . $match[1] . "\">{$match[0]}</a>"
-                    ) . '>';
-                },
-                    $value
-            ),
-            'x' => preg_replace_callback(
-                '~(?<!\w)[@#](\w++)~',
-                function ($match) use (&$links, $attr) {
-                    return '<' . array_push(
-                        $links,
-                                    "<a $attr href=\"https://x.com/" . ($match[0][0] == '@'
-                                            ? ''
-                                            : 'search/%23') . $match[1] . "\">{$match[0]}</a>"
-                    ) . '>';
-                },
-                    $value
-            ),
-            default => preg_replace_callback(
-                '~' . preg_quote($protocol, '~') . '://([^\s<]+?)(?<![\.,:])~i',
-                function ($match) use ($protocol, &$links, $attr) {
-                    return '<' . array_push(
-                        $links,
-                        "<a $attr href=\"$protocol://{$match[1]}\">{$match[1]}</a>"
+                        "<a{$attr} href=\"{$scheme}://{$safe}\">{$safe}</a>"
                     ) . '>';
                 },
                 $value
-            ),
+            ) ?? $value,
+
+            'mail' =>
+            preg_replace_callback(
+                '~(?P<email>[^\s<]+@[^\s<]+?\.[^\s<]+)(?<![\.,:])~',
+                static function ($m) use (&$links, $attr) {
+                    $email = htmlspecialchars($m['email'], ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5, 'UTF-8');
+                    return '<' . array_push(
+                        $links,
+                        "<a{$attr} href=\"mailto:{$email}\">{$email}</a>"
+                    ) . '>';
+                },
+                $value
+            ) ?? $value,
+
+            'twitter', 'x' =>
+            preg_replace_callback(
+                '~(?<!\\w)(?P<symbol>[@#])(?P<handle>\\w++)~',
+                static function ($m) use (&$links, $attr) {
+                    $handle = htmlspecialchars($m['handle'], ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5, 'UTF-8');
+                    $symbol = $m['symbol'];
+                    $url    = $symbol === '@'
+                            ? "https://x.com/{$handle}"
+                            : "https://x.com/search/%23{$handle}";
+                    $safe   = "{$symbol}{$handle}";
+                    return '<' . array_push(
+                        $links,
+                        "<a{$attr} href=\"{$url}\">{$safe}</a>"
+                    ) . '>';
+                },
+                $value
+            ) ?? $value,
+
+            default =>
+            preg_replace_callback(
+                '~' . preg_quote($protocol, '~') . '://([^\s<]+?)(?<![\.,:])~i',
+                static function ($m) use (&$links, $attr, $protocol) {
+                    $link = htmlspecialchars($m[1], ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5, 'UTF-8');
+                    return '<' . array_push(
+                        $links,
+                        "<a{$attr} href=\"{$protocol}://{$link}\">{$link}</a>"
+                    ) . '>';
+                },
+                $value
+            ) ?? $value,
         };
     }
 
-    // Insert all link
-    return preg_replace_callback('/<(\d+)>/', function ($match) use (&$links) {
-        return $links[$match[1] - 1];
-    }, $value);
+    // Reinsert placeholders
+    return preg_replace_callback(
+        '/<(\\d+)>/',
+        static fn($m) => $links[(int)$m[1] - 1] ?? $m[0],
+        $value
+    ) ?? $value;
 }
 
 /**
@@ -397,7 +404,6 @@ function normalize_path(string $path): array|string|null
  * @param string $filename Filename to beautify.
  * @return string Beautified filename.
  * @throws Exception
- * @throws ReflectionException
  */
 function beautify_filename(string $filename): string
 {
@@ -425,7 +431,7 @@ function beautify_filename(string $filename): string
      * @param string $filename     Beautified filename.
      * @param string $filenameRaw The filename prior to beautification.
      */
-    $filename = Devflow::$PHP->hook->filter->applyFilter('beautified_filename', $filename, $filenameRaw);
+    $filename = __observer()->filter->applyFilter('beautified.filename', $filename, $filenameRaw);
 
     // lowercase for windows/unix interoperability http://support.microsoft.com/kb/100625
     $filename = mb_strtolower($filename, mb_detect_encoding($filename));
@@ -444,7 +450,6 @@ function beautify_filename(string $filename): string
  * @param bool $beautify Whether to beautify the sanitized filename.
  * @return string Sanitized filename for use.
  * @throws Exception
- * @throws ReflectionException
  */
 function sanitize_filename(string $filename, bool $beautify = true): string
 {
@@ -477,7 +482,7 @@ function sanitize_filename(string $filename, bool $beautify = true): string
      * @param string $filename     Sanitized filename.
      * @param string $filenameRaw The filename prior to sanitization.
      */
-    $filename = Devflow::$PHP->hook->filter->applyFilter('sanitized_filename', $filename, $filenameRaw);
+    $filename = __observer()->filter->applyFilter('sanitized.filename', $filename, $filenameRaw);
 
     // maximise filename length to 255 bytes http://serverfault.com/a/9548/44086
     $ext = pathinfo($filename, PATHINFO_EXTENSION);
@@ -847,7 +852,7 @@ function set_email_template(string $body): string
 {
     $tpl = file_get_contents(resource_path('tpl' . Devflow::$PHP::DS . 'system_email.tpl'));
 
-    $template = Devflow::$PHP->hook->filter->applyFilter('email_template', $tpl);
+    $template = __observer()->filter->applyFilter('email.template', $tpl);
 
     return str_replace('{content}', $body, $template);
 }
@@ -878,7 +883,7 @@ function replace_template_vars(string $template): string
         'time_format' => $option->read(optionKey: 'time_format')
     ];
 
-    $toReplace = Devflow::$PHP->hook->filter->applyFilter('email_template_tags', $varArray);
+    $toReplace = __observer()->filter->applyFilter('email.template.tags', $varArray);
 
     foreach ($toReplace as $tag => $var) {
         $template = str_replace(search: '{' . $tag . '}', replace: $var, subject: $template);
@@ -914,7 +919,7 @@ function process_email_html(string $text, string $title): string
     $body = str_replace('{title}', $title, $template);
 
     // Replace variables in email
-    return Devflow::$PHP->hook->filter->applyFilter('email_template_body', replace_template_vars($body));
+    return __observer()->filter->applyFilter('email.template.body', replace_template_vars($body));
 }
 
 /**
@@ -965,7 +970,7 @@ function cms_enqueue_css(
         $options = [
             'public_dir' => remove_trailing_slash(public_path()),
             'css_dir' => 'static' . Devflow::$PHP::DS . 'assets' . Devflow::$PHP::DS  . 'css',
-            'pipeline' => Devflow::$PHP->hook->filter->applyFilter('default_css_pipeline', $minify),
+            'pipeline' => __observer()->filter->applyFilter('default.css.pipeline', $minify),
             'pipeline_dir' => 'minify',
         ];
         $default = new AppAssets($options);
@@ -974,7 +979,7 @@ function cms_enqueue_css(
         $options = [
             'public_dir' => remove_trailing_slash(public_path()),
             'css_dir' => 'plugins' . Devflow::$PHP::DS  . $slug . Devflow::$PHP::DS  . 'assets' . Devflow::$PHP::DS  . 'css',
-            'pipeline' => Devflow::$PHP->hook->filter->applyFilter('plugin_css_pipeline', $minify),
+            'pipeline' => __observer()->filter->applyFilter('plugin.css.pipeline', $minify),
             'pipeline_dir' => 'minify'
         ];
         $default = new PluginAssets($options);
@@ -983,7 +988,7 @@ function cms_enqueue_css(
         $options = [
             'public_dir' => remove_trailing_slash(public_path()),
             'css_dir' => 'themes' . Devflow::$PHP::DS  . $slug . Devflow::$PHP::DS  . 'assets' . Devflow::$PHP::DS  . 'css',
-            'pipeline' => Devflow::$PHP->hook->filter->applyFilter('theme_css_pipeline', $minify),
+            'pipeline' => __observer()->filter->applyFilter('theme.css.pipeline', $minify),
             'pipeline_dir' => 'minify'
         ];
         $default = new ThemeAssets($options);
@@ -1024,7 +1029,7 @@ function cms_enqueue_js(
         $options = [
             'public_dir' => remove_trailing_slash(public_path()),
             'js_dir' => 'static' . Devflow::$PHP::DS  . 'assets' . Devflow::$PHP::DS  . 'js',
-            'pipeline' => Devflow::$PHP->hook->filter->applyFilter('default_js_pipeline', $minify),
+            'pipeline' => __observer()->filter->applyFilter('default.js.pipeline', $minify),
             'pipeline_dir' => 'minify',
         ];
         $default = new AppAssets($options);
@@ -1033,7 +1038,7 @@ function cms_enqueue_js(
         $options = [
             'public_dir' => remove_trailing_slash(public_path()),
             'js_dir' => 'plugins' . Devflow::$PHP::DS  . $slug . Devflow::$PHP::DS  . 'assets' . Devflow::$PHP::DS  . 'js',
-            'pipeline' => Devflow::$PHP->hook->filter->applyFilter('plugin_js_pipeline', $minify),
+            'pipeline' => __observer()->filter->applyFilter('plugin.js.pipeline', $minify),
             'pipeline_dir' => 'minify'
         ];
         $default = new PluginAssets($options);
@@ -1042,7 +1047,7 @@ function cms_enqueue_js(
         $options = [
             'public_dir' => remove_trailing_slash(public_path()),
             'js_dir' => 'themes' . Devflow::$PHP::DS  . $slug . Devflow::$PHP::DS  . 'assets' . Devflow::$PHP::DS  . 'js',
-            'pipeline' => Devflow::$PHP->hook->filter->applyFilter('theme_js_pipeline', $minify),
+            'pipeline' => __observer()->filter->applyFilter('theme.js.pipeline', $minify),
             'pipeline_dir' => 'minify'
         ];
         $default = new ThemeAssets($options);
@@ -1108,8 +1113,8 @@ function generate_random_password(
      * @param bool   $specialChars      Whether to include standard special characters.
      * @param bool   $extraSpecialChars Whether to include other special characters.
      */
-    return Devflow::$PHP->hook->filter->applyFilter(
-        'random_password',
+    return __observer()->filter->applyFilter(
+        'random.password',
         $password,
         $length,
         $specialChars,
@@ -1399,20 +1404,20 @@ function updater_server_url(): string
     /**
      * Filters the update api version.
      */
-    $apiVersion = Devflow::$PHP->hook->filter->applyFilter('updater_api_version', 'api/1.1');
+    $apiVersion = __observer()->filter->applyFilter('updater.api.version', 'api/2.0');
     /**
      * Filters the update base server url.
      */
-    $updateBaseUrl = Devflow::$PHP->hook->filter->applyFilter(
-        'updater_base_url',
+    $updateBaseUrl = __observer()->filter->applyFilter(
+        'updater.base.url',
         'https://devflow-cmf.s3.amazonaws.com'
     );
     /**
      * Filters the updater url where update.json and
      * releases.json are located.
      */
-    return Devflow::$PHP->hook->filter->applyFilter(
-        'updater_url',
+    return __observer()->filter->applyFilter(
+        'updater.url',
         sprintf('%s/%s', $updateBaseUrl, $apiVersion)
     );
 }
@@ -1445,11 +1450,11 @@ function show_update_message(): void
                             msgid: 'Devflow release %s is available for download/upgrade. Before upgrading, make sure to backup your system.',
                             domain: 'devflow'
                         ),
-                        $update->getLatestVersion()
+                        $update->latestVersion
                     );
                     $alert .= '</div>';
 
-                    echo Devflow::$PHP->hook->filter->applyFilter('update_message', $alert);
+                    echo __observer()->filter->applyFilter('update.message', $alert);
                 }
             }
         } catch (Exception $e) {
@@ -1468,6 +1473,7 @@ function show_update_message(): void
  * @param string|null $replacement Replacement of deprecated code if any.
  * @throws TypeException
  */
+#[Deprecated(message: 'use PHP 8.4 new Deprecated attribute instead.', since: 'v2.0.0')]
 function deprecation_notice(
     string $functionName,
     string $deprecatedVersion,
@@ -1487,7 +1493,7 @@ function deprecation_notice(
     );
 
     if (php_like("%dev%", config(key: 'app.env'))) {
-        Devflow::$PHP->hook->action->addAction('admin_notices', function () use ($message, $caller) {
+        __observer()->action->addAction('admin_notices', function () use ($message, $caller) {
             echo '<div class="alert dismissable alert-danger center sticky">' .
                     $message . ' <strong>' . $caller['function'] . '()</strong> is called from <strong>'
                     . $caller['file'] . '</strong> on line <strong>' . $caller['line'] . '</strong>' .
