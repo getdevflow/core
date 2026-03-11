@@ -144,7 +144,6 @@ final class Options
             $result = $this->cache->get(md5($optionKey));
 
             if (is_null__($result)) {
-                logger('info', 'options', [$optionKey]);
                 $result = $this->dfdb->getVar(
                     $this->dfdb->prepare(
                         "SELECT option_value FROM {$this->dfdb->prefix}option WHERE option_key = ? LIMIT 1",
