@@ -50,7 +50,7 @@ final class Content extends stdClass
 {
     use HydratorAware;
 
-    public function __construct(protected ?Database $dfdb = null)
+    public function __construct(protected Database $dfdb)
     {
     }
 
@@ -134,6 +134,7 @@ final class Content extends stdClass
      * @param array $data
      * @return Content
      * @throws TypeException
+     * @throws Exception
      */
     public function create(array $data = []): Content
     {
@@ -151,11 +152,12 @@ final class Content extends stdClass
      */
     protected function __create(): Content
     {
-        return new Content();
+        return new Content($this->dfdb);
     }
 
     /**
      * @throws TypeException
+     * @throws Exception
      */
     public function populate(Content $content, array $data = []): self
     {

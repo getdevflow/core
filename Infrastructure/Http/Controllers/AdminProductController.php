@@ -10,7 +10,7 @@ use App\Domain\Product\Model\Product;
 use App\Domain\Product\ValueObject\ProductId;
 use App\Infrastructure\Persistence\Database;
 use App\Infrastructure\Services\UserAuth;
-use Cms\Forms\ProductForm;
+use Application\Service\Forms\ProductForm;
 use Codefy\CommandBus\Busses\SynchronousCommandBus;
 use Codefy\CommandBus\Containers\ContainerFactory;
 use Codefy\CommandBus\Exceptions\CommandCouldNotBeHandledException;
@@ -75,7 +75,7 @@ final class AdminProductController extends BaseController
      */
     public function products(ServerRequest $request): string|ResponseInterface
     {
-        if (false === $this->user->can(permissionName: 'manage:product', request: $request)) {
+        if (false === $this->user->can(permissionName: 'manage:product')) {
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow'),
             );
@@ -115,7 +115,7 @@ final class AdminProductController extends BaseController
      */
     public function productCreate(ServerRequest $request): ?ResponseInterface
     {
-        if (false === $this->user->can(permissionName: 'create:product', request: $request)) {
+        if (false === $this->user->can(permissionName: 'create:product')) {
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
@@ -170,7 +170,7 @@ final class AdminProductController extends BaseController
      */
     public function productCreateView(ServerRequest $request): ResponseInterface|null|string
     {
-        if (false === $this->user->can(permissionName: 'create:product', request: $request)) {
+        if (false === $this->user->can(permissionName: 'create:product')) {
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
@@ -203,7 +203,7 @@ final class AdminProductController extends BaseController
         ServerRequest $request,
         string $productId
     ): ?ResponseInterface {
-        if (false === $this->user->can(permissionName: 'update:product', request: $request)) {
+        if (false === $this->user->can(permissionName: 'update:product')) {
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
@@ -256,7 +256,7 @@ final class AdminProductController extends BaseController
      */
     public function productView(ServerRequest $request, string $productId): string|ResponseInterface
     {
-        if (false === $this->user->can(permissionName: 'update:product', request: $request)) {
+        if (false === $this->user->can(permissionName: 'update:product')) {
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
@@ -279,7 +279,7 @@ final class AdminProductController extends BaseController
                 data: [
                     'title' => $product->title,
                     'product' => $product,
-                    'form' => (new ProductForm())->buildForm($request->getParsedBody(), $product->id),
+                    'form' => new ProductForm()->buildForm($request->getParsedBody(), $product->id),
                 ]
             );
         } catch (
@@ -310,7 +310,7 @@ final class AdminProductController extends BaseController
      */
     public function removeFeaturedImage(ServerRequest $request, string $productId): ?ResponseInterface
     {
-        if (false === $this->user->can(permissionName: 'update:product', request: $request)) {
+        if (false === $this->user->can(permissionName: 'update:product')) {
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
@@ -363,7 +363,7 @@ final class AdminProductController extends BaseController
      */
     public function productDelete(ServerRequest $request, string $productId): ResponseInterface
     {
-        if (false === $this->user->can(permissionName: 'delete:product', request: $request)) {
+        if (false === $this->user->can(permissionName: 'delete:product')) {
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );

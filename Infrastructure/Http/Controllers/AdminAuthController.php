@@ -14,8 +14,6 @@ use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\SimpleCache\InvalidArgumentException;
-use Qubus\EventDispatcher\ActionFilter\Action;
-use Qubus\EventDispatcher\ActionFilter\Filter;
 use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
 use Qubus\Http\ServerRequest;
@@ -56,7 +54,6 @@ final class AdminAuthController extends BaseController
     /**
      * @param ServerRequest $request
      * @return ResponseInterface
-     * @throws SessionException
      */
     public function auth(ServerRequest $request): ResponseInterface
     {
@@ -78,10 +75,9 @@ final class AdminAuthController extends BaseController
             /**
              * Fires after the user has logged in.
              *
-             * @param $sessionService SessionService
              * @param $request ServerRequest
              */
-            __observer()->action->doAction('login_init', $this->sessionService, $request);
+            __observer()->action->doAction('login_init', $request);
 
             return $this->redirect($loginLink);
         } catch (
@@ -112,7 +108,7 @@ final class AdminAuthController extends BaseController
      */
     public function login(ServerRequest $request): ResponseInterface|string
     {
-        if (true === $this->user->can(permissionName: 'access:admin', request: $request)) {
+        if (true === $this->user->can(permissionName: 'access:admin')) {
             return $this->redirect(admin_url());
         }
 
@@ -128,11 +124,9 @@ final class AdminAuthController extends BaseController
     /**
      * @param ServerRequest $request
      * @return ResponseInterface
-     * @throws ContainerExceptionInterface
      * @throws Exception
      * @throws InvalidArgumentException
      * @throws NamedRouteNotFoundException
-     * @throws NotFoundExceptionInterface
      * @throws ReflectionException
      * @throws RouteParamFailedConstraintException
      * @throws SessionException
@@ -155,7 +149,7 @@ final class AdminAuthController extends BaseController
             );
         }
 
-        if (false === $this->user->can(permissionName: 'access:admin', request: $request)) {
+        if (false === $this->user->can(permissionName: 'access:admin')) {
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'You are already logged out.', domain: 'devflow')
             );
@@ -170,10 +164,9 @@ final class AdminAuthController extends BaseController
         /**
          * Fires after a user has logged out.
          *
-         * @param $sessionService SessionService
          * @param $request ServerRequest
          */
-        __observer()->action->doAction('cms_logout', $this->sessionService, $request);
+        __observer()->action->doAction('cms_logout', $request);
 
         return $this->redirect($this->router->url(name: 'admin.login'));
     }
@@ -182,9 +175,7 @@ final class AdminAuthController extends BaseController
      * @param ServerRequest $request
      * @return ResponseInterface
      * @throws InvalidArgumentException
-     * @throws SessionException
      * @throws ReflectionException
-     * @throws TypeException
      */
     public function resetPasswordChange(ServerRequest $request): ResponseInterface
     {

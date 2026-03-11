@@ -18,24 +18,16 @@ use App\Domain\User\ValueObject\UserToken;
 use App\Infrastructure\Persistence\Cache\UserCachePsr16;
 use App\Infrastructure\Persistence\Database;
 use App\Infrastructure\Services\NativePhpCookies;
-use App\Infrastructure\Services\Options;
 use App\Shared\Services\DateTime;
 use App\Shared\Services\MetaData;
 use App\Shared\Services\Sanitizer;
 use App\Shared\Services\Utils;
 use App\Shared\ValueObject\ArrayLiteral;
-use Codefy\CommandBus\Busses\SynchronousCommandBus;
-use Codefy\CommandBus\Containers\ContainerFactory;
 use Codefy\CommandBus\Exceptions\CommandCouldNotBeHandledException;
 use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
 use Codefy\CommandBus\Exceptions\UnresolvableCommandHandlerException;
-use Codefy\CommandBus\Odin;
-use Codefy\CommandBus\Resolvers\NativeCommandHandlerResolver;
 use Codefy\Framework\Factory\FileLoggerFactory;
 use Codefy\Framework\Support\Password;
-use Codefy\QueryBus\Busses\SynchronousQueryBus;
-use Codefy\QueryBus\Enquire;
-use Codefy\QueryBus\Resolvers\NativeQueryHandlerResolver;
 use Codefy\QueryBus\UnresolvableQueryHandlerException;
 use Defuse\Crypto\Crypto;
 use Defuse\Crypto\Exception\BadFormatException;
@@ -57,6 +49,8 @@ use Qubus\ValueObjects\Web\EmailAddress;
 use ReflectionException;
 
 use function array_map;
+use function Codefy\Framework\Helpers\ask;
+use function Codefy\Framework\Helpers\command;
 use function Codefy\Framework\Helpers\config;
 use function Codefy\Framework\Helpers\mail;
 use function Codefy\Framework\Helpers\storage_path;
@@ -80,18 +74,11 @@ use function strtolower;
  * @file App/Shared/Helpers/user.php
  * @return mixed
  * @throws ReflectionException
- * @throws UnresolvableQueryHandlerException|TypeException
+ * @throws UnresolvableQueryHandlerException
  */
 function get_all_users(): mixed
 {
-    $resolver = new NativeQueryHandlerResolver(
-        container: ContainerFactory::make(config: config(key: 'querybus.aliases'))
-    );
-    $enquirer = new Enquire(bus: new SynchronousQueryBus($resolver));
-
-    $query = new FindUsersQuery();
-
-    return $enquirer->execute($query);
+    return ask(new FindUsersQuery());
 }
 
 /**
@@ -173,7 +160,9 @@ function cms_get_current_user(): false|object
  */
 function get_user_by(string $field, mixed $value): User|false
 {
-    $userdata = new User(dfdb())->findBy($field, $value);
+    /** @var User $user */
+    $user = Devflow::$PHP->make(User::class);
+    $userdata = $user->findBy($field, $value);
 
     if (is_false__($userdata)) {
         return false;
@@ -388,6 +377,7 @@ function user_status_label(string $status): array
  * @param string|null $active
  * @return void
  * @throws TypeException
+ * @throws Exception
  */
 function get_system_roles(?string $active = null): void
 {
@@ -414,13 +404,7 @@ function get_system_roles(?string $active = null): void
  */
 function get_users_dropdown_list(?string $active = null): void
 {
-    $resolver = new NativeQueryHandlerResolver(
-        container: ContainerFactory::make(config: config(key: 'querybus.aliases'))
-    );
-    $enquirer = new Enquire(bus: new SynchronousQueryBus($resolver));
-
-    $query = new FindUsersQuery();
-    $users = $enquirer->execute($query);
+    $users = ask(new FindUsersQuery());
 
     foreach ($users as $user) {
         echo '<option value="' . $user['id'] . '"' . selected($active, $user['id'], false) . '>'
@@ -444,7 +428,7 @@ function get_users_dropdown_list(?string $active = null): void
 function get_usermeta(string $userId, string $key = '', bool $single = false): array|string
 {
     return MetaData::factory(dfdb()->prefix . 'usermeta')
-            ->read('user', $userId, $key, $single);
+        ->read('user', $userId, $key, $single);
 }
 
 /**
@@ -461,7 +445,7 @@ function get_usermeta(string $userId, string $key = '', bool $single = false): a
 function get_usermeta_by_mid(string $mid): bool|array
 {
     return MetaData::factory(dfdb()->prefix . 'usermeta')
-            ->readByMid('user', $mid);
+        ->readByMid('user', $mid);
 }
 
 /**
@@ -490,7 +474,7 @@ function get_usermeta_by_mid(string $mid): bool|array
 function update_usermeta(string $userId, string $metaKey, mixed $value, mixed $prevValue = ''): bool|string
 {
     return MetaData::factory(dfdb()->prefix . 'usermeta')
-            ->update('user', $userId, $metaKey, $value, $prevValue);
+        ->update('user', $userId, $metaKey, $value, $prevValue);
 }
 
 /**
@@ -501,19 +485,17 @@ function update_usermeta(string $userId, string $metaKey, mixed $value, mixed $p
  * @param string $metaKey
  * @param mixed $value
  * @return bool
- * @throws CommandPropertyNotFoundException
  * @throws ContainerExceptionInterface
  * @throws Exception
  * @throws InvalidArgumentException
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  * @throws TypeException
- * @throws UnresolvableQueryHandlerException
  */
 function update_usermeta_by_mid(string $mid, string $metaKey, mixed $value): bool
 {
     return MetaData::factory(dfdb()->prefix . 'usermeta')
-            ->updateByMid('user', $mid, $value, $metaKey);
+        ->updateByMid('user', $mid, $value, $metaKey);
 }
 
 /**
@@ -525,19 +507,17 @@ function update_usermeta_by_mid(string $mid, string $metaKey, mixed $value): boo
  * @param mixed $value Metadata value.
  * @param bool $unique Optional. Whether the same key should not be added. Default false.
  * @return string|false Meta ID on success, false on failure.
- * @throws CommandPropertyNotFoundException
  * @throws ContainerExceptionInterface
  * @throws Exception
  * @throws InvalidArgumentException
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  * @throws TypeException
- * @throws UnresolvableQueryHandlerException
  */
 function add_usermeta(string $userId, string $meta, mixed $value, bool $unique = false): false|string
 {
     return MetaData::factory(dfdb()->prefix . 'usermeta')
-            ->create('user', $userId, $meta, $value, $unique);
+        ->create('user', $userId, $meta, $value, $unique);
 }
 
 /**
@@ -560,7 +540,7 @@ function add_usermeta(string $userId, string $meta, mixed $value, bool $unique =
 function delete_usermeta(string $userId, string $meta, mixed $value = ''): bool
 {
     return MetaData::factory(dfdb()->prefix . 'usermeta')
-            ->delete('user', $userId, $meta, $value);
+        ->delete('user', $userId, $meta, $value);
 }
 
 /**
@@ -577,7 +557,7 @@ function delete_usermeta(string $userId, string $meta, mixed $value = ''): bool
 function delete_usermeta_by_mid(string $mid): bool
 {
     return MetaData::factory(dfdb()->prefix . 'usermeta')
-            ->deleteByMid('user', $mid);
+        ->deleteByMid('user', $mid);
 }
 
 /**
@@ -747,10 +727,10 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
     $defaults = [
         'url' => '',
         'bio' => '',
-        'timezone' => config('app.timezone'),
+        'timezone' => config()->string('app.timezone'),
         'dateFormat' => 'd F Y',
         'timeFormat' => 'h:i A',
-        'locale' => config('app.locale'),
+        'locale' => config()->string(key: 'app.locale'),
     ];
 
     $userdata = Utils::parseArgs($userdata, $defaults);
@@ -772,8 +752,10 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
 
         /**
          * Create a new user object.
+         *
+         * @var User $user
          */
-        $user = new User();
+        $user = Devflow::$PHP->make(User::class);
         $user->id = $userId->toNative();
         $user->token = $userToken;
         $user->pass = $userPass;
@@ -781,6 +763,16 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
     } else {
         $update = false;
         $userId = new UserId();
+
+        if (mb_strlen($userdata['pass']) < config()->integer(key: 'cms.password_length')) {
+            return new UserError(message: esc_html__(
+                string: sprintf(
+                    'Password must be at least %s characters long.',
+                    config()->integer(key: 'cms.password_length')
+                ),
+                domain: 'devflow'
+            ));
+        }
         /**
          * Hash the plaintext password.
          *
@@ -790,8 +782,10 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
 
         /**
          * Create new User object.
+         *
+         * @var User $user
          */
-        $user = new User();
+        $user = Devflow::$PHP->make(User::class);
         $user->id = $userId->toNative();
         $user->token = UserToken::generateAsString();
         $user->pass = $userPass;
@@ -1126,11 +1120,6 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
      */
     $meta = __observer()->filter->applyFilter('insert.usermeta', $meta, $user, $update);
 
-    $resolver = new NativeCommandHandlerResolver(
-        container: ContainerFactory::make(config: config(key: 'commandbus.container'))
-    );
-    $odin = new Odin(bus: new SynchronousCommandBus($resolver));
-
     if (is_false__($update)) {
 
         try {
@@ -1152,7 +1141,7 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
                 'meta' => ArrayLiteral::fromNative($meta),
             ]);
 
-            $odin->execute($command);
+            command($command);
         } catch (CommandCouldNotBeHandledException | UnresolvableCommandHandlerException | ReflectionException $e) {
             FileLoggerFactory::getLogger()->error($e->getMessage());
         }
@@ -1184,7 +1173,7 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
                 'meta' => ArrayLiteral::fromNative($meta),
             ]);
 
-            $odin->execute($command);
+            command($command);
         } catch (CommandCouldNotBeHandledException | UnresolvableCommandHandlerException | ReflectionException $e) {
             FileLoggerFactory::getLogger()->error($e->getMessage());
         }
@@ -1428,16 +1417,11 @@ function cms_delete_user(string $userId, ?string $assignId = null): bool
     __observer()->action->doAction('cms_delete_user', $userId, $assignId);
 
     try {
-        $resolver = new NativeCommandHandlerResolver(
-            container: ContainerFactory::make(config: config(key: 'commandbus.container'))
-        );
-        $odin = new Odin(bus: new SynchronousCommandBus($resolver));
-
         $command = new DeleteUserCommand([
             'id' => UserId::fromString($userId),
         ]);
 
-        $odin->execute($command);
+        command($command);
     } catch (CommandCouldNotBeHandledException | UnresolvableCommandHandlerException | ReflectionException $e) {
         FileLoggerFactory::getLogger()->error($e->getMessage());
         return false;
@@ -1537,7 +1521,6 @@ function queue_new_user_email(string $userId, string $pass): bool
  * @return string|bool User id on success, false on failure.
  * @throws EnvironmentIsBrokenException
  * @throws ReflectionException
- * @throws TypeException
  */
 function queue_reset_user_password(User $user): bool|string
 {
@@ -1602,7 +1585,7 @@ function send_reset_password_email(object|array $user, string $password): bool
 {
     $message = '';
 
-    $option = Options::factory();
+    $option = option();
 
     $siteName = $option->read(optionKey: 'sitename');
 
@@ -1670,7 +1653,7 @@ function send_password_change_email(object|array $user, string $password, array 
 {
     $message = '';
 
-    $option = Options::factory();
+    $option = option();
 
     $siteName = $option->read(optionKey: 'sitename');
 
@@ -1738,7 +1721,7 @@ function send_email_change_email(object|array $user, array $userdata): bool
 {
     $message = '';
 
-    $option = Options::factory();
+    $option = option();
 
     $siteName = $option->read(optionKey: 'sitename');
 
@@ -1796,7 +1779,6 @@ function send_email_change_email(object|array $user, array $userdata): bool
  * @file App/Shared/Helpers/user.php
  * @return array Array of blacklisted usernames.
  * @throws Exception
- * @throws ReflectionException
  */
 function blacklisted_usernames(): array
 {
@@ -1892,7 +1874,6 @@ function blacklisted_usernames(): array
  * @file App/Shared/Helpers/user.php
  * @param string $userId ID of user whose password is to be reset.
  * @return bool|string User id on success or Exception on failure.
- * @throws CommandCouldNotBeHandledException
  * @throws EnvironmentIsBrokenException
  * @throws Exception
  * @throws ReflectionException
@@ -1904,14 +1885,10 @@ function reset_password(string $userId): bool|string
 {
     $password = generate_random_password(config(key: 'cms.password_length'));
 
-    $user = new User();
+    /** @var User $user */
+    $user = Devflow::$PHP->make(User::class);
     $user->id = $userId;
     $user->pass = $password;
-
-    $resolver = new NativeCommandHandlerResolver(
-        container: ContainerFactory::make(config: config(key: 'commandbus.container'))
-    );
-    $odin = new Odin(bus: new SynchronousCommandBus($resolver));
 
     try {
         $command = new UpdateUserPasswordCommand([
@@ -1920,7 +1897,7 @@ function reset_password(string $userId): bool|string
             'pass' => new StringLiteral($password),
         ]);
 
-        $odin->execute($command);
+        command($command);
 
         $_userId = queue_reset_user_password($user);
         Devflow::$PHP->flash->success(
@@ -1972,9 +1949,8 @@ function get_users_reassign(string $userId = ''): void
  * @file App/Shared/Helpers/user.php
  * @param string $siteKey Site key.
  * @return array|false|string User array on success.
- * @throws ContainerExceptionInterface
- * @throws NotFoundExceptionInterface
  * @throws ReflectionException
+ * @throws TypeException
  */
 function get_users_by_site_key(string $siteKey = ''): array|string|bool
 {
@@ -2004,7 +1980,7 @@ function get_user_timezone(): mixed
     if (is_user_logged_in() && $userTimezone !== false) {
         return $userTimezone->timezone;
     }
-    return Options::factory()->read(optionKey: 'site_timezone') ?? config(key: 'app.timezone');
+    return option()->read(optionKey: 'site_timezone') ?? config(key: 'app.timezone');
 }
 
 /**
@@ -2024,7 +2000,7 @@ function get_user_date_format(): mixed
     if (is_user_logged_in() && $userDateFormat !== false) {
         return $userDateFormat->dateFormat;
     }
-    return Options::factory()->read(optionKey: 'date_format');
+    return option()->read(optionKey: 'date_format');
 }
 
 /**
@@ -2044,7 +2020,7 @@ function get_user_time_format(): mixed
     if (is_user_logged_in() && $userTimeFormat !== false) {
         return $userTimeFormat->timeFormat;
     }
-    return Options::factory()->read(optionKey: 'time_format');
+    return option()->read(optionKey: 'time_format');
 }
 
 /**

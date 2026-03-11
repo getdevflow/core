@@ -58,6 +58,7 @@ final class AdminMediaController extends BaseController
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
      * @throws TypeException
+     * @throws \Exception
      */
     public function connector(ServerRequest $request): ResponseInterface
     {
@@ -65,17 +66,17 @@ final class AdminMediaController extends BaseController
             return JsonResponseFactory::create(data: 'invalid', status: 400);
         }
 
-        if ($this->user->can(permissionName: 'manage:media', request: $request) === false) {
+        if ($this->user->can(permissionName: 'manage:media') === false) {
             return JsonResponseFactory::create(data: 'invalid', status: 400);
         }
 
-        if ($this->configContainer->getConfigKey(key: 'elfinder.options.debug') === true) {
+        if ($this->configContainer->boolean(key: 'elfinder.options.debug') === true) {
             error_reporting(error_level: 0);
         }
 
-        $roots = $this->configContainer->getConfigKey(key: 'elfinder.roots', default: []);
+        $roots = $this->configContainer->array(key: 'elfinder.roots', default: []);
         if (empty($roots)) {
-            $dirs = (array) $this->configContainer->getConfigKey(key: 'elfinder.dir');
+            $dirs = $this->configContainer->array(key: 'elfinder.dir');
             foreach ($dirs as $dir) {
                 $roots[] = [
                     'driver' => 'LocalFileSystem',
@@ -117,18 +118,18 @@ final class AdminMediaController extends BaseController
             }
         }
 
-        $rootOptions = $this->configContainer->getConfigKey(key: 'elfinder.root_options', default: []);
+        $rootOptions = $this->configContainer->array(key: 'elfinder.root_options', default: []);
         foreach ($roots as $key => $root) {
             $roots[$key] = array_merge($rootOptions, $root);
         }
 
-        $opts = $this->configContainer->getConfigKey(key: 'elfinder.options', default: []);
+        $opts = $this->configContainer->array(key: 'elfinder.options', default: []);
         $opts = array_merge($opts, ['roots' => $roots]);
 
         // run elFinder
         $connector = new elFinderConnector(new elFinder($opts));
         $connector->run();
-        return JsonResponseFactory::create(data: 'ok', status: 200);
+        return JsonResponseFactory::create(data: 'ok');
     }
 
     /**

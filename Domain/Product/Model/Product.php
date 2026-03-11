@@ -48,7 +48,7 @@ final class Product extends stdClass
 {
     use HydratorAware;
 
-    public function __construct(protected ?Database $dfdb = null)
+    public function __construct(protected Database $dfdb)
     {
     }
 
@@ -148,9 +148,12 @@ final class Product extends stdClass
      */
     protected function __create(): Product
     {
-        return new Product();
+        return new Product($this->dfdb);
     }
 
+    /**
+     * @throws Exception
+     */
     public function populate(Product $product, array $data = []): self
     {
         $product->id = esc_html(string: $data['product_id']) ?? null;
@@ -198,7 +201,7 @@ final class Product extends stdClass
         }
 
         return MetaData::factory('productmeta')
-                ->exists('product', $this->id, Registry::getInstance()->get('tblPrefix') . $key);
+            ->exists('product', $this->id, Registry::getInstance()->get('tblPrefix') . $key);
     }
 
     /**
@@ -217,7 +220,7 @@ final class Product extends stdClass
             $value = $this->{$key};
         } else {
             $value = MetaData::factory('productmeta')
-                    ->read('product', $this->id, Registry::getInstance()->get('tblPrefix') . $key, true);
+                ->read('product', $this->id, Registry::getInstance()->get('tblPrefix') . $key, true);
         }
 
         return esc_html($value);

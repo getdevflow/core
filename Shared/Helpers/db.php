@@ -18,16 +18,15 @@ use App\Domain\User\ValueObject\UserId;
 use App\Infrastructure\Persistence\Database;
 use App\Infrastructure\Services\Options;
 use App\Shared\Services\MetaData;
+use App\Shared\Services\Registry;
 use App\Shared\Services\Sanitizer;
 use App\Shared\Services\SimpleCacheObjectCacheFactory;
 use Codefy\CommandBus\Busses\SynchronousCommandBus;
 use Codefy\CommandBus\Containers\ContainerFactory;
-use Codefy\CommandBus\Exceptions\CommandCouldNotBeHandledException;
 use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
 use Codefy\CommandBus\Exceptions\UnresolvableCommandHandlerException;
 use Codefy\CommandBus\Odin;
 use Codefy\CommandBus\Resolvers\NativeCommandHandlerResolver;
-use Codefy\Framework\Application;
 use Codefy\Framework\Factory\FileLoggerFactory;
 use Codefy\QueryBus\Busses\SynchronousQueryBus;
 use Codefy\QueryBus\Enquire;
@@ -45,13 +44,14 @@ use Psr\SimpleCache\InvalidArgumentException;
 use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
 use Qubus\Http\Session\SessionException;
-use Qubus\NoSql\NodeQ;
+use Qubus\NoSql\Node;
 use Qubus\Support\Collection\ArrayCollection;
 use Qubus\Support\Collection\Collection;
 use Qubus\Support\DateTime\QubusDateTimeImmutable;
 use Qubus\Support\Inflector;
 use ReflectionException;
 
+use function Codefy\Framework\Helpers\app;
 use function Codefy\Framework\Helpers\config;
 use function Codefy\Framework\Helpers\mail;
 use function Codefy\Framework\Helpers\storage_path;
@@ -67,11 +67,23 @@ use function sprintf;
  * Global database function.
  *
  * @return Database
- * @throws TypeException
+ * @throws ContainerExceptionInterface
+ * @throws NotFoundExceptionInterface
+ * @throws ReflectionException
  */
 function dfdb(): Database
 {
-    return Application::getInstance()->make(name: Database::class);
+    return Registry::getInstance()->get('dfdb');
+}
+
+/**
+ * Return Options instance.
+ *
+ * @return Options
+ */
+function option(): Options
+{
+    return app(name: Options::class);
 }
 
 /**
@@ -233,7 +245,6 @@ function cms_slugify(string $title, string $table): string
  * @file App/Shared/Helpers/db.php
  * @return object[]
  * @throws ReflectionException
- * @throws TypeException
  * @throws UnresolvableQueryHandlerException
  */
 function tinymce_link_list(): array
@@ -591,7 +602,6 @@ function reassign_content(string $userId, string $assignId): bool
  * @param string $userId ID of user being removed.
  * @param array $params User parameters (assign_id and role).
  * @return bool
- * @throws CommandCouldNotBeHandledException
  * @throws CommandPropertyNotFoundException
  * @throws ContainerExceptionInterface
  * @throws Exception
@@ -641,7 +651,7 @@ function reassign_sites(string $userId, array $params = []): bool
             $command = new UpdateSiteOwnerCommand([
                 'siteId' => SiteId::fromString($params['site_id']),
                 'siteOwner' => UserId::fromString($params['assign_id']),
-                'siteModified' => QubusDateTimeImmutable::now(Options::factory()->read(optionKey: 'site_timezone')),
+                'siteModified' => QubusDateTimeImmutable::now(option()->read(optionKey: 'site_timezone')),
             ]);
 
             $odin->execute($command);
@@ -909,10 +919,10 @@ function populate_productmeta_cache(): bool
  */
 function cms_nodeq_login_details(): void
 {
-    $option = Options::factory();
+    $option = option();
 
     $table = 'login';
-    $nodeq = NodeQ::open(storage_path("app/queue/{$table}"));
+    $nodeq = Node::open(storage_path("app/queue/{$table}"));
 
     $sql = $nodeq->where('sent', (int) 0)->get();
 
@@ -1011,10 +1021,10 @@ function cms_nodeq_login_details(): void
  */
 function cms_nodeq_reset_password(): void
 {
-    $option = Options::factory();
+    $option = option();
 
     $table = 'password_reset';
-    $nodeq = NodeQ::open(storage_path("app/queue/{$table}"));
+    $nodeq = Node::open(storage_path("app/queue/{$table}"));
 
     $sql = $nodeq->where('sent', (int) 0)->get();
 

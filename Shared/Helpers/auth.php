@@ -8,7 +8,6 @@ use App\Application\Devflow;
 use App\Domain\User\Model\User;
 use App\Infrastructure\Persistence\Database;
 use App\Infrastructure\Services\NativePhpCookies;
-use App\Infrastructure\Services\Options;
 use App\Shared\Services\Registry;
 use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
 use Codefy\Framework\Auth\Rbac\Rbac;
@@ -36,6 +35,7 @@ use function Qubus\Security\Helpers\__observer;
 use function Qubus\Security\Helpers\esc_html;
 use function Qubus\Security\Helpers\t__;
 use function Qubus\Support\Helpers\is_false__;
+use function Qubus\Support\Helpers\is_null__;
 use function sprintf;
 use function time;
 use function unlink;
@@ -168,7 +168,7 @@ function cms_authenticate(string $login, string $password, string $rememberme): 
 
     $user = $dfdb->getRow($dfdb->prepare($sql, [$login, $login]), Database::ARRAY_A);
 
-    if (is_false__($user)) {
+    if (is_null__($user)) {
         Devflow::$PHP->flash->error(
             sprintf(
                 t__(
@@ -320,7 +320,7 @@ function cms_set_auth_cookie(array $user, string $rememberme = ''): void
          */
         $expire = __observer()->filter->applyFilter(
             'auth.cookie.expiration',
-            Options::factory()->read('cookieexpire', 172800)
+            option()->read('cookieexpire', 172800)
         );
     } else {
         /**
@@ -431,7 +431,6 @@ function login_form_show_message(): void
  * @file App/Shared/Helpers/auth.php
  * @param string $key COOKIE key.
  * @return false|array|object Cookie data or false.
- * @throws TypeException
  */
 function get_secure_cookie_data(string $key): false|array|object
 {
@@ -448,5 +447,5 @@ function get_secure_cookie_data(string $key): false|array|object
  */
 function get_user_roles(): array
 {
-    return config(key: 'rbac.roles');
+    return config()->array(key: 'rbac.roles');
 }

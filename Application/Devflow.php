@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace App\Application;
 
 use App\Infrastructure\Persistence\Database;
-use Codefy\Framework\Codefy;
-use Qubus\Exception\Exception;
+use Codefy\Framework\Proxy\Codefy;
+use Exception;
 use Qubus\Expressive\QueryBuilder;
 
-final class Devflow extends Codefy
+class Devflow extends Codefy
 {
     public static function db(): Database
     {
@@ -26,6 +26,6 @@ final class Devflow extends Codefy
 
     public static function release(): string
     {
-        return '2.0.0-beta.2';
+        return '2.0.0-beta.3';
     }
 }

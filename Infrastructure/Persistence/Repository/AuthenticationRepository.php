@@ -5,17 +5,18 @@ declare(strict_types=1);
 namespace App\Infrastructure\Persistence\Repository;
 
 use Codefy\Framework\Auth\Repository\AuthUserRepository;
+use Codefy\Framework\Auth\UserSession;
 use Codefy\Framework\Support\Password;
-use PDO;
 use Qubus\Config\ConfigContainer;
 use Qubus\Exception\Exception;
+use Qubus\Expressive\Connection;
 use Qubus\Http\Session\SessionEntity;
 
 use function sprintf;
 
 class AuthenticationRepository implements AuthUserRepository
 {
-    public function __construct(private PDO $pdo, protected ConfigContainer $config)
+    public function __construct(private Connection $connection, protected ConfigContainer $config)
     {
     }
 
@@ -25,15 +26,19 @@ class AuthenticationRepository implements AuthUserRepository
      */
     public function authenticate(string $credential, #[\SensitiveParameter] ?string $password = null): ?SessionEntity
     {
+        /** @var array{identity: string, role: string, token: string, password: string} $fields */
         $fields = $this->config->getConfigKey(key: 'auth.pdo.fields');
+
+        /** @var string $table */
+        $table = $this->config->getConfigKey('auth.pdo.table');
 
         $sql = sprintf(
             "SELECT * FROM %s WHERE %s = :identity",
-            $this->config->getConfigKey('auth.pdo.table'),
+            $table,
             $fields['identity']
         );
 
-        $stmt = $this->pdo->prepare(query: $sql);
+        $stmt = $this->connection->pdo->prepare($sql);
         if (false === $stmt) {
             return null;
         }
@@ -41,29 +46,17 @@ class AuthenticationRepository implements AuthUserRepository
         $stmt->bindParam(':identity', $credential);
         $stmt->execute();
 
+        /** @var object{'user_token': string|null, 'user_password': string}|null $result */
         $result = $stmt->fetchObject();
         if (! $result) {
             return null;
         }
 
-        $passwordHash = (string) ($result->{$fields['password']} ?? '');
+        /** @var string $passwordHash */
+        $passwordHash = ($result->{$fields['password']} ?? '');
 
         if (Password::verify(password: $password ?? '', hash: $passwordHash)) {
-            $user = new class () implements SessionEntity {
-                public ?string $token = null;
-
-                public function withToken(?string $token = null): self
-                {
-                    $this->token = $token;
-                    return $this;
-                }
-
-                public function isEmpty(): bool
-                {
-                    return !empty($this->token);
-                }
-            };
-
+            $user = new UserSession();
             $user
                 ->withToken($result->user_token);
 
@@ -71,5 +64,29 @@ class AuthenticationRepository implements AuthUserRepository
         }
 
         return null;
+    }
+
+    /**
+     * @inheritDoc
+     * @throws Exception
+     */
+    public function find(string $token): bool|null|object
+    {
+        /** @var string $table */
+        $table = $this->config->getConfigKey('auth.pdo.table');
+        $sql = sprintf(
+            "SELECT * FROM %s WHERE user_token = :token",
+            $table,
+        );
+
+        $stmt = $this->connection->pdo->prepare($sql);
+        if (false === $stmt) {
+            return null;
+        }
+
+        $stmt->bindParam(':token', $token);
+        $stmt->execute();
+
+        return $stmt->fetchObject();
     }
 }

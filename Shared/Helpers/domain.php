@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace App\Shared\Helpers;
 
-use App\Application\Devflow;
-use App\Infrastructure\Services\Options;
+use Codefy\Framework\Proxy\Codefy;
 use Gettext\Loader\MoLoader;
 use Gettext\Translator;
 use Gettext\TranslatorFunctions;
@@ -69,7 +68,7 @@ function load_devflow_textdomain(): bool
         // Locale domain
         $domain = $info['id'];
         // Absolute path to the .mo file.
-        $path = $info['path'] . 'locale' . Devflow::$PHP::DS . $domain . '-' . $locale . '.mo';
+        $path = $info['path'] . 'locale' . Codefy::$PHP::DS . $domain . '-' . $locale . '.mo';
         /**
          * Filter .mo file path for loading translations for a specific plugin text domain.
          */
@@ -86,7 +85,7 @@ function load_devflow_textdomain(): bool
         // Locale domain
         $domain = $info['id'];
         // Absolute path to the .mo file.
-        $path = $info['path'] . 'locale' . Devflow::$PHP::DS . $domain . '-' . $locale . '.mo';
+        $path = $info['path'] . 'locale' . Codefy::$PHP::DS . $domain . '-' . $locale . '.mo';
         /**
          * Filter .mo file path for loading translations for a specific plugin text domain.
          */
@@ -120,12 +119,10 @@ function load_devflow_textdomain(): bool
  * @throws Exception
  * @throws InvalidArgumentException
  * @throws ReflectionException
- * @throws ContainerExceptionInterface
- * @throws NotFoundExceptionInterface
  */
 function load_core_locale(): string
 {
-    $option = Options::factory();
-    $locale = $option->read(optionKey: 'site_locale', default: config(key: 'app.locale'));
+    $option = option();
+    $locale = $option->read(optionKey: 'site_locale', default: config()->string(key: 'app.locale'));
     return __observer()->filter->applyFilter('core.locale', $locale);
 }

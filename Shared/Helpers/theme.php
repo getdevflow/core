@@ -51,7 +51,7 @@ use function sprintf;
  */
 function get_theme(): string
 {
-    $option = Options::factory();
+    $option = option();
 
     if ($option->exists(optionKey: 'site_theme')) {
         $siteTheme = $option->read(optionKey: 'site_theme');
@@ -99,7 +99,6 @@ function theme_name(): mixed
  *                      Typically, this is done by passing `__FILE__` as the argument.
  * @return string Themes' URL link with optional paths appended.
  * @throws Exception
- * @throws ReflectionException
  */
 function theme_url(string $path = '', string $theme = ''): string
 {
@@ -353,12 +352,11 @@ function theme_info(string $themesDir = ''): array
  * @throws InvalidArgumentException
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
- * @throws TypeException
  */
 function activate_theme(string $theme): void
 {
     try {
-        Options::factory()->update(optionKey: 'site_theme', newvalue: $theme);
+        option()->update(optionKey: 'site_theme', newvalue: $theme);
     } catch (PDOException | \Exception $ex) {
         FileLoggerFactory::getLogger()->error(
             sprintf(
@@ -377,15 +375,12 @@ function activate_theme(string $theme): void
  *
  * @file App/Shared/Helpers/theme.php
  * @return void
- * @throws ContainerExceptionInterface
- * @throws NotFoundExceptionInterface
  * @throws ReflectionException
- * @throws TypeException
  */
 function deactivate_theme(): void
 {
     try {
-        Options::factory()->delete(name: 'site_theme');
+        option()->delete(name: 'site_theme');
     } catch (PDOException | \Exception $ex) {
         FileLoggerFactory::getLogger()->error(
             sprintf(
@@ -416,7 +411,7 @@ function is_theme_active(string $theme = ''): bool
         return false;
     }
 
-    $option = Options::factory();
+    $option = option();
 
     if ($option->exists(optionKey: 'site_theme') && $option->read(optionKey: 'site_theme') === $theme) {
         return true;
@@ -428,16 +423,14 @@ function is_theme_active(string $theme = ''): bool
 /**
  * Executes the active theme.
  *
- * @throws ContainerExceptionInterface
  * @throws Exception
  * @throws InvalidArgumentException
- * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  * @throws TypeException
  */
 function load_active_theme(): void
 {
-    $activeTheme = Options::factory()->read('site_theme');
+    $activeTheme = option()->read('site_theme');
 
     if ('' !== $activeTheme && !is_null__($activeTheme) && !is_false__($activeTheme)) {
         if (!class_exists($activeTheme)) {
@@ -465,7 +458,6 @@ function load_active_theme(): void
  * @return bool
  * @throws CommandPropertyNotFoundException
  * @throws ReflectionException
- * @throws TypeException
  * @throws UnresolvableQueryHandlerException
  */
 function has_content(?string $type = null, int $limit = 0, ?int $offset = null, string $status = 'published'): bool
@@ -667,7 +659,6 @@ function content_published_datetime(): string
  * @return bool
  * @throws CommandPropertyNotFoundException
  * @throws ReflectionException
- * @throws TypeException
  * @throws UnresolvableQueryHandlerException
  */
 function has_products(int $limit = 0, ?int $offset = null, string $status = 'published'): bool
@@ -837,7 +828,6 @@ function product_featured_image(): ?string
  *
  * @return string|null
  * @throws Exception
- * @throws ReflectionException
  */
 function product_permalink(): ?string
 {

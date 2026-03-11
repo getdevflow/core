@@ -36,7 +36,7 @@ final class Site extends stdClass
 {
     use HydratorAware;
 
-    public function __construct(protected ?Database $dfdb = null)
+    public function __construct(protected Database $dfdb)
     {
     }
 
@@ -131,9 +131,12 @@ final class Site extends stdClass
      */
     protected function __create(): Site
     {
-        return new Site();
+        return new Site($this->dfdb);
     }
 
+    /**
+     * @throws Exception
+     */
     public function populate(Site $site, array $data = []): self
     {
         $site->id = esc_html(string: $data['site_id']) ?? null;

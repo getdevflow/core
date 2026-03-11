@@ -6,20 +6,27 @@ namespace App\Infrastructure\Providers;
 
 use App\Infrastructure\Persistence\Database;
 use App\Infrastructure\Persistence\NativePdoDatabase;
+use App\Shared\Services\Registry;
 use Codefy\Framework\Support\CodefyServiceProvider;
-use PDO;
-use Qubus\Config\ConfigContainer;
+use ReflectionException;
 
 class DatabaseServiceProvider extends CodefyServiceProvider
 {
+    /**
+     * @throws ReflectionException
+     */
     public function register(): void
     {
         $this->codefy->singleton(key: Database::class, value: function () {
-            return NativePdoDatabase::getInstance(
-                pdo: $this->codefy->make(name: PDO::class),
-                configContainer: $this->codefy->make(name: ConfigContainer::class)
+            return new NativePdoDatabase(
+                pdo: $this->codefy->getDbConnection()->pdo,
+                configContainer: $this->codefy->configContainer
             );
         });
-        $this->codefy->share(nameOrInstance: Database::class);
+
+        /** @var Database $database */
+        $database = $this->codefy->make(Database::class);
+        /** Do not touch. */
+        Registry::getInstance()->set('dfdb', $database);
     }
 }

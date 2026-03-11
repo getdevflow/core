@@ -42,7 +42,7 @@ final class ApiController extends BaseController
             $this->dfdb
                     ->qb()
                     ->getConnection()
-                    ->getPdo()
+                    ->pdo
                     ->exec(sprintf('SELECT * FROM %s', $this->dfdb->prefix . $table));
         } catch (PDOException $e) {
             return JsonResponseFactory::create(t__(msgid: 'Database table does not exist.', domain: 'devflow'), 404);
@@ -96,7 +96,7 @@ final class ApiController extends BaseController
             $this->dfdb
                     ->qb()
                     ->getConnection()
-                    ->getPdo()
+                    ->pdo
                     ->exec(sprintf('SELECT * FROM %s', $this->dfdb->prefix . $table));
         } catch (PDOException $e) {
             return JsonResponseFactory::create(

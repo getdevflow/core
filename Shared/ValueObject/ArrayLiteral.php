@@ -5,14 +5,11 @@ declare(strict_types=1);
 namespace App\Shared\ValueObject;
 
 use JsonException;
-use Qubus\Exception\Data\TypeException;
 use Qubus\ValueObjects\Util;
 use Qubus\ValueObjects\ValueObject;
 
 use function func_get_arg;
-use function is_array;
 use function json_encode;
-use function sprintf;
 
 use const JSON_THROW_ON_ERROR;
 
@@ -20,26 +17,14 @@ class ArrayLiteral implements ValueObject
 {
     private array $value = [];
 
-    /**
-     * @throws TypeException
-     */
     public function __construct(array $data = [])
     {
-        if (false === is_array($data)) {
-            throw new TypeException(
-                sprintf(
-                    'Argument "%s" is invalid. Must enter an array.',
-                    $data
-                )
-            );
-        }
         $this->value = $data;
     }
 
     /**
      * Returns an array object.
      *
-     * @throws TypeException
      */
     public static function fromNative(): self
     {

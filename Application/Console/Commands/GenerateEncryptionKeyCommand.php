@@ -6,6 +6,7 @@ namespace App\Application\Console\Commands;
 
 use Codefy\Framework\Application;
 use Codefy\Framework\Console\ConsoleCommand;
+use Defuse\Crypto\Exception\EnvironmentIsBrokenException;
 use Defuse\Crypto\Key;
 
 class GenerateEncryptionKeyCommand extends ConsoleCommand
@@ -19,6 +20,9 @@ class GenerateEncryptionKeyCommand extends ConsoleCommand
         parent::__construct(codefy: $codefy);
     }
 
+    /**
+     * @throws EnvironmentIsBrokenException
+     */
     public function handle(): int
     {
         $key = Key::createNewRandomKey()->saveToAsciiSafeString();
@@ -31,6 +35,6 @@ class GenerateEncryptionKeyCommand extends ConsoleCommand
         // return value is important when using CI
         // to fail the build when the command fails
         // 0 = success, other values = fail
-        return ConsoleCommand::SUCCESS;
+        return self::SUCCESS;
     }
 }

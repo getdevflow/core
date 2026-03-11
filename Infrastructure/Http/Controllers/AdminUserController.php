@@ -72,7 +72,8 @@ final class AdminUserController extends BaseController
         protected Database $dfdb,
         protected UserAuth $user,
         protected ConfigContainer $configContainer,
-        protected Renderer $view
+        protected Renderer $view,
+        protected Options $option,
     ) {
         parent::__construct($sessionService, $router, $view);
     }
@@ -91,7 +92,7 @@ final class AdminUserController extends BaseController
      */
     public function userCreate(ServerRequest $request): ?ResponseInterface
     {
-        if (false === $this->user->can(permissionName: 'create:users', request: $request)) {
+        if (false === $this->user->can(permissionName: 'create:users')) {
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow'),
             );
@@ -203,7 +204,7 @@ final class AdminUserController extends BaseController
      */
     public function userCreateView(ServerRequest $request): ResponseInterface|string
     {
-        if (false === $this->user->can(permissionName: 'create:users', request: $request)) {
+        if (false === $this->user->can(permissionName: 'create:users')) {
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow'),
             );
@@ -233,7 +234,7 @@ final class AdminUserController extends BaseController
      */
     public function users(ServerRequest $request): string|ResponseInterface
     {
-        if (false === $this->user->can(permissionName: 'manage:users', request: $request)) {
+        if (false === $this->user->can(permissionName: 'manage:users')) {
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow'),
             );
@@ -274,7 +275,7 @@ final class AdminUserController extends BaseController
      */
     public function userChange(ServerRequest $request, string $userId): ?ResponseInterface
     {
-        if (false === $this->user->can(permissionName: 'update:users', request: $request)) {
+        if (false === $this->user->can(permissionName: 'update:users')) {
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Permission denied.', domain: 'devflow')
             );
@@ -339,7 +340,7 @@ final class AdminUserController extends BaseController
      */
     public function userView(ServerRequest $request, string $userId): string|ResponseInterface
     {
-        if (false === $this->user->can(permissionName: 'update:content', request: $request)) {
+        if (false === $this->user->can(permissionName: 'update:content')) {
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
@@ -387,7 +388,7 @@ final class AdminUserController extends BaseController
      */
     public function userDelete(ServerRequest $request): ResponseInterface
     {
-        if (false === $this->user->can(permissionName: 'delete:users', request: $request)) {
+        if (false === $this->user->can(permissionName: 'delete:users')) {
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
@@ -474,7 +475,7 @@ final class AdminUserController extends BaseController
      */
     public function userResetPassword(ServerRequest $request, string $userId): ResponseInterface
     {
-        if (false === $this->user->can(permissionName: 'update:users', request: $request)) {
+        if (false === $this->user->can(permissionName: 'update:users')) {
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
@@ -586,7 +587,7 @@ final class AdminUserController extends BaseController
      */
     public function userSwitchTo(ServerRequest $request, string $userId, Response $response): ResponseInterface
     {
-        if (false === $this->user->can(permissionName: 'switch:user', request: $request)) {
+        if (false === $this->user->can(permissionName: 'switch:user')) {
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
@@ -630,14 +631,14 @@ final class AdminUserController extends BaseController
                 'id' => $userId,
                 'token' => get_user_value($userId, 'token'),
                 'remember' => 'yes',
-                'exp' => (int) Options::factory()->read('cookieexpire', 172800) + time()
+                'exp' => (int) $this->option->read('cookieexpire', 172800) + time()
             ];
 
             $cookies->setSecureCookie($authCookie);
 
             $this->sessionService::$options = [
                 'cookie-name' => 'USERSESSID',
-                'cookie-lifetime' => (int) Options::factory()->read('cookieexpire', 172800)
+                'cookie-lifetime' => (int) $this->option->read('cookieexpire', 172800)
             ];
             $session = $this->sessionService->makeSession($request);
 
@@ -721,7 +722,7 @@ final class AdminUserController extends BaseController
                 'id' => $userId,
                 'token' => get_user_value($userId, 'token'),
                 'remember' => 'yes',
-                'exp' => (int) Options::factory()->read('cookieexpire', 172800) + time()
+                'exp' => (int) $this->option->read('cookieexpire', 172800) + time()
             ];
             $cookies->setSecureCookie($switchCookie);
 
@@ -739,7 +740,7 @@ final class AdminUserController extends BaseController
 
             $this->sessionService::$options = [
                 'cookie-name' => 'USERSESSID',
-                'cookie-lifetime' => (int) Options::factory()->read('cookieexpire', 172800)
+                'cookie-lifetime' => (int) $this->option->read('cookieexpire', 172800)
             ];
             $session = $this->sessionService->makeSession($request);
 

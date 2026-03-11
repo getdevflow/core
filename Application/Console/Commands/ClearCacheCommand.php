@@ -11,8 +11,6 @@ use Codefy\Framework\Application;
 use Codefy\Framework\Console\ConsoleCommand;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
-use Qubus\Exception\Data\TypeException;
-use Qubus\Http\Session\SessionException;
 use ReflectionException;
 
 class ClearCacheCommand extends ConsoleCommand
@@ -30,7 +28,6 @@ class ClearCacheCommand extends ConsoleCommand
      * @throws NotFoundExceptionInterface
      * @throws ContainerExceptionInterface
      * @throws ReflectionException
-     * @throws TypeException
      */
     public function handle(): int
     {
@@ -67,6 +64,6 @@ class ClearCacheCommand extends ConsoleCommand
         // return value is important when using CI
         // to fail the build when the command fails
         // 0 = success, other values = fail
-        return ConsoleCommand::SUCCESS;
+        return self::SUCCESS;
     }
 }

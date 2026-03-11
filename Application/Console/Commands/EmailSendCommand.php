@@ -49,6 +49,6 @@ class EmailSendCommand extends ConsoleCommand
         // return value is important when using CI
         // to fail the build when the command fails
         // 0 = success, other values = fail
-        return ConsoleCommand::SUCCESS;
+        return self::SUCCESS;
     }
 }

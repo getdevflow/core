@@ -41,6 +41,6 @@ final class UpdaterCheckCommand extends ConsoleCommand
                 ));
             }
         }
-        return ConsoleCommand::SUCCESS;
+        return self::SUCCESS;
     }
 }

@@ -21,7 +21,6 @@ final class NativePhpCookies
      *
      * @param int $length
      * @return string
-     * @throws TypeException
      */
     public function token(int $length = 20): string
     {
@@ -48,10 +47,10 @@ final class NativePhpCookies
         return setcookie(
             name: $key,
             value: $value,
-            expires_or_options: ($expires === null ? time() + config(key: 'cookies.lifetime') : time() + $expires),
+            expires_or_options: ($expires === null ? time() + config()->integer(key: 'cookies.lifetime') : time() + $expires),
             path: config(key: 'cookies.path'),
             domain: config(key: 'cookies.domain'),
-            secure: config(key: 'cookies.secure'),
+            secure: config()->boolean(key: 'cookies.secure'),
             httponly: config(key: 'cookies.httponly') ?? true,
         );
     }
@@ -95,8 +94,8 @@ final class NativePhpCookies
             expires_or_options: $data['exp'],
             path: config(key: 'cookies.path'),
             domain: config(key: 'cookies.domain'),
-            secure: config(key: 'cookies.secure'),
-            httponly: config(key: 'cookies.httponly') ?? true,
+            secure: config()->boolean(key: 'cookies.secure'),
+            httponly: config(key: 'cookies.httponly', default: true),
         );
     }
 
@@ -125,7 +124,7 @@ final class NativePhpCookies
             expires_or_options: time() - (432000 + config(key: 'cookies.lifetime')),
             path: config(key: 'cookies.path'),
             domain: config(key: 'cookies.domain'),
-            secure: config(key: 'cookies.secure'),
+            secure: config()->boolean(key: 'cookies.secure'),
             httponly: config(key: 'cookies.httponly') ?? true,
         );
     }
@@ -134,7 +133,6 @@ final class NativePhpCookies
      * Generates a hardened cookie string with digest.
      *
      * @param mixed $data Cookie value: e.g. random token or hash
-     * @throws TypeException
      */
     public function buildCookie(mixed $data, mixed $expires): string
     {
@@ -177,7 +175,6 @@ final class NativePhpCookies
      *
      * @param string $key String from the client
      * @return bool
-     * @throws TypeException
      */
     public function verifySecureCookie(string $key): bool
     {

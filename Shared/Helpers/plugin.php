@@ -99,6 +99,7 @@ function plugin_dir_path(string $filename): string
  *
  * @return array|false
  * @throws TypeException
+ * @throws ReflectionException
  */
 function active_plugins(): array|false
 {
@@ -207,7 +208,7 @@ function load_active_plugins(): void
 {
     $activePlugins = active_plugins();
 
-    if (!is_false__($activePlugins)) {
+    if (!empty($activePlugins)) {
         foreach ($activePlugins as $plugin) {
             // if the class does not exist,
             // deactivate it and move on
@@ -238,7 +239,6 @@ function load_active_plugins(): void
  *                       The URL will be relative to its directory. Default empty.
  *                       Typically, this is done by passing `__FILE__` as the argument.
  * @return string Plugins URL link with optional paths appended.
- * @throws ReflectionException
  * @throws \Qubus\Exception\Exception
  */
 function plugin_url(string $path = '', string $plugin = ''): string
@@ -278,7 +278,6 @@ function plugin_url(string $path = '', string $plugin = ''): string
  *
  * @param string $file The filename of the plugin (__FILE__).
  * @return string the URL path of the directory that contains the plugin.
- * @throws ReflectionException
  * @throws \Qubus\Exception\Exception
  */
 function plugin_dir_url(string $file): string
@@ -309,7 +308,7 @@ function plugin_info(string $pluginsDir = ''): array
             $app->make(name: Database::class),
             $app->make(name: Renderer::class)
         );
-        $info[] = Devflow::$PHP->execute([$class, 'meta']);
+        $info[] =Devflow::$PHP->execute([$class, 'meta']);
     }
 
     return $info;

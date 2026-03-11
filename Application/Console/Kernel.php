@@ -9,9 +9,17 @@ use Codefy\Framework\Scheduler\Schedule;
 use Qubus\EventDispatcher\ActionFilter\Action;
 use Qubus\Exception\Exception;
 use ReflectionException;
+use Symfony\Component\Console\Command\SignalableCommandInterface;
 
 class Kernel extends ConsoleKernel
 {
+    /**
+     * Add your custom console commands here.
+     *
+     * @var array<class-string<SignalableCommandInterface>|callable>
+     */
+    protected array $commands = [];
+
     /**
      * Place all your scheduled tasks here.
      *
@@ -33,11 +41,6 @@ class Kernel extends ConsoleKernel
      */
     protected function commands(): void
     {
-        $commands = $this->codefy->make('codefy.config')->getConfigKey('app.commands');
-
-        foreach ($commands as $command) {
-            $command = $this->codefy->make($command);
-            $this->registerCommand($command);
-        }
+        $this->load();
     }
 }

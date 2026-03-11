@@ -116,14 +116,13 @@ final class CmsHelperServiceProvider extends CodefyServiceProvider
         __observer()->action->addAction('update_post_init', 'App\Shared\Helpers\populate_contentmeta_cache', 5);
         __observer()->action->addAction('flush_cache', 'App\Shared\Helpers\populate_options_cache', 5);
         __observer()->action->addAction('maintenance_mode', 'App\Shared\Helpers\cms_maintenance_mode', 1);
-        __observer()->action->addAction('cms_logout', 'App\Shared\Helpers\renew_csrf_session', 5, 2);
         __observer()->filter->addFilter('the.body', [Parsecode::getInstance(), 'autop']);
         __observer()->filter->addFilter('the.body', [Parsecode::getInstance(), 'unAutop']);
         __observer()->filter->addFilter('the.body', [Parsecode::getInstance(), 'doParsecode'], 5);
         __observer()->filter->addFilter(
             'the.body',
             'App\Shared\Helpers\cms_encode_email',
-            $this->codefy->configContainer->getConfigKey(key: 'cms.eae_filter_priority')
+            $this->codefy->configContainer->integer(key: 'cms.eae_filter_priority')
         );
         __observer()->filter->addFilter('cms.authenticate.user', '\App\Shared\Helpers\cms_authenticate', 5, 3);
         __observer()->filter->addFilter('cms.auth.cookie', '\App\Shared\Helpers\cms_set_auth_cookie', 5, 2);

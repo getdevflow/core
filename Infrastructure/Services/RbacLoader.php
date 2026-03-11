@@ -26,8 +26,8 @@ final readonly class RbacLoader
      */
     public function initRbacRoles(): void
     {
-        if (!is_null__($this->configContainer->getConfigKey(key: 'rbac.roles'))) {
-            $rolesConfig = (array) $this->configContainer->getConfigKey(key: 'rbac.roles', default: []);
+        if (!is_null__($this->configContainer->array(key: 'rbac.roles'))) {
+            $rolesConfig = (array) $this->configContainer->array(key: 'rbac.roles', default: []);
             $this->addRoles($rolesConfig);
         }
     }
@@ -37,8 +37,8 @@ final readonly class RbacLoader
      */
     public function initRbacPermissions(): void
     {
-        if (!is_null__($this->configContainer->getConfigKey(key: 'rbac.permissions'))) {
-            $permissionsConfig = (array) $this->configContainer->getConfigKey(key: 'rbac.permissions', default: []);
+        if (!is_null__($this->configContainer->array(key: 'rbac.permissions'))) {
+            $permissionsConfig = (array) $this->configContainer->array(key: 'rbac.permissions', default: []);
             $this->addPermissions($permissionsConfig);
         }
     }

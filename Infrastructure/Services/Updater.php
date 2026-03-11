@@ -13,7 +13,6 @@ use Psr\Container\NotFoundExceptionInterface;
 use Psr\Log\LoggerInterface;
 use Psr\SimpleCache\CacheInterface;
 use Psr\SimpleCache\InvalidArgumentException;
-use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
 use ReflectionException;
 use RuntimeException;
@@ -131,7 +130,6 @@ final class Updater
      * @throws ReflectionException
      * @throws ContainerExceptionInterface
      * @throws NotFoundExceptionInterface
-     * @throws TypeException
      */
     public function __construct(?string $tempDir = null, ?string $installDir = null, int $maxExecutionTime = 60)
     {
@@ -762,7 +760,7 @@ final class Updater
                 continue;
             }
 
-            //If file is a update script, include
+            //If file is an update script, include
             if ($filename === $this->updateScriptName) {
                 $this->log->debug(sprintf('Try to include update script "%s"', $absoluteFilename));
                 require($absoluteFilename);

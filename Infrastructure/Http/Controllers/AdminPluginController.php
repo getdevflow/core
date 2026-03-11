@@ -53,7 +53,7 @@ final class AdminPluginController extends BaseController
      */
     public function plugins(ServerRequest $request): ResponseInterface|string
     {
-        if (false === $this->user->can(permissionName: 'manage:plugins', request: $request)) {
+        if (false === $this->user->can(permissionName: 'manage:plugins')) {
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );

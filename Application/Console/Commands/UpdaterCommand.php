@@ -156,6 +156,6 @@ EOT
             $this->terminalComment('No updates needed.');
         }
 
-        return ConsoleCommand::SUCCESS;
+        return self::SUCCESS;
     }
 }

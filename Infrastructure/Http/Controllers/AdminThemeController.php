@@ -56,7 +56,7 @@ final class AdminThemeController extends BaseController
      */
     public function themes(ServerRequest $request): ResponseInterface|string
     {
-        if (false === $this->user->can(permissionName: 'manage:themes', request: $request)) {
+        if (false === $this->user->can(permissionName: 'manage:themes')) {
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );

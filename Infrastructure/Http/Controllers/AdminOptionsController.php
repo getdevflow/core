@@ -56,7 +56,8 @@ final class AdminOptionsController extends BaseController
         protected Router $router,
         protected UserAuth $user,
         protected Database $dfdb,
-        protected Renderer $view
+        protected Renderer $view,
+        protected Options $option
     ) {
         parent::__construct($sessionService, $router, $view);
     }
@@ -93,7 +94,7 @@ final class AdminOptionsController extends BaseController
                     $value = trim($value);
                 }
 
-                Options::factory()->update($option, $value);
+                $this->option->update($option, $value);
             }
 
             Devflow::$PHP->flash->success(
@@ -137,7 +138,7 @@ final class AdminOptionsController extends BaseController
                 }
 
                 $value = $request->getParsedBody()[$optionName];
-                Options::factory()->update($optionName, $value);
+                $this->option->update($optionName, $value);
             }
 
             /** @var Site $currentSite */
@@ -265,7 +266,7 @@ final class AdminOptionsController extends BaseController
                 }
 
                 $value = $request->getParsedBody()[$optionName];
-                Options::factory()->update($optionName, $value);
+                $this->option->update($optionName, $value);
             }
 
             Devflow::$PHP->flash->{'success'}(

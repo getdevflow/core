@@ -4,14 +4,15 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Providers;
 
-use App\Application\Devflow;
 use App\Infrastructure\Persistence\Database;
+use App\Shared\Services\Registry;
 use Codefy\Framework\Support\CodefyServiceProvider;
 use Gettext\Translator;
 use Gettext\TranslatorFunctions;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Psr\SimpleCache\InvalidArgumentException;
+use Qubus\EventDispatcher\ActionFilter\Filter;
 use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
 use ReflectionException;
@@ -30,23 +31,23 @@ class TranslatorServiceProvider extends CodefyServiceProvider
      */
     public function register(): void
     {
+        $translator = new Translator();
+        TranslatorFunctions::register($translator);
+
         /** @var Database $database */
         $database = $this->codefy->make(name: Database::class);
 
         if (!$this->codefy->isRunningInConsole()) {
-            Devflow::$PHP->hook->filter->removeFilter(hook: 'core_locale', callback: function ($locale) {
+            Filter::getInstance()->removeFilter(hook: 'core_locale', callback: function ($locale) {
                 return '';
             });
 
-            Devflow::$PHP->hook->filter->addFilter(hook: 'core_locale', callback: function ($locale) use ($database) {
+            Filter::getInstance()->addFilter(hook: 'core_locale', callback: function ($locale) use ($database) {
                 $sql = "SELECT option_value FROM {$database->prefix}option WHERE option_key = 'site_locale' LIMIT 1";
                 $locale = $database->getVar($sql);
                 return $locale;
             });
         }
-
-        $translator = new Translator();
-        TranslatorFunctions::register($translator);
 
         /** Do not touch. */
 

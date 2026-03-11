@@ -40,11 +40,10 @@ final class SiteServiceProvider extends CodefyServiceProvider
         /** @var RequestInterface $request */
         $request = $this->codefy->make(RequestInterface::class);
 
-        /** @var PDO $pdo */
-        $pdo = $this->codefy->make(PDO::class);
+        $pdo = $this->codefy->getDbConnection()->pdo;
 
-        $default = $this->codefy->configContainer->getConfigKey(key: 'database.default');
-        $prefix = $this->codefy->configContainer->getConfigKey(key: "database.connections.{$default}.prefix");
+        $default = $this->codefy->configContainer->string(key: 'database.default');
+        $prefix = $this->codefy->configContainer->string(key: "database.connections.{$default}.prefix");
 
         try {
             $sql = "SELECT site_key FROM {$prefix}site WHERE site_domain = :domain OR site_mapping = :mapping LIMIT 1";

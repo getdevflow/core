@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Shared\Helpers;
 
 use App\Application\Devflow;
-use App\Infrastructure\Services\Options;
 use App\Infrastructure\Services\Updater;
 use App\Shared\Services\Assets\AppAssets;
 use App\Shared\Services\Assets\PluginAssets;
@@ -60,7 +59,6 @@ use function file_get_contents;
 use function filesize;
 use function floor;
 use function get_defined_functions;
-use function htmlentities;
 use function is_dir;
 use function is_file;
 use function is_readable;
@@ -865,15 +863,13 @@ function set_email_template(string $body): string
  * @file App/Shared/Helpers/core.php
  * @param string $template Template with variables.
  * @return string Template with variables replaced.
- * @throws ContainerExceptionInterface
  * @throws Exception
  * @throws InvalidArgumentException
- * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  */
 function replace_template_vars(string $template): string
 {
-    $option = Options::factory();
+    $option = option();
     $varArray = [
         'site_name' => $option->read(optionKey: 'sitename'),
         'site_url' => site_url(),
@@ -1471,9 +1467,8 @@ function show_update_message(): void
  * @param string $deprecatedVersion Version for which code becomes deprecated.
  * @param string $removedVersion Version for when deprecated code will be removed.
  * @param string|null $replacement Replacement of deprecated code if any.
- * @throws TypeException
  */
-#[Deprecated(message: 'use PHP 8.4 new Deprecated attribute instead.', since: 'v2.0.0')]
+#[Deprecated(message: 'deprecated with no replacement.', since: 'v2.0.0')]
 function deprecation_notice(
     string $functionName,
     string $deprecatedVersion,

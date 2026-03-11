@@ -11,13 +11,9 @@ use App\Domain\User\Model\User;
 use App\Domain\User\ValueObject\UserId;
 use App\Domain\User\ValueObject\UserToken;
 use App\Infrastructure\Persistence\Database;
-use Codefy\CommandBus\Busses\SynchronousCommandBus;
-use Codefy\CommandBus\Containers\ContainerFactory;
 use Codefy\CommandBus\Exceptions\CommandCouldNotBeHandledException;
 use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
 use Codefy\CommandBus\Exceptions\UnresolvableCommandHandlerException;
-use Codefy\CommandBus\Odin;
-use Codefy\CommandBus\Resolvers\NativeCommandHandlerResolver;
 use Codefy\Framework\Application;
 use Codefy\Framework\Console\ConsoleCommand;
 use Codefy\Framework\Factory\FileLoggerFactory;
@@ -38,6 +34,7 @@ use function App\Shared\Helpers\cms_insert_user;
 use function App\Shared\Helpers\generate_random_password;
 use function App\Shared\Helpers\generate_random_username;
 use function App\Shared\Helpers\generate_unique_key;
+use function Codefy\Framework\Helpers\command;
 use function Codefy\Framework\Helpers\storage_path;
 use function file_put_contents;
 use function Qubus\Error\Helpers\is_error;
@@ -65,7 +62,7 @@ class InstallCmsCommand extends ConsoleCommand
     {
         if ($this->usersExist()) {
             $this->terminalRaw(string: '<error>Error: system already installed.</error>');
-            return ConsoleCommand::FAILURE;
+            return self::FAILURE;
         }
 
         $this->terminalRaw(string: '<info>Installer started....</info>');
@@ -76,7 +73,7 @@ class InstallCmsCommand extends ConsoleCommand
 
         if (is_error($user)) {
             $this->terminalRaw(string: '<error>Error: not installed.</error>');
-            return ConsoleCommand::FAILURE;
+            return self::FAILURE;
         }
 
         $this->terminalRaw(string: '<info>Creating the main site...</info>');
@@ -105,7 +102,7 @@ class InstallCmsCommand extends ConsoleCommand
         // return value is important when using CI
         // to fail the build when the command fails
         // 0 = success, other values = fail
-        return ConsoleCommand::SUCCESS;
+        return self::SUCCESS;
     }
 
     /**
@@ -129,12 +126,12 @@ class InstallCmsCommand extends ConsoleCommand
         $user->url = '';
         $user->bio = '';
         $user->status = 'A';
-        $user->timezone = $this->codefy->configContainer->getConfigKey(key: 'app.timezone');
+        $user->timezone = $this->codefy->configContainer->string(key: 'app.timezone');
         $user->dateFormat = 'd F Y';
         $user->timeFormat = 'h:i A';
-        $user->locale = $this->codefy->configContainer->getConfigKey(key: 'app.locale');
+        $user->locale = $this->codefy->configContainer->string(key: 'app.locale');
         $user->registered = QubusDateTimeImmutable::now(
-            $this->codefy->configContainer->getConfigKey(key: 'app.timezone')
+            $this->codefy->configContainer->string(key: 'app.timezone')
         )->format('Y-m-d H:i:s');
 
         try {
@@ -168,14 +165,14 @@ class InstallCmsCommand extends ConsoleCommand
         $dfdb = $this->codefy->make(Database::class);
 
         $options = [
-            'sitename' => $this->codefy->configContainer->getConfigKey(key: 'app.name'),
+            'sitename' => $this->codefy->configContainer->string(key: 'app.name'),
             'site_description' => 'Just another Devflow site.',
             'charset' => 'UTF-8',
             'admin_email' => 'admin@example.com',
-            'site_locale' => $this->codefy->configContainer->getConfigKey(key: 'app.locale'),
+            'site_locale' => $this->codefy->configContainer->string(key: 'app.locale'),
             'cookieexpire' => 604800,
             'cookiepath' => '/',
-            'site_timezone' => $this->codefy->configContainer->getConfigKey(key: 'app.timezone'),
+            'site_timezone' => $this->codefy->configContainer->string(key: 'app.timezone'),
             'admin_skin' => 'skin-red',
             'date_format' => 'd F Y',
             'time_format' => 'h:i A',
@@ -202,25 +199,18 @@ class InstallCmsCommand extends ConsoleCommand
      */
     protected function createMainSite(string $ownerId): void
     {
-        $resolver = new NativeCommandHandlerResolver(
-            container: ContainerFactory::make(
-                config: $this->codefy->configContainer->getConfigKey(key: 'commandbus.container')
-            )
-        );
-        $odin = new Odin(bus: new SynchronousCommandBus($resolver));
-
-        $dbConnection = $this->codefy->configContainer->getConfigKey(key: 'database.default');
+        $dbConnection = $this->codefy->configContainer->string(key: 'database.default');
 
         try {
             $site = new Site();
-            $site->key = $this->codefy->configContainer->getConfigKey(
+            $site->key = $this->codefy->configContainer->string(
                 key: "database.connections.{$dbConnection}.prefix"
             );
-            $site->name = $this->codefy->configContainer->getConfigKey(key: 'app.name');
-            $site->slug = Inflector::slugify($this->codefy->configContainer->getConfigKey(key: 'app.name'));
-            $site->domain = $this->codefy->configContainer->getConfigKey(key: 'cms.main_site_url');
+            $site->name = $this->codefy->configContainer->string(key: 'app.name');
+            $site->slug = Inflector::slugify($this->codefy->configContainer->string(key: 'app.name'));
+            $site->domain = $this->codefy->configContainer->string(key: 'cms.main_site_url');
             $site->mapping = '';
-            $site->path = $this->codefy->configContainer->getConfigKey(key: 'cms.main_site_path');
+            $site->path = $this->codefy->configContainer->string(key: 'cms.main_site_path');
             $site->owner = $ownerId;
             $site->status = 'public';
 
@@ -237,11 +227,11 @@ class InstallCmsCommand extends ConsoleCommand
                 'siteOwner' => UserId::fromString($site->owner),
                 'siteStatus' => new StringLiteral($site->status),
                 'siteRegistered' => QubusDateTimeImmutable::now(
-                    $this->codefy->configContainer->getConfigKey(key: 'app.timezone')
+                    $this->codefy->configContainer->string(key: 'app.timezone')
                 ),
             ]);
 
-            $odin->execute($command);
+            command($command);
 
             /**
              * Fires immediately after a new site is saved.

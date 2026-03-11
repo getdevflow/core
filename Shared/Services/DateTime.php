@@ -22,7 +22,7 @@ class DateTime
      * @param string|DateTimeZone|null $timezone
      * @param string|null $locale
      */
-    public function __construct(?string $time = null, string|DateTimeZone|null $timezone = null, string $locale = null)
+    public function __construct(?string $time = null, string|DateTimeZone|null $timezone = null, ?string $locale = null)
     {
         $this->dateTime = QubusDateTimeImmutable::parse($time);
     }

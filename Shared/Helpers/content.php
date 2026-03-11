@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Shared\Helpers;
 
+use App\Application\Devflow;
 use App\Domain\Content\Command\UpdateContentStatusCommand;
 use App\Domain\Content\Model\Content;
 use App\Domain\Content\Command\CreateContentCommand;
@@ -66,7 +67,7 @@ use function str_replace;
  *
  * @return array
  * @throws ReflectionException
- * @throws UnresolvableQueryHandlerException|TypeException
+ * @throws UnresolvableQueryHandlerException
  */
 function get_content(): array
 {
@@ -89,7 +90,7 @@ function get_content(): array
  * @return array Array of published content or content by particular content type.
  * @throws CommandPropertyNotFoundException
  * @throws ReflectionException
- * @throws UnresolvableQueryHandlerException|TypeException
+ * @throws UnresolvableQueryHandlerException
  */
 function get_all_content_with_filters(
     ?string $contentTypeSlug = null,
@@ -159,7 +160,9 @@ function get_content_by_type_and_id(string $contentTypeSlug, string $contentId):
  */
 function get_content_by(string $field, string $value): false|object
 {
-    $contentdata = new Content(dfdb())->findBy($field, $value);
+    /** @var Content $content */
+    $content = Devflow::$PHP->make(name: Content::class);
+    $contentdata = $content->findBy($field, $value);
 
     if (is_false__($contentdata)) {
         return false;
@@ -1942,8 +1945,9 @@ function cms_insert_content(array|ServerRequestInterface|Content $contentdata): 
 
         /**
          * Create new content object.
+         * @var Content $content
          */
-        $content = new Content();
+        $content = Devflow::$PHP->make(Content::class);
         $content->id = $contentId->toNative();
     } else {
         $update = false;
@@ -1965,8 +1969,10 @@ function cms_insert_content(array|ServerRequestInterface|Content $contentdata): 
 
         /**
          * Create new content object.
+         *
+         * @var Content $content
          */
-        $content = new Content();
+        $content = Devflow::$PHP->make(Content::class);
         $content->id = $contentId->toNative();
     }
 
@@ -2883,7 +2889,6 @@ function the_title(string|Content|ContentId $content): string
 }
 
 /**
- * @throws CommandCouldNotBeHandledException
  * @throws CommandPropertyNotFoundException
  * @throws ContainerExceptionInterface
  * @throws Exception

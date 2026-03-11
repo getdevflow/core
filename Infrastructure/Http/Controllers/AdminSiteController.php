@@ -65,16 +65,16 @@ final class AdminSiteController extends BaseController
      * @param ServerRequest $request
      * @return ResponseInterface|null
      * @throws ContainerExceptionInterface
+     * @throws DateInvalidTimeZoneException
      * @throws Exception
      * @throws InvalidArgumentException
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
-     * @throws SessionException
      * @throws TypeException
      */
     public function siteCreate(ServerRequest $request): ?ResponseInterface
     {
-        if (false === $this->user->can(permissionName: 'create:sites', request: $request)) {
+        if (false === $this->user->can(permissionName: 'create:sites')) {
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
@@ -131,7 +131,7 @@ final class AdminSiteController extends BaseController
      */
     public function sites(ServerRequest $request): string|ResponseInterface
     {
-        if (false === $this->user->can(permissionName: 'manage:sites', request: $request)) {
+        if (false === $this->user->can(permissionName: 'manage:sites')) {
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
@@ -183,7 +183,7 @@ final class AdminSiteController extends BaseController
      */
     public function siteChange(ServerRequest $request, string $siteId): ?ResponseInterface
     {
-        if (false === $this->user->can(permissionName: 'update:sites', request: $request)) {
+        if (false === $this->user->can(permissionName: 'update:sites')) {
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
@@ -244,7 +244,7 @@ final class AdminSiteController extends BaseController
      */
     public function siteView(ServerRequest $request, string $siteId): string|ResponseInterface
     {
-        if (false === $this->user->can(permissionName: 'manage:sites', request: $request)) {
+        if (false === $this->user->can(permissionName: 'manage:sites')) {
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
@@ -305,7 +305,7 @@ final class AdminSiteController extends BaseController
      */
     public function siteUsers(ServerRequest $request): ResponseInterface|null|string
     {
-        if (false === $this->user->can(permissionName: 'manage:sites', request: $request)) {
+        if (false === $this->user->can(permissionName: 'manage:sites')) {
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
@@ -354,8 +354,8 @@ final class AdminSiteController extends BaseController
     public function siteUsersDelete(ServerRequest $request, string $userId): ResponseInterface
     {
         if (
-            false === $this->user->can(permissionName: 'delete:users', request: $request) &&
-            false === $this->user->can(permissionName: 'manage:sites', request: $request)
+            false === $this->user->can(permissionName: 'delete:users') &&
+            false === $this->user->can(permissionName: 'manage:sites')
         ) {
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
@@ -425,7 +425,7 @@ final class AdminSiteController extends BaseController
      */
     public function siteDelete(ServerRequest $request, string $siteId): ResponseInterface
     {
-        if (false === $this->user->can(permissionName: 'delete:sites', request: $request)) {
+        if (false === $this->user->can(permissionName: 'delete:sites')) {
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );

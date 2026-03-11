@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Content\Query\Trait;
 
 use Qubus\Exception\Data\TypeException;
+use Qubus\Exception\Exception;
 
 use function Codefy\Framework\Helpers\config;
 use function Qubus\Security\Helpers\esc_html;
@@ -18,6 +19,7 @@ trait PopulateContentQueryAware
      * @param array|null $data
      * @return array|null
      * @throws TypeException
+     * @throws Exception
      */
     private function populate(?array $data = []): ?array
     {

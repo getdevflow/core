@@ -35,7 +35,6 @@ final class FileResource extends BaseStorageResource
     /**
      * @throws FilesystemException
      * @throws SentinelException
-     * @throws TypeException
      */
     public function load(): void
     {

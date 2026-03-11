@@ -13,7 +13,8 @@ trait EventSourcedRepositoryAware
 {
     use IdentityMapAware;
 
-    /** {@inheritDoc}
+    /**
+     * {@inheritDoc}
      * @throws CorruptEventStreamException
      */
     public function loadAggregateRoot(AggregateId $aggregateId): RecordsEvents
@@ -41,7 +42,7 @@ trait EventSourcedRepositoryAware
 
         $aggregate->clearRecordedEvents();
 
-        $committedEvents = $transaction->committedEvents();
+        $committedEvents = $transaction->committedEvents;
 
         $this->projection->project(...$committedEvents);
 

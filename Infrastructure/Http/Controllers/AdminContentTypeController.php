@@ -63,7 +63,7 @@ final class AdminContentTypeController extends BaseController
      */
     public function contentTypeCreate(ServerRequest $request): ?ResponseInterface
     {
-        if (false === $this->user->can(permissionName: 'create:content', request: $request)) {
+        if (false === $this->user->can(permissionName: 'create:content')) {
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
@@ -111,7 +111,7 @@ final class AdminContentTypeController extends BaseController
      */
     public function contentTypes(ServerRequest $request): string|ResponseInterface
     {
-        if (false === $this->user->can(permissionName: 'manage:content', request: $request)) {
+        if (false === $this->user->can(permissionName: 'manage:content')) {
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
@@ -154,7 +154,7 @@ final class AdminContentTypeController extends BaseController
      */
     public function contentTypeChange(ServerRequest $request, string $contentTypeId): ?ResponseInterface
     {
-        if (false === $this->user->can(permissionName: 'update:content', request: $request)) {
+        if (false === $this->user->can(permissionName: 'update:content')) {
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
@@ -205,7 +205,7 @@ final class AdminContentTypeController extends BaseController
      */
     public function contentTypeView(ServerRequest $request, string $contentTypeId): string|ResponseInterface
     {
-        if (false === $this->user->can(permissionName: 'update:content', request: $request)) {
+        if (false === $this->user->can(permissionName: 'update:content')) {
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
@@ -266,7 +266,7 @@ final class AdminContentTypeController extends BaseController
      */
     public function contentTypeDelete(ServerRequest $request, string $contentTypeId): ResponseInterface
     {
-        if (false === $this->user->can(permissionName: 'delete:content', request: $request)) {
+        if (false === $this->user->can(permissionName: 'delete:content')) {
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );

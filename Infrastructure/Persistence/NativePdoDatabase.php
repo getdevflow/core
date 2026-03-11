@@ -13,11 +13,11 @@ use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Psr\SimpleCache\InvalidArgumentException;
 use Qubus\Config\ConfigContainer;
-use Qubus\Dbal\Schema;
 use Qubus\Error\Error;
 use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
 use Qubus\Expressive\QueryBuilder;
+use Qubus\Expressive\Schema;
 use ReflectionException;
 
 use function App\Shared\Helpers\is_multisite;
@@ -26,7 +26,7 @@ use function array_map;
 use function array_merge;
 use function array_shift;
 use function array_values;
-use function Codefy\Framework\Helpers\qb;
+use function Codefy\Framework\Helpers\queryBuilder;
 use function count;
 use function func_get_args;
 use function get_object_vars;
@@ -117,8 +117,8 @@ final class NativePdoDatabase implements Database
         protected PDO $pdo,
         protected ConfigContainer $configContainer,
     ) {
-        $this->connectionType = $this->configContainer->getConfigKey(key: 'database.default');
-        $this->basePrefix = $this->configContainer->getConfigKey(
+        $this->connectionType = $this->configContainer->string(key: 'database.default');
+        $this->basePrefix = $this->configContainer->string(
             key: "database.connections.{$this->connectionType}.prefix"
         );
 
@@ -477,7 +477,7 @@ final class NativePdoDatabase implements Database
     public function schema(): Schema
     {
         if ($this->schema === null) {
-            $this->schema = qb()->schema();
+            $this->schema = queryBuilder()->schema();
         }
 
         return $this->schema;
@@ -488,7 +488,7 @@ final class NativePdoDatabase implements Database
      */
     public function qb(): ?QueryBuilder
     {
-        return qb();
+        return queryBuilder();
     }
 
     /**

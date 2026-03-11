@@ -18,22 +18,14 @@ use App\Domain\User\ValueObject\UserId;
 use App\Infrastructure\Persistence\Cache\SiteCachePsr16;
 use App\Infrastructure\Persistence\Cache\UserCachePsr16;
 use App\Infrastructure\Persistence\Database;
-use App\Infrastructure\Services\Options;
 use App\Shared\Services\DateTime;
 use App\Shared\Services\Registry;
 use App\Shared\Services\Sanitizer;
 use App\Shared\Services\SimpleCacheObjectCacheFactory;
-use Codefy\CommandBus\Busses\SynchronousCommandBus;
-use Codefy\CommandBus\Containers\ContainerFactory;
 use Codefy\CommandBus\Exceptions\CommandCouldNotBeHandledException;
 use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
 use Codefy\CommandBus\Exceptions\UnresolvableCommandHandlerException;
-use Codefy\CommandBus\Odin;
-use Codefy\CommandBus\Resolvers\NativeCommandHandlerResolver;
 use Codefy\Framework\Factory\FileLoggerFactory;
-use Codefy\QueryBus\Busses\SynchronousQueryBus;
-use Codefy\QueryBus\Enquire;
-use Codefy\QueryBus\Resolvers\NativeQueryHandlerResolver;
 use Codefy\QueryBus\UnresolvableQueryHandlerException;
 use DateInvalidTimeZoneException;
 use PDOException;
@@ -56,6 +48,8 @@ use ReflectionException;
 
 use function array_merge;
 use function Codefy\Framework\Helpers\app;
+use function Codefy\Framework\Helpers\ask;
+use function Codefy\Framework\Helpers\command;
 use function Codefy\Framework\Helpers\config;
 use function Codefy\Framework\Helpers\public_path;
 use function Codefy\Framework\Helpers\resource_path;
@@ -84,14 +78,7 @@ use function strtotime;
  */
 function get_all_sites(): mixed
 {
-    $resolver = new NativeQueryHandlerResolver(
-        container: ContainerFactory::make(config: config(key: 'querybus.aliases'))
-    );
-    $enquirer = new Enquire(bus: new SynchronousQueryBus($resolver));
-
-    $query = new FindSitesQuery();
-
-    return $enquirer->execute($query);
+    return ask(new FindSitesQuery());
 }
 
 /**
@@ -109,7 +96,9 @@ function get_all_sites(): mixed
  */
 function get_site_by(string $field, string $value): false|object
 {
-    $sitedata = new Site(dfdb: dfdb())->findBy($field, $value);
+    /** @var Site $site */
+    $site = Devflow::$PHP->make(Site::class);
+    $sitedata = $site->findBy($field, $value);
     if (is_false__($sitedata)) {
         return false;
     }
@@ -239,7 +228,7 @@ function create_site_directories(string $siteId, Site $site, bool $update = fals
         return false;
     }
 
-    $key = crc32(string: $site->key . config(key: 'cms.app_salt'));
+    $key = crc32(string: $site->key . config()->string(key: 'cms.app_salt'));
 
     mkdir(
         directory: public_path(
@@ -358,13 +347,13 @@ function delete_site_tables(string $siteId, Site $oldSite): bool
 
     try {
         $dfdb->qb()->transactional(function () use ($dfdb, $dropTables) {
-            $dfdb->qb()->getConnection()->getPdo()->exec(statement: "SET GLOBAL FOREIGN_KEY_CHECKS=0;");
+            $dfdb->qb()->getConnection()->pdo->exec(statement: "SET GLOBAL FOREIGN_KEY_CHECKS=0;");
 
             foreach ((array) $dropTables as $table) {
-                $dfdb->qb()->getConnection()->getPdo()->exec(statement: sprintf("DROP TABLE IF EXISTS %s", $table));
+                $dfdb->qb()->getConnection()->pdo->exec(statement: sprintf("DROP TABLE IF EXISTS %s", $table));
             }
 
-            $dfdb->qb()->getConnection()->getPdo()->exec(statement: "SET GLOBAL FOREIGN_KEY_CHECKS=1;");
+            $dfdb->qb()->getConnection()->pdo->exec(statement: "SET GLOBAL FOREIGN_KEY_CHECKS=1;");
         });
 
         return true;
@@ -400,7 +389,7 @@ function delete_site_directories(string $siteId, Site $oldSite): bool
         return false;
     }
 
-    $key = crc32(string: $oldSite->key . config(key: 'cms.app_salt'));
+    $key = crc32(string: $oldSite->key . config()->string(key: 'cms.app_salt'));
 
     rmdir__(public_path(path: 'sites' . Devflow::$PHP::DS . $key));
 
@@ -427,18 +416,11 @@ function get_current_site_key(): mixed
  * @file App/Shared/Helpers/site.php
  * @return array Users data.
  * @throws ReflectionException
- * @throws UnresolvableQueryHandlerException|TypeException
+ * @throws UnresolvableQueryHandlerException
  */
 function get_multisite_users(): array
 {
-    $resolver = new NativeQueryHandlerResolver(
-        container: ContainerFactory::make(config: config(key: 'querybus.aliases'))
-    );
-    $enquirer = new Enquire(bus: new SynchronousQueryBus($resolver));
-
-    $query = new FindMultisiteUniqueUsersQuery();
-
-    return $enquirer->execute($query);
+    return ask(new FindMultisiteUniqueUsersQuery());
 }
 
 /**
@@ -550,7 +532,6 @@ function add_user_to_site(User|string $user, Site|string $site, string $role): f
  *
  * @return string|Error  The newly created site's id or Error if the site could not
  *                       be created.
- * @throws CommandCouldNotBeHandledException
  * @throws CommandPropertyNotFoundException
  * @throws ContainerExceptionInterface
  * @throws Exception
@@ -559,7 +540,6 @@ function add_user_to_site(User|string $user, Site|string $site, string $role): f
  * @throws ReflectionException
  * @throws TypeException
  * @throws UnresolvableCommandHandlerException
- * @throws UnresolvableQueryHandlerException
  * @throws DateInvalidTimeZoneException
  */
 function cms_insert_site(array|ServerRequestInterface|Site $sitedata): Error|string
@@ -601,8 +581,10 @@ function cms_insert_site(array|ServerRequestInterface|Site $sitedata): Error|str
 
         /**
          * Create new site object.
+         *
+         * @var Site $site
          */
-        $site = new Site();
+        $site = Devflow::$PHP->make(Site::class);
         $site->id = $siteId->toNative();
     } else {
         $update = false;
@@ -621,8 +603,10 @@ function cms_insert_site(array|ServerRequestInterface|Site $sitedata): Error|str
 
         /**
          * Create new site object.
+         *
+         * @var Site $site
          */
-        $site = new Site();
+        $site = Devflow::$PHP->make(Site::class);
         $site->id = $siteId->toNative();
     }
     $site->key = $siteKey;
@@ -838,11 +822,6 @@ function cms_insert_site(array|ServerRequestInterface|Site $sitedata): Error|str
         $update ? $siteBefore->id : null
     );
 
-    $resolver = new NativeCommandHandlerResolver(
-        container: ContainerFactory::make(config: config('commandbus.container'))
-    );
-    $odin = new Odin(bus: new SynchronousCommandBus($resolver));
-
     if ($update) {
         $site->modified = $siteModified;
 
@@ -860,11 +839,11 @@ function cms_insert_site(array|ServerRequestInterface|Site $sitedata): Error|str
                     date('Y', strtotime($site->modified)),
                     date('m', strtotime($site->modified)),
                     date('d', strtotime($site->modified)),
-                    new QubusDateTimeZone(Options::factory()->read(optionKey: 'site_timezone'))
+                    new QubusDateTimeZone(option()->read(optionKey: 'site_timezone'))
                 ),
             ]);
 
-            $odin->execute($command);
+            command($command);
 
         } catch (PDOException $e) {
             FileLoggerFactory::getLogger()->error(
@@ -896,11 +875,11 @@ function cms_insert_site(array|ServerRequestInterface|Site $sitedata): Error|str
                     date('Y', strtotime($site->registered)),
                     date('m', strtotime($site->registered)),
                     date('d', strtotime($site->registered)),
-                    new QubusDateTimeZone(Options::factory()->read(optionKey: 'site_timezone'))
+                    new QubusDateTimeZone(option()->read(optionKey: 'site_timezone'))
                 ),
             ]);
 
-            $odin->execute($command);
+            command($command);
 
         } catch (
             PDOException |
@@ -992,7 +971,6 @@ function cms_insert_site(array|ServerRequestInterface|Site $sitedata): Error|str
  * @file App/Shared/Helpers/site.php
  * @param array|ServerRequestInterface|Site $sitedata An array of site data or a site object.
  * @return Error|string The updated site's id or Error if update failed.
- * @throws CommandCouldNotBeHandledException
  * @throws CommandPropertyNotFoundException
  * @throws ContainerExceptionInterface
  * @throws DateInvalidTimeZoneException
@@ -1075,7 +1053,6 @@ function cms_update_site(array|ServerRequestInterface|Site $sitedata): Error|str
  * @file App/Shared/Helpers/site.php
  * @param string $siteId ID of site to delete.
  * @return string|Error Returns id of deleted site or Error.
- * @throws CommandCouldNotBeHandledException
  * @throws CommandPropertyNotFoundException
  * @throws ContainerExceptionInterface
  * @throws Exception
@@ -1087,11 +1064,6 @@ function cms_update_site(array|ServerRequestInterface|Site $sitedata): Error|str
  */
 function cms_delete_site(string $siteId): Error|string
 {
-    $resolver = new NativeCommandHandlerResolver(
-        container: ContainerFactory::make(config: config(key: 'commandbus.container'))
-    );
-    $odin = new Odin(bus: new SynchronousCommandBus($resolver));
-
     /** @var Site $oldSite */
     $oldSite = get_site_by('id', $siteId);
 
@@ -1119,7 +1091,7 @@ function cms_delete_site(string $siteId): Error|string
             'siteId' => SiteId::fromString($siteId)
         ]);
 
-        $odin->execute($command);
+        command($command);
     } catch (PDOException $e) {
         FileLoggerFactory::getLogger()->error(
             sprintf(
@@ -1237,7 +1209,9 @@ function cms_delete_site_user(string $userId, array $params = []): Error|bool
             }
 
             foreach ($sites as $oldSite) {
-                $site = new Site()->create($oldSite);
+                /** @var Site $site */
+                $site = Devflow::$PHP->make(Site::class);
+                $site->create((array) $oldSite);
                 SimpleCacheObjectCacheFactory::make(namespace: 'sites')->delete(key: md5($site->id));
                 /**
                  * Action hook triggered after the site is deleted.
@@ -1371,7 +1345,7 @@ function new_site_schema(string $siteId, Site $site, bool $update): bool|string
     $insertData = str_replace('{api_key}', $apiKey, $insertData);
 
     try {
-        $dfdb->qb()->getConnection()->getPDO()->exec($insertData);
+        $dfdb->qb()->getConnection()->pdo->exec($insertData);
     } catch (PDOException $e) {
         FileLoggerFactory::getLogger()->error(
             sprintf(
@@ -1708,14 +1682,16 @@ function cms_unique_site_slug(string $originalSlug, string $originalTitle, strin
  */
 function get_siteinfo(string $show = '', string $filter = 'raw'): string
 {
+    $options = option();
+
     $dispatch = [
         'homeurl' => home_url(),
         'siteurl' => site_url(),
-        'description' => Options::factory()->read(optionKey: 'site_description'),
-        'sitename' => Options::factory()->read(optionKey: 'sitename'),
-        'timezone' => Options::factory()->read(optionKey: 'site_timezone'),
-        'admin_email' => Options::factory()->read(optionKey: 'admin_email'),
-        'locale' => Options::factory()->read(optionKey: 'site_locale'),
+        'description' => $options->read(optionKey: 'site_description'),
+        'sitename' => $options->read(optionKey: 'sitename'),
+        'timezone' => $options->read(optionKey: 'site_timezone'),
+        'admin_email' => $options->read(optionKey: 'admin_email'),
+        'locale' => $options->read(optionKey: 'site_locale'),
         'release' => Devflow::release(),
     ];
 

@@ -19,9 +19,11 @@ use Qubus\Exception\Exception;
 use Qubus\ValueObjects\Identity\Ulid;
 use ReflectionException;
 
+use function App\Shared\Helpers\dfdb;
 use function App\Shared\Helpers\maybe_serialize;
 use function App\Shared\Helpers\maybe_unserialize;
 use function Codefy\Framework\Helpers\app;
+use function Codefy\Framework\Helpers\logger;
 use function md5;
 use function Qubus\Security\Helpers\purify_html;
 use function Qubus\Support\Helpers\is_null__;
@@ -38,11 +40,10 @@ final class Options
      * @throws ContainerExceptionInterface
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
-     * @throws TypeException
      */
     public static function factory(): Options
     {
-        $dfdb = app(name: Database::class);
+        $dfdb = dfdb();
 
         return new self(
             dfdb: $dfdb,
@@ -142,7 +143,8 @@ final class Options
         try {
             $result = $this->cache->get(md5($optionKey));
 
-            if (empty($result)) {
+            if (is_null__($result)) {
+                logger('info', 'options', [$optionKey]);
                 $result = $this->dfdb->getVar(
                     $this->dfdb->prepare(
                         "SELECT option_value FROM {$this->dfdb->prefix}option WHERE option_key = ? LIMIT 1",

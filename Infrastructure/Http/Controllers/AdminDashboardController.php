@@ -18,6 +18,7 @@ use Psr\SimpleCache\InvalidArgumentException;
 use Qubus\EventDispatcher\ActionFilter\Action;
 use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
+use Qubus\Http\Response;
 use Qubus\Http\ServerRequest;
 use Qubus\Http\Session\SessionException;
 use Qubus\Http\Session\SessionService;
@@ -29,6 +30,7 @@ use ReflectionException;
 
 use function App\Shared\Helpers\admin_url;
 use function App\Shared\Helpers\get_all_users;
+use function preg_filter;
 use function Qubus\Security\Helpers\esc_html__;
 use function Qubus\Security\Helpers\t__;
 
@@ -59,7 +61,7 @@ final class AdminDashboardController extends BaseController
      */
     public function index(ServerRequest $request): ResponseInterface|string
     {
-        if (false === $this->user->can(permissionName: 'access:admin', request: $request)) {
+        if (false === $this->user->can(permissionName: 'access:admin')) {
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
@@ -85,7 +87,7 @@ final class AdminDashboardController extends BaseController
      */
     public function snapshot(ServerRequest $request): ResponseInterface|string
     {
-        if (false === $this->user->can(permissionName: 'access:admin', request: $request)) {
+        if (false === $this->user->can(permissionName: 'access:admin')) {
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
@@ -113,31 +115,23 @@ final class AdminDashboardController extends BaseController
      */
     public function flushCache(ServerRequest $request): ResponseInterface
     {
-        if (false === $this->user->can(permissionName: 'manage:settings', request: $request)) {
+        if (false === $this->user->can(permissionName: 'manage:settings')) {
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
         }
 
-        $namespaces = [
-            $this->dfdb->prefix . 'content',
-            $this->dfdb->prefix . 'contentslug',
-            $this->dfdb->prefix . 'contenttype',
-            $this->dfdb->prefix . 'contentmeta',
-            $this->dfdb->prefix . 'products',
-            $this->dfdb->prefix . 'productslug',
-            $this->dfdb->prefix . 'productsku',
-            $this->dfdb->prefix . 'productmeta',
-            'useremail',
-            'userlogin',
-            'users',
-            'usertoken',
-            'sites',
-            'sitekey',
-            'siteslug',
-            $this->dfdb->prefix . 'options',
-            $this->dfdb->prefix . 'database'
-        ];
+        $globalNamespaces = ['useremail','userlogin','users','usertoken','sites','sitekey','siteslug'];
+        $siteNamespaces = preg_filter(
+            pattern: '/^/',
+            replacement: $this->dfdb->prefix,
+            subject: [
+                'content','contentslug','contenttype','contentmeta','products','productslug','productsku',
+                'productmeta','options','database'
+            ]
+        );
+
+        $namespaces = [...$siteNamespaces, ...$globalNamespaces];
 
         if (true === SimpleCacheObjectCacheFactory::make(namespace: $this->dfdb->prefix . 'usermeta')->clear()) {
             ItemPoolObjectCacheFactory::make()->clear();
@@ -172,7 +166,7 @@ final class AdminDashboardController extends BaseController
      */
     public function media(ServerRequest $request): ResponseInterface|string
     {
-        if (false === $this->user->can(permissionName: 'manage:media', request: $request)) {
+        if (false === $this->user->can(permissionName: 'manage:media')) {
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );

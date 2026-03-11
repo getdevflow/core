@@ -14,6 +14,8 @@ use Codefy\Framework\Auth\Rbac\Resource\StorageResource;
 use Codefy\Framework\Auth\Repository\AuthUserRepository;
 use Codefy\Framework\Auth\Sentinel;
 use Codefy\Framework\Support\CodefyServiceProvider;
+use Gettext\Translator;
+use Gettext\TranslatorFunctions;
 use Qubus\Exception\Exception;
 use ReflectionException;
 
@@ -24,10 +26,6 @@ final class RbacServiceProvider extends CodefyServiceProvider
      */
     public function register(): void
     {
-        if ($this->codefy->isRunningInConsole()) {
-            return;
-        }
-
         $this->codefy->alias(original: StorageResource::class, alias: FileResource::class);
         $this->codefy->define(name: FileResource::class, args: [
             ':file' => 'rbac.json'

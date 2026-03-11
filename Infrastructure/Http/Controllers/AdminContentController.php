@@ -10,7 +10,7 @@ use App\Domain\Content\Model\Content;
 use App\Domain\Content\ValueObject\ContentId;
 use App\Infrastructure\Persistence\Database;
 use App\Infrastructure\Services\UserAuth;
-use Cms\Forms\ContentForm;
+use Application\Service\Forms\ContentForm;
 use Codefy\CommandBus\Busses\SynchronousCommandBus;
 use Codefy\CommandBus\Containers\ContainerFactory;
 use Codefy\CommandBus\Exceptions\CommandCouldNotBeHandledException;
@@ -66,17 +66,15 @@ final class AdminContentController extends BaseController
      * @param ServerRequest $request
      * @param string $contentTypeSlug
      * @return ResponseInterface|null
-     * @throws ContainerExceptionInterface
      * @throws Exception
      * @throws InvalidArgumentException
-     * @throws NotFoundExceptionInterface
      * @throws ReflectionException
      * @throws SessionException
      * @throws TypeException
      */
     public function contentCreate(ServerRequest $request, string $contentTypeSlug): ?ResponseInterface
     {
-        if (false === $this->user->can(permissionName: 'create:content', request: $request)) {
+        if (false === $this->user->can(permissionName: 'create:content')) {
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
@@ -132,7 +130,7 @@ final class AdminContentController extends BaseController
      */
     public function contentCreateView(ServerRequest $request, string $contentTypeSlug): ResponseInterface|null|string
     {
-        if (false === $this->user->can(permissionName: 'create:content', request: $request)) {
+        if (false === $this->user->can(permissionName: 'create:content')) {
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
@@ -191,7 +189,7 @@ final class AdminContentController extends BaseController
         string $contentTypeSlug,
         string $contentId
     ): ?ResponseInterface {
-        if (false === $this->user->can(permissionName: 'update:content', request: $request)) {
+        if (false === $this->user->can(permissionName: 'update:content')) {
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
@@ -243,7 +241,7 @@ final class AdminContentController extends BaseController
      */
     public function contentView(ServerRequest $request, string $contentId): string|ResponseInterface
     {
-        if (false === $this->user->can(permissionName: 'update:content', request: $request)) {
+        if (false === $this->user->can(permissionName: 'update:content')) {
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
@@ -267,7 +265,7 @@ final class AdminContentController extends BaseController
                     'title' => $content->title,
                     'content' => $content,
                     'type' => get_content_type_by('slug', $content->type),
-                    'form' => (new ContentForm())->buildForm($content->toArray(), $content->type, $content->id),
+                    'form' => new ContentForm()->buildForm($content->toArray(), $content->type, $content->id),
                 ]
             );
         } catch (
@@ -302,7 +300,7 @@ final class AdminContentController extends BaseController
      */
     public function contentViewByType(ServerRequest $request, string $contentTypeSlug): string|ResponseInterface
     {
-        if (false === $this->user->can(permissionName: 'update:content', request: $request)) {
+        if (false === $this->user->can(permissionName: 'update:content')) {
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
@@ -358,7 +356,7 @@ final class AdminContentController extends BaseController
      */
     public function removeFeaturedImage(ServerRequest $request, string $contentId): ?ResponseInterface
     {
-        if (false === $this->user->can(permissionName: 'update:content', request: $request)) {
+        if (false === $this->user->can(permissionName: 'update:content')) {
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
@@ -412,7 +410,7 @@ final class AdminContentController extends BaseController
      */
     public function contentDelete(ServerRequest $request, string $contentTypeSlug, string $contentId): ResponseInterface
     {
-        if (false === $this->user->can(permissionName: 'delete:content', request: $request)) {
+        if (false === $this->user->can(permissionName: 'delete:content')) {
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );

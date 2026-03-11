@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Domain\User\Query\Trait;
 
+use Qubus\Exception\Exception;
+
 use function Qubus\Security\Helpers\esc_html;
 use function Qubus\Support\Helpers\is_null__;
 
@@ -14,6 +16,7 @@ trait PopulateUserQueryAware
      *
      * @param array|null $data
      * @return array|null
+     * @throws Exception
      */
     private function populate(?array $data = []): ?array
     {

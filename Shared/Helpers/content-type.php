@@ -36,6 +36,7 @@ use Qubus\Exception\Exception;
 use Qubus\ValueObjects\StringLiteral\StringLiteral;
 use ReflectionException;
 
+use function Codefy\Framework\Helpers\ask;
 use function Codefy\Framework\Helpers\config;
 use function Qubus\Security\Helpers\__observer;
 use function Qubus\Security\Helpers\esc_html__;
@@ -58,17 +59,12 @@ use function Qubus\Support\Helpers\is_null__;
  */
 function get_content_type_by(string $field, string $value): false|object
 {
-    $resolver = new NativeQueryHandlerResolver(
-        container: ContainerFactory::make(config: config(key: 'querybus.aliases'))
-    );
-    $enquirer = new Enquire(bus: new SynchronousQueryBus($resolver));
-
     $query = match ($field) {
         'id' => new FindContentTypeByIdQuery(['contentTypeId' => ContentTypeId::fromString($value)]),
         'slug' => new FindContentTypeBySlugQuery(['contentTypeSlug' => new StringLiteral($value)]),
     };
 
-    $results = $enquirer->execute($query);
+    $results = ask($query);
 
     if (is_null__($results) || is_false__($results)) {
         return false;

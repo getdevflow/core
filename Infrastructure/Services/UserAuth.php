@@ -5,142 +5,157 @@ declare(strict_types=1);
 namespace App\Infrastructure\Services;
 
 use App\Domain\User\Model\User;
+use Codefy\Framework\Auth\Rbac\Entity\Role;
 use Codefy\Framework\Auth\Rbac\Rbac;
-use Codefy\Framework\Auth\UserSession;
+use Codefy\Framework\Auth\Repository\AuthUserRepository;
 use Codefy\Framework\Factory\FileLoggerFactory;
 use Codefy\Framework\Http\Middleware\Auth\UserAuthorizationMiddleware;
-use Exception;
-use Psr\Container\ContainerExceptionInterface;
-use Psr\Container\NotFoundExceptionInterface;
+use Codefy\Framework\Http\Middleware\Auth\UserCookieDecryptMiddleware;
+use Codefy\Framework\Http\RequestContext;
 use Psr\Http\Message\ServerRequestInterface;
-use Psr\SimpleCache\InvalidArgumentException;
 use Qubus\Exception\Data\TypeException;
-use Qubus\Http\Session\SessionService;
-use ReflectionException;
 
 use function App\Shared\Helpers\get_user_by;
 use function Qubus\Support\Helpers\is_false__;
 
 final class UserAuth
 {
-    private ?string $token = null;
-    public function __construct(
-        protected Rbac $rbac,
-        protected SessionService $sessionService,
-        protected ServerRequestInterface $request
-    ) {
+    public function __construct(protected Rbac $rbac, protected AuthUserRepository $user)
+    {
     }
 
     /**
-     * Returns whether the current user has the specified permission.
+     * Authorization check.
      *
      * @param string $permissionName
-     * @param ServerRequestInterface $request
-     * @param array $ruleParams
+     * @param array<array-key, mixed> $ruleParams
      * @return bool
-     * @throws ContainerExceptionInterface
-     * @throws InvalidArgumentException
-     * @throws NotFoundExceptionInterface
-     * @throws ReflectionException
+     * @throws \ReflectionException
      * @throws TypeException
-     * @throws \Qubus\Exception\Exception
      */
-    public function can(string $permissionName, ServerRequestInterface $request, array $ruleParams = []): bool
+    public function can(string $permissionName, array $ruleParams = []): bool
     {
-        $this->setRequest($request);
-
-        /** This is only checked by routes which have the `user.authorization` middleware enabled. */
-        if ($this->request->getHeaderLine(UserAuthorizationMiddleware::HEADER_HTTP_STATUS_CODE) === 'not_authorized') {
-            return false;
-        }
-
         if (
-            !isset($this->request->getCookieParams()['USERSESSID'])
-                || empty($this->request->getCookieParams()['USERSESSID'])
+                $this->getRequest()->getHeaderLine(
+                        UserAuthorizationMiddleware::HEADER_HTTP_STATUS_CODE
+                ) === 'not_authorized'
         ) {
             return false;
         }
 
+        if (!$this->hasAuthenticatedUser()) {
+            return false;
+        }
+
         $roles = $this->getRoles();
+
         return array_any($roles, fn($role) => $role->checkAccess($permissionName, $ruleParams));
     }
 
     /**
+     * Get the current authenticated user model.
+     *
      * @return User|null
-     * @throws ContainerExceptionInterface
-     * @throws InvalidArgumentException
-     * @throws NotFoundExceptionInterface
-     * @throws ReflectionException
-     * @throws TypeException
-     * @throws \Qubus\Exception\Exception
-     * @throws Exception
+     * @throws \ReflectionException
      */
     public function current(): ?User
     {
-        $this->sessionService::$options = [
-            'cookie-name' => 'USERSESSID',
-        ];
-        $session = $this->sessionService->makeSession($this->request);
+        $token = $this->getToken();
 
-        /** @var UserSession $user */
-        $user = $session->get(type: UserSession::class);
-        if ($user->isEmpty()) {
+        if ($token === null) {
             return null;
         }
 
-        $this->token = $user->token;
-
-        try {
-            return $this->findUserByToken();
-        } catch (ReflectionException $e) {
-            FileLoggerFactory::getLogger()->error($e->getMessage());
-        }
-
-        return null;
+        return $this->resolveUserByToken($token);
     }
 
     /**
-     * @return User|null
-     * @throws ReflectionException
-     * @throws ContainerExceptionInterface
-     * @throws NotFoundExceptionInterface
-     * @throws InvalidArgumentException
-     * @throws \Qubus\Exception\Exception
+     * Whether user is authenticated.
+     *
+     * @return bool
      */
-    public function findUserByToken(): ?User
+    private function hasAuthenticatedUser(): bool
     {
-        /** @var User $user */
-        $user = get_user_by('token', $this->token);
-        if (is_false__($user)) {
-            return null;
-        }
-
-        return $user;
+        return $this->getToken() !== null;
     }
 
     /**
-     * @return array
-     * @throws ContainerExceptionInterface
-     * @throws InvalidArgumentException
-     * @throws NotFoundExceptionInterface
-     * @throws ReflectionException
-     * @throws TypeException
-     * @throws \Qubus\Exception\Exception
+     * @throws \ReflectionException
+     */
+    private function resolveUserByToken(string $token): ?User
+    {
+        try {
+            /** @var User $user */
+            $user = get_user_by('token', $token);
+            if (is_false__($user)) {
+                return null;
+            }
+
+            return $user;
+        } catch (\Throwable $e) {
+            FileLoggerFactory::getLogger()->error($e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * @return array<string, Role>
+     * @throws \ReflectionException
      */
     private function getRoles(): array
     {
         $user = $this->current();
-        $result = [];
+
+        if ($user === false) {
+            return [];
+        }
+
+        $roles = [];
+        // @phpstan-ignore property.nonObject
         foreach ((array)$user->role as $roleName) {
             if ($role = $this->rbac->getRole($roleName)) {
-                $result[$roleName] = $role;
+                $roles[$roleName] = $role;
             }
         }
-        return $result;
+
+        return $roles;
     }
 
-    private function setRequest(ServerRequestInterface $request): void
+    /**
+     * A guest is any user without an authenticated token.
+     */
+    public function guest(): bool
     {
-        $this->request = $request;
+        return $this->getToken() === null;
+    }
+
+    /**
+     * Whether user is logged in.
+     *
+     * @return bool
+     */
+    public function isLoggedIn(): bool
+    {
+        return $this->getToken() !== null;
+    }
+
+    /**
+     * Fetch decrypted token from request context.
+     */
+    private function getToken(): ?string
+    {
+        $request = $this->getRequest();
+
+        return $request->getAttribute(UserCookieDecryptMiddleware::USER_COOKIE);
+    }
+
+    /**
+     * Return request object.
+     *
+     * @return ServerRequestInterface
+     */
+    private function getRequest(): ServerRequestInterface
+    {
+        return RequestContext::get();
     }
 }

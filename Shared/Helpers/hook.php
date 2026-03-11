@@ -12,9 +12,6 @@ use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
-use Qubus\Http\Response;
-use Qubus\Http\ServerRequest;
-use Qubus\Http\Session\SessionService;
 use ReflectionException;
 
 use function abs;
@@ -111,7 +108,7 @@ function sanitize_meta(string $metaKey, mixed $metaValue, string $arrayType, str
  * @return mixed
  * @throws Exception
  */
-function cms_admin_copyright_footer()
+function cms_admin_copyright_footer(): mixed
 {
     $copyright = '<!--  Copyright Line -->' . "\n";
     $copyright .= '<strong>&#169; ' . t__(msgid: sprintf('Copyright %s', date('Y')), domain: 'devflow') . ' | ' .
@@ -476,7 +473,6 @@ function cms_optimized_image_upload(string $image): ?string
  *
  * @file App/Shared/Helpers/hook.php
  * @throws Exception
- * @throws ReflectionException
  */
 function admin_dashboard_js(): void
 {
@@ -766,34 +762,12 @@ function get_http_response_code(string $url): int
  */
 function cms_dev_mode(): void
 {
-    if (config(key: 'app.env') === 'dev') {
+    if (config(key: 'app.env') === 'development') {
         echo '<div class="alert dismissable alert-danger center sticky">' . esc_html__(
             string: 'Your system is currently in `dev` mode. Please remember to set your system to `prod` mode after testing. When `prod` mode is set, this warning message will disappear.',
             domain: 'devflow'
         ) . '</div>';
     }
-}
-
-/**
- * Renews the csrf session on successful logout.
- *
- * @access private
- * @param SessionService $sessionService
- * @param ServerRequest $request
- * @return void
- * @throws TypeException
- * @throws \Exception
- */
-function renew_csrf_session(SessionService $sessionService, ServerRequest $request): void
-{
-    $sessionService::$options = [
-        'cookie-name' => 'CSRFSESSID',
-        'cookie-lifetime' => 2592000,
-    ];
-    $session = $sessionService->makeSession($request);
-    $session->renew();
-
-    $sessionService->commitSession(new Response(), $session);
 }
 
 /**

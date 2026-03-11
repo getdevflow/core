@@ -55,7 +55,7 @@ use function strtolower;
  */
 final class User extends stdClass
 {
-    public function __construct(protected ?Database $dfdb = null)
+    public function __construct(protected Database $dfdb)
     {
     }
 
@@ -157,9 +157,12 @@ final class User extends stdClass
      */
     protected function __create(): User
     {
-        return new User();
+        return new User($this->dfdb);
     }
 
+    /**
+     * @throws Exception
+     */
     public function populate(User $user, array $data = []): self
     {
         $user->id = esc_html(string: $data['user_id']) ?? null;
@@ -216,7 +219,7 @@ final class User extends stdClass
             $value = $this->{$key};
         } else {
             $value = MetaData::factory(Registry::getInstance()->get('tblPrefix') . 'usermeta')
-                    ->read('user', $this->id, Registry::getInstance()->get('tblPrefix') . $key, true);
+                ->read('user', $this->id, Registry::getInstance()->get('tblPrefix') . $key, true);
         }
 
         return purify_html($value);
@@ -312,16 +315,16 @@ final class User extends stdClass
     public function setRole(string $role): void
     {
         $oldRole = MetaData::factory(Registry::getInstance()->get('tblPrefix') . 'usermeta')
-                ->read('user', $this->id, Registry::getInstance()->get('tblPrefix') . 'role', true);
+            ->read('user', $this->id, Registry::getInstance()->get('tblPrefix') . 'role', true);
 
         MetaData::factory(Registry::getInstance()->get('tblPrefix') . 'usermeta')
-                ->update(
-                    'user',
-                    $this->id,
-                    Registry::getInstance()->get('tblPrefix') . 'role',
-                    $role,
-                    $oldRole
-                );
+            ->update(
+                'user',
+                $this->id,
+                Registry::getInstance()->get('tblPrefix') . 'role',
+                $role,
+                $oldRole
+            );
 
         /**
          * Fires after the user's role has been added/changed.

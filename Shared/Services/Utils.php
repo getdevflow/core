@@ -4,18 +4,16 @@ declare(strict_types=1);
 
 namespace App\Shared\Services;
 
-use Codefy\Framework\Codefy;
+use App\Application\Devflow;
 use Codefy\Framework\Support\ArgsParser;
 use Codefy\Framework\Support\StringParser;
 use Qubus\EventDispatcher\ActionFilter\Filter;
-use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
 use ReflectionException;
 
 use function basename;
 use function Codefy\Framework\Helpers\config;
 use function ctype_digit;
-use function strpos;
 
 class Utils
 {
@@ -65,13 +63,10 @@ class Utils
         return ArgsParser::parse($args, $defaults, $deep);
     }
 
-    /**
-     * @throws TypeException
-     */
     public static function getPathInfo(string $relative)
     {
         $base = basename(config(key: 'app.path'));
-        if (str_starts_with($_SERVER['REQUEST_URI'], Codefy::$PHP::DS . $base . $relative)) {
+        if (str_starts_with($_SERVER['REQUEST_URI'], Devflow::$PHP::DS . $base . $relative)) {
             return $relative;
         } else {
             return $_SERVER['REQUEST_URI'];
@@ -84,7 +79,6 @@ class Utils
      * e.g. `/admin/`
      *
      * @return bool True if an admin screen, otherwise false.
-     * @throws TypeException
      */
     public static function isAdmin(): bool
     {
@@ -100,7 +94,6 @@ class Utils
      * e.g. `/login/`
      *
      * @return bool True if login screen, otherwise false.
-     * @throws TypeException
      */
     public static function isLogin(): bool
     {

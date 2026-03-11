@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Infrastructure\Persistence;
 
 use PDOException;
-use Qubus\Dbal\Schema;
 use Qubus\Exception\Exception;
 use Qubus\Expressive\QueryBuilder;
+use Qubus\Expressive\Schema;
 use ReflectionException;
 
 interface Database

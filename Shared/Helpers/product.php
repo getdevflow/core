@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Shared\Helpers;
 
+use App\Application\Devflow;
 use App\Domain\Product\Command\DeleteProductCommand;
 use App\Domain\Product\Command\UpdateProductStatusCommand;
 use App\Domain\Product\Query\FindProductsQuery;
@@ -19,17 +20,10 @@ use App\Shared\Services\MetaData;
 use App\Shared\Services\Sanitizer;
 use App\Shared\Services\Utils;
 use App\Shared\ValueObject\ArrayLiteral;
-use Codefy\CommandBus\Busses\SynchronousCommandBus;
-use Codefy\CommandBus\Containers\ContainerFactory;
 use Codefy\CommandBus\Exceptions\CommandCouldNotBeHandledException;
 use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
 use Codefy\CommandBus\Exceptions\UnresolvableCommandHandlerException;
-use Codefy\CommandBus\Odin;
-use Codefy\CommandBus\Resolvers\NativeCommandHandlerResolver;
 use Codefy\Framework\Factory\FileLoggerFactory;
-use Codefy\QueryBus\Busses\SynchronousQueryBus;
-use Codefy\QueryBus\Enquire;
-use Codefy\QueryBus\Resolvers\NativeQueryHandlerResolver;
 use Codefy\QueryBus\UnresolvableQueryHandlerException;
 use PDOException;
 use Psr\Container\ContainerExceptionInterface;
@@ -48,6 +42,8 @@ use Qubus\ValueObjects\StringLiteral\StringLiteral;
 use ReflectionException;
 
 use function array_map;
+use function Codefy\Framework\Helpers\ask;
+use function Codefy\Framework\Helpers\command;
 use function Codefy\Framework\Helpers\config;
 use function is_array;
 use function preg_split;
@@ -65,16 +61,11 @@ use function str_replace;
  *
  * @return array
  * @throws ReflectionException
- * @throws UnresolvableQueryHandlerException|TypeException
+ * @throws UnresolvableQueryHandlerException
  */
 function get_products(): array
 {
-    $resolver = new NativeQueryHandlerResolver(container: ContainerFactory::make(config: config('querybus.aliases')));
-    $enquirer = new Enquire(bus: new SynchronousQueryBus($resolver));
-
-    $query = new FindProductsQuery();
-
-    return $enquirer->execute($query);
+    return ask(new FindProductsQuery());
 }
 
 /**
@@ -88,7 +79,7 @@ function get_products(): array
  * @return array Array of published products or product by particular sku.
  * @throws CommandPropertyNotFoundException
  * @throws ReflectionException
- * @throws UnresolvableQueryHandlerException|TypeException
+ * @throws UnresolvableQueryHandlerException
  */
 function get_all_products_with_filters(
     ?string $productSku = null,
@@ -96,9 +87,6 @@ function get_all_products_with_filters(
     ?int $offset = null,
     string $status = 'all'
 ): array {
-    $resolver = new NativeQueryHandlerResolver(container: ContainerFactory::make(config: config('querybus.aliases')));
-    $enquirer = new Enquire(bus: new SynchronousQueryBus($resolver));
-
     $query = new FindProductsQuery([
         'productSku' => $productSku,
         'limit' => $limit,
@@ -106,7 +94,7 @@ function get_all_products_with_filters(
         'status' => $status,
     ]);
 
-    return $enquirer->execute($query);
+    return ask($query);
 }
 
 /**
@@ -125,7 +113,9 @@ function get_all_products_with_filters(
  */
 function get_product_by(string $field, string $value): false|object
 {
-    $productdata = new Product(dfdb())->findBy($field, $value);
+    /** @var Product $product */
+    $product = Devflow::$PHP->make(Product::class);
+    $productdata = $product->findBy($field, $value);
 
     if (is_false__($productdata)) {
         return false;
@@ -472,13 +462,11 @@ function update_productmeta(
  * @param string $metaKey
  * @param string $metaValue
  * @return bool
- * @throws CommandPropertyNotFoundException
  * @throws ContainerExceptionInterface
  * @throws Exception
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  * @throws TypeException
- * @throws UnresolvableQueryHandlerException
  * @throws InvalidArgumentException
  */
 function update_productmeta_by_mid(string $mid, string $metaKey, string $metaValue): bool
@@ -487,7 +475,7 @@ function update_productmeta_by_mid(string $mid, string $metaKey, string $metaVal
     $_metaValue = unslash($metaValue);
 
     return MetaData::factory(dfdb()->prefix . 'productmeta')
-            ->updateByMid('product', $mid, $_metaValue, $_metaKey);
+        ->updateByMid('product', $mid, $_metaValue, $_metaKey);
 }
 
 /**
@@ -500,19 +488,17 @@ function update_productmeta_by_mid(string $mid, string $metaKey, string $metaVal
  * @param bool $unique Optional. Whether the same key should not be added.
  *                     Default false.
  * @return false|string Meta ID on success, false on failure.
- * @throws CommandPropertyNotFoundException
  * @throws ContainerExceptionInterface
  * @throws Exception
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  * @throws TypeException
- * @throws UnresolvableQueryHandlerException
  * @throws InvalidArgumentException
  */
 function add_productmeta(string $productId, string $metaKey, mixed $metaValue, bool $unique = false): false|string
 {
     return MetaData::factory(dfdb()->prefix . 'productmeta')
-            ->create('product', $productId, $metaKey, $metaValue, $unique);
+        ->create('product', $productId, $metaKey, $metaValue, $unique);
 }
 
 /**
@@ -536,7 +522,7 @@ function add_productmeta(string $productId, string $metaKey, mixed $metaValue, b
 function delete_productmeta(string $productId, string $metaKey, mixed $metaValue = ''): bool
 {
     return MetaData::factory(dfdb()->prefix . 'productmeta')
-            ->delete('product', $productId, $metaKey, $metaValue);
+        ->delete('product', $productId, $metaKey, $metaValue);
 }
 
 /**
@@ -1612,8 +1598,10 @@ function cms_insert_product(array|ServerRequestInterface|Product $productdata): 
 
         /**
          * Create new product object.
+         *
+         * @var Product $product
          */
-        $product = new Product();
+        $product = Devflow::$PHP->make(Product::class);
         $product->id = $productId->toNative();
     } else {
         $update = false;
@@ -1630,8 +1618,10 @@ function cms_insert_product(array|ServerRequestInterface|Product $productdata): 
 
         /**
          * Create new product object.
+         *
+         * @var Product $product
          */
-        $product = new Product();
+        $product = Devflow::$PHP->make(Product::class);
         $product->id = $productId->toNative();
     }
 
@@ -1978,11 +1968,6 @@ function cms_insert_product(array|ServerRequestInterface|Product $productdata): 
         $update ? $productBefore->id : $productId,
     );
 
-    $resolver = new NativeCommandHandlerResolver(
-        container: ContainerFactory::make(config: config(key: 'commandbus.container'))
-    );
-    $odin = new Odin(bus: new SynchronousCommandBus($resolver));
-
     if (!$update) {
         /**
          * Fires immediately before a product is inserted into the product document.
@@ -2012,7 +1997,7 @@ function cms_insert_product(array|ServerRequestInterface|Product $productdata): 
                 'publishedGmt' => $productPublishedGmt,
             ]);
 
-            $odin->execute($command);
+            command($command);
         } catch (PDOException $ex) {
             FileLoggerFactory::getLogger()->error(
                 sprintf(
@@ -2061,7 +2046,7 @@ function cms_insert_product(array|ServerRequestInterface|Product $productdata): 
                 'modifiedGmt' => $productModifiedGmt,
             ]);
 
-            $odin->execute($command);
+            command($command);
         } catch (PDOException $ex) {
             FileLoggerFactory::getLogger()->error(
                 sprintf(
@@ -2201,7 +2186,6 @@ function cms_update_product(array|ServerRequestInterface|Product $productdata): 
  * @file App/Shared/Helpers/product.php
  * @param string $productId The id of the product to delete.
  * @return bool|Product Product on success or false on failure.
- * @throws CommandCouldNotBeHandledException
  * @throws CommandPropertyNotFoundException
  * @throws ContainerExceptionInterface
  * @throws Exception
@@ -2219,11 +2203,6 @@ function cms_delete_product(string $productId): Product|bool
     if (is_false__($product)) {
         return false;
     }
-
-    $resolver = new NativeCommandHandlerResolver(
-        container: ContainerFactory::make(config: config(key: 'commandbus.container'))
-    );
-    $odin = new Odin(bus: new SynchronousCommandBus($resolver));
 
     /**
      * Action hook fires before a product is deleted.
@@ -2252,7 +2231,7 @@ function cms_delete_product(string $productId): Product|bool
             'productId' => ProductId::fromString($product->id),
         ]);
 
-        $odin->execute($command);
+        command($command);
     } catch (PDOException $ex) {
         FileLoggerFactory::getLogger()->error(
             sprintf(
@@ -2371,7 +2350,6 @@ function the_product_meta(string|Product|ProductId $product, string $key): strin
  *
  * @param string|null $active Currency selected.
  * @return void
- * @throws TypeException
  */
 function currency_option(?string $active = null): void
 {
@@ -2381,7 +2359,6 @@ function currency_option(?string $active = null): void
 }
 
 /**
- * @throws CommandCouldNotBeHandledException
  * @throws CommandPropertyNotFoundException
  * @throws ContainerExceptionInterface
  * @throws Exception
@@ -2394,11 +2371,6 @@ function currency_option(?string $active = null): void
  */
 function publish_scheduled_product(): void
 {
-    $resolver = new NativeCommandHandlerResolver(
-        container: ContainerFactory::make(config: config(key: 'commandbus.container'))
-    );
-    $odin = new Odin(bus: new SynchronousCommandBus($resolver));
-
     $products = get_all_products_with_filters();
     $now = new DateTime('now', get_user_timezone())->getDateTime();
 
@@ -2415,7 +2387,7 @@ function publish_scheduled_product(): void
                     'productModifiedGmt' => new DateTime(time: 'now', timezone: 'GMT')->getDateTime(),
                 ]);
 
-                $odin->execute($command);
+                command($command);
             }
         }
     } catch (PDOException $ex) {

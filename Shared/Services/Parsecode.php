@@ -5,9 +5,7 @@ declare(strict_types=1);
 namespace App\Shared\Services;
 
 use Exception;
-use Qubus\EventDispatcher\ActionFilter\Filter;
 use Qubus\Inheritance\StaticProxyAware;
-use ReflectionException;
 
 use function array_intersect;
 use function array_key_exists;
@@ -24,11 +22,11 @@ use function preg_match_all;
 use function preg_replace;
 use function preg_replace_callback;
 use function preg_split;
+use function Qubus\Security\Helpers\__observer;
 use function Qubus\Security\Helpers\t__;
 use function sprintf;
 use function str_replace;
 use function stripcslashes;
-use function strpos;
 use function strtolower;
 use function substr;
 use function trim;
@@ -47,19 +45,18 @@ final class Parsecode
      */
     public static array $parsecodeTags = [];
 
-    public function cleanPre(mixed $matches): array|string
+    /**
+     * Clean <pre> blocks to prevent unwanted paragraph/line-break insertion.
+     */
+    public function cleanPre(array|string $matches): string
     {
-        if (is_array($matches)) {
-            $text = $matches[1] . $matches[2] . "</pre>";
-        } else {
-            $text = $matches;
-        }
+        $text = is_array($matches) ? "{$matches[1]}{$matches[2]}</pre>" : $matches;
 
-        $text = str_replace('<br />', '', $text);
-        $text = str_replace('<p>', "\n", $text);
-        $text = str_replace('</p>', '', $text);
-
-        return $text;
+        return str_replace(
+            ['<br />', '<p>', '</p>'],
+            ['', "\n", ''],
+            $text
+        );
     }
 
     /**
@@ -116,7 +113,9 @@ final class Parsecode
      */
     public function add(string $tag, callable $func): bool
     {
-        if ('' === trim($tag)) {
+        $tag = trim($tag);
+
+        if ($tag === '') {
             throw new Exception(t__(msgid: 'Invalid parsecode name: empty name given.', domain: 'devflow'));
         }
 
@@ -132,12 +131,9 @@ final class Parsecode
             );
         }
 
-        if (is_callable($func)) {
-            self::$parsecodeTags[$tag] = $func;
+        self::$parsecodeTags[$tag] = $func;
 
-            return true;
-        }
-        return false;
+        return true;
     }
 
     /**
@@ -156,6 +152,7 @@ final class Parsecode
             unset(self::$parsecodeTags[$tag]);
             return true;
         }
+
         return false;
     }
 
@@ -192,23 +189,22 @@ final class Parsecode
      */
     public function has(string $content, string $tag): bool
     {
-        if (!str_contains($content, '[')) {
+        if (!str_contains($content, '[') || !$this->exists($tag)) {
             return false;
         }
-        if ($this->exists($tag)) {
-            preg_match_all('/' . $this->getRegex() . '/s', $content, $matches, PREG_SET_ORDER);
-            if (empty($matches)) {
-                return false;
+
+        preg_match_all('/' . $this->getRegex() . '/s', $content, $matches, PREG_SET_ORDER);
+
+        foreach ($matches as $parsecode) {
+            if ($tag === $parsecode[2]) {
+                return true;
             }
-            foreach ($matches as $parsecode) {
-                if ($tag === $parsecode[2]) {
-                    return true;
-                }
-                if (!empty($parsecode[5]) && $this->has($parsecode[5], $tag)) {
-                    return true;
-                }
+
+            if (!empty($parsecode[5]) && $this->has($parsecode[5], $tag)) {
+                return true;
             }
         }
+
         return false;
     }
 
@@ -262,7 +258,7 @@ final class Parsecode
      * @param array|null $tagnames Optional. List of parsecodes to find. Defaults to all registered parsecodes.
      * @return string The parsecode search regular expression
      */
-    public function getRegex(array $tagnames = null): string
+    public function getRegex(?array $tagnames = null): string
     {
         if (empty($tagnames)) {
             $tagnames = array_keys(self::$parsecodeTags);
@@ -379,7 +375,6 @@ final class Parsecode
      * @param string $parsecode Optional. The name of the parsecode, provided for context to enable filtering
      * @return array Combined and filtered attribute list.
      * @throws \Qubus\Exception\Exception
-     * @throws ReflectionException
      */
     public function atts(array $pairs, array $atts, string $parsecode = ''): array
     {
@@ -404,7 +399,7 @@ final class Parsecode
          * @param string $parsecode The parsecode name.
          */
         if ($parsecode) {
-            $out = Filter::getInstance()->applyFilter("atts_{$parsecode}", $out, $pairs, $atts, $parsecode);
+            $out = __observer()->filter->applyFilter("atts.{$parsecode}", $out, $pairs, $atts, $parsecode);
         }
 
         return $out;
@@ -427,9 +422,9 @@ final class Parsecode
         return preg_replace_callback(
             "/$pattern/s",
             [
-                        $this,
-                        'stripParsecodeTag',
-                ],
+                $this,
+                'stripParsecodeTag',
+            ],
             $content
         );
     }
@@ -461,7 +456,7 @@ final class Parsecode
         $pee = preg_replace('!(<' . $allblocks . '[^>]*>)!', "\n$1", $pee);
         $pee = preg_replace('!(</' . $allblocks . '>)!', "$1\n\n", $pee);
         $pee = str_replace(["\r\n", "\r"], "\n", $pee); // cross-platform newlines
-        if (strpos($pee, '<object') !== false) {
+        if (str_contains($pee, '<object')) {
             $pee = preg_replace('|\s*<param([^>]*)>\s*|', "<param$1>", $pee); // no pee inside object/embed
             $pee = preg_replace('|\s*</embed>\s*|', '</embed>', $pee);
         }
@@ -487,7 +482,7 @@ final class Parsecode
         }
         $pee = preg_replace('!(</?' . $allblocks . '[^>]*>)\s*<br />!', "$1", $pee);
         $pee = preg_replace('!<br />(\s*</?(?:p|li|div|dl|dd|dt|th|pre|td|ul|ol)[^>]*>)!', '$1', $pee);
-        if (strpos($pee, '<pre') !== false) {
+        if (str_contains($pee, '<pre')) {
             $pee = preg_replace_callback('!(<pre[^>]*>)(.*?)</pre>!is', [$this, 'cleanPre'], $pee);
         }
         $pee = preg_replace("|\n</p>$|", '</p>', $pee);
@@ -506,7 +501,7 @@ final class Parsecode
             return $pee;
         }
 
-        $tagregexp = join('|', array_map('preg_quote', array_keys(self::$parsecodeTags)));
+        $tagregexp = implode('|', array_map('preg_quote', array_keys(self::$parsecodeTags)));
 
         $pattern = '/'
         . '<p>'                              // Opening paragraph

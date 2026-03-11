@@ -26,7 +26,6 @@ class SiteCachePsr16 implements SiteCache
      * @throws InvalidArgumentException
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
-     * @throws TypeException
      */
     public static function update(Site|array $site): void
     {

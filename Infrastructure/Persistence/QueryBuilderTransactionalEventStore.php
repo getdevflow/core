@@ -116,7 +116,7 @@ final class QueryBuilderTransactionalEventStore implements TransactionalEventSto
         $query = $this->dfdb->qb()->table(tableName: $this->dfdb->basePrefix . 'event_store')
             ->select(columns: '*')
             ->where(condition: 'aggregate_id', parameters: (string) $aggregateId)
-            ->and__()
+            ->and()
             ->where(condition: 'aggregate_playhead = ?', parameters: $playhead);
 
         return $this->eventStream($query, $aggregateId);
