@@ -12,20 +12,18 @@ use Codefy\Domain\EventSourcing\DomainEvent;
 use Codefy\Domain\Metadata;
 use Qubus\Exception\Data\TypeException;
 
-use function Qubus\Support\Helpers\is_null__;
-
 class ContentMetaWasChanged extends AggregateChanged
 {
-    private ?ContentId $contentId = null;
+    private ContentId $id;
 
-    private ?ArrayLiteral $meta = null;
+    private ArrayLiteral $meta;
 
     public static function withData(
-        ContentId $contentId,
+        ContentId $id,
         ArrayLiteral $meta
     ): ContentMetaWasChanged|DomainEvent|AggregateChanged {
         $event = self::occur(
-            aggregateId: $contentId,
+            aggregateId: $id,
             payload: [
                 'meta' => $meta->toNative()
             ],
@@ -34,7 +32,7 @@ class ContentMetaWasChanged extends AggregateChanged
             ]
         );
 
-        $event->contentId = $contentId;
+        $event->id = $id;
         $event->meta = $meta;
 
         return $event;
@@ -45,19 +43,16 @@ class ContentMetaWasChanged extends AggregateChanged
      */
     public function contentId(): ContentId|AggregateId
     {
-        if (is_null__($this->contentId)) {
-            $this->contentId = ContentId::fromString(contentId: $this->aggregateId()->__toString());
+        if (!isset($this->id)) {
+            $this->id = ContentId::fromString(contentId: $this->aggregateId()->__toString());
         }
 
-        return $this->contentId;
+        return $this->id;
     }
 
-    /**
-     * @throws TypeException
-     */
     public function contentmeta(): ArrayLiteral
     {
-        if (is_null__($this->meta)) {
+        if (!isset($this->meta)) {
             $this->meta = ArrayLiteral::fromNative($this->payload()['meta']);
         }
 
