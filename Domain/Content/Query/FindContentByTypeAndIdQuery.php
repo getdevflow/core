@@ -11,7 +11,7 @@ use Qubus\ValueObjects\StringLiteral\StringLiteral;
 
 final class FindContentByTypeAndIdQuery extends PropertyCommand implements Query
 {
-    public ?StringLiteral $contentTypeSlug = null;
+    public StringLiteral $type;
 
-    public ?ContentId $contentId = null;
+    public ContentId $id;
 }

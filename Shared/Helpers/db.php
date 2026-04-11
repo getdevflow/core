@@ -15,22 +15,13 @@ use App\Domain\Site\Query\FindSitesByOwnerQuery;
 use App\Domain\Site\ValueObject\SiteId;
 use App\Domain\User\Model\User;
 use App\Domain\User\ValueObject\UserId;
-use App\Infrastructure\Persistence\Database;
+use Qubus\Expressive\Database;
 use App\Infrastructure\Services\Options;
-use App\Shared\Services\MetaData;
-use App\Shared\Services\Registry;
 use App\Shared\Services\Sanitizer;
 use App\Shared\Services\SimpleCacheObjectCacheFactory;
-use Codefy\CommandBus\Busses\SynchronousCommandBus;
-use Codefy\CommandBus\Containers\ContainerFactory;
 use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
 use Codefy\CommandBus\Exceptions\UnresolvableCommandHandlerException;
-use Codefy\CommandBus\Odin;
-use Codefy\CommandBus\Resolvers\NativeCommandHandlerResolver;
 use Codefy\Framework\Factory\FileLoggerFactory;
-use Codefy\QueryBus\Busses\SynchronousQueryBus;
-use Codefy\QueryBus\Enquire;
-use Codefy\QueryBus\Resolvers\NativeQueryHandlerResolver;
 use Codefy\QueryBus\UnresolvableQueryHandlerException;
 use Defuse\Crypto\Crypto;
 use Defuse\Crypto\Exception\BadFormatException;
@@ -52,6 +43,8 @@ use Qubus\Support\Inflector;
 use ReflectionException;
 
 use function Codefy\Framework\Helpers\app;
+use function Codefy\Framework\Helpers\ask;
+use function Codefy\Framework\Helpers\command;
 use function Codefy\Framework\Helpers\config;
 use function Codefy\Framework\Helpers\mail;
 use function Codefy\Framework\Helpers\storage_path;
@@ -61,19 +54,23 @@ use function Qubus\Security\Helpers\__observer;
 use function Qubus\Security\Helpers\esc_html;
 use function Qubus\Security\Helpers\esc_html__;
 use function Qubus\Support\Helpers\is_false__;
+use function Qubus\Support\Helpers\is_null__;
 use function sprintf;
 
 /**
  * Global database function.
  *
  * @return Database
- * @throws ContainerExceptionInterface
- * @throws NotFoundExceptionInterface
- * @throws ReflectionException
  */
 function dfdb(): Database
 {
-    return Registry::getInstance()->get('dfdb');
+    static $dfdb;
+
+    if (is_null__($dfdb)) {
+        $dfdb = app(name: Database::class);
+    }
+
+    return $dfdb;
 }
 
 /**
@@ -87,9 +84,64 @@ function option(): Options
 }
 
 /**
+ * @param string $key
+ * @param mixed $default
+ * @return mixed
+ * @throws Exception
+ * @throws InvalidArgumentException
+ * @throws ReflectionException
+ */
+function get_option(string $key, mixed $default = ''): mixed
+{
+    static $option;
+
+    if(is_null__($option)) {
+        $option = option();
+    }
+
+    return $option->read(optionKey: $key, default: $default);
+}
+
+/**
+ * @param string $key
+ * @param mixed $value
+ * @return mixed
+ * @throws Exception
+ * @throws InvalidArgumentException
+ * @throws ReflectionException
+ * @throws TypeException
+ */
+function update_option(string $key, mixed $value): bool
+{
+    static $option;
+
+    if(is_null__($option)) {
+        $option = option();
+    }
+
+    return $option->update(optionKey: $key, newvalue: $value);
+}
+
+/**
+ * @param string $key
+ * @return bool
+ * @throws \Exception
+ */
+function delete_option(string $key): bool
+{
+    static $option;
+
+    if(is_null__($option)) {
+        $option = option();
+    }
+
+    return $option->delete(name: $key);
+}
+
+/**
  * Returns the object subtype for a given array ID of a specific type.
  *
- * @file App/Shared/Helpers/db.php
+ * @file core/Shared/Helpers/db.php
  * @param string $type Type of array to request metadata for. (e.g. content, user, product).
  * @param string $id ID of the array to retrieve its subtype.
  * @return string The array subtype or an empty string if unspecified subtype.
@@ -139,13 +191,14 @@ function get_object_subtype(string $type, string $id): string
 /**
  * Creates unique slug based on string
  *
- * @file App/Shared/Helpers/db.php
+ * @file core/Shared/Helpers/db.php
  * @param string $title Text to be slugified.
  * @param string $table Table the text is saved to (i.e. content, contenttype, site, product)
  * @return string Slug.
+ * @throws ContainerExceptionInterface
  * @throws Exception
+ * @throws NotFoundExceptionInterface
  * @throws ReflectionException
- * @throws TypeException
  */
 function cms_slugify(string $title, string $table): string
 {
@@ -242,23 +295,15 @@ function cms_slugify(string $title, string $table): string
 /**
  * Returns a list of internal links for TinyMCE.
  *
- * @file App/Shared/Helpers/db.php
+ * @file core/Shared/Helpers/db.php
  * @return object[]
  * @throws ReflectionException
  * @throws UnresolvableQueryHandlerException
  */
 function tinymce_link_list(): array
 {
-    $resolver = new NativeQueryHandlerResolver(
-        container: ContainerFactory::make(config: config(key: 'querybus.aliases'))
-    );
-    $enquirer = new Enquire(bus: new SynchronousQueryBus($resolver));
-
-    $contentQuery = new FindContentQuery();
-    $contentResults = $enquirer->execute($contentQuery);
-
-    $productsQuery = new FindProductsQuery();
-    $productsResults = $enquirer->execute($productsQuery);
+    $contentResults = ask(new FindContentQuery());
+    $productsResults = ask(new FindProductsQuery());
 
     $results = array_merge($contentResults, $productsResults);
 
@@ -272,13 +317,14 @@ function tinymce_link_list(): array
 /**
  * Checks if a slug exists among records from the content type table.
  *
- * @file App/Shared/Helpers/db.php
+ * @file core/Shared/Helpers/db.php
  * @param string $contentTypeId Content Type id to check against.
  * @param string $slug Slug to search for.
  * @return bool Returns true if content type slug exists or false otherwise.
+ * @throws ContainerExceptionInterface
  * @throws Exception
+ * @throws NotFoundExceptionInterface
  * @throws ReflectionException
- * @throws TypeException
  */
 function if_content_type_slug_exists(string $contentTypeId, string $slug): bool
 {
@@ -315,14 +361,15 @@ function if_content_type_slug_exists(string $contentTypeId, string $slug): bool
 /**
  * Checks if a slug exists among records from the content table.
  *
- * @file App/Shared/Helpers/db.php
+ * @file core/Shared/Helpers/db.php
  * @param string $contentId Content id to check against or null.
  * @param string $slug Slug to search for.
  * @param string $contentType The content type to filter.
  * @return bool Returns true if content slug exists or false otherwise.
+ * @throws ContainerExceptionInterface
  * @throws Exception
+ * @throws NotFoundExceptionInterface
  * @throws ReflectionException
- * @throws TypeException
  */
 function if_content_slug_exists(string $contentId, string $slug, string $contentType): bool
 {
@@ -361,13 +408,14 @@ function if_content_slug_exists(string $contentId, string $slug, string $content
 /**
  * Checks if a site slug exists.
  *
- * @file App/Shared/Helpers/db.php
+ * @file core/Shared/Helpers/db.php
  * @param string $siteId Site id to check against.
  * @param string $slug Slug to search for.
  * @return bool Returns true if site slug exists or false otherwise.
+ * @throws ContainerExceptionInterface
  * @throws Exception
+ * @throws NotFoundExceptionInterface
  * @throws ReflectionException
- * @throws TypeException
  */
 function if_site_slug_exists(string $siteId, string $slug): bool
 {
@@ -404,13 +452,14 @@ function if_site_slug_exists(string $siteId, string $slug): bool
 /**
  * Checks if a product slug exists.
  *
- * @file App/Shared/Helpers/db.php
+ * @file core/Shared/Helpers/db.php
  * @param string $productId Product id to check against.
  * @param string $slug Slug to search for.
  * @return bool Returns true if site slug exists or false otherwise.
+ * @throws ContainerExceptionInterface
  * @throws Exception
+ * @throws NotFoundExceptionInterface
  * @throws ReflectionException
- * @throws TypeException
  */
 function if_product_slug_exists(string $productId, string $slug): bool
 {
@@ -447,12 +496,13 @@ function if_product_slug_exists(string $productId, string $slug): bool
 /**
  * Checks if content has any children.
  *
- * @file App/Shared/Helpers/db.php
+ * @file core/Shared/Helpers/db.php
  * @param string $contentId Content id to check.
  * @return bool|array| False if content has no children or array of children if true.
+ * @throws ContainerExceptionInterface
  * @throws Exception
+ * @throws NotFoundExceptionInterface
  * @throws ReflectionException
- * @throws TypeException
  */
 function is_content_parent(string $contentId): bool|array
 {
@@ -493,12 +543,13 @@ function is_content_parent(string $contentId): bool|array
 /**
  * Checks if a given content type exists on content.
  *
- * @file App/Shared/Helpers/db.php
+ * @file core/Shared/Helpers/db.php
  * @param string $contentType Content Type slug to check for.
  * @return bool Returns true if content type exists or false otherwise.
+ * @throws ContainerExceptionInterface
  * @throws Exception
+ * @throws NotFoundExceptionInterface
  * @throws ReflectionException
- * @throws TypeException
  */
 function if_content_type_exists(string $contentType): bool
 {
@@ -534,14 +585,14 @@ function if_content_type_exists(string $contentType): bool
 /**
  * Reassigns content to a different user.
  *
- * @file App/Shared/Helpers/db.php
+ * @file core/Shared/Helpers/db.php
  * @param string $userId ID of user being removed.
  * @param string $assignId ID of user to whom content will be assigned.
  * @return bool
+ * @throws ContainerExceptionInterface
  * @throws Exception
+ * @throws NotFoundExceptionInterface
  * @throws ReflectionException
- * @throws SessionException
- * @throws TypeException
  */
 function reassign_content(string $userId, string $assignId): bool
 {
@@ -598,7 +649,7 @@ function reassign_content(string $userId, string $assignId): bool
 /**
  * Reassigns sites to a different user.
  *
- * @file App/Shared/Helpers/db.php
+ * @file core/Shared/Helpers/db.php
  * @param string $userId ID of user being removed.
  * @param array $params User parameters (assign_id and role).
  * @return bool
@@ -643,18 +694,13 @@ function reassign_sites(string $userId, array $params = []): bool
 
     if ($count > 0) {
         try {
-            $resolver = new NativeCommandHandlerResolver(
-                container: ContainerFactory::make(config: config(key: 'commandbus.container'))
-            );
-            $odin = new Odin(bus: new SynchronousCommandBus($resolver));
-
             $command = new UpdateSiteOwnerCommand([
-                'siteId' => SiteId::fromString($params['site_id']),
-                'siteOwner' => UserId::fromString($params['assign_id']),
-                'siteModified' => QubusDateTimeImmutable::now(option()->read(optionKey: 'site_timezone')),
+                'id' => SiteId::fromString($params['site_id']),
+                'owner' => UserId::fromString($params['assign_id']),
+                'modified' => QubusDateTimeImmutable::now(get_option(key: 'site_timezone')),
             ]);
 
-            $odin->execute($command);
+            command($command);
 
             return true;
         } catch (PDOException $e) {
@@ -676,7 +722,7 @@ function reassign_sites(string $userId, array $params = []): bool
 /**
  * Checks if the requested user is an admin of any sites or has any admin roles.
  *
- * @file App/Shared/Helpers/db.php
+ * @file core/Shared/Helpers/db.php
  * @param string $userId ID of user to check.
  * @return bool Returns true if user has sites and false otherwise.
  * @throws CommandPropertyNotFoundException
@@ -693,16 +739,11 @@ function if_user_has_sites(string $userId): bool
         return false;
     }
 
-    $resolver = new NativeQueryHandlerResolver(
-        container: ContainerFactory::make(config: config(key: 'querybus.aliases'))
-    );
-    $enquirer = new Enquire(bus: new SynchronousQueryBus($resolver));
-
     $query = new FindSitesByOwnerQuery([
-        'siteOwner' => UserId::fromString($userId),
+        'owner' => UserId::fromString($userId),
     ]);
 
-    $results = $enquirer->execute($query);
+    $results = ask($query);
 
     if (!empty($results)) {
         return true;
@@ -718,7 +759,7 @@ function if_user_has_sites(string $userId): bool
 /**
  * Get an array of sites by owner.
  *
- * @file App/Shared/Helpers/db.php
+ * @file core/Shared/Helpers/db.php
  * @param string $userId The owner's id.
  * @return array|object
  * @throws CommandPropertyNotFoundException
@@ -732,30 +773,23 @@ function get_owner_sites(string $userId): array|object
         return [];
     }
 
-    $resolver = new NativeQueryHandlerResolver(
-        container: ContainerFactory::make(config: config(key: 'querybus.aliases'))
-    );
-    $enquirer = new Enquire(bus: new SynchronousQueryBus($resolver));
-
     $query = new FindSitesByOwnerQuery([
-        'siteOwner' => UserId::fromString($userId),
+        'owner' => UserId::fromString($userId),
     ]);
 
-    return $enquirer->execute($query);
+    return ask($query);
 }
 
 /**
  * Populate the option cache.
  *
  * @access private
- *
- * @file App/Shared/Helpers/db.php
+ * @file core/Shared/Helpers/db.php
  * @return bool
  * @throws ContainerExceptionInterface
  * @throws InvalidArgumentException
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
- * @throws TypeException
  */
 function populate_options_cache(): bool
 {
@@ -786,129 +820,12 @@ function populate_options_cache(): bool
 }
 
 /**
- * Populate the usermeta cache.
- *
- * @access private
- *
- * @file App/Shared/Helpers/db.php
- * @return bool
- * @throws ContainerExceptionInterface
- * @throws Exception
- * @throws NotFoundExceptionInterface
- * @throws ReflectionException
- */
-function populate_usermeta_cache(): bool
-{
-    $dfdb = dfdb();
-
-    try {
-        $umeta = $dfdb->getResults(query: "SELECT * FROM {$dfdb->basePrefix}usermeta", output: Database::ARRAY_A);
-        foreach ($umeta as $meta) {
-            MetaData::factory(namespace: $dfdb->prefix . 'usermeta')
-                ->updateMetaDataCache(metaType: 'user', metaTypeIds: [$meta['user_id']]);
-        }
-        return true;
-    } catch (PDOException $e) {
-        FileLoggerFactory::getLogger()->error(
-            sprintf(
-                'SQLSTATE[%s]: %s',
-                $e->getCode(),
-                $e->getMessage()
-            ),
-            [
-                'Db Function' => 'populate_usermeta_cache'
-            ]
-        );
-    }
-
-    return false;
-}
-
-/**
- * Populate the contentmeta cache.
- *
- * @access private
- *
- * @file App/Shared/Helpers/db.php
- * @return bool
- * @throws ContainerExceptionInterface
- * @throws Exception
- * @throws NotFoundExceptionInterface
- * @throws ReflectionException
- */
-function populate_contentmeta_cache(): bool
-{
-    $dfdb = dfdb();
-
-    try {
-        $pmeta = $dfdb->getResults(query: "SELECT * FROM {$dfdb->prefix}contentmeta", output: Database::ARRAY_A);
-        foreach ($pmeta as $meta) {
-            MetaData::factory(namespace: $dfdb->prefix . 'contentmeta')
-                ->updateMetaDataCache(metaType: 'content', metaTypeIds: [$meta['content_id']]);
-        }
-        return true;
-    } catch (PDOException $e) {
-        FileLoggerFactory::getLogger()->error(
-            sprintf(
-                'SQLSTATE[%s]: %s',
-                $e->getCode(),
-                $e->getMessage()
-            ),
-            [
-                'Db Function' => 'populate_contentmeta_cache'
-            ]
-        );
-    }
-
-    return false;
-}
-
-/**
- * Populate the productmeta cache.
- *
- * @access private
- *
- * @file App/Shared/Helpers/db.php
- * @return bool
- * @throws ContainerExceptionInterface
- * @throws Exception
- * @throws NotFoundExceptionInterface
- * @throws ReflectionException
- */
-function populate_productmeta_cache(): bool
-{
-    $dfdb = dfdb();
-
-    try {
-        $pmeta = $dfdb->getResults(query: "SELECT * FROM {$dfdb->prefix}productmeta", output: Database::ARRAY_A);
-        foreach ($pmeta as $meta) {
-            MetaData::factory(namespace: $dfdb->prefix . 'productmeta')
-                    ->updateMetaDataCache(metaType: 'product', metaTypeIds: [$meta['product_id']]);
-        }
-        return true;
-    } catch (PDOException $e) {
-        FileLoggerFactory::getLogger()->error(
-            sprintf(
-                'SQLSTATE[%s]: %s',
-                $e->getCode(),
-                $e->getMessage()
-            ),
-            [
-                'Db Function' => 'populate_productmeta_cache'
-            ]
-        );
-    }
-
-    return false;
-}
-
-/**
  * Login Details Email
  *
  * Function used to send login details to new
  * user.
  *
- * @file App/Shared/Helpers/db.php
+ * @file core/Shared/Helpers/db.php
  * @throws ContainerExceptionInterface
  * @throws EnvironmentIsBrokenException
  * @throws Exception
@@ -919,8 +836,6 @@ function populate_productmeta_cache(): bool
  */
 function cms_nodeq_login_details(): void
 {
-    $option = option();
-
     $table = 'login';
     $nodeq = Node::open(storage_path("app/queue/{$table}"));
 
@@ -934,13 +849,13 @@ function cms_nodeq_login_details(): void
 
     if (count($sql) > 0) {
         foreach ($sql as $r) {
-            $siteName = $option->read(optionKey: 'sitename');
+            $siteName = get_option(key: 'sitename');
             /** @var User $user */
             $user = get_userdata($r['userid']);
             try {
                 $password = Crypto::decrypt(
                     $r['pass'],
-                    Key::loadFromAsciiSafeString(config('auth.encryption_key'))
+                    Key::loadFromAsciiSafeString(config()->string(key: 'auth.encryption_key'))
                 );
 
                 $message = esc_html__(string: 'Hi there,', domain: 'devflow') . "<br />";
@@ -959,8 +874,8 @@ function cms_nodeq_login_details(): void
                         string: 'If you have any problems, please contact us at <a href="mailto:%s">%s</a>.',
                         domain: 'devflow'
                     ),
-                    $option->read(optionKey: 'admin_email'),
-                    $option->read(optionKey: 'admin_email')
+                    get_option(key: 'admin_email'),
+                    get_option(key: 'admin_email')
                 ) . "</p>";
 
                 $message = process_email_html($message, esc_html__(string: 'New Account', domain: 'devflow'));
@@ -1011,7 +926,7 @@ function cms_nodeq_login_details(): void
  *
  * Function used to send reset password to a user.
  *
- * @file App/Shared/Helpers/db.php
+ * @file core/Shared/Helpers/db.php
  * @throws ContainerExceptionInterface
  * @throws EnvironmentIsBrokenException
  * @throws Exception
@@ -1021,8 +936,6 @@ function cms_nodeq_login_details(): void
  */
 function cms_nodeq_reset_password(): void
 {
-    $option = option();
-
     $table = 'password_reset';
     $nodeq = Node::open(storage_path("app/queue/{$table}"));
 
@@ -1037,7 +950,7 @@ function cms_nodeq_reset_password(): void
 
     if (count($sql) > 0) {
         foreach ($sql as $r) {
-            $siteName = $option->read(optionKey: 'sitename');
+            $siteName = get_option(key: 'sitename');
             /** @var User $user */
             $user = get_userdata($r['userid']);
             try {
@@ -1062,8 +975,8 @@ function cms_nodeq_reset_password(): void
                         string: 'If you have any problems, please contact us at <a href="mailto:%s">%s</a>.',
                         domain: 'devflow'
                     ),
-                    $option->read(optionKey: 'admin_email'),
-                    $option->read(optionKey: 'admin_email')
+                    get_option(key: 'admin_email'),
+                    get_option(key: 'admin_email')
                 ) . "</p>";
 
                 $message = process_email_html($message, esc_html__(string: 'Password Reset', domain: 'devflow'));
@@ -1123,13 +1036,12 @@ function cms_nodeq_reset_password(): void
 /**
  * Creates a new collection.
  *
- * @file App/Shared/Helpers/db.php
+ * @file core/Shared/Helpers/db.php
  * @param string|null $value
  * @return Collection
  * @throws CommandPropertyNotFoundException
  * @throws ReflectionException
  * @throws UnresolvableQueryHandlerException
- * @throws TypeException
  */
 function collection(?string $value = null): Collection
 {

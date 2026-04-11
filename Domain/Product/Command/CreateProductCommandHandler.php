@@ -39,7 +39,7 @@ class CreateProductCommandHandler implements CommandHandler
             $command->createdGmt,
             $command->published,
             $command->publishedGmt,
-            $command->meta,
+            $command->attribute,
         );
 
         $this->aggregateRepository->saveAggregateRoot($product);

@@ -9,5 +9,5 @@ use Codefy\CommandBus\PropertyCommand;
 
 final class DeleteSiteCommand extends PropertyCommand
 {
-    public ?SiteId $siteId = null;
+    public SiteId $id;
 }

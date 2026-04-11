@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Http\Controllers;
 
-use App\Infrastructure\Persistence\Database;
+use Qubus\Expressive\Database;
 use Codefy\Framework\Http\BaseController;
 use Exception;
 use PDOException;

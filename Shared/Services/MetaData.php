@@ -4,10 +4,8 @@ declare(strict_types=1);
 
 namespace App\Shared\Services;
 
-use App\Infrastructure\Persistence\Database;
-use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
+use Qubus\Expressive\Database;
 use Codefy\Framework\Factory\FileLoggerFactory;
-use Codefy\QueryBus\UnresolvableQueryHandlerException;
 use PDOException;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
@@ -48,7 +46,6 @@ final class MetaData
      * @throws ContainerExceptionInterface
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
-     * @throws TypeException
      */
     public static function factory(string $namespace = 'metadata'): MetaData
     {
@@ -67,13 +64,12 @@ final class MetaData
      */
     private function table(string $type): string
     {
-        $prefix = 'user' === $type ? $this->dfdb->basePrefix : $this->dfdb->prefix;
-        $tableName = "{$type}meta";
-        if (empty($prefix . $tableName)) {
+        $tableName = $this->dfdb->prefix . "{$type}meta";
+        if (empty($tableName)) {
             return '';
         }
 
-        return $prefix . $tableName;
+        return $tableName;
     }
 
     /**
@@ -95,13 +91,13 @@ final class MetaData
          * Filters whether to retrieve metadata of a specific type.
          *
          * The dynamic portion of the hook, `$metaType`, refers to the meta
-         * array type (content or user). Returning a non-null value
+         * array type (ie. content or user). Returning a non-null value
          * will effectively short-circuit the function.
          *
-         * @param null|string   $value     The value getMetaData() should return - a single metadata value.
-         * @param string        $metaTypeId   Array ID.
-         * @param string        $metaKey   Optional. Meta key.
-         * @param bool          $single     Whether to return only the first value of the specified $metaKey.
+         * @param null|string $value      The value getMetaData() should return - a single metadata value.
+         * @param string      $metaTypeId Array ID.
+         * @param string      $metaKey    Optional. Meta key.
+         * @param bool        $single     Whether to return only the first value of the specified $metaKey.
          */
         $check = __observer()->filter->applyFilter("get.{$metaType}.metadata", null, $metaTypeId, $metaKey, $single);
         if ('' !== $check) {
@@ -140,14 +136,12 @@ final class MetaData
      * @param mixed $prevValue Optional. If specified, only update existing metadata entries with
      *                         the specified value. Otherwise, update all entries.
      * @return bool|string Meta ID if the key didn't exist, true on successful update, false on failure.
-     * @throws CommandPropertyNotFoundException
      * @throws ContainerExceptionInterface
      * @throws Exception
+     * @throws InvalidArgumentException
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
      * @throws TypeException
-     * @throws UnresolvableQueryHandlerException
-     * @throws InvalidArgumentException
      */
     public function update(
         string $metaType,
@@ -255,10 +249,8 @@ final class MetaData
                     $this->dfdb
                         ->qb()
                         ->table($table)
-                        ->where(sprintf("%s = ?", $column), $metaTypeId)
-                        ->and__()
-                        ->where('meta_key = ?', $metaKey)
-                        ->and__()
+                        ->where(sprintf("%s = ?", $column), $metaTypeId)->and()
+                        ->where('meta_key = ?', $metaKey)->and()
                         ->where('meta_value = ?', $metaValue)
                         ->update($data);
                 });
@@ -276,8 +268,7 @@ final class MetaData
                         $this->dfdb
                         ->qb()
                         ->table($table)
-                        ->where(sprintf("%s = ?", $column), $metaTypeId)
-                        ->and__()
+                        ->where(sprintf("%s = ?", $column), $metaTypeId)->and()
                         ->where('meta_key = ?', $metaKey)
                         ->update($data);
                     }
@@ -428,14 +419,14 @@ final class MetaData
             ) {
                 $metaId = Ulid::generateAsString();
                 $this->dfdb
-                        ->qb()
-                        ->table($table)
-                        ->insert([
-                            'meta_id' => $metaId,
-                            sprintf("%s", $column) => $metaTypeId,
-                            'meta_key' => $metaKey,
-                            'meta_value' => $metaValue,
-                        ]);
+                    ->qb()
+                    ->table($table)
+                    ->insert([
+                        'meta_id' => $metaId,
+                        sprintf("%s", $column) => $metaTypeId,
+                        'meta_key' => $metaKey,
+                        'meta_value' => $metaValue,
+                    ]);
 
                 return $metaId;
             });
@@ -606,6 +597,8 @@ final class MetaData
          * @param mixed  $metaValue  Meta value.
          */
         __observer()->action->doAction("delete_{$metaType}meta", $metaIds, $metaTypeId, $metaKey, $_metaValue);
+
+        $count = -1;
 
         $query = $this->dfdb->prepare(
             query: sprintf("DELETE FROM %s WHERE meta_id IN(?)", $table),
@@ -809,19 +802,19 @@ final class MetaData
 
             __observer()->action->doAction("update_{$metaType}meta", $metaId, $metaTypeId, $metaKey, $_metaValue);
 
+            $result = false;
+
             // Run the update query.
             try {
                 $this->dfdb->qb()->transactional(function () use ($table, $metaId, $metaKey, $metaValue) {
                     $this->dfdb
-                            ->qb()
-                            ->table(sprintf('%s', $table))
-                            ->update(
-                                [
-                                    'meta_key' => $metaKey,
-                                    'meta_value' => $metaValue,
-                                ],
-                            )
-                            ->where('meta_id = ?', $metaId);
+                        ->qb()
+                        ->table(sprintf('%s', $table))
+                        ->update([
+                            'meta_key' => $metaKey,
+                            'meta_value' => $metaValue,
+                        ])
+                        ->where('meta_id = ?', $metaId);
                 });
 
                 $result = true;
@@ -895,15 +888,17 @@ final class MetaData
                 $meta['meta_value']
             );
 
+            $result = false;
+
             // Run the query, will return true if deleted, false otherwise
             try {
                 $this->dfdb->qb()->transactional(function () use ($table, $metaId) {
                     $this->dfdb
-                            ->qb()
-                            ->setStructure(primaryKeyName: 'meta_id')
-                            ->table(tableName: sprintf('%s', $table))
-                            ->reset()
-                            ->findOne(id: $metaId);
+                        ->qb()
+                        ->setStructure(primaryKeyName: 'meta_id')
+                        ->table(tableName: sprintf('%s', $table))
+                        ->reset()
+                        ->findOne(id: $metaId);
                 });
 
                 $result = true;

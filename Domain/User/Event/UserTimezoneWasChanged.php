@@ -12,30 +12,28 @@ use Codefy\Domain\Metadata;
 use Qubus\Exception\Data\TypeException;
 use Qubus\ValueObjects\StringLiteral\StringLiteral;
 
-use function Qubus\Support\Helpers\is_null__;
-
 class UserTimezoneWasChanged extends AggregateChanged
 {
-    private ?UserId $userId = null;
+    private UserId $id;
 
-    private ?StringLiteral $userTimezone = null;
+    private StringLiteral $timezone;
 
     public static function withData(
-        UserId $userId,
-        StringLiteral $userTimezone
+        UserId $id,
+        StringLiteral $timezone
     ): UserTimezoneWasChanged|DomainEvent|AggregateChanged {
         $event = self::occur(
-            aggregateId: $userId,
+            aggregateId: $id,
             payload: [
-                'user_timezone' => $userTimezone->toNative(),
+                'user_timezone' => $timezone->toNative(),
             ],
             metadata: [
                 Metadata::AGGREGATE_TYPE => 'user'
             ]
         );
 
-        $event->userId = $userId;
-        $event->userTimezone = $userTimezone;
+        $event->id = $id;
+        $event->timezone = $timezone;
 
         return $event;
     }
@@ -45,22 +43,19 @@ class UserTimezoneWasChanged extends AggregateChanged
      */
     public function userId(): UserId|AggregateId
     {
-        if (is_null__($this->userId)) {
-            $this->userId = UserId::fromString(userId: $this->aggregateId()->__toString());
+        if (!isset($this->id)) {
+            $this->id = UserId::fromString(userId: $this->aggregateId()->__toString());
         }
 
-        return $this->userId;
+        return $this->id;
     }
 
-    /**
-     * @throws TypeException
-     */
     public function userTimezone(): StringLiteral
     {
-        if (is_null__($this->userTimezone)) {
-            $this->userTimezone = StringLiteral::fromNative($this->payload()['user_timezone']);
+        if (!isset($this->timezone)) {
+            $this->timezone = StringLiteral::fromNative($this->payload()['user_timezone']);
         }
 
-        return $this->userTimezone;
+        return $this->timezone;
     }
 }

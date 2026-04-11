@@ -21,6 +21,6 @@ class FindSiteByKeyQueryHandler implements QueryHandler
      */
     public function handle(FindSiteByKeyQuery|Query $query): array|object
     {
-        return $this->repository->findByKey($query->siteKey->toNative());
+        return $this->repository->findByKey($query->key->toNative());
     }
 }

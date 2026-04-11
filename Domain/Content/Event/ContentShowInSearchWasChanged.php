@@ -11,30 +11,28 @@ use Codefy\Domain\Metadata;
 use Qubus\Exception\Data\TypeException;
 use Qubus\ValueObjects\Number\IntegerNumber;
 
-use function Qubus\Support\Helpers\is_null__;
-
 final class ContentShowInSearchWasChanged extends AggregateChanged
 {
-    private ?ContentId $contentId = null;
+    private ContentId $id;
 
-    private ?IntegerNumber $contentShowInSearch = null;
+    private IntegerNumber $showInSearch;
 
     public static function withData(
-        ContentId $contentId,
-        IntegerNumber $contentShowInSearch,
+        ContentId $id,
+        IntegerNumber $showInSearch,
     ): ContentShowInSearchWasChanged|DomainEvent|AggregateChanged {
         $event = self::occur(
-            aggregateId: $contentId,
+            aggregateId: $id,
             payload: [
-                'content_show_in_search' => $contentShowInSearch->toNative(),
+                'content_show_in_search' => $showInSearch->toNative(),
             ],
             metadata: [
                 Metadata::AGGREGATE_TYPE => 'content',
             ]
         );
 
-        $event->contentId = $contentId;
-        $event->contentShowInSearch = $contentShowInSearch;
+        $event->id = $id;
+        $event->showInSearch = $showInSearch;
 
         return $event;
     }
@@ -44,19 +42,22 @@ final class ContentShowInSearchWasChanged extends AggregateChanged
      */
     public function contentId(): ContentId
     {
-        if (is_null__($this->contentId)) {
-            $this->contentId = ContentId::fromString($this->aggregateId()->__toString());
+        if (!isset($this->id)) {
+            $this->id = ContentId::fromString($this->aggregateId()->__toString());
         }
 
-        return $this->contentId;
+        return $this->id;
     }
 
+    /**
+     * @throws TypeException
+     */
     public function contentShowInSearch(): IntegerNumber
     {
-        if (is_null__($this->contentShowInSearch)) {
-            $this->contentShowInSearch = IntegerNumber::fromNative($this->payload()['content_show_in_search']);
+        if (!isset($this->showInSearch)) {
+            $this->showInSearch = IntegerNumber::fromNative($this->payload()['content_show_in_search']);
         }
 
-        return $this->contentShowInSearch;
+        return $this->showInSearch;
     }
 }

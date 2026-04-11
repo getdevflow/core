@@ -21,6 +21,6 @@ class FindSiteBySlugQueryHandler implements QueryHandler
      */
     public function handle(FindSiteBySlugQuery|Query $query): array|object
     {
-        return $this->repository->findBySlug($query->siteSlug->toNative());
+        return $this->repository->findBySlug($query->slug->toNative());
     }
 }

@@ -25,9 +25,9 @@ class DeleteContentTypeCommandHandler implements CommandHandler
     public function handle(DeleteContentTypeCommand|Command $command): void
     {
         /** @var ContentType $contentType */
-        $contentType = $this->aggregateRepository->loadAggregateRoot($command->contentTypeId);
+        $contentType = $this->aggregateRepository->loadAggregateRoot($command->id);
 
-        $contentType->changeContentTypeDeleted($command->contentTypeId);
+        $contentType->changeContentTypeDeleted($command->id);
 
         $this->aggregateRepository->saveAggregateRoot($contentType);
     }

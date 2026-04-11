@@ -12,25 +12,25 @@ use Qubus\ValueObjects\StringLiteral\StringLiteral;
 
 final class CreateSiteCommand extends PropertyCommand
 {
-    public ?SiteId $siteId;
+    public SiteId $id;
 
-    public ?StringLiteral $siteKey = null;
+    public StringLiteral $key;
 
-    public ?StringLiteral $siteName = null;
+    public StringLiteral $name;
 
-    public ?StringLiteral $siteSlug = null;
+    public StringLiteral $slug;
 
-    public ?StringLiteral $siteDomain = null;
+    public StringLiteral $domain;
 
-    public ?StringLiteral $siteMapping = null;
+    public StringLiteral $mapping;
 
-    public ?StringLiteral $sitePath = null;
+    public StringLiteral $path;
 
-    public ?UserId $siteOwner = null;
+    public UserId $owner;
 
-    public ?StringLiteral $siteStatus = null;
+    public StringLiteral $status;
 
-    public ?DateTimeInterface $siteRegistered = null;
+    public DateTimeInterface $registered;
 
-    public ?DateTimeInterface $siteModified = null;
+    public DateTimeInterface $modified;
 }

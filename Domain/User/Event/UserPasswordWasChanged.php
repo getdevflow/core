@@ -13,20 +13,18 @@ use Qubus\Exception\Data\TypeException;
 use Qubus\ValueObjects\StringLiteral\StringLiteral;
 use SensitiveParameter;
 
-use function Qubus\Support\Helpers\is_null__;
-
 class UserPasswordWasChanged extends AggregateChanged
 {
-    private ?UserId $userId = null;
+    private UserId $id;
 
-    private ?StringLiteral $password = null;
+    private StringLiteral $password;
 
     public static function withData(
-        UserId $userId,
+        UserId $id,
         #[SensitiveParameter] StringLiteral $password
     ): UserPasswordWasChanged|DomainEvent|AggregateChanged {
         $event = self::occur(
-            aggregateId: $userId,
+            aggregateId: $id,
             payload: [
                 'user_pass' => $password->toNative(),
             ],
@@ -35,7 +33,7 @@ class UserPasswordWasChanged extends AggregateChanged
             ]
         );
 
-        $event->userId = $userId;
+        $event->id = $id;
         $event->password = $password;
 
         return $event;
@@ -46,19 +44,16 @@ class UserPasswordWasChanged extends AggregateChanged
      */
     public function userId(): UserId|AggregateId
     {
-        if (is_null__(var: $this->userId)) {
-            $this->userId = UserId::fromString(userId: $this->aggregateId()->__toString());
+        if (!isset($this->id)) {
+            $this->id = UserId::fromString(userId: $this->aggregateId()->__toString());
         }
 
-        return $this->userId;
+        return $this->id;
     }
 
-    /**
-     * @throws TypeException
-     */
     public function userPass(): StringLiteral
     {
-        if (is_null__(var: $this->password)) {
+        if (!isset($this->password)) {
             $this->password = StringLiteral::fromNative($this->payload()['user_pass']);
         }
 

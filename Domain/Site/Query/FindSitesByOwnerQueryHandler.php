@@ -19,6 +19,6 @@ class FindSitesByOwnerQueryHandler implements QueryHandler
      */
     public function handle(FindSitesByOwnerQuery|Query $query): array|object
     {
-        return $this->repository->findByOwner($query->siteOwner->toNative());
+        return $this->repository->findByOwner($query->owner->toNative());
     }
 }

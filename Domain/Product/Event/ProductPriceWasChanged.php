@@ -12,34 +12,32 @@ use Codefy\Domain\Metadata;
 use Qubus\Exception\Data\TypeException;
 use Qubus\ValueObjects\Money\Money;
 
-use function Qubus\Support\Helpers\is_null__;
-
 final class ProductPriceWasChanged extends AggregateChanged
 {
-    private ?ProductId $productId = null;
+    private ProductId $id;
 
-    private ?Money $productPrice = null;
+    private Money $price;
 
     /**
      * @throws TypeException
      */
     public static function withData(
-        ProductId $productId,
-        Money $productPrice,
+        ProductId $id,
+        Money $price,
     ): ProductPriceWasChanged|DomainEvent|AggregateChanged {
         $event = self::occur(
-            aggregateId: $productId,
+            aggregateId: $id,
             payload: [
-                'product_price' => $productPrice->getAmount()->toNative(),
-                'product_currency' => $productPrice->getCurrency()->getCode()->toNative(),
+                'product_price' => $price->getAmount()->toNative(),
+                'product_currency' => $price->getCurrency()->getCode()->toNative(),
             ],
             metadata: [
                 Metadata::AGGREGATE_TYPE => 'product',
             ],
         );
 
-        $event->productId = $productId;
-        $event->productPrice = $productPrice;
+        $event->id = $id;
+        $event->price = $price;
 
         return $event;
     }
@@ -49,11 +47,11 @@ final class ProductPriceWasChanged extends AggregateChanged
      */
     public function productId(): ProductId|AggregateId
     {
-        if (is_null__($this->productId)) {
-            $this->productId = ProductId::fromString(productId: $this->aggregateId()->__toString());
+        if (!isset($this->id)) {
+            $this->id = ProductId::fromString(productId: $this->aggregateId()->__toString());
         }
 
-        return $this->productId;
+        return $this->id;
     }
 
     /**
@@ -61,13 +59,13 @@ final class ProductPriceWasChanged extends AggregateChanged
      */
     public function productPrice(): Money
     {
-        if (is_null__($this->productPrice)) {
-            $this->productPrice = Money::fromNative(
+        if (!isset($this->price)) {
+            $this->price = Money::fromNative(
                 $this->payload()['product_price'],
                 $this->payload()['product_currency']
             );
         }
 
-        return $this->productPrice;
+        return $this->price;
     }
 }

@@ -10,7 +10,7 @@ use App\Domain\Site\ValueObject\SiteId;
 use App\Domain\User\Model\User;
 use App\Domain\User\ValueObject\UserId;
 use App\Domain\User\ValueObject\UserToken;
-use App\Infrastructure\Persistence\Database;
+use Qubus\Expressive\Database;
 use Codefy\CommandBus\Exceptions\CommandCouldNotBeHandledException;
 use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
 use Codefy\CommandBus\Exceptions\UnresolvableCommandHandlerException;
@@ -48,7 +48,7 @@ class InstallCmsCommand extends ConsoleCommand
 
     protected string $description = 'Installs the CMS.';
 
-    public function __construct(protected Application $codefy)
+    public function __construct(protected Application $codefy, protected Database $dfdb)
     {
         parent::__construct(codefy: $codefy);
     }
@@ -56,7 +56,7 @@ class InstallCmsCommand extends ConsoleCommand
     /**
      * @return int
      * @throws ReflectionException
-     * @throws UnresolvableQueryHandlerException|Exception
+     * @throws Exception
      */
     public function handle(): int
     {
@@ -114,7 +114,7 @@ class InstallCmsCommand extends ConsoleCommand
         $login = generate_random_username();
         $password = generate_random_password(26);
 
-        $user = new User();
+        $user = new User($this->dfdb);
         $user->fname = 'Super';
         $user->mname = '';
         $user->lname = 'Admin';
@@ -159,11 +159,10 @@ class InstallCmsCommand extends ConsoleCommand
 
     /**
      * @throws Exception
+     * @throws \Exception
      */
     protected function createSiteOptions(): void
     {
-        $dfdb = $this->codefy->make(Database::class);
-
         $options = [
             'sitename' => $this->codefy->configContainer->string(key: 'app.name'),
             'site_description' => 'Just another Devflow site.',
@@ -180,9 +179,9 @@ class InstallCmsCommand extends ConsoleCommand
             'api_key' => generate_unique_key(length: 32),
         ];
 
-        $dfdb->qb()->transactional(function () use ($dfdb, $options) {
+        $this->dfdb->transactional(function () use ($options) {
             foreach ($options as $optionName => $optionValue) {
-                $dfdb->qb()->table($dfdb->basePrefix . 'option')
+                $this->dfdb->table($this->dfdb->basePrefix . 'option')
                     ->set([
                         'option_id' => Ulid::generateAsString(),
                         'option_key' => $optionName,
@@ -202,7 +201,7 @@ class InstallCmsCommand extends ConsoleCommand
         $dbConnection = $this->codefy->configContainer->string(key: 'database.default');
 
         try {
-            $site = new Site();
+            $site = new Site($this->dfdb);
             $site->key = $this->codefy->configContainer->string(
                 key: "database.connections.{$dbConnection}.prefix"
             );
@@ -253,15 +252,11 @@ class InstallCmsCommand extends ConsoleCommand
         }
     }
 
-    /**
-     * @throws ReflectionException
-     * @throws UnresolvableQueryHandlerException
-     */
     protected function usersExist(): bool
     {
-        $cdb = $this->codefy->make(name: Database::class);
-        $sql = "SELECT * FROM {$cdb->basePrefix}user";
-        $users = $cdb->getResults($sql);
+        $prefix = $this->dfdb->basePrefix;
+        $sql = "SELECT * FROM {$prefix}user";
+        $users = $this->dfdb->getResults($sql);
 
         return count($users) > 0 && file_exists(storage_path('install.lock'));
     }

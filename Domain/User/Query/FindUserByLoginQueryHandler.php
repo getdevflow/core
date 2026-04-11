@@ -16,6 +16,8 @@ final class FindUserByLoginQueryHandler implements QueryHandler
 
     public function handle(FindUserByLoginQuery|Query $query): array|null|object
     {
-        return $this->repository->findByLogin($query->userLogin->toNative());
+        /** @var FindUserByLoginQuery $query */
+
+        return $this->repository->findByLogin($query->login->toNative());
     }
 }

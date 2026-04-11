@@ -35,7 +35,7 @@ trait PopulateContentQueryAware
             'title' => esc_html(string: $data['content_title']) ?? null,
             'body' => purify_html($data['content_body']) ?? null,
             'author' => isset($data['content_author']) ? esc_html(string: $data['content_author']) : null,
-            'contentType' => esc_html(string: $data['content_type']) ?? null,
+            'type' => esc_html(string: $data['content_type']) ?? null,
             'parent' => isset($data['content_parent']) ? esc_html(string: $data['content_parent']) : null,
             'sidebar' => esc_html(string: (string) $data['content_sidebar']) ?? null,
             'showInMenu' => esc_html(string: (string) $data['content_show_in_menu']) ?? null,

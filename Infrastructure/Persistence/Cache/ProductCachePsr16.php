@@ -38,13 +38,13 @@ class ProductCachePsr16 implements ProductCache
         }
 
         SimpleCacheObjectCacheFactory::make(namespace: dfdb()->prefix . 'products')
-                ->set(md5($product['id']), $product);
+            ->set(md5($product['id']), $product);
 
         SimpleCacheObjectCacheFactory::make(namespace: dfdb()->prefix . 'productslug')
-                ->set(md5($product['slug']), $product['id']);
+            ->set(md5($product['slug']), $product['id']);
 
         SimpleCacheObjectCacheFactory::make(namespace: dfdb()->prefix . 'productsku')
-                ->set(md5($product['sku']), $product['id']);
+            ->set(md5($product['sku']), $product['id']);
     }
 
     /**
@@ -67,16 +67,16 @@ class ProductCachePsr16 implements ProductCache
         }
 
         SimpleCacheObjectCacheFactory::make(namespace: dfdb()->prefix . 'products')
-                ->delete(md5($product['id']));
+            ->delete(md5($product['id']));
 
         SimpleCacheObjectCacheFactory::make(namespace: dfdb()->prefix . 'productslug')
-                ->delete(md5($product['slug']));
+            ->delete(md5($product['slug']));
 
         SimpleCacheObjectCacheFactory::make(namespace: dfdb()->prefix . 'productsku')
-                ->delete(md5($product['sku']));
+            ->delete(md5($product['sku']));
 
         SimpleCacheObjectCacheFactory::make(namespace: dfdb()->prefix . 'productmeta')
-                ->delete(md5($product['id']));
+            ->delete(md5($product['id']));
 
         /**
          * Fires immediately after the given user's cache is cleaned.

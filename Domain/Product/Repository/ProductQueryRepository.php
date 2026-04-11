@@ -6,14 +6,14 @@ namespace App\Domain\Product\Repository;
 
 interface ProductQueryRepository
 {
-    public function findById(string $productId): array|object;
+    public function findById(string $id): array|object;
 
-    public function findBySku(string $productSku): array|object;
+    public function findBySku(string $sku): array|object;
 
-    public function findBySlug(string $productSlug): array|object;
+    public function findBySlug(string $slug): array|object;
 
     public function findByFilters(
-        ?string $productSku = null,
+        ?string $sku = null,
         int $limit = 0,
         ?int $offset = null,
         string $status = 'all'

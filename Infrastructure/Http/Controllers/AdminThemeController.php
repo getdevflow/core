@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Infrastructure\Http\Controllers;
 
 use App\Application\Devflow;
-use App\Infrastructure\Persistence\Database;
+use Qubus\Expressive\Database;
 use App\Infrastructure\Services\UserAuth;
 use Codefy\Framework\Factory\FileLoggerFactory;
 use Codefy\Framework\Http\BaseController;
@@ -27,8 +27,10 @@ use function App\Shared\Helpers\activate_theme;
 use function App\Shared\Helpers\admin_url;
 use function App\Shared\Helpers\cms_enqueue_css;
 use function App\Shared\Helpers\cms_enqueue_js;
+use function App\Shared\Helpers\current_user_can;
 use function App\Shared\Helpers\deactivate_theme;
 use function App\Shared\Helpers\is_user_logged_in;
+use function Codefy\Framework\Helpers\view;
 use function Qubus\Security\Helpers\t__;
 
 final class AdminThemeController extends BaseController
@@ -53,10 +55,11 @@ final class AdminThemeController extends BaseController
      * @throws ReflectionException
      * @throws SessionException
      * @throws TypeException
+     * @throws \Exception
      */
     public function themes(ServerRequest $request): ResponseInterface|string
     {
-        if (false === $this->user->can(permissionName: 'manage:themes')) {
+        if (false === current_user_can(perm: 'manage:themes')) {
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
@@ -86,7 +89,7 @@ final class AdminThemeController extends BaseController
             echo $script;
         });
 
-        return $this->view->render(
+        return view(
             template: 'framework::backend/admin/theme/index',
             data: ['title' => t__(msgid: 'Themes', domain: 'devflow')]
         );

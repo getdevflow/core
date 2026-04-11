@@ -7,7 +7,6 @@ namespace App\Infrastructure\Providers;
 use App\Shared\Services\Registry;
 use Codefy\Framework\Factory\FileLoggerFactory;
 use Codefy\Framework\Support\CodefyServiceProvider;
-use PDO;
 use PDOException;
 use Psr\Http\Message\RequestInterface;
 use Qubus\Exception\Exception;
@@ -24,10 +23,6 @@ final class SiteServiceProvider extends CodefyServiceProvider
      */
     public function register(): void
     {
-        if ($this->codefy->isRunningInConsole()) {
-            return;
-        }
-
         $this->registerSiteKey();
     }
 
@@ -38,7 +33,7 @@ final class SiteServiceProvider extends CodefyServiceProvider
     private function registerSiteKey(): void
     {
         /** @var RequestInterface $request */
-        $request = $this->codefy->make(RequestInterface::class);
+        $request = $this->codefy->make(name: RequestInterface::class);
 
         $pdo = $this->codefy->getDbConnection()->pdo;
 

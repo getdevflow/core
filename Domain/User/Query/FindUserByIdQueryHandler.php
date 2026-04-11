@@ -16,6 +16,8 @@ final class FindUserByIdQueryHandler implements QueryHandler
 
     public function handle(FindUserByIdQuery|Query $query): array|object
     {
-        return $this->repository->findById($query->userId->toNative());
+        /** @var FindUserByIdQuery $query */
+
+        return $this->repository->findById($query->id->toNative());
     }
 }

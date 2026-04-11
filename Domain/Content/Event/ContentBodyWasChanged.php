@@ -11,30 +11,28 @@ use Codefy\Domain\Metadata;
 use Qubus\Exception\Data\TypeException;
 use Qubus\ValueObjects\StringLiteral\StringLiteral;
 
-use function Qubus\Support\Helpers\is_null__;
-
 final class ContentBodyWasChanged extends AggregateChanged
 {
-    private ?ContentId $contentId = null;
+    private ContentId $id;
 
-    private ?StringLiteral $contentBody = null;
+    private StringLiteral $body;
 
     public static function withData(
-        ContentId $contentId,
-        StringLiteral $contentBody,
+        ContentId $id,
+        StringLiteral $body,
     ): ContentBodyWasChanged|DomainEvent|AggregateChanged {
         $event = self::occur(
-            aggregateId: $contentId,
+            aggregateId: $id,
             payload: [
-                'content_body' => $contentBody->toNative(),
+                'content_body' => $body->toNative(),
             ],
             metadata: [
                 Metadata::AGGREGATE_TYPE => 'content',
             ]
         );
 
-        $event->contentId = $contentId;
-        $event->contentBody = $contentBody;
+        $event->id = $id;
+        $event->body = $body;
 
         return $event;
     }
@@ -44,22 +42,19 @@ final class ContentBodyWasChanged extends AggregateChanged
      */
     public function contentId(): ContentId
     {
-        if (is_null__($this->contentId)) {
-            $this->contentId = ContentId::fromString($this->aggregateId()->__toString());
+        if (!isset($this->id)) {
+            $this->id = ContentId::fromString($this->aggregateId()->__toString());
         }
 
-        return $this->contentId;
+        return $this->id;
     }
 
-    /**
-     * @throws TypeException
-     */
     public function contentBody(): StringLiteral
     {
-        if (is_null__($this->contentBody)) {
-            $this->contentBody = StringLiteral::fromNative($this->payload()['content_body']);
+        if (!isset($this->body)) {
+            $this->body = StringLiteral::fromNative($this->payload()['content_body']);
         }
 
-        return $this->contentBody;
+        return $this->body;
     }
 }

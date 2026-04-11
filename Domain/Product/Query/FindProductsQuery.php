@@ -9,7 +9,7 @@ use Codefy\QueryBus\Query;
 
 final class FindProductsQuery extends PropertyCommand implements Query
 {
-    public ?string $productSku = null;
+    public ?string $sku = null;
 
     public ?int $limit = 0;
 

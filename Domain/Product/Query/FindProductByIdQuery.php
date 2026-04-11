@@ -10,5 +10,5 @@ use Codefy\QueryBus\Query;
 
 final class FindProductByIdQuery extends PropertyCommand implements Query
 {
-    public ?ProductId $productId = null;
+    public ProductId $id;
 }

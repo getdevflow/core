@@ -17,16 +17,16 @@ use function Qubus\Support\Helpers\is_null__;
 
 class UserNameWasChanged extends AggregateChanged
 {
-    private ?UserId $userId = null;
+    private UserId $id;
 
-    private ?Name $name = null;
+    private Name $name;
 
     public static function withData(
-        UserId $userId,
+        UserId $id,
         Name $name
     ): UserNameWasChanged|DomainEvent|AggregateChanged {
         $event = self::occur(
-            aggregateId: $userId,
+            aggregateId: $id,
             payload: [
                 'user_fname' => $name->getFirstName()->toNative(),
                 'user_mname' => $name->getMiddleName()->toNative(),
@@ -37,7 +37,7 @@ class UserNameWasChanged extends AggregateChanged
             ]
         );
 
-        $event->userId = $userId;
+        $event->id = $id;
         $event->name = $name;
 
         return $event;
@@ -48,19 +48,16 @@ class UserNameWasChanged extends AggregateChanged
      */
     public function userId(): UserId|AggregateId
     {
-        if (is_null__($this->userId)) {
-            $this->userId = UserId::fromString(userId: $this->aggregateId()->__toString());
+        if (!isset($this->id)) {
+            $this->id = UserId::fromString(userId: $this->aggregateId()->__toString());
         }
 
-        return $this->userId;
+        return $this->id;
     }
 
-    /**
-     * @throws TypeException
-     */
     public function name(): Name
     {
-        if (is_null__($this->name)) {
+        if (!isset($this->name)) {
             $this->name = Name::fromNative(
                 $this->payload()['user_fname'],
                 $this->payload()['user_mname'],
@@ -76,7 +73,7 @@ class UserNameWasChanged extends AggregateChanged
      */
     public function userFname(): StringLiteral
     {
-        if (is_null__($this->name)) {
+        if (!isset($this->name)) {
             $this->name = Name::fromNative(
                 $this->payload()['user_fname'],
                 $this->payload()['user_mname'],
@@ -87,12 +84,9 @@ class UserNameWasChanged extends AggregateChanged
         return $this->name->getFirstName();
     }
 
-    /**
-     * @throws TypeException
-     */
     public function userMname(): StringLiteral
     {
-        if (is_null__($this->name)) {
+        if (!isset($this->name)) {
             $this->name = Name::fromNative(
                 $this->payload()['user_fname'],
                 $this->payload()['user_mname'],
@@ -103,12 +97,9 @@ class UserNameWasChanged extends AggregateChanged
         return $this->name->getMiddleName();
     }
 
-    /**
-     * @throws TypeException
-     */
     public function userLname(): StringLiteral
     {
-        if (is_null__($this->name)) {
+        if (!isset($this->name)) {
             $this->name = Name::fromNative(
                 $this->payload()['user_fname'],
                 $this->payload()['user_mname'],

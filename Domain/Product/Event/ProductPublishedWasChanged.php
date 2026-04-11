@@ -13,30 +13,28 @@ use DateTimeInterface;
 use Qubus\Exception\Data\TypeException;
 use Qubus\Support\DateTime\QubusDateTimeImmutable;
 
-use function Qubus\Support\Helpers\is_null__;
-
 final class ProductPublishedWasChanged extends AggregateChanged
 {
-    private ?ProductId $productId = null;
+    private ProductId $id;
 
-    private ?DateTimeInterface $productPublished = null;
+    private DateTimeInterface $published;
 
     public static function withData(
-        ProductId $productId,
-        DateTimeInterface $productPublished,
+        ProductId $id,
+        DateTimeInterface $published,
     ): ProductPublishedWasChanged|DomainEvent|AggregateChanged {
         $event = self::occur(
-            aggregateId: $productId,
+            aggregateId: $id,
             payload: [
-                'product_published' => (string) $productPublished,
+                'product_published' => (string) $published,
             ],
             metadata: [
                 Metadata::AGGREGATE_TYPE => 'product',
             ]
         );
 
-        $event->productId = $productId;
-        $event->productPublished = $productPublished;
+        $event->id = $id;
+        $event->published = $published;
 
         return $event;
     }
@@ -46,21 +44,21 @@ final class ProductPublishedWasChanged extends AggregateChanged
      */
     public function productId(): ProductId
     {
-        if (is_null__($this->productId)) {
-            $this->productId = ProductId::fromString($this->aggregateId()->__toString());
+        if (!isset($this->id)) {
+            $this->id = ProductId::fromString($this->aggregateId()->__toString());
         }
 
-        return $this->productId;
+        return $this->id;
     }
 
     public function productPublished(): DateTimeInterface
     {
-        if (is_null__($this->productPublished)) {
-            $this->productPublished = QubusDateTimeImmutable::createFromInterface(
-                (new DateTime($this->payload()['product_published']))->getDateTime()
+        if (!isset($this->published)) {
+            $this->published = QubusDateTimeImmutable::createFromInterface(
+                new DateTime($this->payload()['product_published'])->getDateTime()
             );
         }
 
-        return $this->productPublished;
+        return $this->published;
     }
 }

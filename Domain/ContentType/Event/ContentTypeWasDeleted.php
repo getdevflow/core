@@ -10,11 +10,9 @@ use Codefy\Domain\EventSourcing\DomainEvent;
 use Codefy\Domain\Metadata;
 use Qubus\Exception\Data\TypeException;
 
-use function Qubus\Support\Helpers\is_null__;
-
 final class ContentTypeWasDeleted extends AggregateChanged
 {
-    private ?ContentTypeId $contentTypeId = null;
+    private ContentTypeId $contentTypeId;
 
     public static function withData(
         ContentTypeId $contentTypeId,
@@ -37,7 +35,7 @@ final class ContentTypeWasDeleted extends AggregateChanged
      */
     public function contentTypeId(): ContentTypeId
     {
-        if (is_null__($this->contentTypeId)) {
+        if (!isset($this->contentTypeId)) {
             $this->contentTypeId = ContentTypeId::fromString($this->aggregateId()->__toString());
         }
 

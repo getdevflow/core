@@ -16,16 +16,16 @@ use function Qubus\Support\Helpers\is_null__;
 
 class UserMetaWasChanged extends AggregateChanged
 {
-    private ?UserId $userId = null;
+    private UserId $id;
 
-    private ?ArrayLiteral $meta = null;
+    private ArrayLiteral $meta;
 
     public static function withData(
-        UserId $userId,
+        UserId $id,
         ?ArrayLiteral $meta = null
     ): UserMetaWasChanged|DomainEvent|AggregateChanged {
         $event = self::occur(
-            aggregateId: $userId,
+            aggregateId: $id,
             payload: [
                 'meta' => $meta->toNative()
             ],
@@ -34,7 +34,7 @@ class UserMetaWasChanged extends AggregateChanged
             ]
         );
 
-        $event->userId = $userId;
+        $event->id = $id;
         $event->meta = $meta;
 
         return $event;
@@ -45,19 +45,16 @@ class UserMetaWasChanged extends AggregateChanged
      */
     public function userId(): UserId|AggregateId
     {
-        if (is_null__($this->userId)) {
-            $this->userId = UserId::fromString(userId: $this->aggregateId()->__toString());
+        if (!isset($this->id)) {
+            $this->id = UserId::fromString(userId: $this->aggregateId()->__toString());
         }
 
-        return $this->userId;
+        return $this->id;
     }
 
-    /**
-     * @throws TypeException
-     */
     public function usermeta(): ArrayLiteral
     {
-        if (is_null__($this->meta)) {
+        if (!isset($this->meta)) {
             $this->meta = ArrayLiteral::fromNative($this->payload()['meta']);
         }
 

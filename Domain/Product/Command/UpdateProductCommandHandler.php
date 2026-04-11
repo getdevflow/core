@@ -38,7 +38,7 @@ class UpdateProductCommandHandler implements CommandHandler
         $product->changeProductShowInSearch($command->showInSearch);
         $product->changeProductFeaturedImage($command->featuredImage);
         $product->changeProductStatus($command->status);
-        $product->changeProductMeta($command->meta);
+        $product->changeProductAttribute($command->attribute);
         $product->changeProductPublished($command->published);
         $product->changeProductPublishedGmt($command->publishedGmt);
         if ($product->hasRecordedEvents()) {

@@ -20,7 +20,7 @@ final class FindContentQueryHandler implements QueryHandler
     public function handle(FindContentQuery|Query $query): array
     {
         return $this->repository->findByFilters(
-            contentTypeSlug: $query->contentTypeSlug,
+            type: $query->type,
             limit: $query->limit,
             offset: $query->offset,
             status: $query->status

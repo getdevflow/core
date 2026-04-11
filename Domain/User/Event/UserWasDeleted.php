@@ -11,24 +11,22 @@ use Codefy\Domain\EventSourcing\DomainEvent;
 use Codefy\Domain\Metadata;
 use Qubus\Exception\Data\TypeException;
 
-use function Qubus\Support\Helpers\is_null__;
-
 class UserWasDeleted extends AggregateChanged
 {
-    private ?UserId $userId = null;
+    private UserId $id;
 
     public static function withData(
-        UserId $userId,
+        UserId $id,
     ): UserWasDeleted|DomainEvent|AggregateChanged {
         $event = self::occur(
-            aggregateId: $userId,
+            aggregateId: $id,
             payload: [],
             metadata: [
                 Metadata::AGGREGATE_TYPE => 'user'
             ]
         );
 
-        $event->userId = $userId;
+        $event->id = $id;
 
         return $event;
     }
@@ -38,10 +36,10 @@ class UserWasDeleted extends AggregateChanged
      */
     public function userId(): UserId|AggregateId
     {
-        if (is_null__($this->userId)) {
-            $this->userId = UserId::fromString(userId: $this->aggregateId()->__toString());
+        if (!isset($this->id)) {
+            $this->id = UserId::fromString(userId: $this->aggregateId()->__toString());
         }
 
-        return $this->userId;
+        return $this->id;
     }
 }

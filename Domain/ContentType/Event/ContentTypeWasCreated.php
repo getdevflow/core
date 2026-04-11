@@ -11,17 +11,15 @@ use Codefy\Domain\Metadata;
 use Qubus\Exception\Data\TypeException;
 use Qubus\ValueObjects\StringLiteral\StringLiteral;
 
-use function Qubus\Support\Helpers\is_null__;
-
 final class ContentTypeWasCreated extends AggregateChanged
 {
-    private ?ContentTypeId $contentTypeId = null;
+    private ContentTypeId $contentTypeId;
 
-    private ?StringLiteral $contentTypeTitle = null;
+    private StringLiteral $contentTypeTitle;
 
-    private ?StringLiteral $contentTypeSlug = null;
+    private StringLiteral $contentTypeSlug;
 
-    private ?StringLiteral $contentTypeDescription = null;
+    private StringLiteral $contentTypeDescription;
 
     public static function withData(
         ContentTypeId $contentTypeId,
@@ -55,43 +53,34 @@ final class ContentTypeWasCreated extends AggregateChanged
      */
     public function contentTypeId(): ContentTypeId
     {
-        if (is_null__($this->contentTypeId)) {
+        if (!isset($this->contentTypeId)) {
             $this->contentTypeId = ContentTypeId::fromString($this->aggregateId()->__toString());
         }
 
         return $this->contentTypeId;
     }
 
-    /**
-     * @throws TypeException
-     */
     public function contentTypeTitle(): StringLiteral
     {
-        if (is_null__($this->contentTypeTitle)) {
+        if (!isset($this->contentTypeTitle)) {
             $this->contentTypeTitle = StringLiteral::fromNative($this->payload()['content_type_title']);
         }
 
         return $this->contentTypeTitle;
     }
 
-    /**
-     * @throws TypeException
-     */
     public function contentTypeSlug(): StringLiteral
     {
-        if (is_null__($this->contentTypeSlug)) {
+        if (!isset($this->contentTypeSlug)) {
             $this->contentTypeSlug = StringLiteral::fromNative($this->payload()['content_type_slug']);
         }
 
         return $this->contentTypeSlug;
     }
 
-    /**
-     * @throws TypeException
-     */
     public function contentTypeDescription(): StringLiteral
     {
-        if (is_null__($this->contentTypeDescription)) {
+        if (!isset($this->contentTypeDescription)) {
             $this->contentTypeDescription = StringLiteral::fromNative($this->payload()['content_type_description']);
         }
 

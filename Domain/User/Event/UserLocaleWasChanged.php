@@ -12,30 +12,28 @@ use Codefy\Domain\Metadata;
 use Qubus\Exception\Data\TypeException;
 use Qubus\ValueObjects\StringLiteral\StringLiteral;
 
-use function Qubus\Support\Helpers\is_null__;
-
 class UserLocaleWasChanged extends AggregateChanged
 {
-    private ?UserId $userId = null;
+    private UserId $id;
 
-    private ?StringLiteral $userLocale = null;
+    private StringLiteral $locale;
 
     public static function withData(
-        UserId $userId,
-        StringLiteral $userLocale
+        UserId $id,
+        StringLiteral $locale
     ): UserLocaleWasChanged|DomainEvent|AggregateChanged {
         $event = self::occur(
-            aggregateId: $userId,
+            aggregateId: $id,
             payload: [
-                'user_locale' => $userLocale->toNative(),
+                'user_locale' => $locale->toNative(),
             ],
             metadata: [
                 Metadata::AGGREGATE_TYPE => 'user'
             ]
         );
 
-        $event->userId = $userId;
-        $event->userLocale = $userLocale;
+        $event->id = $id;
+        $event->locale = $locale;
 
         return $event;
     }
@@ -45,22 +43,19 @@ class UserLocaleWasChanged extends AggregateChanged
      */
     public function userId(): UserId|AggregateId
     {
-        if (is_null__($this->userId)) {
-            $this->userId = UserId::fromString(userId: $this->aggregateId()->__toString());
+        if (!isset($this->id)) {
+            $this->id = UserId::fromString(userId: $this->aggregateId()->__toString());
         }
 
-        return $this->userId;
+        return $this->id;
     }
 
-    /**
-     * @throws TypeException
-     */
     public function userLocale(): StringLiteral
     {
-        if (is_null__($this->userLocale)) {
-            $this->userLocale = StringLiteral::fromNative($this->payload()['user_locale']);
+        if (!isset($this->locale)) {
+            $this->locale = StringLiteral::fromNative($this->payload()['user_locale']);
         }
 
-        return $this->userLocale;
+        return $this->locale;
     }
 }

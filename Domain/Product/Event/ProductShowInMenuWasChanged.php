@@ -11,30 +11,28 @@ use Codefy\Domain\Metadata;
 use Qubus\Exception\Data\TypeException;
 use Qubus\ValueObjects\Number\IntegerNumber;
 
-use function Qubus\Support\Helpers\is_null__;
-
 final class ProductShowInMenuWasChanged extends AggregateChanged
 {
-    private ?ProductId $productId = null;
+    private ProductId $id;
 
-    private ?IntegerNumber $productShowInMenu = null;
+    private IntegerNumber $showInMenu;
 
     public static function withData(
-        ProductId $productId,
-        IntegerNumber $productShowInMenu,
+        ProductId $id,
+        IntegerNumber $showInMenu,
     ): ProductShowInMenuWasChanged|DomainEvent|AggregateChanged {
         $event = self::occur(
-            aggregateId: $productId,
+            aggregateId: $id,
             payload: [
-                'product_show_in_menu' => $productShowInMenu->toNative(),
+                'product_show_in_menu' => $showInMenu->toNative(),
             ],
             metadata: [
                 Metadata::AGGREGATE_TYPE => 'product',
             ]
         );
 
-        $event->productId = $productId;
-        $event->productShowInMenu = $productShowInMenu;
+        $event->id = $id;
+        $event->showInMenu = $showInMenu;
 
         return $event;
     }
@@ -44,19 +42,22 @@ final class ProductShowInMenuWasChanged extends AggregateChanged
      */
     public function productId(): ProductId
     {
-        if (is_null__($this->productId)) {
-            $this->productId = ProductId::fromString($this->aggregateId()->__toString());
+        if (!isset($this->id)) {
+            $this->id = ProductId::fromString($this->aggregateId()->__toString());
         }
 
-        return $this->productId;
+        return $this->id;
     }
 
+    /**
+     * @throws TypeException
+     */
     public function productShowInMenu(): IntegerNumber
     {
-        if (is_null__($this->productShowInMenu)) {
-            $this->productShowInMenu = IntegerNumber::fromNative($this->payload()['product_show_in_menu']);
+        if (!isset($this->showInMenu)) {
+            $this->showInMenu = IntegerNumber::fromNative($this->payload()['product_show_in_menu']);
         }
 
-        return $this->productShowInMenu;
+        return $this->showInMenu;
     }
 }

@@ -177,7 +177,7 @@ final class Sanitizer
          * @param string $rawItems The items prior to sanitization.
          * @param string $context The context for which the string is being sanitized.
          */
-        return Filter::getInstance()->applyFilter('sanitize_items', $items, $rawItems, $context);
+        return Filter::getInstance()->applyFilter('sanitize.items', $items, $rawItems, $context);
     }
 
     /**
@@ -243,7 +243,7 @@ final class Sanitizer
          * @param string $rawItem The item prior to sanitization.
          * @param string $context The context for which the string is being sanitized.
          */
-        return Filter::getInstance()->applyFilter('sanitize_item', $output, $rawItem, $context);
+        return Filter::getInstance()->applyFilter('sanitize.item', $output, $rawItem, $context);
     }
 
     /**
@@ -261,7 +261,7 @@ final class Sanitizer
                 filter: FILTER_VALIDATE_REGEXP,
                 options: [
                     "options" => [
-                            "regexp" => '!' . self::$regexes[$type] . '!i'
+                        "regexp" => '!' . self::$regexes[$type] . '!i'
                     ]
                 ]
             ) !== false;
@@ -320,7 +320,7 @@ final class Sanitizer
          * @param string $key     Sanitized key.
          * @param string $rawKey The key prior to sanitization.
          */
-        return Filter::getInstance()->applyFilter('sanitize_key', $key, $rawKey);
+        return Filter::getInstance()->applyFilter('sanitize.key', $key, $rawKey);
     }
 
     /**
@@ -360,7 +360,7 @@ final class Sanitizer
          * @param string $rawUsername The username prior to sanitization.
          * @param bool   $strict      Whether to limit the sanitization to specific characters. Default false.
          */
-        return Filter::getInstance()->applyFilter('sanitize_user', $username, $rawUsername, $strict);
+        return Filter::getInstance()->applyFilter('sanitize.username', $username, $rawUsername, $strict);
     }
 
     public static function removeAccents(string $string, $encoding = 'UTF-8'): array|string|null

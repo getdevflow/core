@@ -12,30 +12,28 @@ use Codefy\Domain\EventSourcing\DomainEvent;
 use Codefy\Domain\Metadata;
 use Qubus\Exception\Data\TypeException;
 
-use function Qubus\Support\Helpers\is_null__;
-
 class UserLoginWasChanged extends AggregateChanged
 {
-    private ?UserId $userId = null;
+    private UserId $id;
 
-    private ?Username $userLogin = null;
+    private Username $login;
 
     public static function withData(
-        UserId $userId,
-        Username $userLogin
+        UserId $id,
+        Username $login
     ): UserLoginWasChanged|DomainEvent|AggregateChanged {
         $event = self::occur(
-            aggregateId: $userId,
+            aggregateId: $id,
             payload: [
-                'user_login' => $userLogin->toNative(),
+                'user_login' => $login->toNative(),
             ],
             metadata: [
                 Metadata::AGGREGATE_TYPE => 'user'
             ]
         );
 
-        $event->userId = $userId;
-        $event->userLogin = $userLogin;
+        $event->id = $id;
+        $event->login = $login;
 
         return $event;
     }
@@ -45,11 +43,11 @@ class UserLoginWasChanged extends AggregateChanged
      */
     public function userId(): UserId|AggregateId
     {
-        if (is_null__($this->userId)) {
-            $this->userId = UserId::fromString(userId: $this->aggregateId()->__toString());
+        if (!isset($this->id)) {
+            $this->id = UserId::fromString(userId: $this->aggregateId()->__toString());
         }
 
-        return $this->userId;
+        return $this->id;
     }
 
     /**
@@ -57,10 +55,10 @@ class UserLoginWasChanged extends AggregateChanged
      */
     public function userLogin(): Username
     {
-        if (is_null__($this->userLogin)) {
-            $this->userLogin = Username::fromString($this->payload()['user_login']);
+        if (!isset($this->login)) {
+            $this->login = Username::fromString($this->payload()['user_login']);
         }
 
-        return $this->userLogin;
+        return $this->login;
     }
 }

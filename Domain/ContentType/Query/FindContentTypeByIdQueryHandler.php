@@ -23,6 +23,6 @@ class FindContentTypeByIdQueryHandler implements QueryHandler
      */
     public function handle(FindContentTypeByIdQuery|Query $query): array|null|object
     {
-        return $this->repository->findById($query->contentTypeId->toNative());
+        return $this->repository->findById($query->id->toNative());
     }
 }

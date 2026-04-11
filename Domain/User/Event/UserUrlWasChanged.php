@@ -16,26 +16,26 @@ use function Qubus\Support\Helpers\is_null__;
 
 class UserUrlWasChanged extends AggregateChanged
 {
-    private ?UserId $userId = null;
+    private UserId $id;
 
-    private ?StringLiteral $userUrl = null;
+    private StringLiteral $url;
 
     public static function withData(
-        UserId $userId,
-        StringLiteral $userUrl
+        UserId $id,
+        StringLiteral $url
     ): UserUrlWasChanged|DomainEvent|AggregateChanged {
         $event = self::occur(
-            aggregateId: $userId,
+            aggregateId: $id,
             payload: [
-                'user_url' => $userUrl->toNative(),
+                'user_url' => $url->toNative(),
             ],
             metadata: [
                 Metadata::AGGREGATE_TYPE => 'user'
             ]
         );
 
-        $event->userId = $userId;
-        $event->userUrl = $userUrl;
+        $event->id = $id;
+        $event->url = $url;
 
         return $event;
     }
@@ -45,22 +45,19 @@ class UserUrlWasChanged extends AggregateChanged
      */
     public function userId(): UserId|AggregateId
     {
-        if (is_null__($this->userId)) {
-            $this->userId = UserId::fromString(userId: $this->aggregateId()->__toString());
+        if (!isset($this->id)) {
+            $this->id = UserId::fromString(userId: $this->aggregateId()->__toString());
         }
 
-        return $this->userId;
+        return $this->id;
     }
 
-    /**
-     * @throws TypeException
-     */
     public function userUrl(): StringLiteral
     {
-        if (is_null__($this->userUrl)) {
-            $this->userUrl = StringLiteral::fromNative($this->payload()['user_url']);
+        if (!isset($this->url)) {
+            $this->url = StringLiteral::fromNative($this->payload()['user_url']);
         }
 
-        return $this->userUrl;
+        return $this->url;
     }
 }

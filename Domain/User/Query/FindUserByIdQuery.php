@@ -10,5 +10,5 @@ use Codefy\QueryBus\Query;
 
 final class FindUserByIdQuery extends PropertyCommand implements Query
 {
-    public ?UserId $userId = null;
+    public UserId $id;
 }

@@ -11,30 +11,28 @@ use Codefy\Domain\Metadata;
 use Qubus\Exception\Data\TypeException;
 use Qubus\ValueObjects\StringLiteral\StringLiteral;
 
-use function Qubus\Support\Helpers\is_null__;
-
 final class ContentTypeWasChanged extends AggregateChanged
 {
-    private ?ContentId $contentId = null;
+    private ContentId $id;
 
-    private ?StringLiteral $contentTypeSlug = null;
+    private StringLiteral $type;
 
     public static function withData(
-        ContentId $contentId,
-        StringLiteral $contentTypeSlug,
+        ContentId $id,
+        StringLiteral $type,
     ): ContentTypeWasChanged|DomainEvent|AggregateChanged {
         $event = self::occur(
-            aggregateId: $contentId,
+            aggregateId: $id,
             payload: [
-                'content_type' => $contentTypeSlug->toNative(),
+                'content_type' => $type->toNative(),
             ],
             metadata: [
                 Metadata::AGGREGATE_TYPE => 'content',
             ]
         );
 
-        $event->contentId = $contentId;
-        $event->contentTypeSlug = $contentTypeSlug;
+        $event->id = $id;
+        $event->type = $type;
 
         return $event;
     }
@@ -44,22 +42,19 @@ final class ContentTypeWasChanged extends AggregateChanged
      */
     public function contentId(): ContentId
     {
-        if (is_null__($this->contentId)) {
-            $this->contentId = ContentId::fromString($this->aggregateId()->__toString());
+        if (!isset($this->id)) {
+            $this->id = ContentId::fromString($this->aggregateId()->__toString());
         }
 
-        return $this->contentId;
+        return $this->id;
     }
 
-    /**
-     * @throws TypeException
-     */
     public function contentTypeSlug(): StringLiteral
     {
-        if (is_null__($this->contentTypeSlug)) {
-            $this->contentTypeSlug = StringLiteral::fromNative($this->payload()['content_type']);
+        if (!isset($this->type)) {
+            $this->type = StringLiteral::fromNative($this->payload()['content_type']);
         }
 
-        return $this->contentTypeSlug;
+        return $this->type;
     }
 }

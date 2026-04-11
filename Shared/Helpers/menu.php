@@ -21,7 +21,7 @@ use function Qubus\Support\Helpers\add_trailing_slash;
  *
  * Uses admin_submenu_$location_{$menuRoute} filter hook.
  *
- * @file App/Shared/Helpers/menu.php
+ * @file core/Shared/Helpers/menu.php
  * @param string $location Submenu location.
  * @param string $menuTitle The text to be used for the menu.
  * @param string $menuRoute The route part of the url.
@@ -75,7 +75,7 @@ function add_admin_submenu(
 /**
  * Adds an admin dashboard submenu page link.
  *
- * @file App/Shared/Helpers/menu.php
+ * @file core/Shared/Helpers/menu.php
  * @param string $menuTitle The text to be used for the menu.
  * @param string $menuRoute The route part of the url.
  * @param string $screen Unique name of menu's screen.
@@ -102,7 +102,7 @@ function add_dashboard_submenu(
 /**
  * Adds a sites submenu page link.
  *
- * @file App/Shared/Helpers/menu.php
+ * @file core/Shared/Helpers/menu.php
  * @param string $menuTitle The text to be used for the menu.
  * @param string $menuRoute The route part of the url.
  * @param string $screen Unique name of menu's screen.
@@ -129,7 +129,7 @@ function add_sites_submenu(
 /**
  * Adds a plugin submenu page link.
  *
- * @file App/Shared/Helpers/menu.php
+ * @file core/Shared/Helpers/menu.php
  * @param string $menuTitle The text to be used for the menu.
  * @param string $menuRoute The route part of the url.
  * @param string $screen Unique name of menu's screen.
@@ -156,7 +156,7 @@ function add_plugins_submenu(
 /**
  * Adds a theme submenu page link.
  *
- * @file App/Shared/Helpers/menu.php
+ * @file core/Shared/Helpers/menu.php
  * @param string $menuTitle The text to be used for the menu.
  * @param string $menuRoute The route part of the url.
  * @param string $screen Unique name of menu's screen.
@@ -183,7 +183,7 @@ function add_themes_submenu(
 /**
  * Adds a users submenu page link.
  *
- * @file App/Shared/Helpers/menu.php
+ * @file core/Shared/Helpers/menu.php
  * @param string $menuTitle The text to be used for the menu.
  * @param string $menuRoute The route part of the url.
  * @param string $screen Unique name of menu's screen.
@@ -210,7 +210,7 @@ function add_users_submenu(
 /**
  * Adds an options submenu page link.
  *
- * @file App/Shared/Helpers/menu.php
+ * @file core/Shared/Helpers/menu.php
  * @param string $menuTitle The text to be used for the menu.
  * @param string $menuRoute The route part of the url.
  * @param string $screen Unique name of menu's screen.

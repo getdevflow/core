@@ -11,30 +11,28 @@ use Codefy\Domain\Metadata;
 use Qubus\Exception\Data\TypeException;
 use Qubus\ValueObjects\StringLiteral\StringLiteral;
 
-use function Qubus\Support\Helpers\is_null__;
-
 final class ProductTitleWasChanged extends AggregateChanged
 {
-    private ?ProductId $productId = null;
+    private ProductId $id;
 
-    private ?StringLiteral $productTitle = null;
+    private StringLiteral $title;
 
     public static function withData(
-        ProductId $productId,
-        StringLiteral $productTitle,
+        ProductId $id,
+        StringLiteral $title,
     ): ProductTitleWasChanged|DomainEvent|AggregateChanged {
         $event = self::occur(
-            aggregateId: $productId,
+            aggregateId: $id,
             payload: [
-                'product_title' => $productTitle->toNative(),
+                'product_title' => $title->toNative(),
             ],
             metadata: [
                 Metadata::AGGREGATE_TYPE => 'product',
             ]
         );
 
-        $event->productId = $productId;
-        $event->productTitle = $productTitle;
+        $event->id = $id;
+        $event->title = $title;
 
         return $event;
     }
@@ -44,22 +42,19 @@ final class ProductTitleWasChanged extends AggregateChanged
      */
     public function productId(): ProductId
     {
-        if (is_null__($this->productId)) {
-            $this->productId = ProductId::fromString($this->aggregateId()->__toString());
+        if (!isset($this->id)) {
+            $this->id = ProductId::fromString($this->aggregateId()->__toString());
         }
 
-        return $this->productId;
+        return $this->id;
     }
 
-    /**
-     * @throws TypeException
-     */
     public function productTitle(): StringLiteral
     {
-        if (is_null__($this->productTitle)) {
-            $this->productTitle = StringLiteral::fromNative($this->payload()['product_title']);
+        if (!isset($this->title)) {
+            $this->title = StringLiteral::fromNative($this->payload()['product_title']);
         }
 
-        return $this->productTitle;
+        return $this->title;
     }
 }

@@ -21,6 +21,6 @@ final class FindContentByStatusQueryHandler implements QueryHandler
      */
     public function handle(FindContentByStatusQuery|Query $query): array
     {
-        return $this->repository->findByStatus($query->contentStatus->toNative());
+        return $this->repository->findByStatus($query->status->toNative());
     }
 }

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\Console\Commands;
 
-use App\Infrastructure\Persistence\Database;
+use Qubus\Expressive\Database;
 use App\Shared\Services\ItemPoolObjectCacheFactory;
 use App\Shared\Services\SimpleCacheObjectCacheFactory;
 use Codefy\Framework\Application;

@@ -12,30 +12,28 @@ use Codefy\Domain\Metadata;
 use Qubus\Exception\Data\TypeException;
 use Qubus\ValueObjects\StringLiteral\StringLiteral;
 
-use function Qubus\Support\Helpers\is_null__;
-
 final class ProductPurchaseUrlWasChanged extends AggregateChanged
 {
-    private ?ProductId $productId = null;
+    private ProductId $id;
 
-    private ?StringLiteral $productPurchaseUrl = null;
+    private StringLiteral $purchaseUrl;
 
     public static function withData(
-        ProductId $productId,
-        ?StringLiteral $productPurchaseUrl = null,
+        ProductId $id,
+        StringLiteral $purchaseUrl,
     ): ProductPurchaseUrlWasChanged|DomainEvent|AggregateChanged {
         $event = self::occur(
-            aggregateId: $productId,
+            aggregateId: $id,
             payload: [
-                'product_purchase_url' => $productPurchaseUrl?->toNative(),
+                'product_purchase_url' => $purchaseUrl?->toNative(),
             ],
             metadata: [
                 Metadata::AGGREGATE_TYPE => 'product',
             ],
         );
 
-        $event->productId = $productId;
-        $event->productPurchaseUrl = $productPurchaseUrl;
+        $event->id = $id;
+        $event->purchaseUrl = $purchaseUrl;
 
         return $event;
     }
@@ -45,22 +43,19 @@ final class ProductPurchaseUrlWasChanged extends AggregateChanged
      */
     public function productId(): ProductId|AggregateId
     {
-        if (is_null__($this->productId)) {
-            $this->productId = ProductId::fromString(productId: $this->aggregateId()->__toString());
+        if (!isset($this->id)) {
+            $this->id = ProductId::fromString(productId: $this->aggregateId()->__toString());
         }
 
-        return $this->productId;
+        return $this->id;
     }
 
-    /**
-     * @throws TypeException
-     */
-    public function productPurchaseUrl(): StringLiteral
+    public function productPurchaseUrl(): ?StringLiteral
     {
-        if (is_null__($this->productPurchaseUrl)) {
-            $this->productPurchaseUrl = StringLiteral::fromNative($this->payload()['product_purchase_url']);
+        if (!isset($this->purchaseUrl)) {
+            $this->purchaseUrl = StringLiteral::fromNative($this->payload()['product_purchase_url']);
         }
 
-        return $this->productPurchaseUrl;
+        return $this->purchaseUrl;
     }
 }

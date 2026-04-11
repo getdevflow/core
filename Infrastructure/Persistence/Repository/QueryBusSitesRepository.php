@@ -6,7 +6,7 @@ namespace App\Infrastructure\Persistence\Repository;
 
 use App\Domain\Site\Query\Trait\PopulateSiteQueryAware;
 use App\Domain\Site\Repository\SitesQueryRepository;
-use App\Infrastructure\Persistence\Database;
+use Qubus\Expressive\Database;
 use Qubus\Exception\Exception;
 use ReflectionException;
 
@@ -25,11 +25,11 @@ class QueryBusSitesRepository implements SitesQueryRepository
      * @throws ReflectionException
      * @throws Exception
      */
-    public function findById(string $siteId): array|object
+    public function findById(string $id): array|object
     {
         $sql = "SELECT * FROM {$this->dfdb->basePrefix}site WHERE site_id = ?";
 
-        $data = $this->dfdb->getResults($this->dfdb->prepare($sql, [$siteId]), Database::ARRAY_A);
+        $data = $this->dfdb->getResults($this->dfdb->prepare($sql, [$id]), Database::ARRAY_A);
 
         $contents = [];
 
@@ -46,11 +46,11 @@ class QueryBusSitesRepository implements SitesQueryRepository
      * @throws ReflectionException
      * @throws Exception
      */
-    public function findByKey(string $siteKey): array|object
+    public function findByKey(string $key): array|object
     {
         $sql = "SELECT * FROM {$this->dfdb->basePrefix}site WHERE site_key = ?";
 
-        $data = $this->dfdb->getResults($this->dfdb->prepare($sql, [$siteKey]), Database::ARRAY_A);
+        $data = $this->dfdb->getResults($this->dfdb->prepare($sql, [$key]), Database::ARRAY_A);
 
         $contents = [];
 
@@ -67,11 +67,11 @@ class QueryBusSitesRepository implements SitesQueryRepository
      * @throws Exception
      * @throws ReflectionException
      */
-    public function findBySlug(string $siteSlug): array|object
+    public function findBySlug(string $slug): array|object
     {
         $sql = "SELECT * FROM {$this->dfdb->basePrefix}site WHERE site_slug = ?";
 
-        $data = $this->dfdb->getResults($this->dfdb->prepare($sql, [$siteSlug]), Database::ARRAY_A);
+        $data = $this->dfdb->getResults($this->dfdb->prepare($sql, [$slug]), Database::ARRAY_A);
 
         $contents = [];
 
@@ -88,11 +88,11 @@ class QueryBusSitesRepository implements SitesQueryRepository
      * @throws ReflectionException
      * @throws Exception
      */
-    public function findByOwner(string $siteOwner): array|object
+    public function findByOwner(string $owner): array|object
     {
         $sql = "SELECT * FROM {$this->dfdb->basePrefix}site WHERE site_owner = ?";
 
-        $data = $this->dfdb->getResults($this->dfdb->prepare($sql, [$siteOwner]), Database::ARRAY_A);
+        $data = $this->dfdb->getResults($this->dfdb->prepare($sql, [$owner]), Database::ARRAY_A);
 
         $contents = [];
 
@@ -105,6 +105,9 @@ class QueryBusSitesRepository implements SitesQueryRepository
         return convert_array_to_object($contents);
     }
 
+    /**
+     * @throws Exception
+     */
     public function findAll(): array
     {
         $sql = "SELECT * FROM {$this->dfdb->basePrefix}site";

@@ -16,16 +16,16 @@ use function Qubus\Support\Helpers\is_null__;
 
 class UserRoleWasChanged extends AggregateChanged
 {
-    private ?UserId $userId = null;
+    private UserId $id;
 
-    private ?StringLiteral $role = null;
+    private StringLiteral $role;
 
     public static function withData(
-        UserId $userId,
+        UserId $id,
         StringLiteral $role
     ): UserRoleWasChanged|DomainEvent|AggregateChanged {
         $event = self::occur(
-            aggregateId: $userId,
+            aggregateId: $id,
             payload: [
                 'role' => $role->toNative(),
             ],
@@ -34,7 +34,7 @@ class UserRoleWasChanged extends AggregateChanged
             ]
         );
 
-        $event->userId = $userId;
+        $event->id = $id;
         $event->role = $role;
 
         return $event;
@@ -45,19 +45,16 @@ class UserRoleWasChanged extends AggregateChanged
      */
     public function userId(): UserId|AggregateId
     {
-        if (is_null__(var: $this->userId)) {
-            $this->userId = UserId::fromString(userId: $this->aggregateId()->__toString());
+        if (!isset($this->id)) {
+            $this->id = UserId::fromString(userId: $this->aggregateId()->__toString());
         }
 
-        return $this->userId;
+        return $this->id;
     }
 
-    /**
-     * @throws TypeException
-     */
     public function role(): StringLiteral
     {
-        if (is_null__(var: $this->role)) {
+        if (!isset($this->role)) {
             $this->role = StringLiteral::fromNative($this->payload()['role']);
         }
 

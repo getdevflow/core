@@ -19,10 +19,8 @@ use App\Domain\User\Event\UserTimezoneWasChanged;
 use App\Domain\User\Event\UserTokenWasChanged;
 use App\Domain\User\Event\UserWasCreated;
 use App\Domain\User\Services\UserProjection;
-use App\Infrastructure\Persistence\Database;
-use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
+use Qubus\Expressive\Database;
 use Codefy\Domain\EventSourcing\BaseProjection;
-use Codefy\QueryBus\UnresolvableQueryHandlerException;
 use Exception as NativeException;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
@@ -32,7 +30,9 @@ use Qubus\Exception\Exception;
 use Qubus\Expressive\QueryBuilderException;
 use ReflectionException;
 
-use function App\Shared\Helpers\update_user_option;
+use function App\Shared\Helpers\delete_usermeta;
+use function App\Shared\Helpers\get_usermeta;
+use function App\Shared\Helpers\update_usermeta;
 
 final class DatabaseUserProjection extends BaseProjection implements UserProjection
 {
@@ -42,13 +42,11 @@ final class DatabaseUserProjection extends BaseProjection implements UserProject
 
     /**
      * @param UserWasCreated $event
-     * @throws CommandPropertyNotFoundException
      * @throws ContainerExceptionInterface
      * @throws Exception
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
      * @throws TypeException
-     * @throws UnresolvableQueryHandlerException
      * @throws InvalidArgumentException
      * @throws NativeException
      */
@@ -73,13 +71,13 @@ final class DatabaseUserProjection extends BaseProjection implements UserProject
                         'user_time_format' => $event->userTimeFormat()->toNative(),
                         'user_locale' => $event->userLocale()->toNative(),
                         'user_registered' => $event->userRegistered(),
-                ])
-                ->save();
+                    ])
+                    ->save();
             });
 
             if (!$event->usermeta()->isEmpty()) {
                 foreach ($event->usermeta()->toNative() as $meta => $value) {
-                    update_user_option($event->aggregateId()->__toString(), $meta, $value);
+                    update_usermeta($event->aggregateId()->__toString(), $meta, $value);
                 }
             }
         } catch (QueryBuilderException $e) {
@@ -142,9 +140,9 @@ final class DatabaseUserProjection extends BaseProjection implements UserProject
                     ->table(tableName: $this->dfdb->basePrefix . 'user')
                     ->set([
                         'user_email' => $event->userEmail()->__toString(),
-                ])
-                ->where('user_id = ?', $event->userId()->__toString())
-                ->update();
+                    ])
+                    ->where('user_id = ?', $event->userId()->__toString())
+                    ->update();
             });
         } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
@@ -184,9 +182,9 @@ final class DatabaseUserProjection extends BaseProjection implements UserProject
                     ->table(tableName: $this->dfdb->basePrefix . 'user')
                     ->set([
                         'user_pass' => $event->userPass()->__toString(),
-                ])
-                ->where('user_id = ?', $event->userId()->__toString())
-                ->update();
+                    ])
+                    ->where('user_id = ?', $event->userId()->__toString())
+                    ->update();
             });
         } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
@@ -225,7 +223,7 @@ final class DatabaseUserProjection extends BaseProjection implements UserProject
                 $this->dfdb->qb()
                     ->table(tableName: $this->dfdb->basePrefix . 'user')
                     ->set([
-                            'user_timezone' => $event->userTimezone()->toNative(),
+                        'user_timezone' => $event->userTimezone()->toNative(),
                     ])
                     ->where('user_id = ?', $event->userId()->__toString())
                     ->update();
@@ -322,20 +320,18 @@ final class DatabaseUserProjection extends BaseProjection implements UserProject
     /**
      * @param UserMetaWasChanged $event
      * @return void
-     * @throws CommandPropertyNotFoundException
      * @throws ContainerExceptionInterface
      * @throws Exception
      * @throws InvalidArgumentException
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
      * @throws TypeException
-     * @throws UnresolvableQueryHandlerException
      */
     public function projectWhenUserMetaWasChanged(UserMetaWasChanged $event): void
     {
         if (!$event->usermeta()->isEmpty()) {
             foreach ($event->usermeta()->toNative() as $key => $value) {
-                update_user_option($event->aggregateId()->__toString(), $key, $value);
+                update_usermeta($event->aggregateId()->__toString(), $key, $value);
             }
         }
     }
@@ -343,6 +339,10 @@ final class DatabaseUserProjection extends BaseProjection implements UserProject
     /**
      * @param UserWasDeleted $event
      * @return void
+     * @throws ContainerExceptionInterface
+     * @throws Exception
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
      * @throws TypeException
      * @throws NativeException
      */
@@ -355,6 +355,11 @@ final class DatabaseUserProjection extends BaseProjection implements UserProject
                     ->where('user_id = ?', $event->userId()->toNative())
                     ->delete();
             });
+
+            $userMetaKeys = get_usermeta($event->userId()->toNative());
+            foreach ($userMetaKeys as $key => $value) {
+                delete_usermeta($event->userId()->toNative(), $key, $value);
+            }
         } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
         }

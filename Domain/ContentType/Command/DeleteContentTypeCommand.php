@@ -9,5 +9,5 @@ use Codefy\CommandBus\PropertyCommand;
 
 class DeleteContentTypeCommand extends PropertyCommand
 {
-    public ?ContentTypeId $contentTypeId = null;
+    public ContentTypeId $id;
 }

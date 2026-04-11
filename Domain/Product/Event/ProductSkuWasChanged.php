@@ -12,30 +12,28 @@ use Codefy\Domain\Metadata;
 use Qubus\Exception\Data\TypeException;
 use Qubus\ValueObjects\StringLiteral\StringLiteral;
 
-use function Qubus\Support\Helpers\is_null__;
-
 final class ProductSkuWasChanged extends AggregateChanged
 {
-    private ?ProductId $productId = null;
+    private ProductId $id;
 
-    private ?StringLiteral $productSku = null;
+    private StringLiteral $sku;
 
     public static function withData(
-        ProductId $productId,
-        StringLiteral $productSku,
+        ProductId $id,
+        StringLiteral $sku,
     ): ProductSkuWasChanged|DomainEvent|AggregateChanged {
         $event = self::occur(
-            aggregateId: $productId,
+            aggregateId: $id,
             payload: [
-                'product_sku' => $productSku->toNative(),
+                'product_sku' => $sku->toNative(),
             ],
             metadata: [
                 Metadata::AGGREGATE_TYPE => 'product',
             ],
         );
 
-        $event->productId = $productId;
-        $event->productSku = $productSku;
+        $event->id = $id;
+        $event->sku = $sku;
 
         return $event;
     }
@@ -45,22 +43,19 @@ final class ProductSkuWasChanged extends AggregateChanged
      */
     public function productId(): ProductId|AggregateId
     {
-        if (is_null__($this->productId)) {
-            $this->productId = ProductId::fromString(productId: $this->aggregateId()->__toString());
+        if (!isset($this->id)) {
+            $this->id = ProductId::fromString(productId: $this->aggregateId()->__toString());
         }
 
-        return $this->productId;
+        return $this->id;
     }
 
-    /**
-     * @throws TypeException
-     */
     public function productSku(): StringLiteral
     {
-        if (is_null__($this->productSku)) {
-            $this->productSku = StringLiteral::fromNative($this->payload()['product_sku']);
+        if (!isset($this->sku)) {
+            $this->sku = StringLiteral::fromNative($this->payload()['product_sku']);
         }
 
-        return $this->productSku;
+        return $this->sku;
     }
 }

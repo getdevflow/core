@@ -15,7 +15,7 @@ use App\Domain\Site\Event\SiteWasCreated;
 use App\Domain\Site\Event\SiteWasDeleted;
 use App\Domain\Site\Event\SiteWasModified;
 use App\Domain\Site\Services\SiteProjection;
-use App\Infrastructure\Persistence\Database;
+use Qubus\Expressive\Database;
 use Codefy\Domain\EventSourcing\BaseProjection;
 use Exception as NativeException;
 use Qubus\Exception\Data\TypeException;

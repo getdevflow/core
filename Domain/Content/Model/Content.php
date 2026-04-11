@@ -5,9 +5,8 @@ declare(strict_types=1);
 namespace App\Domain\Content\Model;
 
 use App\Infrastructure\Persistence\Cache\ContentCachePsr16;
-use App\Infrastructure\Persistence\Database;
-use App\Shared\Services\MetaData;
-use App\Shared\Services\Registry;
+use Qubus\Expressive\Database;
+use App\Infrastructure\Services\AttributesFactory;
 use App\Shared\Services\SimpleCacheObjectCacheFactory;
 use App\Shared\Services\Trait\HydratorAware;
 use Psr\Container\ContainerExceptionInterface;
@@ -59,7 +58,7 @@ final class Content extends stdClass
      *
      * @param string $field The field to query against: 'id', 'ID', 'slug' or 'type'.
      * @param string $value The field value
-     * @return object|false Raw user object
+     * @return Content|false Raw content object
      * @throws Exception
      * @throws ReflectionException
      * @throws ContainerExceptionInterface
@@ -74,15 +73,18 @@ final class Content extends stdClass
 
         $contentId = match ($field) {
             'id', 'ID' => $value,
+            'owner', 'author' => SimpleCacheObjectCacheFactory::make(namespace: $this->dfdb->prefix . 'contentauthor')
+                ->get(md5($value), ''),
             'slug' => SimpleCacheObjectCacheFactory::make(namespace: $this->dfdb->prefix . 'contentslug')
-                    ->get(md5($value), ''),
+                ->get(md5($value), ''),
             'type' => SimpleCacheObjectCacheFactory::make(namespace: $this->dfdb->prefix . 'contenttype')
-                    ->get(md5($value), ''),
+                ->get(md5($value), ''),
             default => false,
         };
 
         $dbField = match ($field) {
             'id', 'ID' => 'content_id',
+            'owner', 'author' => 'content_author',
             'slug' => 'content_slug',
             'type' => 'content_type',
             default => false,
@@ -161,7 +163,7 @@ final class Content extends stdClass
      */
     public function populate(Content $content, array $data = []): self
     {
-        if (config(key: 'cms.relative_url') === 'contenttype') {
+        if (config()->string(key: 'cms.relative_url') === 'contenttype') {
             $relativeUrl = $data['content_type'] . '/' . $data['content_slug'] . '/';
         } else {
             $relativeUrl = $data['content_slug'] . '/';
@@ -208,10 +210,9 @@ final class Content extends stdClass
     /**
      * Magic method for checking the existence of a certain custom field.
      *
-     * @param string $key Content meta key to check if set.
-     * @return bool Whether the given content meta key is set.
+     * @param string $key Content attribute key to check if set.
+     * @return bool Whether the given content attribute key is set.
      * @throws ContainerExceptionInterface
-     * @throws Exception
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
      */
@@ -221,17 +222,15 @@ final class Content extends stdClass
             return true;
         }
 
-        return MetaData::factory(Registry::getInstance()->get('tblPrefix') . 'contentmeta')
-                ->exists('content', $this->id, Registry::getInstance()->get('tblPrefix') . $key);
+        return AttributesFactory::content()->exists($this->id, $key);
     }
 
     /**
      * Magic method for accessing custom fields.
      *
-     * @param string $key Content meta key to retrieve.
-     * @return string Value of the given content meta key (if set). If `$key` is 'id', the content ID.
+     * @param string $key Content attribute key to retrieve.
+     * @return string Value of the given content attribute key (if set). If `$key` is 'id', the content ID.
      * @throws ContainerExceptionInterface
-     * @throws Exception
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
      */
@@ -240,8 +239,7 @@ final class Content extends stdClass
         if (isset($this->{$key})) {
             $value = $this->{$key};
         } else {
-            $value = MetaData::factory(Registry::getInstance()->get('tblPrefix') . 'contentmeta')
-                    ->read('content', $this->id, Registry::getInstance()->get('tblPrefix') . $key, true);
+            $value = AttributesFactory::content()->get($this->id, $key);
         }
 
         return purify_html($value);
@@ -253,8 +251,8 @@ final class Content extends stdClass
      * This method does not update custom fields in the content document. It only stores
      * the value on the Content instance.
      *
-     * @param string $key   Content meta key.
-     * @param mixed  $value Content meta value.
+     * @param string $key   Content attribute key.
+     * @param mixed  $value Content attribute value.
      */
     public function __set(string $key, mixed $value): void
     {
@@ -264,7 +262,7 @@ final class Content extends stdClass
     /**
      * Magic method for unsetting a certain custom field.
      *
-     * @param string $key Content meta key to unset.
+     * @param string $key Content attribute key to unset.
      */
     public function __unset(string $key)
     {
@@ -274,14 +272,13 @@ final class Content extends stdClass
     }
 
     /**
-     * Retrieve the value of a property or meta key.
+     * Retrieve the value of a property or attribute key.
      *
-     * Retrieves from the content and contentmeta table.
+     * Retrieves from the content table.
      *
      * @param string $key Property
      * @return string
      * @throws ContainerExceptionInterface
-     * @throws Exception
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
      */
@@ -291,14 +288,13 @@ final class Content extends stdClass
     }
 
     /**
-     * Determine whether a property or meta key is set
+     * Determine whether a property or attribute key is set
      *
-     * Consults the content and contentmeta tables.
+     * Consults the content table.
      *
      * @param string $key Property
      * @return bool
      * @throws ContainerExceptionInterface
-     * @throws Exception
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
      */

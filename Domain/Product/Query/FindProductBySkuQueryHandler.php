@@ -21,6 +21,6 @@ final class FindProductBySkuQueryHandler implements QueryHandler
      */
     public function handle(FindProductBySkuQuery|Query $query): array|object
     {
-        return $this->repository->findBySku($query->productSku->toNative());
+        return $this->repository->findBySku($query->sku->toNative());
     }
 }

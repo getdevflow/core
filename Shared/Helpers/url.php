@@ -30,7 +30,7 @@ use const PHP_URL_SCHEME;
 /**
  * Sets the scheme for a URL.
  *
- * @file App/Shared/Helpers/url.php
+ * @file core/Shared/Helpers/url.php
  * @param string $url Absolute URL that includes a scheme
  * @param string|null $scheme Optional. Scheme to give $url. Currently, 'http', 'https', 'login',
  *                            'admin', 'relative', 'rest' or null. Default null.
@@ -66,7 +66,7 @@ function set_url_scheme(string $url, ?string $scheme = null): string
     /**
      * Filters the resulting URL after setting the scheme.
      *
-     * @file App/Shared/Helpers/url.php
+     * @file core/Shared/Helpers/url.php
      * @param string      $url         The complete URL including scheme and path.
      * @param string      $scheme      Scheme applied to the URL. One of 'http', 'https', or 'relative'.
      * @param string|null $origScheme Scheme requested for the URL. One of 'http', 'https', 'login',
@@ -80,7 +80,7 @@ function set_url_scheme(string $url, ?string $scheme = null): string
  *
  * Uses `query_arg_port` filter hook.
  *
- * @file App/Shared/Helpers/url.php
+ * @file core/Shared/Helpers/url.php
  * @param string $key A query variable key.
  * @param string $value A query variable value, or a URL to act upon.
  * @param string $url A URL to act upon.
@@ -116,7 +116,7 @@ function add_query_arg(string $key, string $value, string $url): string
 /**
  * Returns the url based on route.
  *
- * @file App/Shared/Helpers/url.php
+ * @file core/Shared/Helpers/url.php
  * @param string|null $path Relative path.
  * @return string
  */
@@ -133,7 +133,7 @@ function url(?string $path = null): string
  * Returns 'https' if `is_ssl()` evaluates to true and 'http' otherwise. If `$scheme` is
  * 'http' or 'https', `is_ssl(`) is overridden.
  *
- * @file App/Shared/Helpers/url.php
+ * @file core/Shared/Helpers/url.php
  * @param string $path   Optional. Route name or route relative to the site url. Default '/'.
  * @param string|null $scheme Optional. Scheme to give the site URL context. Accepts
  *                       'http', 'https', 'login', 'admin', or 'relative'.
@@ -153,7 +153,7 @@ function cms_site_url(string $path = '', ?string $scheme = null): string
     /**
      * Filters the site URL.
      *
-     * @file App/Shared/Helpers/url.php
+     * @file core/Shared/Helpers/url.php
      * @param string $url         The site url including scheme and path.
      * @param string $path        Route relative to the site url. Blank string if no path is specified.
      * @param string|null $scheme Scheme to give the site url context. Accepts 'http', 'https', 'login',
@@ -165,7 +165,7 @@ function cms_site_url(string $path = '', ?string $scheme = null): string
 /**
  * Returns the url to the admin area for a given site.
  *
- * @file App/Shared/Helpers/url.php
+ * @file core/Shared/Helpers/url.php
  * @param string $path Optional. Path relative to the admin url. Default empty.
  * @param string $scheme Optional. The scheme to use. Accepts 'http' or 'https',
  *                       to force those schemes. Default 'admin'.
@@ -185,7 +185,7 @@ function cms_admin_url(string $path = '', string $scheme = 'admin'): string
     /**
      * Filters the admin area url.
      *
-     * @file App/Shared/Helpers/url.php
+     * @file core/Shared/Helpers/url.php
      * @param string $escUrl The complete admin area url including scheme and path after escaped.
      * @param string $url    The complete admin area url including scheme and path before escaped.
      * @param string $path   Path relative to the admin area url. Blank string if no path is specified.
@@ -199,7 +199,7 @@ function cms_admin_url(string $path = '', string $scheme = 'admin'): string
  * The protocol will be 'https' if `is_ssl()` evaluates to true; If `$scheme` is
  * 'http' or 'https', `is_ssl()` is overridden.
  *
- * @file App/Shared/Helpers/url.php
+ * @file core/Shared/Helpers/url.php
  * @param string $path Optional. Path relative to the home url. Default empty.
  * @param string|null $scheme Optional. Scheme to give the home URL context. Accepts
  *                            'http', 'https', 'relative', or null. Default null.
@@ -230,7 +230,7 @@ function cms_home_url(string $path = '', ?string $scheme = null): string
     /**
      * Filters the home URL.
      *
-     * @file App/Shared/Helpers/url.php
+     * @file core/Shared/Helpers/url.php
      * @param string      $escUrl The escaped home url.
      * @param string      $url     The home url before it was escaped.
      * @param string      $path    Route relative to the site url. Blank string if no path is specified.
@@ -243,7 +243,7 @@ function cms_home_url(string $path = '', ?string $scheme = null): string
 /**
  * Returns the login url for a given site.
  *
- * @file App/Shared/Helpers/url.php
+ * @file core/Shared/Helpers/url.php
  * @param string $redirect Path to redirect to on log in.
  * @param string $path Optional. Path relative to the login url. Default empty.
  * @param string|null $scheme Optional. Scheme to give the logout URL context. Accepts
@@ -284,7 +284,7 @@ function cms_login_url(string $redirect = '', string $path = '', ?string $scheme
     /**
      * Filters the login URL.
      *
-     * @file App/Shared/Helpers/url.php
+     * @file core/Shared/Helpers/url.php
      * @param string $loginUrl    The login URL. Not HTML-encoded.
      * @param string $redirect     The path to redirect to on login, if supplied.
      * @param string $path         Route relative to the login url. Blank string if no path is specified.
@@ -297,7 +297,7 @@ function cms_login_url(string $redirect = '', string $path = '', ?string $scheme
 /**
  * Returns the login url for a given site.
  *
- * @file App/Shared/Helpers/url.php
+ * @file core/Shared/Helpers/url.php
  * @param string $redirect Path to redirect to on logout.
  * @param string $path Optional. Path relative to the logout url. Default empty.
  * @param string|null $scheme Optional. Scheme to give the logout URL context. Accepts
@@ -338,7 +338,7 @@ function cms_logout_url(string $redirect = '', string $path = '', ?string $schem
     /**
      * Filters the logout URL.
      *
-     * @file App/Shared/Helpers/url.php
+     * @file core/Shared/Helpers/url.php
      * @param string $logoutUrl   The logout URL. Not HTML-encoded.
      * @param string $redirect     The path to redirect to on logout, if supplied.
      * @param string $path         Route relative to the logout url. Blank string if no path is specified.
@@ -354,7 +354,7 @@ function cms_logout_url(string $redirect = '', string $path = '', ?string $schem
  * Returns 'https' if `is_ssl()` evaluates to true and 'http' otherwise. If `$scheme` is
  * 'http' or 'https', `is_ssl()` is overridden.
  *
- * @file App/Shared/Helpers/url.php
+ * @file core/Shared/Helpers/url.php
  * @param string $path Optional. Route relative to the site url. Default '/'.
  * @param string|null $scheme Optional. Scheme to give the site URL context. Accepts
  *                        'http', 'https', 'login', 'admin', or 'relative'.
@@ -370,7 +370,7 @@ function site_url(string $path = '', ?string $scheme = null): string
 /**
  * Returns the url to the admin area for a given site.
  *
- * @file App/Shared/Helpers/url.php
+ * @file core/Shared/Helpers/url.php
  * @param string $path Optional. Path relative to the admin url. Default empty.
  * @param string $scheme Optional. The scheme to use. Accepts 'http' or 'https',
  *                        to force those schemes. Default 'admin'.
@@ -388,7 +388,7 @@ function admin_url(string $path = '', string $scheme = 'admin'): string
  * The protocol will be 'https' if `is_ssl()` evaluates to true; If `$scheme` is
  * 'http' or 'https', `is_ssl()` is overridden.
  *
- * @file App/Shared/Helpers/url.php
+ * @file core/Shared/Helpers/url.php
  * @param string $path Optional. Path relative to the home url. Default empty.
  * @param string|null $scheme Optional. Scheme to give the home URL context. Accepts
  *                             'http', 'https', 'relative', or null. Default null.
@@ -403,7 +403,7 @@ function home_url(string $path = '', ?string $scheme = null): string
 /**
  * Returns the login url for a given site.
  *
- * @file App/Shared/Helpers/url.php
+ * @file core/Shared/Helpers/url.php
  * @param string $redirect Path to redirect to on log in.
  * @param string $path Optional. Path relative to the login url. Default empty.
  * @param string|null $scheme Optional. Scheme to give the home URL context. Accepts
@@ -419,7 +419,7 @@ function login_url(string $redirect = '', string $path = '', ?string $scheme = '
 /**
  * Returns the login url for a given site.
  *
- * @file App/Shared/Helpers/url.php
+ * @file core/Shared/Helpers/url.php
  * @param string $redirect Path to redirect to on logout.
  * @param string $path Optional. Path relative to the logout url. Default empty.
  * @param string|null $scheme Optional. Scheme to give the logout URL context. Accepts
@@ -435,7 +435,7 @@ function logout_url(string $redirect = '', string $path = '', ?string $scheme = 
 /**
  * Returns the admin login url for a given site.
  *
- * @file App/Shared/Helpers/url.php
+ * @file core/Shared/Helpers/url.php
  * @param string $redirect Path to redirect to on log in.
  * @param string $path Optional. Path relative to the login url. Default empty.
  * @param string|null $scheme Optional. Scheme to give the home URL context. Accepts
@@ -476,7 +476,7 @@ function admin_login_url(string $redirect = '', string $path = '', ?string $sche
     /**
      * Filters the login URL.
      *
-     * @file App/Shared/Helpers/url.php
+     * @file core/Shared/Helpers/url.php
      * @param string $loginUrl    The login URL. Not HTML-encoded.
      * @param string $redirect    The path to redirect to on login, if supplied.
      * @param string $path        Route relative to the login url. Blank string if no path is specified.
@@ -489,7 +489,7 @@ function admin_login_url(string $redirect = '', string $path = '', ?string $sche
 /**
  * Returns the admin logout url for a given site.
  *
- * @file App/Shared/Helpers/url.php
+ * @file core/Shared/Helpers/url.php
  * @param string $redirect Path to redirect to on logout.
  * @param string $path Optional. Path relative to the logout url. Default empty.
  * @param string|null $scheme Optional. Scheme to give the logout URL context. Accepts
@@ -530,7 +530,7 @@ function admin_logout_url(string $redirect = '', string $path = '', ?string $sch
     /**
      * Filters the logout URL.
      *
-     * @file App/Shared/Helpers/url.php
+     * @file core/Shared/Helpers/url.php
      * @param string $logoutUrl   The logout URL. Not HTML-encoded.
      * @param string $redirect    The path to redirect to on logout, if supplied.
      * @param string $path        Route relative to the logout url. Blank string if no path is specified.

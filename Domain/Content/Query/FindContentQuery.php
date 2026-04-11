@@ -9,7 +9,7 @@ use Codefy\QueryBus\Query;
 
 final class FindContentQuery extends PropertyCommand implements Query
 {
-    public ?string $contentTypeSlug = null;
+    public ?string $type = null;
 
     public ?int $limit = 0;
 

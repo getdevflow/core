@@ -14,30 +14,28 @@ use DateTimeInterface;
 use Qubus\Exception\Data\TypeException;
 use Qubus\Support\DateTime\QubusDateTimeImmutable;
 
-use function Qubus\Support\Helpers\is_null__;
-
 final class SiteWasModified extends AggregateChanged
 {
-    private ?SiteId $siteId = null;
+    private SiteId $id;
 
-    private ?DateTimeInterface $siteModified = null;
+    private DateTimeInterface $modified;
 
     public static function withData(
-        SiteId $siteId,
-        DateTimeInterface $siteModified,
+        SiteId $id,
+        DateTimeInterface $modified,
     ): SiteWasModified|DomainEvent|AggregateChanged {
         $event = self::occur(
-            aggregateId: $siteId,
+            aggregateId: $id,
             payload: [
-                    'site_modified' => (string) $siteModified,
-                ],
+                'site_modified' => (string) $modified,
+            ],
             metadata: [
-                    Metadata::AGGREGATE_TYPE => 'site'
-                ],
+                Metadata::AGGREGATE_TYPE => 'site'
+            ],
         );
 
-        $event->siteId = $siteId;
-        $event->siteModified = $siteModified;
+        $event->id = $id;
+        $event->modified = $modified;
 
         return $event;
     }
@@ -47,21 +45,21 @@ final class SiteWasModified extends AggregateChanged
      */
     public function siteId(): SiteId|AggregateId
     {
-        if (is_null__($this->siteId)) {
-            $this->siteId = SiteId::fromString(siteId: $this->aggregateId()->__toString());
+        if (!isset($this->id)) {
+            $this->id = SiteId::fromString(siteId: $this->aggregateId()->__toString());
         }
 
-        return $this->siteId;
+        return $this->id;
     }
 
     public function siteModified(): DateTimeInterface
     {
-        if (is_null__($this->siteModified)) {
-            $this->siteModified = QubusDateTimeImmutable::createFromInterface(
-                (new DateTime($this->payload()['site_modified']))->getDateTime()
+        if (!isset($this->modified)) {
+            $this->modified = QubusDateTimeImmutable::createFromInterface(
+                new DateTime($this->payload()['site_modified'])->getDateTime()
             );
         }
 
-        return $this->siteModified;
+        return $this->modified;
     }
 }

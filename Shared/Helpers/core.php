@@ -107,7 +107,7 @@ use const PATHINFO_FILENAME;
 /**
  * Turn all URLs into clickable links.
  *
- * @file App/Shared/Helpers/core.php
+ * @file core/Shared/Helpers/core.php
  * @param string                $value      Input text.
  * @param list<string>          $protocols  Supported protocols, e.g. ['http', 'https', 'mail', 'x'].
  * @param array<string,string>  $attributes Extra HTML attributes to add to generated <a> tags.
@@ -206,7 +206,7 @@ function make_clickable(string $value, array $protocols = ['http', 'mail'], arra
 /**
  * Checks if a remote file exists.
  *
- * @file App/Shared/Helpers/core.php
+ * @file core/Shared/Helpers/core.php
  * @return bool True on success, false otherwise.
  */
 function remote_file_exists(string $url): bool
@@ -232,7 +232,7 @@ function remote_file_exists(string $url): bool
 }
 
 /**
- * @file App/Shared/Helpers/core.php
+ * @file core/Shared/Helpers/core.php
  * @param string $file Filepath
  * @param int $digits Digits to display.
  * @return string|bool Size (KB, MB, GB, TB) on success or false otherwise.
@@ -256,7 +256,7 @@ function get_file_size(string $file, int $digits = 2): bool|string
  *
  * Compares the first two arguments and if identical marks as checked.
  *
- * @file App/Shared/Helpers/core.php
+ * @file core/Shared/Helpers/core.php
  * @param mixed $checked One of the values to compare
  * @param mixed $current (true) The other value to compare if not just true.
  * @param bool $echo Whether to echo or just return the string.
@@ -272,7 +272,7 @@ function checked(mixed $checked, mixed $current = true, bool $echo = true): stri
  *
  * Compares the first two arguments and if identical marks as selected.
  *
- * @file App/Shared/Helpers/core.php
+ * @file core/Shared/Helpers/core.php
  * @param mixed $selected One of the values to compare.
  * @param mixed $current (true) The other value to compare if not just true.
  * @param bool $echo Whether to echo or just return the string.
@@ -288,7 +288,7 @@ function selected(mixed $selected, mixed $current = true, bool $echo = true): st
  *
  * Compares the first two arguments and if identical marks as disabled.
  *
- * @file App/Shared/Helpers/core.php
+ * @file core/Shared/Helpers/core.php
  * @param mixed $disabled One of the values to compare.
  * @param mixed $current (true) The other value to compare if not just true.
  * @param bool $echo Whether to echo or just return the string.
@@ -306,7 +306,7 @@ function disabled(mixed $disabled, mixed $current = true, bool $echo = true): st
  *
  * @access private
  *
- * @file App/Shared/Helpers/core.php
+ * @file core/Shared/Helpers/core.php
  * @param mixed $helper One of the values to compare.
  * @param mixed $current (true) The other value to compare if not just true.
  * @param bool $echo Whether to echo or just return the string.
@@ -329,7 +329,7 @@ function checked_selected_helper(mixed $helper, mixed $current, bool $echo, stri
 }
 
 /**
- * @file App/Shared/Helpers/core.php
+ * @file core/Shared/Helpers/core.php
  * @param float|int $seconds
  * @return string
  */
@@ -358,7 +358,7 @@ function seconds_to_minutes(float|int $seconds): string
 /**
  * Determines if SSL is used.
  *
- * @file App/Shared/Helpers/core.php
+ * @file core/Shared/Helpers/core.php
  * @return bool True if SSL, false otherwise.
  */
 function is_ssl(): bool
@@ -379,7 +379,7 @@ function is_ssl(): bool
 /**
  * Normalize a filesystem path.
  *
- * @file App/Shared/Helpers/core.php
+ * @file core/Shared/Helpers/core.php
  * @param string $path Path to normalize.
  * @return array|string|null Normalized path.
  */
@@ -398,7 +398,7 @@ function normalize_path(string $path): array|string|null
  *
  * Uses `beautified_filename` filter hook.
  *
- * @file App/Shared/Helpers/core.php
+ * @file core/Shared/Helpers/core.php
  * @param string $filename Filename to beautify.
  * @return string Beautified filename.
  * @throws Exception
@@ -441,9 +441,9 @@ function beautify_filename(string $filename): string
 /**
  * Sanitizes a filename.
  *
- * Uses `sanitized_filename` filter hook.
+ * Uses `sanitized.filename` filter hook.
  *
- * @file App/Shared/Helpers/core.php
+ * @file core/Shared/Helpers/core.php
  * @param string $filename Name of file to sanitize.
  * @param bool $beautify Whether to beautify the sanitized filename.
  * @return string Sanitized filename for use.
@@ -476,7 +476,7 @@ function sanitize_filename(string $filename, bool $beautify = true): string
     /**
      * Filters a sanitized filename.
      *
-     * @file App/Shared/Helpers/core.php
+     * @file core/Shared/Helpers/core.php
      * @param string $filename     Sanitized filename.
      * @param string $filenameRaw The filename prior to sanitization.
      */
@@ -499,7 +499,7 @@ function sanitize_filename(string $filename, bool $beautify = true): string
 /**
  * Returns an array of function names in a file.
  *
- * @file App/Shared/Helpers/core.php
+ * @file core/Shared/Helpers/core.php
  * @param string $filename The path to the file.
  * @param bool $sort If true, sort results by function name.
  */
@@ -523,7 +523,7 @@ function get_functions(string $filename, bool $sort = false): array
 /**
  * Checks a given file for any duplicated named user functions.
  *
- * @file App/Shared/Helpers/core.php
+ * @file core/Shared/Helpers/core.php
  * @param string $filename
  * @return Error|false
  */
@@ -554,7 +554,7 @@ function is_duplicate_function(string $filename): Error|false
  * Performs a check within a php script and returns any other files
  * that might have been required or included.
  *
- * @file App/Shared/Helpers/core.php
+ * @file core/Shared/Helpers/core.php
  * @param string $filename PHP script to check.
  */
 function check_includes(string $filename): array|string
@@ -608,7 +608,7 @@ function check_includes(string $filename): array|string
 /**
  * Performs a syntax and error check of a given PHP script.
  *
- * @file App/Shared/Helpers/core.php
+ * @file core/Shared/Helpers/core.php
  * @param string $filename PHP script/file to check.
  * @param bool $checkIncludes If set to true, will check if other files have been included.
  * @return Error
@@ -658,7 +658,7 @@ function check_syntax(string $filename, bool $checkIncludes = true): Error
 /**
  * Removes directory recursively along with any files.
  *
- * @file App/Shared/Helpers/core.php
+ * @file core/Shared/Helpers/core.php
  * @param string $dir Directory that should be removed.
  */
 function rmdir__(string $dir): void
@@ -682,7 +682,7 @@ function rmdir__(string $dir): void
  * Prints a list of timezones which includes
  * current time.
  *
- * @file App/Shared/Helpers/core.php
+ * @file core/Shared/Helpers/core.php
  * @return array Timezone list.
  * @throws DateInvalidTimeZoneException
  * @throws DateMalformedStringException
@@ -690,15 +690,15 @@ function rmdir__(string $dir): void
 function generate_timezone_list(): array
 {
     static $regions = array(
-            \DateTimeZone::AFRICA,
-            \DateTimeZone::AMERICA,
-            \DateTimeZone::ANTARCTICA,
-            \DateTimeZone::ASIA,
-            \DateTimeZone::ATLANTIC,
-            \DateTimeZone::AUSTRALIA,
-            \DateTimeZone::EUROPE,
-            \DateTimeZone::INDIAN,
-            \DateTimeZone::PACIFIC
+        \DateTimeZone::AFRICA,
+        \DateTimeZone::AMERICA,
+        \DateTimeZone::ANTARCTICA,
+        \DateTimeZone::ASIA,
+        \DateTimeZone::ATLANTIC,
+        \DateTimeZone::AUSTRALIA,
+        \DateTimeZone::EUROPE,
+        \DateTimeZone::INDIAN,
+        \DateTimeZone::PACIFIC
     );
 
     $timezones = [];
@@ -735,7 +735,7 @@ function generate_timezone_list(): array
 /**
  * Get age by birthdate.
  *
- * @file App/Shared/Helpers/core.php
+ * @file core/Shared/Helpers/core.php
  * @param string $birthdate User's birthdate.
  * @return string|int
  */
@@ -753,7 +753,7 @@ function get_age(string $birthdate = '0000-00-00'): string|int
 /**
  * Generates a unique key.
  *
- * @file App/Shared/Helpers/core.php
+ * @file core/Shared/Helpers/core.php
  * @param int $length
  * @return string
  */
@@ -774,7 +774,9 @@ function generate_unique_key(int $length = 6): string
  * @access private
  * @param int $length
  * @return string
- * @throws TypeException
+ * @throws ContainerExceptionInterface
+ * @throws NotFoundExceptionInterface
+ * @throws ReflectionException
  */
 function generate_site_key(int $length = 6): string
 {
@@ -785,7 +787,7 @@ function generate_site_key(int $length = 6): string
 /**
  * Converts date to GMT format.
  *
- * @file App/Shared/Helpers/core.php
+ * @file core/Shared/Helpers/core.php
  * @param string $string The date to be converted.
  * @param string $format The format string for the converted date.
  * @return string
@@ -799,7 +801,7 @@ function convert_date_to_gmt(string $string = 'now', string $format = 'Y-m-d H:i
 /**
  * Converts seconds to time format.
  *
- * @file App/Shared/Helpers/core.php
+ * @file core/Shared/Helpers/core.php
  * @param int $seconds
  * @return string
  */
@@ -839,9 +841,9 @@ function convert_seconds_to_time(int $seconds): string
  *
  * Looks for {content} into the template and replaces it with the message.
  *
- * Uses `email_template` filter hook.
+ * Uses `email.template` filter hook.
  *
- * @file App/Shared/Helpers/core.php
+ * @file core/Shared/Helpers/core.php
  * @param string $body The message to templatize.
  * @return string $email The email surrounded by template.
  * @throws Exception
@@ -858,9 +860,9 @@ function set_email_template(string $body): string
 /**
  * Replace variables in the template.
  *
- * Uses `email_template_tags` filter hook.
+ * Uses `email.template.tags` filter hook.
  *
- * @file App/Shared/Helpers/core.php
+ * @file core/Shared/Helpers/core.php
  * @param string $template Template with variables.
  * @return string Template with variables replaced.
  * @throws Exception
@@ -869,14 +871,13 @@ function set_email_template(string $body): string
  */
 function replace_template_vars(string $template): string
 {
-    $option = option();
     $varArray = [
-        'site_name' => $option->read(optionKey: 'sitename'),
+        'site_name' => get_option(key: 'sitename'),
         'site_url' => site_url(),
-        'site_description' => $option->read(optionKey: 'site_description'),
-        'admin_email' => $option->read(optionKey: 'admin_email'),
-        'date_format' => $option->read(optionKey: 'date_format'),
-        'time_format' => $option->read(optionKey: 'time_format')
+        'site_description' => get_option(key: 'site_description'),
+        'admin_email' => get_option(key: 'admin_email'),
+        'date_format' => get_option(key: 'date_format'),
+        'time_format' => get_option(key: 'time_format')
     ];
 
     $toReplace = __observer()->filter->applyFilter('email.template.tags', $varArray);
@@ -891,16 +892,14 @@ function replace_template_vars(string $template): string
 /**
  * Process the HTML version of the text.
  *
- * Uses `email_template_body` filter hook.
+ * Uses `email.template.body` filter hook.
  *
- * @file App/Shared/Helpers/core.php
+ * @file core/Shared/Helpers/core.php
  * @param string $text
  * @param string $title
  * @return string
- * @throws ContainerExceptionInterface
  * @throws Exception
  * @throws InvalidArgumentException
- * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  */
 function process_email_html(string $text, string $title): string
@@ -921,7 +920,7 @@ function process_email_html(string $text, string $title): string
 /**
  * Retrieve the domain name.
  *
- * @file App/Shared/Helpers/core.php
+ * @file core/Shared/Helpers/core.php
  * @return string
  */
 function get_domain_name(): string
@@ -937,7 +936,7 @@ function get_domain_name(): string
 /**
  * Enqueues stylesheets.
  *
- * Uses `default_css_pipeline`, `plugin_css_pipeline` and `theme_css_pipeline`
+ * Uses `default.css.pipeline`, `plugin.css.pipeline` and `theme.css.pipeline`
  * filter hooks.
  *
  * Example Usage:
@@ -946,7 +945,7 @@ function get_domain_name(): string
  *      cms_enqueue_css('plugin', ['fontawesome','select2-css'], false, Plugin::basename( dirname(__FILE__) ))
  *      cms_enqueue_css('theme', 'theme-slug/assets/css/style.css')
  *
- * @file App/Shared/Helpers/core.php
+ * @file core/Shared/Helpers/core.php
  * @param string $config Set whether to use `default` config or `plugin` config.
  * @param string|array $asset Relative path or URL to stylesheet(s) to enqueue.
  * @param bool|string $minify Enable css assets pipeline (concatenation and minification).
@@ -996,7 +995,7 @@ function cms_enqueue_css(
 /**
  * Enqueues javascript.
  *
- * Uses `default_js_pipeline`, `plugin_js_pipeline` and `theme_js_pipeline`
+ * Uses `default.js.pipeline`, `plugin.js.pipeline` and `theme.js.pipeline`
  * filter hooks.
  *
  * Example Usage:
@@ -1005,7 +1004,7 @@ function cms_enqueue_css(
  *      cms_enqueue_js('plugin', 'select2-js', false, Plugin::basename( dirname(__FILE__) ))
  *      cms_enqueue_js('theme', 'theme-slug/assets/js/config.js')
  *
- * @file App/Shared/Helpers/core.php
+ * @file core/Shared/Helpers/core.php
  * @param string $config Set whether to use `default`, `plugin`  or `theme` config.
  * @param string|array $asset Relative path or URL to javascript(s) to enqueue.
  * @param bool|string $minify Enable js assets pipeline (concatenation and minification).
@@ -1055,7 +1054,7 @@ function cms_enqueue_js(
 /**
  * Generates a random username.
  *
- * @file App/Shared/Helpers/core.php
+ * @file core/Shared/Helpers/core.php
  * @param int $length
  * @return string
  */
@@ -1074,7 +1073,7 @@ function generate_random_username(int $length = 6): string
  *
  * Uses `random_lib` library to create passwords with far less predictability.
  *
- * @file App/Shared/Helpers/core.php
+ * @file core/Shared/Helpers/core.php
  * @param int $length Optional. The length of password to generate. Default 12.
  * @param bool $specialChars Optional. Whether to include standard special characters.
  *                                Default true.
@@ -1103,7 +1102,7 @@ function generate_random_password(
     /**
      * Filters the system generated password.
      *
-     * @file App/Shared/Helpers/core.php
+     * @file core/Shared/Helpers/core.php
      * @param string $password          The generated password.
      * @param int    $length            The length of password to generate.
      * @param bool   $specialChars      Whether to include standard special characters.
@@ -1121,7 +1120,7 @@ function generate_random_password(
 /**
  * Get the current screen.
  *
- * @file App/Shared/Helpers/core.php
+ * @file core/Shared/Helpers/core.php
  * @return string|null Current screen or null if screen is not defined.
  * @throws ReflectionException
  * @throws ContainerExceptionInterface
@@ -1145,7 +1144,7 @@ function get_current_screen(): ?string
  *
  * @access private
  *
- * @file App/Shared/Helpers/core.php
+ * @file core/Shared/Helpers/core.php
  * @param string $pathToImage Path to original image.
  * @param string $pathToOptimized Path to where optimized image should be saved.
  * @return void Optimized image.
@@ -1165,11 +1164,11 @@ function _cms_image_optimizer(string $pathToImage, string $pathToOptimized): voi
  *
  *      sort_list($content,'content_id','ASC', false);
  *
- * @file App/Shared/Helpers/core.php
+ * @file core/Shared/Helpers/core.php
  * @param array $objects        Array of objects to sort.
  * @param array|string $orderby Name of field or array of fields to filter by.
  * @param string $order         (ASC|DESC)
- * @param bool $preserveKeys   Whether to preserve keys.
+ * @param bool $preserveKeys    Whether to preserve keys.
  * @return array Returns a sorted array.
  */
 function sort_list(
@@ -1189,7 +1188,7 @@ function sort_list(
 /**
  * Site path.
  *
- * @file App/Shared/Helpers/core.php
+ * @file core/Shared/Helpers/core.php
  * @param string|null $path
  * @return string
  * @throws ContainerExceptionInterface
@@ -1206,7 +1205,7 @@ function site_path(?string $path = null): string
 /**
  * Encrypt function.
  *
- * @file App/Shared/Helpers/core.php
+ * @file core/Shared/Helpers/core.php
  * @param string $string
  * @return string
  * @throws BadFormatException
@@ -1215,13 +1214,13 @@ function site_path(?string $path = null): string
  */
 function encrypt(string $string): string
 {
-    return Crypto::encrypt($string, Key::loadFromAsciiSafeString(config(key: 'cms.encryption_key')));
+    return Crypto::encrypt($string, Key::loadFromAsciiSafeString(config()->string(key: 'app.crypto_key')));
 }
 
 /**
  * Decrypt function.
  *
- * @file App/Shared/Helpers/core.php
+ * @file core/Shared/Helpers/core.php
  * @param string $string
  * @return string
  * @throws BadFormatException
@@ -1231,13 +1230,13 @@ function encrypt(string $string): string
  */
 function decrypt(string $string): string
 {
-    return Crypto::decrypt($string, Key::loadFromAsciiSafeString(config(key: 'cms.encryption_key')));
+    return Crypto::decrypt($string, Key::loadFromAsciiSafeString(config()->string(key: 'app.crypto_key')));
 }
 
 /**
  * Serializes data if necessary.
  *
- * @file App/Shared/Helpers/core.php
+ * @file core/Shared/Helpers/core.php
  * @param string $data Data to be serialized.
  * @return mixed Serialized data or original string.
  * @throws TypeException
@@ -1260,8 +1259,8 @@ function maybe_serialize(mixed $data): mixed
 /**
  * Unserializes data if necessary.
  *
- * @file App/Shared/Helpers/core.php
- * @param mixed $data Data that should be unserialzed.
+ * @file core/Shared/Helpers/core.php
+ * @param mixed $data Data that should be unserialized.
  * @return mixed Unserialized data or original input.
  */
 function maybe_unserialize(mixed $data): mixed
@@ -1279,7 +1278,7 @@ function maybe_unserialize(mixed $data): mixed
 /**
  * Checks if data is serialized.
  *
- * @file App/Shared/Helpers/core.php
+ * @file core/Shared/Helpers/core.php
  * @param object|array|string $data
  * @return bool
  */
@@ -1291,7 +1290,7 @@ function is_serialized(object|array|string $data): bool
 /**
  * Sets a registry parameter.
  *
- * @file App/Shared/Helpers/core.php
+ * @file core/Shared/Helpers/core.php
  * @param string $key
  * @param mixed $value
  * @return void
@@ -1305,7 +1304,7 @@ function set_registry_entry(string $key, mixed $value): void
 /**
  * Finds an entry of the registry by its identifier and returns it.
  *
- * @file App/Shared/Helpers/core.php
+ * @file core/Shared/Helpers/core.php
  * @param string $key
  * @return mixed
  * @throws ContainerExceptionInterface
@@ -1344,7 +1343,7 @@ function current_screen(string $key, string $value): string
  */
 function is_multisite(): bool
 {
-    return config(key: 'cms.multisite') === true;
+    return config()->boolean(key: 'cms.multisite');
 }
 
 /**
@@ -1354,13 +1353,13 @@ function time_ago(string $original): string
 {
     // array of time period chunks
     $chunks = [
-            [60 * 60 * 24 * (date('z', mktime(0, 0, 0, 12, 31, (int) date('Y'))) + 1), 'year'],
-            [60 * 60 * 24 * date('t'), 'month'],
-            [60 * 60 * 24 * 7, 'week'],
-            [60 * 60 * 24, 'day'],
-            [60 * 60, 'hour'],
-            [60, 'min'],
-            [1, 'sec'],
+        [60 * 60 * 24 * (date('z', mktime(0, 0, 0, 12, 31, (int) date('Y'))) + 1), 'year'],
+        [60 * 60 * 24 * date('t'), 'month'],
+        [60 * 60 * 24 * 7, 'week'],
+        [60 * 60 * 24, 'day'],
+        [60 * 60, 'hour'],
+        [60, 'min'],
+        [1, 'sec'],
     ];
 
     $today = time(); /* Current unix time  */
@@ -1384,7 +1383,7 @@ function time_ago(string $original): string
         $seconds2 = $chunks[$i + 1][0];
         $name2 = $chunks[$i + 1][1];
 
-        // add second item if its greater than 0
+        // add second item if it's greater than 0
         if (($count2 = floor(($since - ($seconds * $count)) / $seconds2)) != 0) {
             $print .= ($count2 == 1) ? ', 1 ' . $name2 : " $count2 {$name2}s";
         }

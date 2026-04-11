@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Services;
 
-use App\Infrastructure\Persistence\Database;
+use Qubus\Expressive\Database;
 use Qubus\View\Renderer;
 
 use function sprintf;

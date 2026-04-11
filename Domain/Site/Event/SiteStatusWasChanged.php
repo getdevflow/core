@@ -12,30 +12,28 @@ use Codefy\Domain\Metadata;
 use Qubus\Exception\Data\TypeException;
 use Qubus\ValueObjects\StringLiteral\StringLiteral;
 
-use function Qubus\Support\Helpers\is_null__;
-
 final class SiteStatusWasChanged extends AggregateChanged
 {
-    private ?SiteId $siteId = null;
+    private SiteId $id;
 
-    private ?StringLiteral $siteStatus = null;
+    private StringLiteral $status;
 
     public static function withData(
-        SiteId $siteId,
-        StringLiteral $siteStatus
+        SiteId $id,
+        StringLiteral $status
     ): SiteStatusWasChanged|DomainEvent|AggregateChanged {
         $event = self::occur(
-            aggregateId: $siteId,
+            aggregateId: $id,
             payload: [
-                    'site_status' => $siteStatus->toNative(),
-                ],
+                'site_status' => $status->toNative(),
+            ],
             metadata: [
-                    Metadata::AGGREGATE_TYPE => 'site'
-                ],
+                Metadata::AGGREGATE_TYPE => 'site'
+            ],
         );
 
-        $event->siteId = $siteId;
-        $event->siteStatus = $siteStatus;
+        $event->id = $id;
+        $event->status = $status;
 
         return $event;
     }
@@ -45,22 +43,19 @@ final class SiteStatusWasChanged extends AggregateChanged
      */
     public function siteId(): SiteId|AggregateId
     {
-        if (is_null__($this->siteId)) {
-            $this->siteId = SiteId::fromString(siteId: $this->aggregateId()->__toString());
+        if (!isset($this->id)) {
+            $this->id = SiteId::fromString(siteId: $this->aggregateId()->__toString());
         }
 
-        return $this->siteId;
+        return $this->id;
     }
 
-    /**
-     * @throws TypeException
-     */
     public function siteStatus(): StringLiteral
     {
-        if (is_null__($this->siteStatus)) {
-            $this->siteStatus = StringLiteral::fromNative($this->payload()['site_status']);
+        if (!isset($this->status)) {
+            $this->status = StringLiteral::fromNative($this->payload()['site_status']);
         }
 
-        return $this->siteStatus;
+        return $this->status;
     }
 }

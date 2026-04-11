@@ -11,30 +11,28 @@ use Codefy\Domain\Metadata;
 use Qubus\Exception\Data\TypeException;
 use Qubus\ValueObjects\StringLiteral\StringLiteral;
 
-use function Qubus\Support\Helpers\is_null__;
-
 final class ProductBodyWasChanged extends AggregateChanged
 {
-    private ?ProductId $productId = null;
+    private ProductId $id;
 
-    private ?StringLiteral $productBody = null;
+    private StringLiteral $body;
 
     public static function withData(
-        ProductId $productId,
-        StringLiteral $productBody,
+        ProductId $id,
+        StringLiteral $body,
     ): ProductBodyWasChanged|DomainEvent|AggregateChanged {
         $event = self::occur(
-            aggregateId: $productId,
+            aggregateId: $id,
             payload: [
-                'product_body' => $productBody->toNative(),
+                'product_body' => $body->toNative(),
             ],
             metadata: [
                 Metadata::AGGREGATE_TYPE => 'product',
             ]
         );
 
-        $event->productId = $productId;
-        $event->productBody = $productBody;
+        $event->id = $id;
+        $event->body = $body;
 
         return $event;
     }
@@ -44,22 +42,19 @@ final class ProductBodyWasChanged extends AggregateChanged
      */
     public function productId(): ProductId
     {
-        if (is_null__($this->productId)) {
-            $this->productId = ProductId::fromString($this->aggregateId()->__toString());
+        if (!isset($this->id)) {
+            $this->id = ProductId::fromString($this->aggregateId()->__toString());
         }
 
-        return $this->productId;
+        return $this->id;
     }
 
-    /**
-     * @throws TypeException
-     */
     public function productBody(): StringLiteral
     {
-        if (is_null__($this->productBody)) {
-            $this->productBody = StringLiteral::fromNative($this->payload()['product_body']);
+        if (!isset($this->body)) {
+            $this->body = StringLiteral::fromNative($this->payload()['product_body']);
         }
 
-        return $this->productBody;
+        return $this->body;
     }
 }

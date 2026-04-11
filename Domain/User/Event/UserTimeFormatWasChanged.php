@@ -12,30 +12,28 @@ use Codefy\Domain\Metadata;
 use Qubus\Exception\Data\TypeException;
 use Qubus\ValueObjects\StringLiteral\StringLiteral;
 
-use function Qubus\Support\Helpers\is_null__;
-
 class UserTimeFormatWasChanged extends AggregateChanged
 {
-    private ?UserId $userId = null;
+    private UserId $id;
 
-    private ?StringLiteral $userTimeFormat = null;
+    private StringLiteral $timeFormat;
 
     public static function withData(
-        UserId $userId,
-        StringLiteral $userTimeFormat
+        UserId $id,
+        StringLiteral $timeFormat
     ): UserTimeFormatWasChanged|DomainEvent|AggregateChanged {
         $event = self::occur(
-            aggregateId: $userId,
+            aggregateId: $id,
             payload: [
-                'user_time_format' => $userTimeFormat->toNative(),
+                'user_time_format' => $timeFormat->toNative(),
             ],
             metadata: [
                 Metadata::AGGREGATE_TYPE => 'user'
             ]
         );
 
-        $event->userId = $userId;
-        $event->userTimeFormat = $userTimeFormat;
+        $event->id = $id;
+        $event->timeFormat = $timeFormat;
 
         return $event;
     }
@@ -45,22 +43,19 @@ class UserTimeFormatWasChanged extends AggregateChanged
      */
     public function userId(): UserId|AggregateId
     {
-        if (is_null__($this->userId)) {
-            $this->userId = UserId::fromString(userId: $this->aggregateId()->__toString());
+        if (!isset($this->id)) {
+            $this->id = UserId::fromString(userId: $this->aggregateId()->__toString());
         }
 
-        return $this->userId;
+        return $this->id;
     }
 
-    /**
-     * @throws TypeException
-     */
     public function userTimeFormat(): StringLiteral
     {
-        if (is_null__($this->userTimeFormat)) {
-            $this->userTimeFormat = StringLiteral::fromNative($this->payload()['user_time_format']);
+        if (!isset($this->timeFormat)) {
+            $this->timeFormat = StringLiteral::fromNative($this->payload()['user_time_format']);
         }
 
-        return $this->userTimeFormat;
+        return $this->timeFormat;
     }
 }

@@ -11,9 +11,9 @@ use Qubus\ValueObjects\StringLiteral\StringLiteral;
 
 final class UpdateUserPasswordCommand extends PropertyCommand
 {
-    public ?UserId $id = null;
+    public UserId $id;
 
-    public ?UserToken $token = null;
+    public UserToken $token;
 
-    public ?StringLiteral $pass = null;
+    public StringLiteral $pass;
 }

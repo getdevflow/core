@@ -7,7 +7,7 @@ namespace App\Domain\Product\Service;
 use App\Domain\Product\Event\ProductAuthorWasChanged;
 use App\Domain\Product\Event\ProductBodyWasChanged;
 use App\Domain\Product\Event\ProductFeaturedImageWasChanged;
-use App\Domain\Product\Event\ProductMetaWasChanged;
+use App\Domain\Product\Event\ProductAttributeWasChanged;
 use App\Domain\Product\Event\ProductModifiedGmtWasChanged;
 use App\Domain\Product\Event\ProductModifiedWasChanged;
 use App\Domain\Product\Event\ProductPriceWasChanged;
@@ -50,7 +50,7 @@ interface ProductProjection extends Projection
 
     public function projectWhenProductStatusWasChanged(ProductStatusWasChanged $event): void;
 
-    public function projectWhenProductMetaWasChanged(ProductMetaWasChanged $event): void;
+    public function projectWhenProductAttributeWasChanged(ProductAttributeWasChanged $event): void;
 
     public function projectWhenProductPublishedWasChanged(ProductPublishedWasChanged $event): void;
 

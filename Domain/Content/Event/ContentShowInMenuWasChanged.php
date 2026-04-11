@@ -11,30 +11,28 @@ use Codefy\Domain\Metadata;
 use Qubus\Exception\Data\TypeException;
 use Qubus\ValueObjects\Number\IntegerNumber;
 
-use function Qubus\Support\Helpers\is_null__;
-
 final class ContentShowInMenuWasChanged extends AggregateChanged
 {
-    private ?ContentId $contentId = null;
+    private ContentId $id;
 
-    private ?IntegerNumber $contentShowInMenu = null;
+    private IntegerNumber $showInMenu;
 
     public static function withData(
-        ContentId $contentId,
-        IntegerNumber $contentShowInMenu,
+        ContentId $id,
+        IntegerNumber $showInMenu,
     ): ContentShowInMenuWasChanged|DomainEvent|AggregateChanged {
         $event = self::occur(
-            aggregateId: $contentId,
+            aggregateId: $id,
             payload: [
-                'content_show_in_menu' => $contentShowInMenu->toNative(),
+                'content_show_in_menu' => $showInMenu->toNative(),
             ],
             metadata: [
                 Metadata::AGGREGATE_TYPE => 'content',
             ]
         );
 
-        $event->contentId = $contentId;
-        $event->contentShowInMenu = $contentShowInMenu;
+        $event->id = $id;
+        $event->showInMenu = $showInMenu;
 
         return $event;
     }
@@ -44,19 +42,22 @@ final class ContentShowInMenuWasChanged extends AggregateChanged
      */
     public function contentId(): ContentId
     {
-        if (is_null__($this->contentId)) {
-            $this->contentId = ContentId::fromString($this->aggregateId()->__toString());
+        if (!isset($this->id)) {
+            $this->id = ContentId::fromString($this->aggregateId()->__toString());
         }
 
-        return $this->contentId;
+        return $this->id;
     }
 
+    /**
+     * @throws TypeException
+     */
     public function contentShowInMenu(): IntegerNumber
     {
-        if (is_null__($this->contentShowInMenu)) {
-            $this->contentShowInMenu = IntegerNumber::fromNative($this->payload()['content_show_in_menu']);
+        if (!isset($this->showInMenu)) {
+            $this->showInMenu = IntegerNumber::fromNative($this->payload()['content_show_in_menu']);
         }
 
-        return $this->contentShowInMenu;
+        return $this->showInMenu;
     }
 }

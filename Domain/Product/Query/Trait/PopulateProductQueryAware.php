@@ -4,9 +4,13 @@ declare(strict_types=1);
 
 namespace App\Domain\Product\Query\Trait;
 
-use function Codefy\Framework\Helpers\config;
+use Qubus\EventDispatcher\ActionFilter\Filter;
+use Qubus\Exception\Exception;
+use ReflectionException;
+
 use function Qubus\Security\Helpers\esc_html;
 use function Qubus\Security\Helpers\purify_html;
+use function sprintf;
 
 trait PopulateProductQueryAware
 {
@@ -15,9 +19,16 @@ trait PopulateProductQueryAware
      *
      * @param array|null $data
      * @return array|null
+     * @throws Exception
+     * @throws ReflectionException
      */
     private function populate(?array $data = []): ?array
     {
+        $relativeUrl = Filter::getInstance()->applyFilter(
+            'product.relative.url',
+            sprintf('product/%s/', $data['product_slug'])
+        );
+
         return [
             'id' => esc_html(string: $data['product_id']) ?? null,
             'slug' => esc_html(string: $data['product_slug']) ?? null,
@@ -30,6 +41,7 @@ trait PopulateProductQueryAware
             'purchaseUrl' => isset($data['product_purchase_url']) ?
                     esc_html(string: (string) $data['product_purchase_url']) :
                     null,
+            'relativeUrl' => esc_html(string: $relativeUrl),
             'showInMenu' => esc_html(string: (string) $data['product_show_in_menu']) ?? null,
             'showInSearch' => esc_html(string: (string) $data['product_show_in_search']) ?? null,
             'featuredImage' => isset($data['product_featured_image']) ?

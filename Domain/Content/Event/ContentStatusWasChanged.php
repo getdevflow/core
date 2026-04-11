@@ -11,30 +11,28 @@ use Codefy\Domain\Metadata;
 use Qubus\Exception\Data\TypeException;
 use Qubus\ValueObjects\StringLiteral\StringLiteral;
 
-use function Qubus\Support\Helpers\is_null__;
-
 final class ContentStatusWasChanged extends AggregateChanged
 {
-    private ?ContentId $contentId = null;
+    private ContentId $id;
 
-    private ?StringLiteral $contentStatus = null;
+    private StringLiteral $status;
 
     public static function withData(
-        ContentId $contentId,
-        StringLiteral $contentStatus,
+        ContentId $id,
+        StringLiteral $status,
     ): ContentStatusWasChanged|DomainEvent|AggregateChanged {
         $event = self::occur(
-            aggregateId: $contentId,
+            aggregateId: $id,
             payload: [
-                'content_status' => $contentStatus->toNative(),
+                'content_status' => $status->toNative(),
             ],
             metadata: [
                 Metadata::AGGREGATE_TYPE => 'content',
             ]
         );
 
-        $event->contentId = $contentId;
-        $event->contentStatus = $contentStatus;
+        $event->id = $id;
+        $event->status = $status;
 
         return $event;
     }
@@ -44,22 +42,19 @@ final class ContentStatusWasChanged extends AggregateChanged
      */
     public function contentId(): ContentId
     {
-        if (is_null__($this->contentId)) {
-            $this->contentId = ContentId::fromString($this->aggregateId()->__toString());
+        if (!isset($this->id)) {
+            $this->id = ContentId::fromString($this->aggregateId()->__toString());
         }
 
-        return $this->contentId;
+        return $this->id;
     }
 
-    /**
-     * @throws TypeException
-     */
     public function contentStatus(): StringLiteral
     {
-        if (is_null__($this->contentStatus)) {
-            $this->contentStatus = StringLiteral::fromNative($this->payload()['content_status']);
+        if (!isset($this->status)) {
+            $this->status = StringLiteral::fromNative($this->payload()['content_status']);
         }
 
-        return $this->contentStatus;
+        return $this->status;
     }
 }

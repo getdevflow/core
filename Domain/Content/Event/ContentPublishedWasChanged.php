@@ -12,31 +12,30 @@ use DateTimeInterface;
 use Qubus\Exception\Data\TypeException;
 use Qubus\Support\DateTime\QubusDateTimeImmutable;
 
-use function Qubus\Support\Helpers\is_null__;
 use function strtotime;
 
 final class ContentPublishedWasChanged extends AggregateChanged
 {
-    private ?ContentId $contentId = null;
+    private ContentId $id;
 
-    private ?DateTimeInterface $contentPublished = null;
+    private DateTimeInterface $published;
 
     public static function withData(
-        ContentId $contentId,
-        DateTimeInterface $contentPublished,
+        ContentId $id,
+        DateTimeInterface $published,
     ): ContentPublishedWasChanged|DomainEvent|AggregateChanged {
         $event = self::occur(
-            aggregateId: $contentId,
+            aggregateId: $id,
             payload: [
-                'content_published' => (string) $contentPublished,
+                'content_published' => (string) $published,
             ],
             metadata: [
                 Metadata::AGGREGATE_TYPE => 'content',
             ]
         );
 
-        $event->contentId = $contentId;
-        $event->contentPublished = $contentPublished;
+        $event->id = $id;
+        $event->published = $published;
 
         return $event;
     }
@@ -46,21 +45,21 @@ final class ContentPublishedWasChanged extends AggregateChanged
      */
     public function contentId(): ContentId
     {
-        if (is_null__($this->contentId)) {
-            $this->contentId = ContentId::fromString($this->aggregateId()->__toString());
+        if (!isset($this->id)) {
+            $this->id = ContentId::fromString($this->aggregateId()->__toString());
         }
 
-        return $this->contentId;
+        return $this->id;
     }
 
     public function contentPublished(): DateTimeInterface
     {
-        if (is_null__($this->contentPublished)) {
-            $this->contentPublished = QubusDateTimeImmutable::parse(
+        if (!isset($this->published)) {
+            $this->published = QubusDateTimeImmutable::parse(
                 strtotime($this->payload()['content_published'])
             );
         }
 
-        return $this->contentPublished;
+        return $this->published;
     }
 }

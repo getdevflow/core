@@ -16,47 +16,49 @@ use Codefy\Domain\Metadata;
 use Codefy\Framework\Support\Password;
 use DateTimeInterface;
 use Qubus\Exception\Data\TypeException;
+use Qubus\Exception\Exception;
 use Qubus\Support\DateTime\QubusDateTimeImmutable;
 use Qubus\ValueObjects\Person\Name;
 use Qubus\ValueObjects\StringLiteral\StringLiteral;
 use Qubus\ValueObjects\Web\EmailAddress;
 use SensitiveParameter;
 
-use function Qubus\Support\Helpers\is_null__;
-
-class UserWasCreated extends AggregateChanged
+final class UserWasCreated extends AggregateChanged
 {
-    private ?UserId $id = null;
+    private UserId $id;
 
-    private ?Username $login = null;
+    private Username $login;
 
-    private ?Name $name = null;
+    private Name $name;
 
-    private ?EmailAddress $emailAddress = null;
+    private EmailAddress $email;
 
-    private ?UserToken $token = null;
+    private UserToken $token;
 
-    private ?StringLiteral $password = null;
+    private StringLiteral $password;
 
-    private ?StringLiteral $url = null;
+    private StringLiteral $url;
 
-    private ?StringLiteral $timezone = null;
+    private StringLiteral $timezone;
 
-    private ?StringLiteral $dateFormat = null;
+    private StringLiteral $dateFormat;
 
-    private ?StringLiteral $timeFormat = null;
+    private StringLiteral $timeFormat;
 
-    private ?StringLiteral $locale = null;
+    private StringLiteral $locale;
 
-    private ?DateTimeInterface $registered = null;
+    private DateTimeInterface $registered;
 
-    private ?ArrayLiteral $meta = null;
+    private ArrayLiteral $meta;
 
+    /**
+     * @throws Exception
+     */
     public static function withData(
-        UserId $userId,
-        Username $userLogin,
+        UserId $id,
+        Username $login,
         Name $name,
-        EmailAddress $emailAddress,
+        EmailAddress $email,
         #[SensitiveParameter] UserToken $token,
         #[SensitiveParameter] StringLiteral $password,
         StringLiteral $url,
@@ -68,14 +70,14 @@ class UserWasCreated extends AggregateChanged
         ?ArrayLiteral $meta = null,
     ): UserWasCreated|DomainEvent|AggregateChanged {
         $event = self::occur(
-            aggregateId: $userId,
+            aggregateId: $id,
             payload: [
-                'user_id' => $userId->toNative(),
-                'user_login' => $userLogin->toNative(),
+                'user_id' => $id->toNative(),
+                'user_login' => $login->toNative(),
                 'user_fname' => $name->getFirstName()->toNative(),
                 'user_mname' => $name->getMiddleName()->toNative(),
                 'user_lname' => $name->getLastName()->toNative(),
-                'user_email' => $emailAddress->toNative(),
+                'user_email' => $email->toNative(),
                 'user_token' => $token->toNative(),
                 'user_pass' => Password::hash($password->toNative()),
                 'user_url' => $url->toNative(),
@@ -91,10 +93,10 @@ class UserWasCreated extends AggregateChanged
             ]
         );
 
-        $event->id = $userId;
-        $event->login = $userLogin;
+        $event->id = $id;
+        $event->login = $login;
         $event->name = $name;
-        $event->emailAddress = $emailAddress;
+        $event->email = $email;
         $event->token = $token;
         $event->password = $password;
         $event->url = $url;
@@ -113,7 +115,7 @@ class UserWasCreated extends AggregateChanged
      */
     public function userId(): UserId|AggregateId
     {
-        if (is_null__($this->id)) {
+        if (!isset($this->id)) {
             $this->id = UserId::fromString(userId: $this->aggregateId()->__toString());
         }
 
@@ -125,19 +127,16 @@ class UserWasCreated extends AggregateChanged
      */
     public function userLogin(): Username
     {
-        if (is_null__($this->login)) {
+        if (!isset($this->login)) {
             $this->login = Username::fromString($this->payload()['user_login']);
         }
 
         return $this->login;
     }
 
-    /**
-     * @throws TypeException
-     */
     public function name(): Name
     {
-        if (is_null__($this->name)) {
+        if (!isset($this->name)) {
             $this->name = Name::fromNative(
                 $this->payload()['user_fname'],
                 $this->payload()['user_mname'],
@@ -150,11 +149,11 @@ class UserWasCreated extends AggregateChanged
 
     public function userEmail(): EmailAddress
     {
-        if (is_null__($this->emailAddress)) {
-            $this->emailAddress = EmailAddress::fromNative($this->payload()['user_email']);
+        if (!isset($this->email)) {
+            $this->email = EmailAddress::fromNative($this->payload()['user_email']);
         }
 
-        return $this->emailAddress;
+        return $this->email;
     }
 
     /**
@@ -162,79 +161,61 @@ class UserWasCreated extends AggregateChanged
      */
     public function userToken(): UserToken
     {
-        if (is_null__($this->token)) {
+        if (!isset($this->token)) {
             $this->token = UserToken::fromString($this->payload()['user_token']);
         }
 
         return $this->token;
     }
 
-    /**
-     * @throws TypeException
-     */
     public function userPass(): StringLiteral
     {
-        if (is_null__($this->password)) {
+        if (!isset($this->password)) {
             $this->password = StringLiteral::fromNative($this->payload()['user_pass']);
         }
 
         return $this->password;
     }
 
-    /**
-     * @throws TypeException
-     */
     public function userUrl(): StringLiteral
     {
-        if (is_null__($this->url)) {
+        if (!isset($this->url)) {
             $this->url = StringLiteral::fromNative($this->payload()['user_url']);
         }
 
         return $this->url;
     }
 
-    /**
-     * @throws TypeException
-     */
     public function userTimezone(): StringLiteral
     {
-        if (is_null__($this->timezone)) {
+        if (!isset($this->timezone)) {
             $this->timezone = StringLiteral::fromNative($this->payload()['user_timezone']);
         }
 
         return $this->timezone;
     }
 
-    /**
-     * @throws TypeException
-     */
     public function userDateFormat(): StringLiteral
     {
-        if (is_null__($this->dateFormat)) {
+        if (!isset($this->dateFormat)) {
             $this->dateFormat = StringLiteral::fromNative($this->payload()['user_date_format']);
         }
 
         return $this->dateFormat;
     }
 
-    /**
-     * @throws TypeException
-     */
     public function userTimeFormat(): StringLiteral
     {
-        if (is_null__($this->timeFormat)) {
+        if (!isset($this->timeFormat)) {
             $this->timeFormat = StringLiteral::fromNative($this->payload()['user_time_format']);
         }
 
         return $this->timeFormat;
     }
 
-    /**
-     * @throws TypeException
-     */
     public function userLocale(): StringLiteral
     {
-        if (is_null__($this->locale)) {
+        if (!isset($this->locale)) {
             $this->locale = StringLiteral::fromNative($this->payload()['user_locale']);
         }
 
@@ -243,21 +224,18 @@ class UserWasCreated extends AggregateChanged
 
     public function userRegistered(): DateTimeInterface
     {
-        if (is_null__($this->registered)) {
+        if (!isset($this->registered)) {
             $this->registered = QubusDateTimeImmutable::createFromInterface(
-                (new DateTime($this->payload()['user_registered']))->getDateTime()
+                new DateTime($this->payload()['user_registered'])->getDateTime()
             );
         }
 
         return $this->registered;
     }
 
-    /**
-     * @throws TypeException
-     */
     public function usermeta(): ArrayLiteral
     {
-        if (is_null__($this->meta)) {
+        if (!isset($this->meta)) {
             $this->meta = ArrayLiteral::fromNative($this->payload()['meta']);
         }
 

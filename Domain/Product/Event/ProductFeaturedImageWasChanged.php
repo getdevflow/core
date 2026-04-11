@@ -11,30 +11,28 @@ use Codefy\Domain\Metadata;
 use Qubus\Exception\Data\TypeException;
 use Qubus\ValueObjects\StringLiteral\StringLiteral;
 
-use function Qubus\Support\Helpers\is_null__;
-
 final class ProductFeaturedImageWasChanged extends AggregateChanged
 {
-    private ?ProductId $productId = null;
+    private ProductId $id;
 
-    private ?StringLiteral $productFeaturedImage = null;
+    private StringLiteral $featuredImage;
 
     public static function withData(
-        ProductId $productId,
-        StringLiteral $productFeaturedImage,
+        ProductId $id,
+        StringLiteral $featuredImage,
     ): ProductFeaturedImageWasChanged|DomainEvent|AggregateChanged {
         $event = self::occur(
-            aggregateId: $productId,
+            aggregateId: $id,
             payload: [
-                'product_featured_image' => $productFeaturedImage->toNative(),
+                'product_featured_image' => $featuredImage->toNative(),
             ],
             metadata: [
                 Metadata::AGGREGATE_TYPE => 'product',
             ]
         );
 
-        $event->productId = $productId;
-        $event->productFeaturedImage = $productFeaturedImage;
+        $event->id = $id;
+        $event->featuredImage = $featuredImage;
 
         return $event;
     }
@@ -44,22 +42,19 @@ final class ProductFeaturedImageWasChanged extends AggregateChanged
      */
     public function productId(): ProductId
     {
-        if (is_null__($this->productId)) {
-            $this->productId = ProductId::fromString($this->aggregateId()->__toString());
+        if (!isset($this->id)) {
+            $this->id = ProductId::fromString($this->aggregateId()->__toString());
         }
 
-        return $this->productId;
+        return $this->id;
     }
 
-    /**
-     * @throws TypeException
-     */
     public function productFeaturedImage(): StringLiteral
     {
-        if (is_null__($this->productFeaturedImage)) {
-            $this->productFeaturedImage = StringLiteral::fromNative($this->payload()['product_featured_image']);
+        if (!isset($this->featuredImage)) {
+            $this->featuredImage = StringLiteral::fromNative($this->payload()['product_featured_image']);
         }
 
-        return $this->productFeaturedImage;
+        return $this->featuredImage;
     }
 }

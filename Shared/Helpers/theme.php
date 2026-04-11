@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Shared\Helpers;
 
 use App\Application\Devflow;
-use App\Infrastructure\Persistence\Database;
+use Qubus\Expressive\Database;
 use App\Infrastructure\Services\Options;
 use App\Shared\Services\Items;
 use App\Shared\Services\PhpFileParser;
@@ -41,20 +41,17 @@ use function sprintf;
 /**
  * Retrieve name of the current theme.
  *
- * @file App/Shared/Helpers/theme.php
+ * @file core/Shared/Helpers/theme.php
  * @return string Theme name.
- * @throws ContainerExceptionInterface
- * @throws NotFoundExceptionInterface
  * @throws InvalidArgumentException
  * @throws Exception
  * @throws ReflectionException
  */
 function get_theme(): string
 {
-    $option = option();
 
-    if ($option->exists(optionKey: 'site_theme')) {
-        $siteTheme = $option->read(optionKey: 'site_theme');
+    if (option()->exists(optionKey: 'site_theme')) {
+        $siteTheme = get_option(key: 'site_theme');
     } else {
         $siteTheme = '';
     }
@@ -70,10 +67,8 @@ function get_theme(): string
  * Retrieve active theme's name.
  *
  * @return mixed|string
- * @throws ContainerExceptionInterface
  * @throws Exception
  * @throws InvalidArgumentException
- * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  * @throws TypeException
  */
@@ -91,7 +86,7 @@ function theme_name(): mixed
 /**
  * Returns full base url of the themes' directory.
  *
- * @file App/Shared/Helpers/theme.php
+ * @file core/Shared/Helpers/theme.php
  * @param string $path  Optional. Extra path appended to the end of the URL, including
  *                      the relative directory if $theme is supplied. Default empty.
  * @param string $theme Optional. A full path to a file inside a theme.
@@ -102,8 +97,8 @@ function theme_name(): mixed
  */
 function theme_url(string $path = '', string $theme = ''): string
 {
-    $path = normalize_path($path ?? '');
-    $theme = normalize_path($theme ?? '');
+    $path = normalize_path($path);
+    $theme = normalize_path($theme);
 
     $themeUrl = site_url('themes/');
 
@@ -135,13 +130,11 @@ function theme_url(string $path = '', string $theme = ''): string
 /**
  * Returns theme directory URI.
  *
- * @file App/Shared/Helpers/theme.php
- * @uses \Qubus\EventDispatcher\ActionFilter\__observer()->filter->applyFilter() Calls 'theme_directory_uri' filter.
+ * @file core/Shared/Helpers/theme.php
+ * @uses \Qubus\EventDispatcher\ActionFilter\Filter::applyFilter() Calls 'theme_directory_uri' filter.
  * @return string Devflow theme directory uri.
- * @throws ContainerExceptionInterface
  * @throws Exception
  * @throws InvalidArgumentException
- * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  */
 function theme_directory_uri(): string
@@ -159,13 +152,11 @@ function theme_directory_uri(): string
 /**
  * Returns javascript directory uri.
  *
- * @file App/Shared/Helpers/theme.php
- * @uses \Qubus\EventDispatcher\ActionFilter\__observer()->filter->applyFilter() Calls 'javascript_directory_uri' filter.
+ * @file core/Shared/Helpers/theme.php
+ * @uses \Qubus\EventDispatcher\ActionFilter\Filter::applyFilter() Calls 'javascript_directory_uri' filter.
  * @return string Devflow javascript url.
- * @throws ContainerExceptionInterface
  * @throws Exception
  * @throws InvalidArgumentException
- * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  */
 function javascript_directory_uri(): string
@@ -222,13 +213,11 @@ function theme_root(?string $filename = ''): string
 /**
  * Retrieve less directory uri.
  *
- * @file App/Shared/Helpers/theme.php
- * @uses \Qubus\EventDispatcher\ActionFilter\__observer()->filter->applyFilter() Calls 'less_directory_uri' filter.
+ * @file core/Shared/Helpers/theme.php
+ * @uses \Qubus\EventDispatcher\ActionFilter\Filter::applyFilter() Calls 'less_directory_uri' filter.
  * @return string Devflow less url.
- * @throws ContainerExceptionInterface
  * @throws Exception
  * @throws InvalidArgumentException
- * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  */
 function less_directory_uri(): string
@@ -246,10 +235,8 @@ function less_directory_uri(): string
  * Returns the base directory for theme stylesheet.
  *
  * @return string
- * @throws ContainerExceptionInterface
  * @throws Exception
  * @throws InvalidArgumentException
- * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  * @throws TypeException
  */
@@ -271,13 +258,11 @@ function css_directory(): string
 /**
  * Return css directory uri.
  *
- * @file App/Shared/Helpers/theme.php
- * @uses \Qubus\EventDispatcher\ActionFilter\__observer()->filter->applyFilter() Calls 'css_directory_uri' filter.
+ * @file core/Shared/Helpers/theme.php
+ * @uses \Qubus\EventDispatcher\ActionFilter\Filter::applyFilter() Calls 'css_directory_uri' filter.
  * @return string Devflow css url.
- * @throws ContainerExceptionInterface
  * @throws Exception
  * @throws InvalidArgumentException
- * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  */
 function css_directory_uri(): string
@@ -294,13 +279,11 @@ function css_directory_uri(): string
 /**
  * Retrieve image directory uri.
  *
- * @file App/Shared/Helpers/theme.php
- * @uses \Qubus\EventDispatcher\ActionFilter\__observer()->filter->applyFilter() Calls 'image_directory_uri' filter.
+ * @file core/Shared/Helpers/theme.php
+ * @uses \Qubus\EventDispatcher\ActionFilter\Filter::applyFilter() Calls 'image_directory_uri' filter.
  * @return string Devflow image url.
- * @throws ContainerExceptionInterface
  * @throws Exception
  * @throws InvalidArgumentException
- * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  */
 function image_directory_uri(): string
@@ -317,7 +300,7 @@ function image_directory_uri(): string
 /**
  * Retrieves metadata about a theme.
  *
- * @file App/Shared/Helpers/theme.php
+ * @file core/Shared/Helpers/theme.php
  * @access private
  * @param string $themesDir
  * @return array
@@ -346,17 +329,15 @@ function theme_info(string $themesDir = ''): array
 /**
  * Activates a specific theme by namespace.
  *
- * @file App/Shared/Helpers/theme.php
+ * @file core/Shared/Helpers/theme.php
  * @param string $theme ID of the theme to activate
- * @throws ContainerExceptionInterface
  * @throws InvalidArgumentException
- * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  */
 function activate_theme(string $theme): void
 {
     try {
-        option()->update(optionKey: 'site_theme', newvalue: $theme);
+        update_option(key: 'site_theme', value: $theme);
     } catch (PDOException | \Exception $ex) {
         FileLoggerFactory::getLogger()->error(
             sprintf(
@@ -373,14 +354,14 @@ function activate_theme(string $theme): void
 /**
  * Deactivates an active theme.
  *
- * @file App/Shared/Helpers/theme.php
+ * @file core/Shared/Helpers/theme.php
  * @return void
  * @throws ReflectionException
  */
 function deactivate_theme(): void
 {
     try {
-        option()->delete(name: 'site_theme');
+        delete_option(key: 'site_theme');
     } catch (PDOException | \Exception $ex) {
         FileLoggerFactory::getLogger()->error(
             sprintf(
@@ -399,10 +380,8 @@ function deactivate_theme(): void
  *
  * @param string $theme
  * @return bool
- * @throws ContainerExceptionInterface
  * @throws Exception
  * @throws InvalidArgumentException
- * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  */
 function is_theme_active(string $theme = ''): bool
@@ -410,14 +389,7 @@ function is_theme_active(string $theme = ''): bool
     if ('' === $theme) {
         return false;
     }
-
-    $option = option();
-
-    if ($option->exists(optionKey: 'site_theme') && $option->read(optionKey: 'site_theme') === $theme) {
-        return true;
-    }
-
-    return false;
+    return option()->exists(optionKey: 'site_theme') && get_option(key: 'site_theme') === $theme;
 }
 
 /**
@@ -430,7 +402,7 @@ function is_theme_active(string $theme = ''): bool
  */
 function load_active_theme(): void
 {
-    $activeTheme = option()->read('site_theme');
+    $activeTheme = get_option(key: 'site_theme');
 
     if ('' !== $activeTheme && !is_null__($activeTheme) && !is_false__($activeTheme)) {
         if (!class_exists($activeTheme)) {

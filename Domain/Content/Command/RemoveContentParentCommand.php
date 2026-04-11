@@ -9,7 +9,7 @@ use Codefy\CommandBus\PropertyCommand;
 
 class RemoveContentParentCommand extends PropertyCommand
 {
-    public ?ContentId $contentId = null;
+    public ContentId $id;
 
-    public ?ContentId $contentParent = null;
+    public ContentId $parent;
 }

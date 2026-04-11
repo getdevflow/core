@@ -6,9 +6,8 @@ namespace App\Shared\Helpers;
 
 use App\Application\Devflow;
 use App\Domain\User\Model\User;
-use App\Infrastructure\Persistence\Database;
+use Qubus\Expressive\Database;
 use App\Infrastructure\Services\NativePhpCookies;
-use App\Shared\Services\Registry;
 use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
 use Codefy\Framework\Auth\Rbac\Rbac;
 use Codefy\Framework\Factory\FileLoggerFactory;
@@ -25,6 +24,7 @@ use Qubus\Http\ServerRequest;
 use Qubus\Http\Session\SessionException;
 use ReflectionException;
 
+use function Codefy\Framework\Helpers\app;
 use function Codefy\Framework\Helpers\config;
 use function Codefy\Framework\Helpers\storage_path;
 use function file_exists;
@@ -41,7 +41,7 @@ use function time;
 use function unlink;
 
 /**
- * @file App/Shared/Helpers/auth.php
+ * @file core/Shared/Helpers/auth.php
  * @return array
  * @throws ContainerExceptionInterface
  * @throws Exception
@@ -57,7 +57,7 @@ function get_roles(): array
     $result = [];
     foreach ((array) $user->role as $roleName) {
         /** @var Rbac $rbac */
-        $rbac = Registry::getInstance()->get('rbac');
+        $rbac = app(name: Rbac::class);
         if ($role = $rbac->getRole($roleName)) {
             $result[$roleName] = $role;
         }
@@ -68,7 +68,7 @@ function get_roles(): array
 /**
  * Checks if current user has specified permission or not.
  *
- * @file App/Shared/Helpers/auth.php
+ * @file core/Shared/Helpers/auth.php
  * @param string $perm Permission to check for.
  * @param array $ruleParams (Optional) Other parameters to use for checking
  *                          based on a rule.
@@ -96,7 +96,7 @@ function current_user_can(string $perm, array $ruleParams = []): bool
 /**
  * Checks if a visitor is logged in or not.
  *
- * @file App/Shared/Helpers/auth.php
+ * @file core/Shared/Helpers/auth.php
  * @return bool
  * @throws ContainerExceptionInterface
  * @throws Exception
@@ -112,14 +112,14 @@ function is_user_logged_in(): bool
 
     $cookies = NativePhpCookies::factory();
 
-    $user = get_user_by('token', cms_get_current_user()->token);
+    $user = get_user_by(field: 'token', value: cms_get_current_user()->token);
     return false !== $user && $cookies->verifySecureCookie(key: 'USERCOOKIEID');
 }
 
 /**
  * Checks if logged-in user can access menu, tab, or screen.
  *
- * @file App/Shared/Helpers/auth.php
+ * @file core/Shared/Helpers/auth.php
  * @param string $perm Permission to check for.
  * @return string HTML style.
  * @throws CommandPropertyNotFoundException
@@ -143,7 +143,7 @@ function ae(string $perm): string
 /**
  * Logs a user in after the login information has checked out.
  *
- * @file App/Shared/Helpers/auth.php
+ * @file core/Shared/Helpers/auth.php
  * @param string $login User's username or email address.
  * @param string $password User's password.
  * @param string $rememberme Whether to remember the user.
@@ -178,13 +178,13 @@ function cms_authenticate(string $login, string $password, string $rememberme): 
                 $login
             ),
         );
-        return redirect($request->getServerParams()['HTTP_REFERER']);
+        return redirect($request->getHeaderLine(name: 'Referer'));
     }
 
     /**
      * Filters the authentication cookie.
      *
-     * @file App/Shared/Helpers/auth.php
+     * @file core/Shared/Helpers/auth.php
      * @param array $user User data array.
      * @param string $rememberme Whether to remember the user.
      */
@@ -211,7 +211,7 @@ function cms_authenticate(string $login, string $password, string $rememberme): 
 /**
  * Checks a user's login information.
  *
- * @file App/Shared/Helpers/auth.php
+ * @file core/Shared/Helpers/auth.php
  * @param string $login User's username or email address.
  * @param string $password User's password.
  * @param string $rememberme Whether to remember the user.
@@ -227,7 +227,7 @@ function cms_authenticate_user(string $login, string $password, string $remember
 {
     $request = new ServerRequest();
 
-    if (empty($login) || empty($password)) {
+    if ($login === '' || $password === '') {
         if (empty($login)) {
             Devflow::$PHP->flash->error(
                 t__(
@@ -235,17 +235,17 @@ function cms_authenticate_user(string $login, string $password, string $remember
                     domain: 'devflow'
                 ),
             );
-            return redirect($request->getServerParams()['HTTP_REFERER']);
+            return redirect($request->getHeaderLine(name: 'Referer'));
         }
 
-        if (empty($password)) {
+        if ($password === '') {
             Devflow::$PHP->flash->error(
                 t__(
                     msgid: '<strong>ERROR</strong>: The password field is empty.',
                     domain: 'devflow'
                 ),
             );
-            return redirect($request->getServerParams()['HTTP_REFERER']);
+            return redirect($request->getHeaderLine(name: 'Referer'));
         }
     }
 
@@ -259,7 +259,7 @@ function cms_authenticate_user(string $login, string $password, string $remember
                     domain: 'devflow'
                 ),
             );
-            return redirect($request->getServerParams()['HTTP_REFERER']);
+            return redirect($request->getHeaderLine(name: 'Referer'));
         }
     } else {
         $user = get_user_by('login', $login);
@@ -271,7 +271,7 @@ function cms_authenticate_user(string $login, string $password, string $remember
                     domain: 'devflow'
                 ),
             );
-            return redirect($request->getServerParams()['HTTP_REFERER']);
+            return redirect($request->getHeaderLine(name: 'Referer'));
         }
     }
 
@@ -282,13 +282,13 @@ function cms_authenticate_user(string $login, string $password, string $remember
                 domain: 'devflow'
             ),
         );
-        return redirect($request->getServerParams()['HTTP_REFERER']);
+        return redirect($request->getHeaderLine(name: 'Referer'));
     }
 
     /**
      * Filters log in details.
      *
-     * @file App/Shared/Helpers/auth.php
+     * @file core/Shared/Helpers/auth.php
      * @param string $login User's username or email address.
      * @param string $password User's password.
      * @param string $rememberme Whether to remember the user.
@@ -299,24 +299,22 @@ function cms_authenticate_user(string $login, string $password, string $remember
 /**
  * Sets auth cookie.
  *
- * @file App/Shared/Helpers/auth.php
+ * @file core/Shared/Helpers/auth.php
  * @param array $user User data array.
  * @param string $rememberme Should user be remembered for a length of time?
- * @throws ContainerExceptionInterface
  * @throws Exception
  * @throws InvalidArgumentException
- * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  */
 function cms_set_auth_cookie(array $user, string $rememberme = ''): void
 {
     $cookies = NativePhpCookies::factory();
 
-    if (isset($rememberme)) {
+    if ($rememberme === 'yes') {
         /**
          * Ensure the browser will continue to send the cookie until it expires.
          *
-         * @file App/Shared/Helpers/auth.php
+         * @file core/Shared/Helpers/auth.php
          */
         $expire = __observer()->filter->applyFilter(
             'auth.cookie.expiration',
@@ -326,7 +324,7 @@ function cms_set_auth_cookie(array $user, string $rememberme = ''): void
         /**
          * Ensure the browser will continue to send the cookie until it expires.
          *
-         * @file App/Shared/Helpers/auth.php
+         * @file core/Shared/Helpers/auth.php
          */
         $expire = __observer()->filter->applyFilter(
             'auth.cookie.expiration',
@@ -338,14 +336,14 @@ function cms_set_auth_cookie(array $user, string $rememberme = ''): void
         'key' => 'USERCOOKIEID',
         'id' => esc_html($user['user_id']),
         'token' => esc_html($user['user_token']),
-        'remember' => (isset($rememberme) ? 'yes' : 'no'),
+        'remember' => ($rememberme == 'yes' ? 'yes' : 'no'),
         'exp' => (int) $expire + time()
     ];
 
     /**
      * Fires immediately before the secure authentication cookie is set.
      *
-     * @file App/Shared/Helpers/auth.php
+     * @file core/Shared/Helpers/auth.php
      * @param array $authCookie Authentication cookie.
      * @param int   $expire  Duration in seconds the authentication cookie should be valid.
      */
@@ -357,7 +355,7 @@ function cms_set_auth_cookie(array $user, string $rememberme = ''): void
 /**
  * Removes all cookies associated with authentication.
  *
- * @file App/Shared/Helpers/auth.php
+ * @file core/Shared/Helpers/auth.php
  * @throws ReflectionException
  * @throws Exception
  */
@@ -367,7 +365,7 @@ function cms_clear_auth_cookie(): void
     /**
      * Fires just before the authentication cookies are cleared.
      *
-     * @file App/Shared/Helpers/auth.php
+     * @file core/Shared/Helpers/auth.php
      */
     __observer()->action->doAction('clear_auth_cookie');
 
@@ -418,7 +416,7 @@ function cms_clear_auth_cookie(): void
 /**
  * Shows error messages on login form.
  *
- * @file App/Shared/Helpers/auth.php
+ * @file core/Shared/Helpers/auth.php
  */
 function login_form_show_message(): void
 {
@@ -428,7 +426,7 @@ function login_form_show_message(): void
 /**
  * Retrieves data from a secure cookie.
  *
- * @file App/Shared/Helpers/auth.php
+ * @file core/Shared/Helpers/auth.php
  * @param string $key COOKIE key.
  * @return false|array|object Cookie data or false.
  */

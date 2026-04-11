@@ -15,35 +15,35 @@ use Qubus\ValueObjects\Web\EmailAddress;
 
 final class UpdateUserCommand extends PropertyCommand
 {
-    public ?UserId $id = null;
+    public UserId $id;
 
-    public ?StringLiteral $fname = null;
+    public StringLiteral $fname;
 
-    public ?StringLiteral $mname = null;
+    public StringLiteral $mname;
 
-    public ?StringLiteral $lname = null;
+    public StringLiteral $lname;
 
-    public ?EmailAddress $email = null;
+    public EmailAddress $email;
 
-    public ?Username $login = null;
+    public Username $login;
 
-    public ?UserToken $token = null;
+    public UserToken $token;
 
-    public ?StringLiteral $pass = null;
+    public StringLiteral $url;
 
-    public ?StringLiteral $url = null;
+    public StringLiteral $bio;
 
-    public ?StringLiteral $timezone = null;
+    public StringLiteral $timezone;
 
-    public ?StringLiteral $dateFormat = null;
+    public StringLiteral $dateFormat;
 
-    public ?StringLiteral $timeFormat = null;
+    public StringLiteral $timeFormat;
 
-    public ?StringLiteral $locale = null;
+    public StringLiteral $locale;
 
-    public ?DateTimeInterface $modified = null;
+    public DateTimeInterface $modified;
 
-    public ?StringLiteral $activationKey = null;
+    public StringLiteral $activationKey;
 
-    public ?ArrayLiteral $meta = null;
+    public ArrayLiteral $attributes;
 }

@@ -10,5 +10,5 @@ use Qubus\ValueObjects\StringLiteral\StringLiteral;
 
 class FindSiteByIdQuery extends PropertyCommand implements Query
 {
-    public ?StringLiteral $siteId = null;
+    public StringLiteral $id;
 }

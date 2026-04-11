@@ -12,31 +12,30 @@ use DateTimeInterface;
 use Qubus\Exception\Data\TypeException;
 use Qubus\Support\DateTime\QubusDateTimeImmutable;
 
-use function Qubus\Support\Helpers\is_null__;
 use function strtotime;
 
 final class ContentModifiedWasChanged extends AggregateChanged
 {
-    private ?ContentId $contentId = null;
+    private ContentId $id;
 
-    private ?DateTimeInterface $contentModified = null;
+    private DateTimeInterface $modified;
 
     public static function withData(
-        ContentId $contentId,
-        DateTimeInterface $contentModified,
+        ContentId $id,
+        DateTimeInterface $modified,
     ): ContentModifiedWasChanged|DomainEvent|AggregateChanged {
         $event = self::occur(
-            aggregateId: $contentId,
+            aggregateId: $id,
             payload: [
-                'content_modified' => (string) $contentModified,
+                'content_modified' => (string) $modified,
             ],
             metadata: [
                 Metadata::AGGREGATE_TYPE => 'content',
             ]
         );
 
-        $event->contentId = $contentId;
-        $event->contentModified = $contentModified;
+        $event->id = $id;
+        $event->modified = $modified;
 
         return $event;
     }
@@ -46,21 +45,21 @@ final class ContentModifiedWasChanged extends AggregateChanged
      */
     public function contentId(): ContentId
     {
-        if (is_null__($this->contentId)) {
-            $this->contentId = ContentId::fromString($this->aggregateId()->__toString());
+        if (!isset($this->id)) {
+            $this->id = ContentId::fromString($this->aggregateId()->__toString());
         }
 
-        return $this->contentId;
+        return $this->id;
     }
 
     public function contentModified(): DateTimeInterface
     {
-        if (is_null__($this->contentModified)) {
-            $this->contentModified = QubusDateTimeImmutable::parse(
+        if (!isset($this->modified)) {
+            $this->modified = QubusDateTimeImmutable::parse(
                 strtotime($this->payload()['content_modified'])
             );
         }
 
-        return $this->contentModified;
+        return $this->modified;
     }
 }

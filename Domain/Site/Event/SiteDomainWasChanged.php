@@ -12,30 +12,28 @@ use Codefy\Domain\Metadata;
 use Qubus\Exception\Data\TypeException;
 use Qubus\ValueObjects\StringLiteral\StringLiteral;
 
-use function Qubus\Support\Helpers\is_null__;
-
 final class SiteDomainWasChanged extends AggregateChanged
 {
-    private ?SiteId $siteId = null;
+    private SiteId $id;
 
-    private ?StringLiteral $siteDomain = null;
+    private StringLiteral $domain;
 
     public static function withData(
-        SiteId $siteId,
-        StringLiteral $siteDomain
+        SiteId $id,
+        StringLiteral $domain
     ): SiteDomainWasChanged|DomainEvent|AggregateChanged {
         $event = self::occur(
-            aggregateId: $siteId,
+            aggregateId: $id,
             payload: [
-                    'site_domain' => $siteDomain->toNative(),
-                ],
+                'site_domain' => $domain->toNative(),
+            ],
             metadata: [
-                    Metadata::AGGREGATE_TYPE => 'site'
-                ],
+                Metadata::AGGREGATE_TYPE => 'site'
+            ],
         );
 
-        $event->siteId = $siteId;
-        $event->siteDomain = $siteDomain;
+        $event->id = $id;
+        $event->domain = $domain;
 
         return $event;
     }
@@ -45,22 +43,19 @@ final class SiteDomainWasChanged extends AggregateChanged
      */
     public function siteId(): SiteId|AggregateId
     {
-        if (is_null__($this->siteId)) {
-            $this->siteId = SiteId::fromString(siteId: $this->aggregateId()->__toString());
+        if (!isset($this->id)) {
+            $this->id = SiteId::fromString(siteId: $this->aggregateId()->__toString());
         }
 
-        return $this->siteId;
+        return $this->id;
     }
 
-    /**
-     * @throws TypeException
-     */
     public function siteDomain(): StringLiteral
     {
-        if (is_null__($this->siteDomain)) {
-            $this->siteDomain = StringLiteral::fromNative($this->payload()['site_domain']);
+        if (!isset($this->domain)) {
+            $this->domain = StringLiteral::fromNative($this->payload()['site_domain']);
         }
 
-        return $this->siteDomain;
+        return $this->domain;
     }
 }

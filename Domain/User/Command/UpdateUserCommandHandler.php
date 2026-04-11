@@ -4,57 +4,51 @@ declare(strict_types=1);
 
 namespace App\Domain\User\Command;
 
-use App\Domain\User\Repository\UserAggregateRepository;
-use App\Domain\User\User;
+use App\Application\Devflow;
+use App\Domain\User\Model\User;
+use App\Domain\User\Repository\UserCommandRepository;
 use Codefy\CommandBus\Command;
 use Codefy\CommandBus\CommandHandler;
-use Codefy\Domain\Aggregate\AggregateNotFoundException;
-use Exception;
-use Qubus\ValueObjects\Person\Name;
-use Qubus\ValueObjects\StringLiteral\StringLiteral;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
+use Psr\SimpleCache\InvalidArgumentException;
+use Qubus\Exception\Data\TypeException;
+use Qubus\Exception\Exception;
+use ReflectionException;
 
-use function Qubus\Support\Helpers\is_false__;
+use function App\Shared\Helpers\update_user_attribute;
+use function App\Shared\Helpers\update_usermeta;
 
 final readonly class UpdateUserCommandHandler implements CommandHandler
 {
-    public function __construct(public UserAggregateRepository $aggregateRepository)
+    public function __construct(public UserCommandRepository $repository)
     {
     }
 
     /**
-     * @throws AggregateNotFoundException
+     * @param UpdateUserCommand|Command $command
      * @throws Exception
      */
     public function handle(UpdateUserCommand|Command $command): void
     {
         /** @var User $user */
-        $user = $this->aggregateRepository->loadAggregateRoot(aggregateId: $command->id);
+        $user = Devflow::$PHP->make(name: User::class);
+        $user->id = $command->id->toNative();
+        $user->login = $command->login->toNative();
+        $user->token = $command->token->toNative();
+        $user->fname = $command->fname->toNative();
+        $user->mname = isset($command->mname) ? $command->mname->toNative() : '';
+        $user->lname = $command->lname->toNative();
+        $user->email = $command->email->toNative();
+        $user->url = $command->url->toNative();
+        $user->bio = $command->bio->toNative();
+        $user->timezone = $command->timezone->toNative();
+        $user->dateFormat = $command->dateFormat->toNative();
+        $user->timeFormat = $command->timeFormat->toNative();
+        $user->locale = $command->locale->toNative();
+        $user->activationKey = isset($command->activationKey) ? $command->activationKey->toNative() : null;
+        $user->modified = $command->modified->format('Y-m-d H:i:s');
 
-        $user->changeUserLogin($command->login);
-        $user->changeUserEmailAddress($command->email);
-        $user->changeUserName(
-            new Name(
-                firstName: $command->fname,
-                middleName: $command->mname ?? new StringLiteral(''),
-                lastName: $command->lname
-            )
-        );
-        $user->changeUserUrl($command->url);
-        $user->changeUserTimezone($command->timezone);
-        $user->changeUserDateFormat($command->dateFormat);
-        $user->changeUserTimeFormat($command->timeFormat);
-        $user->changeUserLocale($command->locale);
-        $user->changeUsermeta($command->meta);
-
-        if (is_false__($command->pass->isEmpty())) {
-            $user->changeUserPassword(password: $command->pass);
-            $user->changeUserToken($command->token);
-        }
-
-        if ($user->hasRecordedEvents()) {
-            $user->changeUserModified($command->modified);
-        }
-
-        $this->aggregateRepository->saveAggregateRoot(aggregate: $user);
+        $this->repository->update(user: $user);
     }
 }

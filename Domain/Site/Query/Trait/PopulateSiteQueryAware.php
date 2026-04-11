@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Domain\Site\Query\Trait;
 
+use Qubus\Exception\Exception;
+
 use function Qubus\Security\Helpers\esc_html;
 
 trait PopulateSiteQueryAware
@@ -13,6 +15,7 @@ trait PopulateSiteQueryAware
      *
      * @param array|null $data
      * @return array|null
+     * @throws Exception
      */
     private function populate(?array $data = []): ?array
     {

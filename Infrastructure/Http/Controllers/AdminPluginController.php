@@ -5,10 +5,9 @@ declare(strict_types=1);
 namespace App\Infrastructure\Http\Controllers;
 
 use App\Application\Devflow;
-use App\Infrastructure\Persistence\Database;
-use App\Infrastructure\Services\UserAuth;
-use Codefy\Framework\Factory\FileLoggerFactory;
+use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
 use Codefy\Framework\Http\BaseController;
+use Codefy\QueryBus\UnresolvableQueryHandlerException;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -17,31 +16,19 @@ use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
 use Qubus\Http\ServerRequest;
 use Qubus\Http\Session\SessionException;
-use Qubus\Http\Session\SessionService;
-use Qubus\Routing\Router;
-use Qubus\View\Renderer;
 use ReflectionException;
 
 use function App\Shared\Helpers\activate_plugin;
 use function App\Shared\Helpers\admin_url;
+use function App\Shared\Helpers\current_user_can;
 use function App\Shared\Helpers\deactivate_plugin;
-use function App\Shared\Helpers\is_user_logged_in;
+use function Codefy\Framework\Helpers\logger;
+use function Codefy\Framework\Helpers\view;
 use function Qubus\Security\Helpers\t__;
 
 final class AdminPluginController extends BaseController
 {
-    public function __construct(
-        protected SessionService $sessionService,
-        protected Router $router,
-        protected UserAuth $user,
-        protected Database $dfdb,
-        protected Renderer $view
-    ) {
-        parent::__construct($sessionService, $router, $view);
-    }
-
     /**
-     * @param ServerRequest $request
      * @return ResponseInterface|string
      * @throws ContainerExceptionInterface
      * @throws Exception
@@ -50,10 +37,11 @@ final class AdminPluginController extends BaseController
      * @throws ReflectionException
      * @throws SessionException
      * @throws TypeException
+     * @throws \Exception
      */
-    public function plugins(ServerRequest $request): ResponseInterface|string
+    public function plugins(): ResponseInterface|string
     {
-        if (false === $this->user->can(permissionName: 'manage:plugins')) {
+        if (false === current_user_can(perm: 'manage:plugins')) {
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
@@ -61,7 +49,7 @@ final class AdminPluginController extends BaseController
             return $this->redirect(admin_url());
         }
 
-        return $this->view->render(
+        return view(
             template: 'framework::backend/admin/plugin/index',
             data: ['title' => t__(msgid: 'Plugins', domain: 'devflow')]
         );
@@ -75,11 +63,13 @@ final class AdminPluginController extends BaseController
      * @throws InvalidArgumentException
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
-     * @throws SessionException
+     * @throws TypeException
+     * @throws CommandPropertyNotFoundException
+     * @throws UnresolvableQueryHandlerException
      */
     public function activate(ServerRequest $request): ResponseInterface
     {
-        if (false === is_user_logged_in()) {
+        if (false === current_user_can(perm: 'activate:plugins')) {
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
@@ -91,7 +81,7 @@ final class AdminPluginController extends BaseController
 
             Devflow::$PHP->flash->success(t__(msgid: 'Plugin activated.', domain: 'devflow'));
         } catch (NotFoundExceptionInterface | ContainerExceptionInterface | ReflectionException $e) {
-            FileLoggerFactory::getLogger()->error($e->getMessage());
+            logger('error', $e->getMessage());
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Plugin activation exception occurred and was logged.', domain: 'devflow')
             );
@@ -103,16 +93,18 @@ final class AdminPluginController extends BaseController
     /**
      * @param ServerRequest $request
      * @return ResponseInterface
+     * @throws CommandPropertyNotFoundException
      * @throws ContainerExceptionInterface
      * @throws Exception
      * @throws InvalidArgumentException
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
-     * @throws SessionException
+     * @throws TypeException
+     * @throws UnresolvableQueryHandlerException
      */
     public function deactivate(ServerRequest $request): ResponseInterface
     {
-        if (false === is_user_logged_in()) {
+        if (false === current_user_can(perm: 'deactivate:plugins')) {
             Devflow::$PHP->flash->error(message: t__(msgid: 'Access denied.', domain: 'devflow'));
 
             return $this->redirect(admin_url());
@@ -123,7 +115,8 @@ final class AdminPluginController extends BaseController
 
             Devflow::$PHP->flash->success(t__(msgid: 'Plugin deactivated.', domain: 'devflow'));
         } catch (NotFoundExceptionInterface | ContainerExceptionInterface | ReflectionException $e) {
-            FileLoggerFactory::getLogger()->error($e->getMessage());
+            logger('error', $e->getMessage());
+
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Plugin deactivation exception occurred and was logged.', domain: 'devflow')
             );

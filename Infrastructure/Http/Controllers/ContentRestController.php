@@ -30,6 +30,7 @@ use function Qubus\Support\Helpers\is_null__;
 final class ContentRestController extends BaseController
 {
     /**
+     * @uses \App\Shared\Helpers\get_all_content_with_filters()
      * @throws Exception
      */
     public function index(Request $request): ResponseInterface
@@ -73,6 +74,7 @@ final class ContentRestController extends BaseController
     }
 
     /**
+     * @uses \App\Shared\Helpers\get_content_by()
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
      * @throws ContainerExceptionInterface
@@ -96,6 +98,7 @@ final class ContentRestController extends BaseController
     }
 
     /**
+     * @uses \App\Shared\Helpers\cms_insert_content()
      * @throws NotFoundExceptionInterface
      * @throws ContainerExceptionInterface
      * @throws InvalidArgumentException
@@ -120,6 +123,7 @@ final class ContentRestController extends BaseController
     }
 
     /**
+     * @uses \App\Shared\Helpers\cms_update_content()
      * @throws NotFoundExceptionInterface
      * @throws ContainerExceptionInterface
      * @throws InvalidArgumentException
@@ -146,6 +150,7 @@ final class ContentRestController extends BaseController
     }
 
     /**
+     * @uses \App\Shared\Helpers\cms_delete_content()
      * @throws NotFoundExceptionInterface
      * @throws ContainerExceptionInterface
      * @throws InvalidArgumentException

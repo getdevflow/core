@@ -4,8 +4,13 @@ declare(strict_types=1);
 
 namespace App\Domain\User\Query\Trait;
 
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
+use Psr\SimpleCache\InvalidArgumentException;
 use Qubus\Exception\Exception;
+use ReflectionException;
 
+use function App\Shared\Helpers\get_user_option;
 use function Qubus\Security\Helpers\esc_html;
 use function Qubus\Support\Helpers\is_null__;
 
@@ -17,6 +22,10 @@ trait PopulateUserQueryAware
      * @param array|null $data
      * @return array|null
      * @throws Exception
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
+     * @throws InvalidArgumentException
+     * @throws ReflectionException
      */
     private function populate(?array $data = []): ?array
     {
@@ -30,7 +39,7 @@ trait PopulateUserQueryAware
             'email' => esc_html(string: $data['user_email']) ?? null,
             'pass' => esc_html(string: $data['user_pass']) ?? null,
             'url' => esc_html(string: $data['user_url']) ?? null,
-            'role' => esc_html(string: $data['role']) ?? null,
+            'role' => get_user_option('role', $data['user_id']),
             'timezone' => esc_html(string: $data['user_timezone']) ?? null,
             'dateFormat' => esc_html(string: $data['user_date_format']) ?? null,
             'timeFormat' => esc_html(string: $data['user_time_format']) ?? null,

@@ -11,7 +11,6 @@ use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Psr\SimpleCache\InvalidArgumentException;
 use Qubus\EventDispatcher\ActionFilter\Action;
-use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
 use ReflectionException;
 
@@ -27,7 +26,6 @@ class ContentCachePsr16 implements ContentCache
      * @throws InvalidArgumentException
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
-     * @throws TypeException
      */
     public static function update(Content|array $content): void
     {
@@ -40,13 +38,13 @@ class ContentCachePsr16 implements ContentCache
         }
 
         SimpleCacheObjectCacheFactory::make(namespace: dfdb()->prefix . 'content')
-                ->set(md5($content['id']), $content);
+            ->set(md5($content['id']), $content);
 
         SimpleCacheObjectCacheFactory::make(namespace: dfdb()->prefix . 'contentslug')
-                ->set(md5($content['slug']), $content['id']);
+            ->set(md5($content['slug']), $content['id']);
 
         SimpleCacheObjectCacheFactory::make(namespace: dfdb()->prefix . 'contenttype')
-                ->set(md5($content['type']), $content['id']);
+            ->set(md5($content['type']), $content['id']);
     }
 
     /**
@@ -69,19 +67,19 @@ class ContentCachePsr16 implements ContentCache
         }
 
         SimpleCacheObjectCacheFactory::make(namespace: dfdb()->prefix . 'content')
-                ->delete(md5($content['id']));
+            ->delete(md5($content['id']));
 
         SimpleCacheObjectCacheFactory::make(namespace: dfdb()->prefix . 'contentslug')
-                ->delete(md5($content['slug']));
+            ->delete(md5($content['slug']));
 
         SimpleCacheObjectCacheFactory::make(namespace: dfdb()->prefix . 'contenttype')
-                ->delete(md5($content['type']));
+            ->delete(md5($content['type']));
 
         SimpleCacheObjectCacheFactory::make(namespace: dfdb()->prefix . 'contentmeta')
-                ->delete(md5($content['id']));
+            ->delete(md5($content['id']));
 
         /**
-         * Fires immediately after the given user's cache is cleaned.
+         * Fires immediately after the given content's cache is cleaned.
          *
          * @param string $contentId Content id.
          * @param array  $content   Content array.

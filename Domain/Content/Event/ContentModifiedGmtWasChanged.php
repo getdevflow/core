@@ -12,31 +12,30 @@ use DateTimeInterface;
 use Qubus\Exception\Data\TypeException;
 use Qubus\Support\DateTime\QubusDateTimeImmutable;
 
-use function Qubus\Support\Helpers\is_null__;
 use function strtotime;
 
 final class ContentModifiedGmtWasChanged extends AggregateChanged
 {
-    private ?ContentId $contentId = null;
+    private ContentId $id;
 
-    private ?DateTimeInterface $contentModifiedGmt = null;
+    private DateTimeInterface $modifiedGmt;
 
     public static function withData(
-        ContentId $contentId,
-        DateTimeInterface $contentModifiedGmt
+        ContentId $id,
+        DateTimeInterface $modifiedGmt
     ): ContentModifiedGmtWasChanged|DomainEvent|AggregateChanged {
         $event = self::occur(
-            aggregateId: $contentId,
+            aggregateId: $id,
             payload: [
-                'content_modified_gmt' => (string) $contentModifiedGmt
+                'content_modified_gmt' => (string) $modifiedGmt
             ],
             metadata: [
                 Metadata::AGGREGATE_TYPE => 'content',
             ]
         );
 
-        $event->contentId = $contentId;
-        $event->contentModifiedGmt = $contentModifiedGmt;
+        $event->id = $id;
+        $event->modifiedGmt = $modifiedGmt;
 
         return $event;
     }
@@ -46,22 +45,22 @@ final class ContentModifiedGmtWasChanged extends AggregateChanged
      */
     public function contentId(): ContentId
     {
-        if (is_null__($this->contentId)) {
-            $this->contentId = ContentId::fromString($this->aggregateId()->__toString());
+        if (!isset($this->id)) {
+            $this->id = ContentId::fromString($this->aggregateId()->__toString());
         }
 
-        return $this->contentId;
+        return $this->id;
     }
 
     public function contentModifiedGmt(): DateTimeInterface
     {
-        if (is_null__($this->contentModifiedGmt)) {
-            $this->contentModifiedGmt = QubusDateTimeImmutable::parse(
+        if (!isset($this->modifiedGmt)) {
+            $this->modifiedGmt = QubusDateTimeImmutable::parse(
                 strtotime($this->payload()['content_modified_gmt']),
                 'GMT'
             );
         }
 
-        return $this->contentModifiedGmt;
+        return $this->modifiedGmt;
     }
 }

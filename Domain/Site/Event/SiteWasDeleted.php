@@ -11,24 +11,22 @@ use Codefy\Domain\EventSourcing\DomainEvent;
 use Codefy\Domain\Metadata;
 use Qubus\Exception\Data\TypeException;
 
-use function Qubus\Support\Helpers\is_null__;
-
 final class SiteWasDeleted extends AggregateChanged
 {
-    private ?SiteId $siteId = null;
+    private SiteId $id;
 
     public static function withData(
-        SiteId $siteId,
+        SiteId $id,
     ): SiteWasDeleted|DomainEvent|AggregateChanged {
         $event = self::occur(
-            aggregateId: $siteId,
+            aggregateId: $id,
             payload: [],
             metadata: [
-                    Metadata::AGGREGATE_TYPE => 'site'
-                ],
+                Metadata::AGGREGATE_TYPE => 'site'
+            ],
         );
 
-        $event->siteId = $siteId;
+        $event->id = $id;
 
         return $event;
     }
@@ -38,10 +36,10 @@ final class SiteWasDeleted extends AggregateChanged
      */
     public function siteId(): SiteId|AggregateId
     {
-        if (is_null__($this->siteId)) {
-            $this->siteId = SiteId::fromString(siteId: $this->aggregateId()->__toString());
+        if (!isset($this->id)) {
+            $this->id = SiteId::fromString(siteId: $this->aggregateId()->__toString());
         }
 
-        return $this->siteId;
+        return $this->id;
     }
 }

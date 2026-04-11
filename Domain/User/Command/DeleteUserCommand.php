@@ -9,5 +9,5 @@ use Codefy\CommandBus\PropertyCommand;
 
 final class DeleteUserCommand extends PropertyCommand
 {
-    public ?UserId $id = null;
+    public UserId $id;
 }

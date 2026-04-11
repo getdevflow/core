@@ -10,5 +10,5 @@ use Codefy\QueryBus\Query;
 
 final class FindUserByTokenQuery extends PropertyCommand implements Query
 {
-    public ?UserToken $userToken = null;
+    public UserToken $token;
 }

@@ -38,39 +38,42 @@ use function Qubus\Support\Helpers\is_null__;
 
 final class User extends EventSourcedAggregate implements AggregateRoot
 {
-    private ?UserId $userId = null;
+    private UserId $id;
 
-    private ?Username $login = null;
+    private Username $login;
 
-    private ?Name $name = null;
+    private Name $name;
 
-    private ?EmailAddress $emailAddress = null;
+    private EmailAddress $email;
 
-    private ?UserToken $token = null;
+    private UserToken $token;
 
-    private ?StringLiteral $password = null;
+    private StringLiteral $password;
 
-    private ?StringLiteral $url = null;
+    private StringLiteral $url;
 
-    private ?StringLiteral $timezone = null;
+    private StringLiteral $timezone;
 
-    private ?StringLiteral $dateFormat = null;
+    private StringLiteral $dateFormat;
 
-    private ?StringLiteral $timeFormat = null;
+    private StringLiteral $timeFormat;
 
-    private ?StringLiteral $locale = null;
+    private StringLiteral $locale;
 
-    private ?DateTimeInterface $registered = null;
+    private DateTimeInterface $registered;
 
-    private ?DateTimeInterface $modified = null;
+    private DateTimeInterface $modified;
 
-    private ?ArrayLiteral $meta = null;
+    private ArrayLiteral $meta;
 
+    /**
+     * @throws \Qubus\Exception\Exception
+     */
     public static function createUser(
-        UserId $userId,
+        UserId $id,
         Username $login,
         Name $name,
-        EmailAddress $emailAddress,
+        EmailAddress $email,
         #[SensitiveParameter] UserToken $token,
         #[SensitiveParameter] StringLiteral $password,
         StringLiteral $url,
@@ -81,14 +84,14 @@ final class User extends EventSourcedAggregate implements AggregateRoot
         DateTimeInterface $registered,
         ?ArrayLiteral $meta = null,
     ): User {
-        $user = self::root(aggregateId: $userId);
+        $user = self::root(aggregateId: $id);
 
         $user->recordApplyAndPublishThat(
             event: UserWasCreated::withData(
-                userId: $userId,
-                userLogin: $login,
+                id: $id,
+                login: $login,
                 name: $name,
-                emailAddress: $emailAddress,
+                email: $email,
                 token: $token,
                 password: $password,
                 url: $url,
@@ -111,7 +114,7 @@ final class User extends EventSourcedAggregate implements AggregateRoot
 
     public function userId(): UserId|AggregateId
     {
-        return $this->userId;
+        return $this->id;
     }
 
     public function login(): Username
@@ -126,7 +129,7 @@ final class User extends EventSourcedAggregate implements AggregateRoot
 
     public function emailAddress(): EmailAddress
     {
-        return $this->emailAddress;
+        return $this->email;
     }
 
     public function token(): UserToken
@@ -186,7 +189,7 @@ final class User extends EventSourcedAggregate implements AggregateRoot
             return;
         }
         $this->recordApplyAndPublishThat(
-            event: UserLoginWasChanged::withData(userId: $this->userId, userLogin: $login)
+            event: UserLoginWasChanged::withData(id: $this->id, login: $login)
         );
     }
 
@@ -198,11 +201,11 @@ final class User extends EventSourcedAggregate implements AggregateRoot
         if ($emailAddress->isEmpty()) {
             throw new Exception(message: t__(msgid: 'Email address cannot be null.', domain: 'devflow'));
         }
-        if ($emailAddress->equals($this->emailAddress)) {
+        if ($emailAddress->equals($this->email)) {
             return;
         }
         $this->recordApplyAndPublishThat(
-            event: UserEmailAddressWasChanged::withData(userId: $this->userId, emailAddress: $emailAddress)
+            event: UserEmailAddressWasChanged::withData(id: $this->id, email: $emailAddress)
         );
     }
 
@@ -218,7 +221,7 @@ final class User extends EventSourcedAggregate implements AggregateRoot
             return;
         }
         $this->recordApplyAndPublishThat(
-            event: UserNameWasChanged::withData(userId: $this->userId, name: $name)
+            event: UserNameWasChanged::withData(id: $this->id, name: $name)
         );
     }
 
@@ -234,7 +237,7 @@ final class User extends EventSourcedAggregate implements AggregateRoot
             return;
         }
         $this->recordApplyAndPublishThat(
-            event: UserTokenWasChanged::withData(userId: $this->userId, userToken: $token)
+            event: UserTokenWasChanged::withData(id: $this->id, token: $token)
         );
     }
 
@@ -250,7 +253,7 @@ final class User extends EventSourcedAggregate implements AggregateRoot
             return;
         }
         $this->recordApplyAndPublishThat(
-            event: UserPasswordWasChanged::withData(userId: $this->userId, password: $password)
+            event: UserPasswordWasChanged::withData(id: $this->id, password: $password)
         );
     }
 
@@ -265,7 +268,7 @@ final class User extends EventSourcedAggregate implements AggregateRoot
         if ($url->equals($this->url)) {
             return;
         }
-        $this->recordApplyAndPublishThat(UserUrlWasChanged::withData($this->userId, $url));
+        $this->recordApplyAndPublishThat(UserUrlWasChanged::withData($this->id, $url));
     }
 
     /**
@@ -279,7 +282,7 @@ final class User extends EventSourcedAggregate implements AggregateRoot
         if ($timezone->equals($this->timezone)) {
             return;
         }
-        $this->recordApplyAndPublishThat(UserTimezoneWasChanged::withData($this->userId, $timezone));
+        $this->recordApplyAndPublishThat(UserTimezoneWasChanged::withData($this->id, $timezone));
     }
 
     /**
@@ -293,7 +296,7 @@ final class User extends EventSourcedAggregate implements AggregateRoot
         if ($dateFormat->equals($this->dateFormat)) {
             return;
         }
-        $this->recordApplyAndPublishThat(UserDateFormatWasChanged::withData($this->userId, $dateFormat));
+        $this->recordApplyAndPublishThat(UserDateFormatWasChanged::withData($this->id, $dateFormat));
     }
 
     /**
@@ -307,7 +310,7 @@ final class User extends EventSourcedAggregate implements AggregateRoot
         if ($timeFormat->equals($this->timeFormat)) {
             return;
         }
-        $this->recordApplyAndPublishThat(UserTimeFormatWasChanged::withData($this->userId, $timeFormat));
+        $this->recordApplyAndPublishThat(UserTimeFormatWasChanged::withData($this->id, $timeFormat));
     }
 
     /**
@@ -321,7 +324,7 @@ final class User extends EventSourcedAggregate implements AggregateRoot
         if ($locale->equals($this->locale)) {
             return;
         }
-        $this->recordApplyAndPublishThat(UserLocaleWasChanged::withData($this->userId, $locale));
+        $this->recordApplyAndPublishThat(UserLocaleWasChanged::withData($this->id, $locale));
     }
 
     /**
@@ -335,7 +338,7 @@ final class User extends EventSourcedAggregate implements AggregateRoot
         ) {
             return;
         }
-        $this->recordApplyAndPublishThat(UserModifiedWasChanged::withData($this->userId, $modified));
+        $this->recordApplyAndPublishThat(UserModifiedWasChanged::withData($this->id, $modified));
     }
 
     /**
@@ -348,10 +351,10 @@ final class User extends EventSourcedAggregate implements AggregateRoot
         if ($userId->isEmpty()) {
             throw new Exception(message: t__(msgid: 'User id cannot be null.', domain: 'devflow'));
         }
-        if (!$userId->equals($this->userId)) {
+        if (!$userId->equals($this->id)) {
             return;
         }
-        $this->recordApplyAndPublishThat(UserWasDeleted::withData($this->userId));
+        $this->recordApplyAndPublishThat(UserWasDeleted::withData($this->id));
     }
 
     /**
@@ -367,7 +370,7 @@ final class User extends EventSourcedAggregate implements AggregateRoot
             return;
         }
 
-        $this->recordApplyAndPublishThat(UserMetaWasChanged::withData($this->userId, $meta));
+        $this->recordApplyAndPublishThat(UserMetaWasChanged::withData($this->id, $meta));
     }
 
     /**
@@ -375,10 +378,10 @@ final class User extends EventSourcedAggregate implements AggregateRoot
      */
     public function whenUserWasCreated(UserWasCreated $event): void
     {
-        $this->userId = $event->userId();
+        $this->id = $event->userId();
         $this->login = $event->userLogin();
         $this->name = $event->name();
-        $this->emailAddress = $event->userEmail();
+        $this->email = $event->userEmail();
         $this->token = $event->userToken();
         $this->password = $event->userPass();
         $this->url = $event->userUrl();
@@ -395,7 +398,7 @@ final class User extends EventSourcedAggregate implements AggregateRoot
      */
     public function whenUserLoginWasChanged(UserLoginWasChanged $event): void
     {
-        $this->userId = $event->userId();
+        $this->id = $event->userId();
         $this->login = $event->userLogin();
     }
 
@@ -404,7 +407,7 @@ final class User extends EventSourcedAggregate implements AggregateRoot
      */
     public function whenUserNameWasChanged(UserNameWasChanged $event): void
     {
-        $this->userId = $event->userId();
+        $this->id = $event->userId();
         $this->name = $event->name();
     }
 
@@ -413,8 +416,8 @@ final class User extends EventSourcedAggregate implements AggregateRoot
      */
     public function whenUserEmailAddressWasChanged(UserEmailAddressWasChanged $event): void
     {
-        $this->userId = $event->userId();
-        $this->emailAddress = $event->userEmail();
+        $this->id = $event->userId();
+        $this->email = $event->userEmail();
     }
 
     /**
@@ -422,7 +425,7 @@ final class User extends EventSourcedAggregate implements AggregateRoot
      */
     public function whenUserTokenWasChanged(UserTokenWasChanged $event): void
     {
-        $this->userId = $event->userId();
+        $this->id = $event->userId();
         $this->token = $event->userToken();
     }
 
@@ -431,7 +434,7 @@ final class User extends EventSourcedAggregate implements AggregateRoot
      */
     public function whenUserPasswordWasChanged(UserPasswordWasChanged $event): void
     {
-        $this->userId = $event->userId();
+        $this->id = $event->userId();
         $this->password = $event->userPass();
     }
 
@@ -440,7 +443,7 @@ final class User extends EventSourcedAggregate implements AggregateRoot
      */
     public function whenUserUrlWasChanged(UserUrlWasChanged $event): void
     {
-        $this->userId = $event->userId();
+        $this->id = $event->userId();
         $this->url = $event->userUrl();
     }
 
@@ -449,7 +452,7 @@ final class User extends EventSourcedAggregate implements AggregateRoot
      */
     public function whenUserTimezoneWasChanged(UserTimezoneWasChanged $event): void
     {
-        $this->userId = $event->userId();
+        $this->id = $event->userId();
         $this->timezone = $event->userTimezone();
     }
 
@@ -458,7 +461,7 @@ final class User extends EventSourcedAggregate implements AggregateRoot
      */
     public function whenUserDateFormatWasChanged(UserDateFormatWasChanged $event): void
     {
-        $this->userId = $event->userId();
+        $this->id = $event->userId();
         $this->dateFormat = $event->userDateFormat();
     }
 
@@ -467,7 +470,7 @@ final class User extends EventSourcedAggregate implements AggregateRoot
      */
     public function whenUserTimeFormatWasChanged(UserTimeFormatWasChanged $event): void
     {
-        $this->userId = $event->userId();
+        $this->id = $event->userId();
         $this->timeFormat = $event->userTimeFormat();
     }
 
@@ -476,7 +479,7 @@ final class User extends EventSourcedAggregate implements AggregateRoot
      */
     public function whenUserLocaleWasChanged(UserLocaleWasChanged $event): void
     {
-        $this->userId = $event->userId();
+        $this->id = $event->userId();
         $this->locale = $event->userLocale();
     }
 
@@ -485,7 +488,7 @@ final class User extends EventSourcedAggregate implements AggregateRoot
      */
     public function whenUserModifiedWasChanged(UserModifiedWasChanged $event): void
     {
-        $this->userId = $event->userId();
+        $this->id = $event->userId();
         $this->modified = $event->userModified();
     }
 
@@ -494,7 +497,7 @@ final class User extends EventSourcedAggregate implements AggregateRoot
      */
     public function whenUserMetaWasChanged(UserMetaWasChanged $event): void
     {
-        $this->userId = $event->userId();
+        $this->id = $event->userId();
         $this->meta = $event->usermeta();
     }
 
@@ -503,6 +506,6 @@ final class User extends EventSourcedAggregate implements AggregateRoot
      */
     public function whenUserWasDeleted(UserWasDeleted $event): void
     {
-        $this->userId = $event->userId();
+        $this->id = $event->userId();
     }
 }

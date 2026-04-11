@@ -10,7 +10,7 @@ use App\Domain\ContentType\Event\ContentTypeSlugWasChanged;
 use App\Domain\ContentType\Event\ContentTypeTitleWasChanged;
 use App\Domain\ContentType\Event\ContentTypeWasDeleted;
 use App\Domain\ContentType\Services\ContentTypeProjection;
-use App\Infrastructure\Persistence\Database;
+use Qubus\Expressive\Database;
 use Codefy\Domain\EventSourcing\BaseProjection;
 use Exception as NativeException;
 use Qubus\Exception\Data\TypeException;

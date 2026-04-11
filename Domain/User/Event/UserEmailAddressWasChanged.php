@@ -12,30 +12,28 @@ use Codefy\Domain\Metadata;
 use Qubus\Exception\Data\TypeException;
 use Qubus\ValueObjects\Web\EmailAddress;
 
-use function Qubus\Support\Helpers\is_null__;
-
 class UserEmailAddressWasChanged extends AggregateChanged
 {
-    private ?UserId $userId = null;
+    private UserId $id;
 
-    private ?EmailAddress $emailAddress = null;
+    private EmailAddress $email;
 
     public static function withData(
-        UserId $userId,
-        EmailAddress $emailAddress
+        UserId $id,
+        EmailAddress $email
     ): UserEmailAddressWasChanged|DomainEvent|AggregateChanged {
         $event = self::occur(
-            aggregateId: $userId,
+            aggregateId: $id,
             payload: [
-                'user_email' => $emailAddress->toNative(),
+                'user_email' => $email->toNative(),
             ],
             metadata: [
                 Metadata::AGGREGATE_TYPE => 'user'
             ]
         );
 
-        $event->userId = $userId;
-        $event->emailAddress = $emailAddress;
+        $event->id = $id;
+        $event->email = $email;
 
         return $event;
     }
@@ -45,19 +43,19 @@ class UserEmailAddressWasChanged extends AggregateChanged
      */
     public function userId(): UserId|AggregateId
     {
-        if (is_null__($this->userId)) {
-            $this->userId = UserId::fromString(userId: $this->aggregateId()->__toString());
+        if (!isset($this->id)) {
+            $this->id = UserId::fromString(userId: $this->aggregateId()->__toString());
         }
 
-        return $this->userId;
+        return $this->id;
     }
 
     public function userEmail(): EmailAddress
     {
-        if (is_null__($this->emailAddress)) {
-            $this->emailAddress = EmailAddress::fromNative($this->payload()['user_email']);
+        if (!isset($this->email)) {
+            $this->email = EmailAddress::fromNative($this->payload()['user_email']);
         }
 
-        return $this->emailAddress;
+        return $this->email;
     }
 }

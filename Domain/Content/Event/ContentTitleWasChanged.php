@@ -11,30 +11,28 @@ use Codefy\Domain\Metadata;
 use Qubus\Exception\Data\TypeException;
 use Qubus\ValueObjects\StringLiteral\StringLiteral;
 
-use function Qubus\Support\Helpers\is_null__;
-
 final class ContentTitleWasChanged extends AggregateChanged
 {
-    private ?ContentId $contentId = null;
+    private ContentId $id;
 
-    private ?StringLiteral $contentTitle = null;
+    private StringLiteral $title;
 
     public static function withData(
-        ContentId $contentId,
-        StringLiteral $contentTitle,
+        ContentId $id,
+        StringLiteral $title,
     ): ContentTitleWasChanged|DomainEvent|AggregateChanged {
         $event = self::occur(
-            aggregateId: $contentId,
+            aggregateId: $id,
             payload: [
-                'content_title' => $contentTitle->toNative(),
+                'content_title' => $title->toNative(),
             ],
             metadata: [
                 Metadata::AGGREGATE_TYPE => 'content',
             ]
         );
 
-        $event->contentId = $contentId;
-        $event->contentTitle = $contentTitle;
+        $event->id = $id;
+        $event->title = $title;
 
         return $event;
     }
@@ -44,22 +42,19 @@ final class ContentTitleWasChanged extends AggregateChanged
      */
     public function contentId(): ContentId
     {
-        if (is_null__($this->contentId)) {
-            $this->contentId = ContentId::fromString($this->aggregateId()->__toString());
+        if (!isset($this->id)) {
+            $this->id = ContentId::fromString($this->aggregateId()->__toString());
         }
 
-        return $this->contentId;
+        return $this->id;
     }
 
-    /**
-     * @throws TypeException
-     */
     public function contentTitle(): StringLiteral
     {
-        if (is_null__($this->contentTitle)) {
-            $this->contentTitle = StringLiteral::fromNative($this->payload()['content_title']);
+        if (!isset($this->title)) {
+            $this->title = StringLiteral::fromNative($this->payload()['content_title']);
         }
 
-        return $this->contentTitle;
+        return $this->title;
     }
 }

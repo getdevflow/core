@@ -6,10 +6,14 @@ namespace App\Infrastructure\Persistence\Repository;
 
 use App\Domain\User\Query\Trait\PopulateUserQueryAware;
 use App\Domain\User\Repository\UserQueryRepository;
-use App\Infrastructure\Persistence\Database;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
+use Psr\SimpleCache\InvalidArgumentException;
+use Qubus\Expressive\Database;
 use Qubus\Exception\Exception;
 use ReflectionException;
 
+use function App\Shared\Helpers\get_current_site_id;
 use function is_array;
 use function Qubus\Support\Helpers\convert_array_to_object;
 use function Qubus\Support\Helpers\is_false__;
@@ -24,18 +28,23 @@ class QueryBusUserRepository implements UserQueryRepository
     }
 
     /**
-     * @throws ReflectionException
+     * @param string $id
+     * @return array|object
+     * @throws ContainerExceptionInterface
      * @throws Exception
+     * @throws InvalidArgumentException
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
      */
-    public function findById(string $userId): array|object
+    public function findById(string $id): array|object
     {
         $sql = "SELECT u.*, m.meta_value AS role FROM {$this->dfdb->basePrefix}user u 
-                JOIN {$this->dfdb->basePrefix}usermeta m 
-                ON (m.user_id = u.user_id AND m.meta_key = '{$this->dfdb->prefix}role') 
+                JOIN {$this->dfdb->prefix}usermeta m 
+                ON (m.user_id = u.user_id AND m.meta_key = 'role') 
                 WHERE u.user_id = ?";
 
         $data = $this->dfdb->getRow(
-            query: $this->dfdb->prepare(query: $sql, params: [$userId]),
+            query: $this->dfdb->prepare(query: $sql, params: [$id]),
             output: Database::ARRAY_A
         );
 
@@ -52,12 +61,19 @@ class QueryBusUserRepository implements UserQueryRepository
         return $user;
     }
 
+    /**
+     * @return array|object|null
+     * @throws ContainerExceptionInterface
+     * @throws Exception
+     * @throws InvalidArgumentException
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
+     */
     public function findUnique(): array|null|object
     {
-        $sql = "SELECT DISTINCT * FROM {$this->dfdb->basePrefix}user 
-        JOIN {$this->dfdb->basePrefix}usermeta 
-        ON {$this->dfdb->basePrefix}usermeta.user_id = {$this->dfdb->basePrefix}user.user_id 
-        WHERE meta_key LIKE {$this->dfdb->prefix}%";
+        $sql = "SELECT DISTINCT u.* FROM {$this->dfdb->basePrefix}user u 
+        JOIN {$this->dfdb->prefix}usermeta m 
+        ON m.user_id = u.user_id";
 
         $data = $this->dfdb->getResults(query: $sql, output: Database::ARRAY_A);
 
@@ -73,18 +89,23 @@ class QueryBusUserRepository implements UserQueryRepository
     }
 
     /**
-     * @throws ReflectionException
+     * @param string $email
+     * @return array|object|null
+     * @throws ContainerExceptionInterface
      * @throws Exception
+     * @throws InvalidArgumentException
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
      */
-    public function findByEmail(string $userEmail): array|null|object
+    public function findByEmail(string $email): array|null|object
     {
         $sql = "SELECT u.*, m.meta_value AS role FROM {$this->dfdb->basePrefix}user u 
-                JOIN {$this->dfdb->basePrefix}usermeta m 
-                ON (m.user_id = u.user_id AND m.meta_key = '{$this->dfdb->prefix}role') 
+                JOIN {$this->dfdb->prefix}usermeta m 
+                ON (m.user_id = u.user_id AND m.meta_key = 'role') 
                 WHERE u.user_email = ?";
 
         $data = $this->dfdb->getRow(
-            query: $this->dfdb->prepare(query: $sql, params: [$userEmail]),
+            query: $this->dfdb->prepare(query: $sql, params: [$email]),
             output: Database::ARRAY_A
         );
 
@@ -102,18 +123,23 @@ class QueryBusUserRepository implements UserQueryRepository
     }
 
     /**
-     * @throws ReflectionException
+     * @param string $login
+     * @return array|object|null
+     * @throws ContainerExceptionInterface
      * @throws Exception
+     * @throws InvalidArgumentException
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
      */
-    public function findByLogin(string $userLogin): array|null|object
+    public function findByLogin(string $login): array|null|object
     {
         $sql = "SELECT u.*, m.meta_value AS role FROM {$this->dfdb->basePrefix}user u 
-                JOIN {$this->dfdb->basePrefix}usermeta m 
-                ON (m.user_id = u.user_id AND m.meta_key = '{$this->dfdb->prefix}role') 
+                JOIN {$this->dfdb->prefix}usermeta m 
+                ON (m.user_id = u.user_id AND m.meta_key = 'role') 
                 WHERE u.user_login = ?";
 
         $data = $this->dfdb->getRow(
-            query: $this->dfdb->prepare(query: $sql, params: [$userLogin]),
+            query: $this->dfdb->prepare(query: $sql, params: [$login]),
             output: Database::ARRAY_A
         );
 
@@ -131,18 +157,23 @@ class QueryBusUserRepository implements UserQueryRepository
     }
 
     /**
-     * @throws ReflectionException
+     * @param string $token
+     * @return array|object|null
+     * @throws ContainerExceptionInterface
      * @throws Exception
+     * @throws InvalidArgumentException
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
      */
-    public function findByToken(string $userToken): array|null|object
+    public function findByToken(string $token): array|null|object
     {
         $sql = "SELECT u.*, m.meta_value AS role FROM {$this->dfdb->basePrefix}user u 
-                JOIN {$this->dfdb->basePrefix}usermeta m 
-                ON (m.user_id = u.user_id AND m.meta_key = '{$this->dfdb->prefix}role') 
+                JOIN {$this->dfdb->prefix}usermeta m 
+                ON (m.user_id = u.user_id AND m.meta_key = 'role') 
                 WHERE u.user_token = ?";
 
         $data = $this->dfdb->getRow(
-            query: $this->dfdb->prepare(query: $sql, params: [$userToken]),
+            query: $this->dfdb->prepare(query: $sql, params: [$token]),
             output: Database::ARRAY_A
         );
 
@@ -159,13 +190,22 @@ class QueryBusUserRepository implements UserQueryRepository
         return $user;
     }
 
+    /**
+     * @return array
+     * @throws Exception
+     * @throws ReflectionException
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
+     * @throws InvalidArgumentException
+     */
     public function findAll(): array
     {
-        $sql = "SELECT u.*, m.meta_value AS role FROM {$this->dfdb->basePrefix}user u 
-                JOIN {$this->dfdb->basePrefix}usermeta m 
-                ON (m.user_id = u.user_id AND m.meta_key = '{$this->dfdb->prefix}role')";
+        $sql = "SELECT u.* FROM {$this->dfdb->basePrefix}user u 
+                JOIN {$this->dfdb->basePrefix}site_user su 
+                ON (u.user_id = su.user_id)
+                WHERE su.site_id = ?";
 
-        $data = $this->dfdb->getResults(query: $sql, output: Database::ARRAY_A);
+        $data = $this->dfdb->getResults(query: $this->dfdb->prepare($sql, [get_current_site_id()]), output: Database::ARRAY_A);
 
         $users = [];
 

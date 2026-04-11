@@ -5,22 +5,19 @@ declare(strict_types=1);
 namespace App\Domain\User\Model;
 
 use App\Infrastructure\Persistence\Cache\UserCachePsr16;
-use App\Infrastructure\Persistence\Database;
-use App\Shared\Services\MetaData;
-use App\Shared\Services\Registry;
+use Qubus\Expressive\Database;
+use App\Infrastructure\Services\AttributesFactory;
 use App\Shared\Services\Sanitizer;
 use App\Shared\Services\SimpleCacheObjectCacheFactory;
-use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
-use Codefy\QueryBus\UnresolvableQueryHandlerException;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Psr\SimpleCache\InvalidArgumentException;
 use Qubus\EventDispatcher\ActionFilter\Action;
-use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
 use ReflectionException;
 use stdClass;
 
+use function App\Shared\Helpers\get_current_site_id;
 use function md5;
 use function Qubus\Security\Helpers\esc_html;
 use function Qubus\Security\Helpers\purify_html;
@@ -64,7 +61,7 @@ final class User extends stdClass
      *
      * @param string $field The field to query against: 'id', 'token' or 'login'.
      * @param string $value The field value
-     * @return object|false Raw user object
+     * @return User|false Raw user object
      * @throws ContainerExceptionInterface
      * @throws Exception
      * @throws InvalidArgumentException
@@ -107,13 +104,17 @@ final class User extends stdClass
             !$data = $this->dfdb->getRow(
                 $this->dfdb->prepare(
                     sprintf(
-                        "SELECT * 
-                            FROM {$this->dfdb->basePrefix}user 
-                            WHERE %s = ?",
+                        "SELECT u.*, s.user_attribute
+                            FROM {$this->dfdb->basePrefix}user u 
+                            JOIN {$this->dfdb->basePrefix}site_user s 
+                            ON u.user_id = s.user_id
+                            WHERE u.%s = ? 
+                            AND s.site_id = ?",
                         $dbField
                     ),
                     [
-                        $value
+                        $value,
+                        get_current_site_id(),
                     ]
                 ),
                 Database::ARRAY_A
@@ -140,6 +141,7 @@ final class User extends stdClass
      *
      * @param array $data
      * @return User
+     * @throws Exception
      */
     public function create(array $data = []): User
     {
@@ -174,6 +176,7 @@ final class User extends stdClass
         $user->email = esc_html(string: $data['user_email']) ?? null;
         $user->pass = esc_html(string: $data['user_pass']) ?? null;
         $user->url = esc_html(string: $data['user_url']) ?? null;
+        $user->bio = isset($data['user_bio']) ? esc_html(string: $data['user_bio']) : null;
         $user->timezone = esc_html(string: $data['user_timezone']) ?? null;
         $user->dateFormat = esc_html(string: $data['user_date_format']) ?? null;
         $user->timeFormat = esc_html(string: $data['user_time_format']) ?? null;
@@ -190,8 +193,8 @@ final class User extends stdClass
     /**
      * Magic method for checking the existence of a certain custom field.
      *
-     * @param string $key User meta key to check if set.
-     * @return bool Whether the given user meta key is set.
+     * @param string $key User attribute key to check if set.
+     * @return bool Whether the given user attribute key is set.
      * @throws Exception
      * @throws ReflectionException
      * @throws ContainerExceptionInterface
@@ -199,15 +202,14 @@ final class User extends stdClass
      */
     public function __isset(string $key)
     {
-        return MetaData::factory(Registry::getInstance()->get('tblPrefix') . 'usermeta')
-            ->exists('user', $this->id, Registry::getInstance()->get('tblPrefix') . $key);
+        return false === AttributesFactory::user()->exists(get_current_site_id(), $this->id, $key);
     }
 
     /**
      * Magic method for accessing custom fields.
      *
-     * @param string $key User meta key to retrieve.
-     * @return string Value of the given user meta key (if set). If `$key` is 'id', the user ID.
+     * @param string $key User attribute key to retrieve.
+     * @return string Value of the given user attribute key (if set). If `$key` is 'id', the user ID.
      * @throws ContainerExceptionInterface
      * @throws Exception
      * @throws NotFoundExceptionInterface
@@ -218,8 +220,7 @@ final class User extends stdClass
         if (isset($this->{$key})) {
             $value = $this->{$key};
         } else {
-            $value = MetaData::factory(Registry::getInstance()->get('tblPrefix') . 'usermeta')
-                ->read('user', $this->id, Registry::getInstance()->get('tblPrefix') . $key, true);
+            $value = AttributesFactory::user()->get(get_current_site_id(), $this->id, $key);
         }
 
         return purify_html($value);
@@ -231,8 +232,8 @@ final class User extends stdClass
      * This method does not update custom fields in the user document. It only stores
      * the value on the User instance.
      *
-     * @param string $key   User meta key.
-     * @param mixed  $value User meta value.
+     * @param string $key   User attribute key.
+     * @param mixed  $value User attribute value.
      */
     public function __set(string $key, mixed $value): void
     {
@@ -247,7 +248,7 @@ final class User extends stdClass
     /**
      * Magic method for unsetting a certain custom field.
      *
-     * @param string $key User meta key to unset.
+     * @param string $key User attribute key to unset.
      */
     public function __unset(string $key)
     {
@@ -257,9 +258,9 @@ final class User extends stdClass
     }
 
     /**
-     * Retrieve the value of a property or meta key.
+     * Retrieve the value of a property or attribute key.
      *
-     * Retrieves from the users and usermeta table.
+     * Retrieves from the user and site_user table.
      *
      * @param string $key Property
      * @return string
@@ -274,9 +275,9 @@ final class User extends stdClass
     }
 
     /**
-     * Determine whether a property or meta key is set
+     * Determine whether a property or attribute key is set
      *
-     * Consults the users and usermeta tables.
+     * Consults the user and site_user tables.
      *
      * @param string $key Property
      * @return bool
@@ -304,35 +305,31 @@ final class User extends stdClass
 
     /**
      * @param string $role
-     * @throws CommandPropertyNotFoundException
+     * @param string|null $siteId
      * @throws ContainerExceptionInterface
      * @throws Exception
+     * @throws InvalidArgumentException
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
-     * @throws TypeException
-     * @throws UnresolvableQueryHandlerException
      */
-    public function setRole(string $role): void
+    public function setRole(string $role, ?string $siteId = null): void
     {
-        $oldRole = MetaData::factory(Registry::getInstance()->get('tblPrefix') . 'usermeta')
-            ->read('user', $this->id, Registry::getInstance()->get('tblPrefix') . 'role', true);
+        if(is_null__($siteId)) {
+            $siteId = get_current_site_id();
+        }
 
-        MetaData::factory(Registry::getInstance()->get('tblPrefix') . 'usermeta')
-            ->update(
-                'user',
-                $this->id,
-                Registry::getInstance()->get('tblPrefix') . 'role',
-                $role,
-                $oldRole
-            );
+        $oldRole = AttributesFactory::user()->get(siteId: $siteId, userId: $this->id, key: 'role');
+
+        AttributesFactory::user()->set(siteId: $siteId, userId: $this->id, key: 'role', value: $role);
 
         /**
          * Fires after the user's role has been added/changed.
          *
          * @param string  $userId  The user id.
+         * @param string  $siteId  The site id.
          * @param string  $role    The new role.
          * @param string  $oldRole The user's previous role.
          */
-        Action::getInstance()->doAction('set_user_role', $this->id, $role, $oldRole);
+        Action::getInstance()->doAction('set_user_role', $this->id, $siteId, $role, $oldRole);
     }
 }

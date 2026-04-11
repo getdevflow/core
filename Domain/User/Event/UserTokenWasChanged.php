@@ -11,33 +11,30 @@ use Codefy\Domain\EventSourcing\AggregateChanged;
 use Codefy\Domain\EventSourcing\DomainEvent;
 use Codefy\Domain\Metadata;
 use Qubus\Exception\Data\TypeException;
-
 use SensitiveParameter;
-
-use function Qubus\Support\Helpers\is_null__;
 
 class UserTokenWasChanged extends AggregateChanged
 {
-    private ?UserId $userId = null;
+    private UserId $id;
 
-    private ?UserToken $userToken = null;
+    private UserToken $token;
 
     public static function withData(
-        UserId $userId,
-        #[SensitiveParameter] UserToken $userToken
+        UserId $id,
+        #[SensitiveParameter] UserToken $token
     ): UserTokenWasChanged|DomainEvent|AggregateChanged {
         $event = self::occur(
-            aggregateId: $userId,
+            aggregateId: $id,
             payload: [
-                'user_token' => $userToken->toNative(),
+                'user_token' => $token->toNative(),
             ],
             metadata: [
                 Metadata::AGGREGATE_TYPE => 'user'
             ]
         );
 
-        $event->userId = $userId;
-        $event->userToken = $userToken;
+        $event->id = $id;
+        $event->token = $token;
 
         return $event;
     }
@@ -47,11 +44,11 @@ class UserTokenWasChanged extends AggregateChanged
      */
     public function userId(): UserId|AggregateId
     {
-        if (is_null__($this->userId)) {
-            $this->userId = UserId::fromString(userId: $this->aggregateId()->__toString());
+        if (!isset($this->id)) {
+            $this->id = UserId::fromString(userId: $this->aggregateId()->__toString());
         }
 
-        return $this->userId;
+        return $this->id;
     }
 
     /**
@@ -59,10 +56,10 @@ class UserTokenWasChanged extends AggregateChanged
      */
     public function userToken(): UserToken
     {
-        if (is_null__($this->userToken)) {
-            $this->userToken = UserToken::fromString(userToken: $this->payload()['user_token']);
+        if (!isset($this->token)) {
+            $this->token = UserToken::fromString(userToken: $this->payload()['user_token']);
         }
 
-        return $this->userToken;
+        return $this->token;
     }
 }

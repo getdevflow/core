@@ -11,30 +11,28 @@ use Codefy\Domain\Metadata;
 use Qubus\Exception\Data\TypeException;
 use Qubus\ValueObjects\StringLiteral\StringLiteral;
 
-use function Qubus\Support\Helpers\is_null__;
-
 final class ProductStatusWasChanged extends AggregateChanged
 {
-    private ?ProductId $productId = null;
+    private ProductId $id;
 
-    private ?StringLiteral $productStatus = null;
+    private StringLiteral $status;
 
     public static function withData(
-        ProductId $productId,
-        StringLiteral $productStatus,
+        ProductId $id,
+        StringLiteral $status,
     ): ProductStatusWasChanged|DomainEvent|AggregateChanged {
         $event = self::occur(
-            aggregateId: $productId,
+            aggregateId: $id,
             payload: [
-                'product_status' => $productStatus->toNative(),
+                'product_status' => $status->toNative(),
             ],
             metadata: [
                 Metadata::AGGREGATE_TYPE => 'product',
             ]
         );
 
-        $event->productId = $productId;
-        $event->productStatus = $productStatus;
+        $event->id = $id;
+        $event->status = $status;
 
         return $event;
     }
@@ -44,22 +42,19 @@ final class ProductStatusWasChanged extends AggregateChanged
      */
     public function productId(): ProductId
     {
-        if (is_null__($this->productId)) {
-            $this->productId = ProductId::fromString($this->aggregateId()->__toString());
+        if (!isset($this->id)) {
+            $this->id = ProductId::fromString($this->aggregateId()->__toString());
         }
 
-        return $this->productId;
+        return $this->id;
     }
 
-    /**
-     * @throws TypeException
-     */
     public function productStatus(): StringLiteral
     {
-        if (is_null__($this->productStatus)) {
-            $this->productStatus = StringLiteral::fromNative($this->payload()['product_status']);
+        if (!isset($this->status)) {
+            $this->status = StringLiteral::fromNative($this->payload()['product_status']);
         }
 
-        return $this->productStatus;
+        return $this->status;
     }
 }

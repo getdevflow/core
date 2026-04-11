@@ -11,30 +11,28 @@ use Codefy\Domain\Metadata;
 use Qubus\Exception\Data\TypeException;
 use Qubus\ValueObjects\Number\IntegerNumber;
 
-use function Qubus\Support\Helpers\is_null__;
-
 final class ProductShowInSearchWasChanged extends AggregateChanged
 {
-    private ?ProductId $productId = null;
+    private ProductId $id;
 
-    private ?IntegerNumber $productShowInSearch = null;
+    private IntegerNumber $showInSearch;
 
     public static function withData(
-        ProductId $productId,
-        IntegerNumber $productShowInSearch,
+        ProductId $id,
+        IntegerNumber $showInSearch,
     ): ProductShowInSearchWasChanged|DomainEvent|AggregateChanged {
         $event = self::occur(
-            aggregateId: $productId,
+            aggregateId: $id,
             payload: [
-                'product_show_in_search' => $productShowInSearch->toNative(),
+                'product_show_in_search' => $showInSearch->toNative(),
             ],
             metadata: [
                 Metadata::AGGREGATE_TYPE => 'product',
             ]
         );
 
-        $event->productId = $productId;
-        $event->productShowInSearch = $productShowInSearch;
+        $event->id = $id;
+        $event->showInSearch = $showInSearch;
 
         return $event;
     }
@@ -44,19 +42,22 @@ final class ProductShowInSearchWasChanged extends AggregateChanged
      */
     public function productId(): ProductId
     {
-        if (is_null__($this->productId)) {
-            $this->productId = ProductId::fromString($this->aggregateId()->__toString());
+        if (!isset($this->id)) {
+            $this->id = ProductId::fromString($this->aggregateId()->__toString());
         }
 
-        return $this->productId;
+        return $this->id;
     }
 
+    /**
+     * @throws TypeException
+     */
     public function productShowInSearch(): IntegerNumber
     {
-        if (is_null__($this->productShowInSearch)) {
-            $this->productShowInSearch = IntegerNumber::fromNative($this->payload()['product_show_in_search']);
+        if (!isset($this->showInSearch)) {
+            $this->showInSearch = IntegerNumber::fromNative($this->payload()['product_show_in_search']);
         }
 
-        return $this->productShowInSearch;
+        return $this->showInSearch;
     }
 }

@@ -7,7 +7,7 @@ namespace App\Domain\Content;
 use App\Domain\Content\Event\ContentAuthorWasChanged;
 use App\Domain\Content\Event\ContentBodyWasChanged;
 use App\Domain\Content\Event\ContentFeaturedImageWasChanged;
-use App\Domain\Content\Event\ContentMetaWasChanged;
+use App\Domain\Content\Event\ContentAttributeWasChanged;
 use App\Domain\Content\Event\ContentModifiedGmtWasChanged;
 use App\Domain\Content\Event\ContentModifiedWasChanged;
 use App\Domain\Content\Event\ContentParentWasChanged;
@@ -39,84 +39,84 @@ use function Qubus\Support\Helpers\is_null__;
 
 final class Content extends EventSourcedAggregate implements AggregateRoot
 {
-    private ?ContentId $contentId = null;
+    private ContentId $id;
 
-    private ?StringLiteral $contentTitle = null;
+    private StringLiteral $title;
 
-    private ?StringLiteral $contentSlug = null;
+    private StringLiteral $slug;
 
-    private ?StringLiteral $contentBody = null;
+    private StringLiteral $body;
 
-    private ?UserId $contentAuthor = null;
+    private UserId $author;
 
-    private ?StringLiteral $contentTypeSlug = null;
+    private StringLiteral $type;
 
-    private ?ContentId $contentParent = null;
+    private ?ContentId $parent = null;
 
-    private ?IntegerNumber $contentSidebar = null;
+    private IntegerNumber $sidebar;
 
-    private ?IntegerNumber $contentShowInMenu = null;
+    private IntegerNumber $showInMenu;
 
-    private ?IntegerNumber $contentShowInSearch = null;
+    private IntegerNumber $showInSearch;
 
-    private ?StringLiteral $contentFeaturedImage = null;
+    private ?StringLiteral $featuredImage = null;
 
-    private ?ArrayLiteral $meta = null;
+    private ArrayLiteral $attribute;
 
-    private ?StringLiteral $contentStatus = null;
+    private StringLiteral $status;
 
-    private ?DateTimeInterface $contentCreated = null;
+    private DateTimeInterface $created;
 
-    private ?DateTimeInterface $contentCreatedGmt = null;
+    private DateTimeInterface $createdGmt;
 
-    private ?DateTimeInterface $contentPublished = null;
+    private DateTimeInterface $published;
 
-    private ?DateTimeInterface $contentPublishedGmt = null;
+    private DateTimeInterface $publishedGmt;
 
-    private ?DateTimeInterface $contentModified = null;
+    private ?DateTimeInterface $modified = null;
 
-    private ?DateTimeInterface $contentModifiedGmt = null;
+    private ?DateTimeInterface $modifiedGmt = null;
 
     public static function createContent(
-        ContentId $contentId,
-        StringLiteral $contentTitle,
-        StringLiteral $contentSlug,
-        StringLiteral $contentBody,
-        UserId $contentAuthor,
-        StringLiteral $contentTypeSlug,
-        IntegerNumber $contentSidebar,
-        IntegerNumber $contentShowInMenu,
-        IntegerNumber $contentShowInSearch,
-        StringLiteral $contentFeaturedImage,
-        StringLiteral $contentStatus,
-        DateTimeInterface $contentCreated,
-        DateTimeInterface $contentCreatedGmt,
-        DateTimeInterface $contentPublished,
-        DateTimeInterface $contentPublishedGmt,
-        ArrayLiteral $meta = null,
-        ?ContentId $contentParent = null,
+        ContentId $id,
+        StringLiteral $title,
+        StringLiteral $slug,
+        StringLiteral $body,
+        UserId $author,
+        StringLiteral $type,
+        IntegerNumber $sidebar,
+        IntegerNumber $showInMenu,
+        IntegerNumber $showInSearch,
+        StringLiteral $featuredImage,
+        StringLiteral $status,
+        DateTimeInterface $created,
+        DateTimeInterface $createdGmt,
+        DateTimeInterface $published,
+        DateTimeInterface $publishedGmt,
+        ArrayLiteral $attribute,
+        ?ContentId $parent = null,
     ): Content {
-        $content = self::root(aggregateId: $contentId);
+        $content = self::root(aggregateId: $id);
 
         $content->recordApplyAndPublishThat(
             ContentWasCreated::withData(
-                contentId: $contentId,
-                contentTitle: $contentTitle,
-                contentSlug: $contentSlug,
-                contentBody: $contentBody,
-                contentAuthor: $contentAuthor,
-                contentTypeSlug: $contentTypeSlug,
-                contentSidebar: $contentSidebar,
-                contentShowInMenu: $contentShowInMenu,
-                contentShowInSearch: $contentShowInSearch,
-                contentFeaturedImage: $contentFeaturedImage,
-                contentStatus: $contentStatus,
-                contentCreated: $contentCreated,
-                contentCreatedGmt: $contentCreatedGmt,
-                contentPublished: $contentPublished,
-                contentPublishedGmt: $contentPublishedGmt,
-                meta: $meta,
-                contentParent: $contentParent,
+                id: $id,
+                title: $title,
+                slug: $slug,
+                body: $body,
+                author: $author,
+                type: $type,
+                sidebar: $sidebar,
+                showInMenu: $showInMenu,
+                showInSearch: $showInSearch,
+                featuredImage: $featuredImage,
+                status: $status,
+                created: $created,
+                createdGmt: $createdGmt,
+                published: $published,
+                publishedGmt: $publishedGmt,
+                attribute: $attribute,
+                parent: $parent,
             )
         );
 
@@ -133,96 +133,96 @@ final class Content extends EventSourcedAggregate implements AggregateRoot
 
     public function contentId(): ContentId
     {
-        return $this->contentId;
+        return $this->id;
     }
 
     public function contentTitle(): StringLiteral
     {
-        return $this->contentTitle;
+        return $this->title;
     }
 
     public function contentSlug(): StringLiteral
     {
-        return $this->contentSlug;
+        return $this->slug;
     }
 
     public function contentBody(): StringLiteral
     {
-        return $this->contentBody;
+        return $this->body;
     }
 
     public function contentAuthor(): UserId
     {
-        return $this->contentAuthor;
+        return $this->author;
     }
 
     public function contentTypeSlug(): StringLiteral
     {
-        return $this->contentTypeSlug;
+        return $this->type;
     }
 
     public function contentParent(): ?ContentId
     {
-        return $this->contentParent;
+        return $this->parent;
     }
 
     public function contentSidebar(): IntegerNumber
     {
-        return $this->contentSidebar;
+        return $this->sidebar;
     }
 
     public function contentShowInMenu(): IntegerNumber
     {
-        return $this->contentShowInMenu;
+        return $this->showInMenu;
     }
 
     public function contentShowInSearch(): IntegerNumber
     {
-        return $this->contentShowInSearch;
+        return $this->showInSearch;
     }
 
     public function contentFeaturedImage(): StringLiteral
     {
-        return $this->contentFeaturedImage;
+        return $this->featuredImage;
     }
     public function contentStatus(): StringLiteral
     {
-        return $this->contentStatus;
+        return $this->status;
     }
 
     public function contentCreated(): DateTimeInterface
     {
-        return $this->contentCreated;
+        return $this->created;
     }
 
     public function contentCreatedGmt(): DateTimeInterface
     {
-        return $this->contentCreatedGmt;
+        return $this->createdGmt;
     }
 
     public function contentPublished(): DateTimeInterface
     {
-        return $this->contentPublished;
+        return $this->published;
     }
 
     public function contentPublishedGmt(): DateTimeInterface
     {
-        return $this->contentPublishedGmt;
+        return $this->publishedGmt;
     }
 
     public function contentModified(): DateTimeInterface
     {
-        return $this->contentModified;
+        return $this->modified;
     }
 
     public function contentModifiedGmt(): DateTimeInterface
     {
-        return $this->contentModifiedGmt;
+        return $this->modifiedGmt;
     }
 
-    public function meta(): ArrayLiteral
+    public function contentAttribute(): ArrayLiteral
     {
-        return $this->meta;
+        return $this->attribute;
     }
 
     /**
@@ -233,11 +233,11 @@ final class Content extends EventSourcedAggregate implements AggregateRoot
         if ($contentTitle->isEmpty()) {
             throw new Exception(message: t__(msgid: 'Content title cannot be empty.', domain: 'devflow'));
         }
-        if ($contentTitle->equals($this->contentTitle)) {
+        if ($contentTitle->equals($this->title)) {
             return;
         }
         $this->recordApplyAndPublishThat(
-            event: ContentTitleWasChanged::withData(contentId: $this->contentId, contentTitle: $contentTitle)
+            event: ContentTitleWasChanged::withData(id: $this->id, title: $contentTitle)
         );
     }
 
@@ -249,11 +249,11 @@ final class Content extends EventSourcedAggregate implements AggregateRoot
         if ($contentSlug->isEmpty()) {
             throw new Exception(message: t__(msgid: 'Content slug cannot be empty.', domain: 'devflow'));
         }
-        if ($contentSlug->equals($this->contentSlug)) {
+        if ($contentSlug->equals($this->slug)) {
             return;
         }
         $this->recordApplyAndPublishThat(
-            event: ContentSlugWasChanged::withData(contentId: $this->contentId, contentSlug: $contentSlug)
+            event: ContentSlugWasChanged::withData(id: $this->id, slug: $contentSlug)
         );
     }
 
@@ -262,13 +262,10 @@ final class Content extends EventSourcedAggregate implements AggregateRoot
      */
     public function changeContentBody(StringLiteral $contentBody): void
     {
-        if ($contentBody->isEmpty()) {
+        if ($contentBody->equals($this->body)) {
             return;
         }
-        if ($contentBody->equals($this->contentBody)) {
-            return;
-        }
-        $this->recordApplyAndPublishThat(ContentBodyWasChanged::withData($this->contentId, $contentBody));
+        $this->recordApplyAndPublishThat(ContentBodyWasChanged::withData($this->id, $contentBody));
     }
 
     /**
@@ -279,10 +276,10 @@ final class Content extends EventSourcedAggregate implements AggregateRoot
         if ($contentAuthor->isEmpty()) {
             throw new Exception(message: t__(msgid: 'Content author cannot be empty.', domain: 'devflow'));
         }
-        if ($contentAuthor->equals($this->contentAuthor)) {
+        if ($contentAuthor->equals($this->author)) {
             return;
         }
-        $this->recordApplyAndPublishThat(ContentAuthorWasChanged::withData($this->contentId, $contentAuthor));
+        $this->recordApplyAndPublishThat(ContentAuthorWasChanged::withData($this->id, $contentAuthor));
     }
 
     /**
@@ -293,10 +290,10 @@ final class Content extends EventSourcedAggregate implements AggregateRoot
         if ($contentTypeSlug->isEmpty()) {
             throw new Exception(message: t__(msgid: 'Content type cannot be empty.', domain: 'devflow'));
         }
-        if ($contentTypeSlug->equals($this->contentTypeSlug)) {
+        if ($contentTypeSlug->equals($this->type)) {
             return;
         }
-        $this->recordApplyAndPublishThat(ContentTypeWasChanged::withData($this->contentId, $contentTypeSlug));
+        $this->recordApplyAndPublishThat(ContentTypeWasChanged::withData($this->id, $contentTypeSlug));
     }
 
     /**
@@ -309,12 +306,12 @@ final class Content extends EventSourcedAggregate implements AggregateRoot
         }
 
         if (
-                (!$contentParent->isEmpty() && !is_null__($this->contentParent)) &&
-                $contentParent->equals($this->contentParent)
+                (!$contentParent->isEmpty() && !is_null__($this->parent)) &&
+                $contentParent->equals($this->parent)
         ) {
             return;
         }
-        $this->recordApplyAndPublishThat(ContentParentWasChanged::withData($this->contentId, $contentParent));
+        $this->recordApplyAndPublishThat(ContentParentWasChanged::withData($this->id, $contentParent));
     }
 
     /**
@@ -322,18 +319,18 @@ final class Content extends EventSourcedAggregate implements AggregateRoot
      */
     public function changeContentParentWasRemoved(?ContentId $contentParent = null): void
     {
-        if (is_null__($this->contentParent) && is_null__($contentParent)) {
+        if (is_null__($this->parent) && is_null__($contentParent)) {
             return;
         }
 
         if (
-                (!is_null__($this->contentParent) && !is_null__($contentParent)) &&
-                (!$contentParent->equals($this->contentParent))
+                (!is_null__($this->parent) && !is_null__($contentParent)) &&
+                (!$contentParent->equals($this->parent))
         ) {
             return;
         }
 
-        $this->recordApplyAndPublishThat(ContentParentWasRemoved::withData($this->contentId, $contentParent));
+        $this->recordApplyAndPublishThat(ContentParentWasRemoved::withData($this->id, $contentParent));
     }
 
     /**
@@ -344,10 +341,10 @@ final class Content extends EventSourcedAggregate implements AggregateRoot
         if ($contentSidebar->toInteger()->toNative() < 0) {
             throw new Exception(message: t__(msgid: 'Content sidebar must be an absolute integer.', domain: 'devflow'));
         }
-        if ($contentSidebar->equals($this->contentSidebar)) {
+        if ($contentSidebar->equals($this->sidebar)) {
             return;
         }
-        $this->recordApplyAndPublishThat(ContentSidebarWasChanged::withData($this->contentId, $contentSidebar));
+        $this->recordApplyAndPublishThat(ContentSidebarWasChanged::withData($this->id, $contentSidebar));
     }
 
     /**
@@ -358,10 +355,10 @@ final class Content extends EventSourcedAggregate implements AggregateRoot
         if ($showInMenu->toInteger()->toNative() < 0) {
             throw new Exception(message: t__(msgid: 'Show in menu must be an absolute integer.', domain: 'devflow'));
         }
-        if ($showInMenu->equals($this->contentShowInMenu)) {
+        if ($showInMenu->equals($this->showInMenu)) {
             return;
         }
-        $this->recordApplyAndPublishThat(ContentShowInMenuWasChanged::withData($this->contentId, $showInMenu));
+        $this->recordApplyAndPublishThat(ContentShowInMenuWasChanged::withData($this->id, $showInMenu));
     }
 
     /**
@@ -372,10 +369,10 @@ final class Content extends EventSourcedAggregate implements AggregateRoot
         if ($showInSearch->toInteger()->toNative() < 0) {
             throw new Exception(message: t__(msgid: 'Show in search must be an absolute integer.', domain: 'devflow'));
         }
-        if ($showInSearch->equals($this->contentShowInSearch)) {
+        if ($showInSearch->equals($this->showInSearch)) {
             return;
         }
-        $this->recordApplyAndPublishThat(ContentShowInSearchWasChanged::withData($this->contentId, $showInSearch));
+        $this->recordApplyAndPublishThat(ContentShowInSearchWasChanged::withData($this->id, $showInSearch));
     }
 
     /**
@@ -383,14 +380,11 @@ final class Content extends EventSourcedAggregate implements AggregateRoot
      */
     public function changeContentFeaturedImage(StringLiteral $contentFeaturedImage): void
     {
-        if ($contentFeaturedImage->isEmpty()) {
-            return;
-        }
-        if ($contentFeaturedImage->equals($this->contentFeaturedImage)) {
+        if ($contentFeaturedImage->equals($this->featuredImage)) {
             return;
         }
         $this->recordApplyAndPublishThat(
-            ContentFeaturedImageWasChanged::withData($this->contentId, $contentFeaturedImage)
+            ContentFeaturedImageWasChanged::withData($this->id, $contentFeaturedImage)
         );
     }
 
@@ -402,10 +396,10 @@ final class Content extends EventSourcedAggregate implements AggregateRoot
         if ($contentStatus->isEmpty()) {
             throw new Exception(message: t__(msgid: 'Content status cannot be empty.', domain: 'devflow'));
         }
-        if ($contentStatus->equals($this->contentStatus)) {
+        if ($contentStatus->equals($this->status)) {
             return;
         }
-        $this->recordApplyAndPublishThat(ContentStatusWasChanged::withData($this->contentId, $contentStatus));
+        $this->recordApplyAndPublishThat(ContentStatusWasChanged::withData($this->id, $contentStatus));
     }
 
     /**
@@ -413,13 +407,13 @@ final class Content extends EventSourcedAggregate implements AggregateRoot
      */
     public function changeContentPublished(DateTimeInterface $contentPublished): void
     {
-        if (empty($this->contentPublished)) {
+        if (empty($this->published)) {
             throw new Exception(message: t__(msgid: 'Content published cannot be empty.', domain: 'devflow'));
         }
-        if ($this->contentPublished->getTimestamp() === $contentPublished->getTimestamp()) {
+        if ($this->published->getTimestamp() === $contentPublished->getTimestamp()) {
             return;
         }
-        $this->recordApplyAndPublishThat(ContentPublishedWasChanged::withData($this->contentId, $contentPublished));
+        $this->recordApplyAndPublishThat(ContentPublishedWasChanged::withData($this->id, $contentPublished));
     }
 
     /**
@@ -427,14 +421,14 @@ final class Content extends EventSourcedAggregate implements AggregateRoot
      */
     public function changeContentPublishedGmt(DateTimeInterface $contentPublishedGmt): void
     {
-        if (empty($this->contentPublishedGmt)) {
+        if (empty($this->publishedGmt)) {
             throw new Exception(message: t__(msgid: 'Content published gmt cannot be empty.', domain: 'devflow'));
         }
-        if ($this->contentPublishedGmt->getTimestamp() === $contentPublishedGmt->getTimestamp()) {
+        if ($this->publishedGmt->getTimestamp() === $contentPublishedGmt->getTimestamp()) {
             return;
         }
         $this->recordApplyAndPublishThat(
-            ContentPublishedGmtWasChanged::withData($this->contentId, $contentPublishedGmt)
+            ContentPublishedGmtWasChanged::withData($this->id, $contentPublishedGmt)
         );
     }
 
@@ -444,12 +438,12 @@ final class Content extends EventSourcedAggregate implements AggregateRoot
     public function changeContentModified(DateTimeInterface $contentModified): void
     {
         if (
-                !is_null__($this->contentModified) &&
-                ($this->contentModified->getTimestamp() === $contentModified->getTimestamp())
+                !is_null__($this->modified) &&
+                ($this->modified->getTimestamp() === $contentModified->getTimestamp())
         ) {
             return;
         }
-        $this->recordApplyAndPublishThat(ContentModifiedWasChanged::withData($this->contentId, $contentModified));
+        $this->recordApplyAndPublishThat(ContentModifiedWasChanged::withData($this->id, $contentModified));
     }
 
     /**
@@ -458,12 +452,12 @@ final class Content extends EventSourcedAggregate implements AggregateRoot
     public function changeContentModifiedGmt(DateTimeInterface $contentModifiedGmt): void
     {
         if (
-                !is_null__($this->contentModifiedGmt) &&
-                ($this->contentModifiedGmt->getTimestamp() === $contentModifiedGmt->getTimestamp())
+                !is_null__($this->modifiedGmt) &&
+                ($this->modifiedGmt->getTimestamp() === $contentModifiedGmt->getTimestamp())
         ) {
             return;
         }
-        $this->recordApplyAndPublishThat(ContentModifiedGmtWasChanged::withData($this->contentId, $contentModifiedGmt));
+        $this->recordApplyAndPublishThat(ContentModifiedGmtWasChanged::withData($this->id, $contentModifiedGmt));
     }
 
     /**
@@ -476,23 +470,19 @@ final class Content extends EventSourcedAggregate implements AggregateRoot
         if ($contentId->isEmpty()) {
             throw new Exception(message: t__(msgid: 'Content id cannot be null.', domain: 'devflow'));
         }
-        if (!$contentId->equals($this->contentId)) {
+        if (!$contentId->equals($this->id)) {
             return;
         }
-        $this->recordApplyAndPublishThat(ContentWasDeleted::withData($this->contentId));
+        $this->recordApplyAndPublishThat(ContentWasDeleted::withData($this->id));
     }
 
-    public function changeContentMeta(ArrayLiteral $meta): void
+    public function changeContentAttribute(ArrayLiteral $attribute): void
     {
-        if ($meta->isEmpty()) {
+        if ($attribute->equals($this->attribute)) {
             return;
         }
 
-        if ($meta->equals($this->meta)) {
-            return;
-        }
-
-        $this->recordApplyAndPublishThat(ContentMetaWasChanged::withData($this->contentId, $meta));
+        $this->recordApplyAndPublishThat(ContentAttributeWasChanged::withData($this->id, $attribute));
     }
 
     /**
@@ -500,23 +490,23 @@ final class Content extends EventSourcedAggregate implements AggregateRoot
      */
     public function whenContentWasCreated(ContentWasCreated $event): void
     {
-        $this->contentId = $event->contentId();
-        $this->contentTitle = $event->contentTitle();
-        $this->contentSlug = $event->contentSlug();
-        $this->contentBody = $event->contentBody();
-        $this->contentAuthor = $event->contentAuthor();
-        $this->contentTypeSlug = $event->contentTypeSlug();
-        $this->contentSidebar = $event->contentSidebar();
-        $this->contentShowInMenu = $event->contentShowInMenu();
-        $this->contentShowInSearch = $event->contentShowInSearch();
-        $this->contentFeaturedImage = $event->contentFeaturedImage();
-        $this->contentStatus = $event->contentStatus();
-        $this->contentCreated = $event->contentCreated();
-        $this->contentCreatedGmt = $event->contentCreatedGmt();
-        $this->contentPublished = $event->contentPublished();
-        $this->contentPublishedGmt = $event->contentPublishedGmt();
-        $this->meta = $event->contentmeta();
-        $this->contentParent = $event->contentParent();
+        $this->id = $event->contentId();
+        $this->title = $event->contentTitle();
+        $this->slug = $event->contentSlug();
+        $this->body = $event->contentBody();
+        $this->author = $event->contentAuthor();
+        $this->type = $event->contentTypeSlug();
+        $this->sidebar = $event->contentSidebar();
+        $this->showInMenu = $event->contentShowInMenu();
+        $this->showInSearch = $event->contentShowInSearch();
+        $this->featuredImage = $event->contentFeaturedImage();
+        $this->status = $event->contentStatus();
+        $this->created = $event->contentCreated();
+        $this->createdGmt = $event->contentCreatedGmt();
+        $this->published = $event->contentPublished();
+        $this->publishedGmt = $event->contentPublishedGmt();
+        $this->attribute = $event->contentAttribute();
+        $this->parent = $event->contentParent();
     }
 
     /**
@@ -524,8 +514,8 @@ final class Content extends EventSourcedAggregate implements AggregateRoot
      */
     public function whenContentTitleWasChanged(ContentTitleWasChanged $event): void
     {
-        $this->contentId = $event->contentId();
-        $this->contentTitle = $event->contentTitle();
+        $this->id = $event->contentId();
+        $this->title = $event->contentTitle();
     }
 
     /**
@@ -533,8 +523,8 @@ final class Content extends EventSourcedAggregate implements AggregateRoot
      */
     public function whenContentSlugWasChanged(ContentSlugWasChanged $event): void
     {
-        $this->contentId = $event->contentId();
-        $this->contentSlug = $event->contentSlug();
+        $this->id = $event->contentId();
+        $this->slug = $event->contentSlug();
     }
 
     /**
@@ -542,8 +532,8 @@ final class Content extends EventSourcedAggregate implements AggregateRoot
      */
     public function whenContentBodyWasChanged(ContentBodyWasChanged $event): void
     {
-        $this->contentId = $event->contentId();
-        $this->contentBody = $event->contentBody();
+        $this->id = $event->contentId();
+        $this->body = $event->contentBody();
     }
 
     /**
@@ -551,8 +541,8 @@ final class Content extends EventSourcedAggregate implements AggregateRoot
      */
     public function whenContentAuthorWasChanged(ContentAuthorWasChanged $event): void
     {
-        $this->contentId = $event->contentId();
-        $this->contentAuthor = $event->contentAuthor();
+        $this->id = $event->contentId();
+        $this->author = $event->contentAuthor();
     }
 
     /**
@@ -560,8 +550,8 @@ final class Content extends EventSourcedAggregate implements AggregateRoot
      */
     public function whenContentTypeWasChanged(ContentTypeWasChanged $event): void
     {
-        $this->contentId = $event->contentId();
-        $this->contentTypeSlug = $event->contentTypeSlug();
+        $this->id = $event->contentId();
+        $this->type = $event->contentTypeSlug();
     }
 
     /**
@@ -569,8 +559,8 @@ final class Content extends EventSourcedAggregate implements AggregateRoot
      */
     public function whenContentParentWasChanged(ContentParentWasChanged $event): void
     {
-        $this->contentId = $event->contentId();
-        $this->contentParent = $event->contentParent();
+        $this->id = $event->contentId();
+        $this->parent = $event->contentParent();
     }
 
     /**
@@ -578,8 +568,8 @@ final class Content extends EventSourcedAggregate implements AggregateRoot
      */
     public function whenContentSidebarWasChanged(ContentSidebarWasChanged $event): void
     {
-        $this->contentId = $event->contentId();
-        $this->contentSidebar = $event->contentSidebar();
+        $this->id = $event->contentId();
+        $this->sidebar = $event->contentSidebar();
     }
 
     /**
@@ -587,8 +577,8 @@ final class Content extends EventSourcedAggregate implements AggregateRoot
      */
     public function whenContentShowInMenuWasChanged(ContentShowInMenuWasChanged $event): void
     {
-        $this->contentId = $event->contentId();
-        $this->contentShowInMenu = $event->contentShowInMenu();
+        $this->id = $event->contentId();
+        $this->showInMenu = $event->contentShowInMenu();
     }
 
     /**
@@ -596,8 +586,8 @@ final class Content extends EventSourcedAggregate implements AggregateRoot
      */
     public function whenContentShowInSearchWasChanged(ContentShowInSearchWasChanged $event): void
     {
-        $this->contentId = $event->contentId();
-        $this->contentShowInSearch = $event->contentShowInSearch();
+        $this->id = $event->contentId();
+        $this->showInSearch = $event->contentShowInSearch();
     }
 
     /**
@@ -605,17 +595,17 @@ final class Content extends EventSourcedAggregate implements AggregateRoot
      */
     public function whenContentFeaturedImageWasChanged(ContentFeaturedImageWasChanged $event): void
     {
-        $this->contentId = $event->contentId();
-        $this->contentFeaturedImage = $event->contentFeaturedImage();
+        $this->id = $event->contentId();
+        $this->featuredImage = $event->contentFeaturedImage();
     }
 
     /**
      * @throws TypeException
      */
-    public function whenContentAttributesWasChanged(ContentMetaWasChanged $event): void
+    public function whenContentAttributesWasChanged(ContentAttributeWasChanged $event): void
     {
-        $this->contentId = $event->contentId();
-        $this->meta = $event->contentmeta();
+        $this->id = $event->contentId();
+        $this->attribute = $event->contentAttribute();
     }
 
     /**
@@ -623,8 +613,8 @@ final class Content extends EventSourcedAggregate implements AggregateRoot
      */
     public function whenContentStatusWasChanged(ContentStatusWasChanged $event): void
     {
-        $this->contentId = $event->contentId();
-        $this->contentStatus = $event->contentStatus();
+        $this->id = $event->contentId();
+        $this->status = $event->contentStatus();
     }
 
     /**
@@ -632,8 +622,8 @@ final class Content extends EventSourcedAggregate implements AggregateRoot
      */
     public function whenContentPublishedWasChanged(ContentPublishedWasChanged $event): void
     {
-        $this->contentId = $event->contentId();
-        $this->contentPublished = $event->contentPublished();
+        $this->id = $event->contentId();
+        $this->published = $event->contentPublished();
     }
 
     /**
@@ -641,8 +631,8 @@ final class Content extends EventSourcedAggregate implements AggregateRoot
      */
     public function whenContentPublishedGmtWasChanged(ContentPublishedGmtWasChanged $event): void
     {
-        $this->contentId = $event->contentId();
-        $this->contentPublishedGmt = $event->contentPublishedGmt();
+        $this->id = $event->contentId();
+        $this->publishedGmt = $event->contentPublishedGmt();
     }
 
     /**
@@ -650,8 +640,8 @@ final class Content extends EventSourcedAggregate implements AggregateRoot
      */
     public function whenContentModifiedWasChanged(ContentModifiedWasChanged $event): void
     {
-        $this->contentId = $event->contentId();
-        $this->contentModified = $event->contentModified();
+        $this->id = $event->contentId();
+        $this->modified = $event->contentModified();
     }
 
     /**
@@ -659,8 +649,8 @@ final class Content extends EventSourcedAggregate implements AggregateRoot
      */
     public function whenContentModifiedGmtWasChanged(ContentModifiedGmtWasChanged $event): void
     {
-        $this->contentId = $event->contentId();
-        $this->contentModifiedGmt = $event->contentModifiedGmt();
+        $this->id = $event->contentId();
+        $this->modifiedGmt = $event->contentModifiedGmt();
     }
 
     /**
@@ -668,17 +658,17 @@ final class Content extends EventSourcedAggregate implements AggregateRoot
      */
     public function whenContentParentWasRemoved(ContentParentWasRemoved $event): void
     {
-        $this->contentId = $event->contentId();
-        $this->contentParent = $event->contentParent();
+        $this->id = $event->contentId();
+        $this->parent = $event->contentParent();
     }
 
     /**
      * @throws TypeException
      */
-    public function whenContentMetaWasChanged(ContentMetaWasChanged $event): void
+    public function whenContentMetaWasChanged(ContentAttributeWasChanged $event): void
     {
-        $this->contentId = $event->contentId();
-        $this->meta = $event->contentMeta();
+        $this->id = $event->contentId();
+        $this->attribute = $event->contentAttribute();
     }
 
     /**
@@ -686,6 +676,6 @@ final class Content extends EventSourcedAggregate implements AggregateRoot
      */
     public function whenContentWasDeleted(ContentWasDeleted $event): void
     {
-        $this->contentId = $event->contentId();
+        $this->id = $event->contentId();
     }
 }

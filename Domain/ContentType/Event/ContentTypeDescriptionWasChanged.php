@@ -11,13 +11,11 @@ use Codefy\Domain\Metadata;
 use Qubus\Exception\Data\TypeException;
 use Qubus\ValueObjects\StringLiteral\StringLiteral;
 
-use function Qubus\Support\Helpers\is_null__;
-
 class ContentTypeDescriptionWasChanged extends AggregateChanged
 {
-    private ?ContentTypeId $contentTypeId = null;
+    private ContentTypeId $contentTypeId;
 
-    private ?StringLiteral $contentTypeDescription = null;
+    private StringLiteral $contentTypeDescription;
 
     public static function withData(
         ContentTypeId $contentTypeId,
@@ -44,19 +42,16 @@ class ContentTypeDescriptionWasChanged extends AggregateChanged
      */
     public function contentTypeId(): ContentTypeId
     {
-        if (is_null__($this->contentTypeId)) {
+        if (!isset($this->contentTypeId)) {
             $this->contentTypeId = ContentTypeId::fromString($this->aggregateId()->__toString());
         }
 
         return $this->contentTypeId;
     }
 
-    /**
-     * @throws TypeException
-     */
     public function contentTypeDescription(): StringLiteral
     {
-        if (is_null__($this->contentTypeDescription)) {
+        if (!isset($this->contentTypeDescription)) {
             $this->contentTypeDescription = StringLiteral::fromNative($this->payload()['content_type_description']);
         }
 

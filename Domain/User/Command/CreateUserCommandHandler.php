@@ -4,16 +4,15 @@ declare(strict_types=1);
 
 namespace App\Domain\User\Command;
 
-use App\Domain\User\Repository\UserAggregateRepository;
-use App\Domain\User\User;
+use App\Application\Devflow;
+use App\Domain\User\Model\User;
+use App\Domain\User\Repository\UserCommandRepository;
 use Codefy\CommandBus\Command;
 use Codefy\CommandBus\CommandHandler;
-use Qubus\ValueObjects\Person\Name;
-use Qubus\ValueObjects\StringLiteral\StringLiteral;
 
 final readonly class CreateUserCommandHandler implements CommandHandler
 {
-    public function __construct(public UserAggregateRepository $aggregateRepository)
+    public function __construct(public UserCommandRepository $repository)
     {
     }
 
@@ -22,26 +21,25 @@ final readonly class CreateUserCommandHandler implements CommandHandler
      */
     public function handle(CreateUserCommand|Command $command): void
     {
-        $user = User::createUser(
-            userId: $command->id,
-            login: $command->login,
-            name: new Name(
-                firstName: $command->fname,
-                middleName: $command->mname ?? new StringLiteral(''),
-                lastName: $command->lname
-            ),
-            emailAddress: $command->email,
-            token: $command->token,
-            password: $command->pass,
-            url: $command->url,
-            timezone: $command->timezone,
-            dateFormat: $command->dateFormat,
-            timeFormat: $command->timeFormat,
-            locale: $command->locale,
-            registered: $command->registered,
-            meta: $command->meta
-        );
+        /** @var User $user */
+        $user = Devflow::$PHP->make(name: User::class);
+        $user->id = $command->id->toNative();
+        $user->login = $command->login->toNative();
+        $user->token = $command->token->toNative();
+        $user->fname = $command->fname->toNative();
+        $user->mname = isset($command->mname) ? $command->mname->toNative() : '';
+        $user->lname = $command->lname->toNative();
+        $user->email = $command->email->toNative();
+        $user->pass = $command->pass->toNative();
+        $user->url = $command->url->toNative();
+        $user->bio = $command->bio->toNative();
+        $user->timezone = $command->timezone->toNative();
+        $user->dateFormat = $command->dateFormat->toNative();
+        $user->timeFormat = $command->timeFormat->toNative();
+        $user->locale = $command->locale->toNative();
+        $user->activationKey = isset($command->activationKey) ? $command->activationKey->toNative() : null;
+        $user->registered = $command->registered->format('Y-m-d H:i:s');
 
-        $this->aggregateRepository->saveAggregateRoot(aggregate: $user);
+        $this->repository->save(user: $user);
     }
 }

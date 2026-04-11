@@ -29,6 +29,7 @@ use function Qubus\Support\Helpers\is_true__;
 final class UserRestController extends BaseController
 {
     /**
+     * @uses \App\Shared\Helpers\get_all_users()
      * @throws Exception
      */
     public function index(Request $request): ResponseInterface
@@ -47,6 +48,7 @@ final class UserRestController extends BaseController
     }
 
     /**
+     * @uses \App\Shared\Helpers\get_user_by()
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
      * @throws ContainerExceptionInterface
@@ -70,6 +72,7 @@ final class UserRestController extends BaseController
     }
 
     /**
+     * @uses \App\Shared\Helpers\cms_insert_user()
      * @throws NotFoundExceptionInterface
      * @throws ContainerExceptionInterface
      * @throws Exception
@@ -92,6 +95,7 @@ final class UserRestController extends BaseController
     }
 
     /**
+     * @uses \App\Shared\Helpers\cms_update_user()
      * @throws NotFoundExceptionInterface
      * @throws ContainerExceptionInterface
      * @throws Exception
@@ -116,6 +120,7 @@ final class UserRestController extends BaseController
     }
 
     /**
+     * @uses \App\Shared\Helpers\cms_delete_user()
      * @throws NotFoundExceptionInterface
      * @throws ContainerExceptionInterface
      * @throws InvalidArgumentException

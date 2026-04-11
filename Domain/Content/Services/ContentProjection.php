@@ -7,7 +7,7 @@ namespace App\Domain\Content\Services;
 use App\Domain\Content\Event\ContentAuthorWasChanged;
 use App\Domain\Content\Event\ContentBodyWasChanged;
 use App\Domain\Content\Event\ContentFeaturedImageWasChanged;
-use App\Domain\Content\Event\ContentMetaWasChanged;
+use App\Domain\Content\Event\ContentAttributeWasChanged;
 use App\Domain\Content\Event\ContentModifiedGmtWasChanged;
 use App\Domain\Content\Event\ContentModifiedWasChanged;
 use App\Domain\Content\Event\ContentParentWasChanged;
@@ -61,7 +61,7 @@ interface ContentProjection extends Projection
 
     public function projectWhenContentModifiedGmtWasChanged(ContentModifiedGmtWasChanged $event): void;
 
-    public function projectWhenContentMetaWasChanged(ContentMetaWasChanged $event): void;
+    public function projectWhenContentAttributeWasChanged(ContentAttributeWasChanged $event): void;
 
     public function projectWhenContentWasDeleted(ContentWasDeleted $event): void;
 }

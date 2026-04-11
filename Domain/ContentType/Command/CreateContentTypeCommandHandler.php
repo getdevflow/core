@@ -21,10 +21,10 @@ class CreateContentTypeCommandHandler implements CommandHandler
     public function handle(CreateContentTypeCommand|Command $command): void
     {
         $contentType = ContentType::createContentType(
-            contentTypeId: $command->contentTypeId,
-            contentTypeTitle: $command->contentTypeTitle,
-            contentTypeSlug: $command->contentTypeSlug,
-            contentTypeDescription: $command->contentTypeDescription,
+            contentTypeId: $command->id,
+            contentTypeTitle: $command->title,
+            contentTypeSlug: $command->slug,
+            contentTypeDescription: $command->description,
         );
 
         $this->aggregateRepository->saveAggregateRoot($contentType);

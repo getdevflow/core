@@ -12,30 +12,28 @@ use Codefy\Domain\Metadata;
 use Qubus\Exception\Data\TypeException;
 use Qubus\ValueObjects\StringLiteral\StringLiteral;
 
-use function Qubus\Support\Helpers\is_null__;
-
 final class SitePathWasChanged extends AggregateChanged
 {
-    private ?SiteId $siteId = null;
+    private SiteId $id;
 
-    private ?StringLiteral $sitePath = null;
+    private StringLiteral $path;
 
     public static function withData(
-        SiteId $siteId,
-        StringLiteral $sitePath
+        SiteId $id,
+        StringLiteral $path
     ): SitePathWasChanged|DomainEvent|AggregateChanged {
         $event = self::occur(
-            aggregateId: $siteId,
+            aggregateId: $id,
             payload: [
-                    'site_path' => $sitePath->toNative(),
-                ],
+                'site_path' => $path->toNative(),
+            ],
             metadata: [
-                    Metadata::AGGREGATE_TYPE => 'site'
-                ],
+                Metadata::AGGREGATE_TYPE => 'site'
+            ],
         );
 
-        $event->siteId = $siteId;
-        $event->sitePath = $sitePath;
+        $event->id = $id;
+        $event->path = $path;
 
         return $event;
     }
@@ -45,22 +43,19 @@ final class SitePathWasChanged extends AggregateChanged
      */
     public function siteId(): SiteId|AggregateId
     {
-        if (is_null__($this->siteId)) {
-            $this->siteId = SiteId::fromString(siteId: $this->aggregateId()->__toString());
+        if (!isset($this->id)) {
+            $this->id = SiteId::fromString(siteId: $this->aggregateId()->__toString());
         }
 
-        return $this->siteId;
+        return $this->id;
     }
 
-    /**
-     * @throws TypeException
-     */
     public function sitePath(): StringLiteral
     {
-        if (is_null__($this->sitePath)) {
-            $this->sitePath = StringLiteral::fromNative($this->payload()['site_path']);
+        if (!isset($this->path)) {
+            $this->path = StringLiteral::fromNative($this->payload()['site_path']);
         }
 
-        return $this->sitePath;
+        return $this->path;
     }
 }

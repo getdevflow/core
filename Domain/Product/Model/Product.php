@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Product\Model;
 
 use App\Infrastructure\Persistence\Cache\ProductCachePsr16;
-use App\Infrastructure\Persistence\Database;
+use Qubus\Expressive\Database;
 use App\Shared\Services\MetaData;
 use App\Shared\Services\Registry;
 use App\Shared\Services\SimpleCacheObjectCacheFactory;
@@ -57,7 +57,7 @@ final class Product extends stdClass
      *
      * @param string $field The field to query against: 'id', 'ID', 'slug' or 'sku'.
      * @param string $value The field value
-     * @return object|false Raw user object
+     * @return Product|false Raw product object
      * @throws Exception
      * @throws ReflectionException
      * @throws ContainerExceptionInterface
@@ -72,6 +72,8 @@ final class Product extends stdClass
 
         $productId = match ($field) {
             'id', 'ID' => $value,
+            'owner', 'author', => SimpleCacheObjectCacheFactory::make(namespace: $this->dfdb->prefix . 'productauthor')
+                    ->get(md5($value), ''),
             'slug' => SimpleCacheObjectCacheFactory::make(namespace: $this->dfdb->prefix . 'productslug')
                     ->get(md5($value), ''),
             'sku' => SimpleCacheObjectCacheFactory::make(namespace: $this->dfdb->prefix . 'productsku')
@@ -81,6 +83,7 @@ final class Product extends stdClass
 
         $dbField = match ($field) {
             'id', 'ID' => 'product_id',
+            'owner', 'author', => 'product_author',
             'slug' => 'product_slug',
             'sku' => 'product_sku',
             default => false,
@@ -131,6 +134,7 @@ final class Product extends stdClass
      *
      * @param array $data
      * @return Product
+     * @throws Exception
      */
     public function create(array $data = []): Product
     {

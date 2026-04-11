@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Site\Model;
 
 use App\Infrastructure\Persistence\Cache\SiteCachePsr16;
-use App\Infrastructure\Persistence\Database;
+use Qubus\Expressive\Database;
 use App\Shared\Services\SimpleCacheObjectCacheFactory;
 use App\Shared\Services\Trait\HydratorAware;
 use Psr\Container\ContainerExceptionInterface;
@@ -74,7 +74,7 @@ final class Site extends stdClass
         if ('' !== $siteId) {
             if (
                     $data = SimpleCacheObjectCacheFactory::make(namespace: 'sites')
-                            ->get(md5($siteId))
+                        ->get(md5($siteId))
             ) {
                 is_array($data) ? convert_array_to_object($data) : $data;
             }
@@ -114,6 +114,7 @@ final class Site extends stdClass
      *
      * @param array $data
      * @return Site
+     * @throws Exception
      */
     public function create(array $data = []): Site
     {
@@ -198,6 +199,8 @@ final class Site extends stdClass
      */
     public function toArray(): array
     {
+        unset($this->dfdb);
+
         return get_object_vars($this);
     }
 }

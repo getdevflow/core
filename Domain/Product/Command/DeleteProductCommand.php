@@ -9,5 +9,5 @@ use Codefy\CommandBus\PropertyCommand;
 
 class DeleteProductCommand extends PropertyCommand
 {
-    public ?ProductId $productId = null;
+    public ProductId $id;
 }

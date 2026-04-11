@@ -10,5 +10,5 @@ use Codefy\QueryBus\Query;
 
 class FindContentTypeByIdQuery extends PropertyCommand implements Query
 {
-    public ?ContentTypeId $contentTypeId = null;
+    public ?ContentTypeId $id = null;
 }

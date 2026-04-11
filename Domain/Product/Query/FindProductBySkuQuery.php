@@ -10,5 +10,5 @@ use Qubus\ValueObjects\StringLiteral\StringLiteral;
 
 final class FindProductBySkuQuery extends PropertyCommand implements Query
 {
-    public ?StringLiteral $productSku = null;
+    public StringLiteral $sku;
 }

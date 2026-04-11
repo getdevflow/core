@@ -7,17 +7,10 @@ namespace App\Infrastructure\Http\Controllers;
 use App\Application\Devflow;
 use App\Domain\Site\Model\Site;
 use App\Domain\User\Query\FindUsersQuery;
-use App\Infrastructure\Persistence\Database;
-use App\Infrastructure\Services\UserAuth;
-use Codefy\CommandBus\Containers\ContainerFactory;
 use Codefy\CommandBus\Exceptions\CommandCouldNotBeHandledException;
 use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
 use Codefy\CommandBus\Exceptions\UnresolvableCommandHandlerException;
-use Codefy\Framework\Factory\FileLoggerFactory;
 use Codefy\Framework\Http\BaseController;
-use Codefy\QueryBus\Busses\SynchronousQueryBus;
-use Codefy\QueryBus\Enquire;
-use Codefy\QueryBus\Resolvers\NativeQueryHandlerResolver;
 use Codefy\QueryBus\UnresolvableQueryHandlerException;
 use DateInvalidTimeZoneException;
 use Psr\Container\ContainerExceptionInterface;
@@ -29,9 +22,6 @@ use Qubus\Exception\Exception;
 use Qubus\Http\Factories\JsonResponseFactory;
 use Qubus\Http\ServerRequest;
 use Qubus\Http\Session\SessionException;
-use Qubus\Http\Session\SessionService;
-use Qubus\Routing\Router;
-use Qubus\View\Renderer;
 use ReflectionException;
 
 use function App\Shared\Helpers\admin_url;
@@ -39,11 +29,15 @@ use function App\Shared\Helpers\cms_delete_site;
 use function App\Shared\Helpers\cms_delete_site_user;
 use function App\Shared\Helpers\cms_insert_site;
 use function App\Shared\Helpers\cms_update_site;
+use function App\Shared\Helpers\current_user_can;
 use function App\Shared\Helpers\get_all_sites;
 use function App\Shared\Helpers\get_site_by;
 use function App\Shared\Helpers\is_multisite;
 use function App\Shared\Helpers\sort_list;
+use function Codefy\Framework\Helpers\ask;
 use function Codefy\Framework\Helpers\config;
+use function Codefy\Framework\Helpers\logger;
+use function Codefy\Framework\Helpers\view;
 use function Qubus\Error\Helpers\is_error;
 use function Qubus\Security\Helpers\t__;
 use function Qubus\Support\Helpers\is_false__;
@@ -51,19 +45,10 @@ use function sprintf;
 
 final class AdminSiteController extends BaseController
 {
-    public function __construct(
-        protected SessionService $sessionService,
-        protected Router $router,
-        protected UserAuth $user,
-        protected Database $dfdb,
-        protected Renderer $view
-    ) {
-        parent::__construct($sessionService, $router, $view);
-    }
-
     /**
      * @param ServerRequest $request
-     * @return ResponseInterface|null
+     * @return ResponseInterface
+     * @throws CommandPropertyNotFoundException
      * @throws ContainerExceptionInterface
      * @throws DateInvalidTimeZoneException
      * @throws Exception
@@ -71,10 +56,11 @@ final class AdminSiteController extends BaseController
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
      * @throws TypeException
+     * @throws UnresolvableQueryHandlerException
      */
-    public function siteCreate(ServerRequest $request): ?ResponseInterface
+    public function siteCreate(ServerRequest $request): ResponseInterface
     {
-        if (false === $this->user->can(permissionName: 'create:sites')) {
+        if (false === current_user_can(perm: 'create:sites')) {
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
@@ -83,7 +69,7 @@ final class AdminSiteController extends BaseController
 
         if (!is_multisite()) {
             Devflow::$PHP->flash->error(
-                message: t__(msgid: 'Access denied.', domain: 'devflow')
+                message: t__(msgid: 'Multisite is not enabled.', domain: 'devflow')
             );
             return $this->redirect(admin_url());
         }
@@ -108,30 +94,31 @@ final class AdminSiteController extends BaseController
             Exception |
             ReflectionException $e
         ) {
-            FileLoggerFactory::getLogger()->error($e->getMessage());
+            logger(level: 'error', message: $e->getMessage());
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Insertion exception occurred and was logged.', domain: 'devflow')
             );
         }
 
-        return $this->redirect($request->getServerParams()['HTTP_REFERER']);
+        return $this->redirect($request->getHeaderLine('Referer'));
     }
 
     /**
      * @param ServerRequest $request
-     * @return string|ResponseInterface
+     * @return ResponseInterface
+     * @throws CommandPropertyNotFoundException
      * @throws ContainerExceptionInterface
      * @throws Exception
      * @throws InvalidArgumentException
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
-     * @throws SessionException
      * @throws TypeException
+     * @throws UnresolvableQueryHandlerException
      * @throws \Exception
      */
-    public function sites(ServerRequest $request): string|ResponseInterface
+    public function sites(ServerRequest $request): ResponseInterface
     {
-        if (false === $this->user->can(permissionName: 'manage:sites')) {
+        if (false === current_user_can(perm: 'manage:sites')) {
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
@@ -140,17 +127,17 @@ final class AdminSiteController extends BaseController
 
         if (!is_multisite()) {
             Devflow::$PHP->flash->error(
-                message: t__(msgid: 'Access denied.', domain: 'devflow')
+                message: t__(msgid: 'Multisite is not enabled.', domain: 'devflow')
             );
             return $this->redirect(admin_url());
         }
 
         try {
-            $connection = config(key: 'database.default');
+            $connection = config()->string(key: 'database.default');
 
             $sites = get_all_sites();
 
-            return $this->view->render(
+            return view(
                 template: 'framework::backend/admin/site/index',
                 data: [
                     'title' => t__(msgid: 'Sites', domain: 'devflow'),
@@ -160,7 +147,7 @@ final class AdminSiteController extends BaseController
                 ]
             );
         } catch (UnresolvableQueryHandlerException | ReflectionException $e) {
-            FileLoggerFactory::getLogger()->error($e->getMessage());
+            logger(level: 'error', message: $e->getMessage());
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Exception occurred and was logged.', domain: 'devflow')
             );
@@ -172,18 +159,19 @@ final class AdminSiteController extends BaseController
     /**
      * @param ServerRequest $request
      * @param string $siteId
-     * @return ResponseInterface|null
+     * @return ResponseInterface
+     * @throws CommandPropertyNotFoundException
      * @throws ContainerExceptionInterface
      * @throws Exception
      * @throws InvalidArgumentException
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
-     * @throws SessionException
      * @throws TypeException
+     * @throws UnresolvableQueryHandlerException
      */
-    public function siteChange(ServerRequest $request, string $siteId): ?ResponseInterface
+    public function siteChange(ServerRequest $request, string $siteId): ResponseInterface
     {
-        if (false === $this->user->can(permissionName: 'update:sites')) {
+        if (false === current_user_can(perm: 'update:sites')) {
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
@@ -192,7 +180,7 @@ final class AdminSiteController extends BaseController
 
         if (!is_multisite()) {
             Devflow::$PHP->flash->error(
-                message: t__(msgid: 'Access denied.', domain: 'devflow')
+                message: t__(msgid: 'Multisite is not enabled.', domain: 'devflow')
             );
             return $this->redirect(admin_url());
         }
@@ -220,19 +208,19 @@ final class AdminSiteController extends BaseController
             Exception |
             ReflectionException $e
         ) {
-            FileLoggerFactory::getLogger()->error($e->getMessage());
+            logger(level: 'error', message: $e->getMessage());
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Change exception occurred and was logged.', domain: 'devflow')
             );
         }
 
-        return $this->redirect($request->getServerParams()['HTTP_REFERER']);
+        return $this->redirect($request->getHeaderLine('Referer'));
     }
 
     /**
      * @param ServerRequest $request
      * @param string $siteId
-     * @return string|ResponseInterface
+     * @return ResponseInterface
      * @throws ContainerExceptionInterface
      * @throws Exception
      * @throws InvalidArgumentException
@@ -242,9 +230,9 @@ final class AdminSiteController extends BaseController
      * @throws TypeException
      * @throws \Exception
      */
-    public function siteView(ServerRequest $request, string $siteId): string|ResponseInterface
+    public function siteView(ServerRequest $request, string $siteId): ResponseInterface
     {
-        if (false === $this->user->can(permissionName: 'manage:sites')) {
+        if (false === current_user_can(perm: 'manage:sites')) {
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
@@ -253,7 +241,7 @@ final class AdminSiteController extends BaseController
 
         if (!is_multisite()) {
             Devflow::$PHP->flash->error(
-                message: t__(msgid: 'Access denied.', domain: 'devflow')
+                message: t__(msgid: 'Multisite is not enabled.', domain: 'devflow')
             );
             return $this->redirect(admin_url());
         }
@@ -269,7 +257,7 @@ final class AdminSiteController extends BaseController
                 );
             }
 
-            return $this->view->render(
+            return view(
                 template: 'framework::backend/admin/site/view',
                 data: [
                     'title' => $site->name,
@@ -282,7 +270,7 @@ final class AdminSiteController extends BaseController
             TypeException |
             ReflectionException $e
         ) {
-            FileLoggerFactory::getLogger()->error($e->getMessage());
+            logger(level: 'error', message: $e->getMessage());
         }
 
         return JsonResponseFactory::create(
@@ -293,19 +281,20 @@ final class AdminSiteController extends BaseController
 
     /**
      * @param ServerRequest $request
-     * @return ResponseInterface|string|null
+     * @return ResponseInterface
+     * @throws CommandPropertyNotFoundException
      * @throws ContainerExceptionInterface
      * @throws Exception
      * @throws InvalidArgumentException
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
-     * @throws SessionException
      * @throws TypeException
      * @throws UnresolvableQueryHandlerException
+     * @throws \Exception
      */
-    public function siteUsers(ServerRequest $request): ResponseInterface|null|string
+    public function siteUsers(ServerRequest $request): ResponseInterface
     {
-        if (false === $this->user->can(permissionName: 'manage:sites')) {
+        if (false === current_user_can(perm: 'manage:sites')) {
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
@@ -314,22 +303,16 @@ final class AdminSiteController extends BaseController
 
         if (!is_multisite()) {
             Devflow::$PHP->flash->error(
-                message: t__(msgid: 'Access denied.', domain: 'devflow')
+                message: t__(msgid: 'Multisite is not enabled.', domain: 'devflow')
             );
             return $this->redirect(admin_url());
         }
-
-        $resolver = new NativeQueryHandlerResolver(
-            container: ContainerFactory::make(config: config(key: 'querybus.aliases'))
-        );
-        $enquirer = new Enquire(bus: new SynchronousQueryBus($resolver));
-
-        $query = new FindUsersQuery();
-        $results = $enquirer->execute($query);
+        
+        $results = ask(new FindUsersQuery());
 
         $users = sort_list($results, 'lname', 'ASC', true);
 
-        return $this->view->render(
+        return view(
             template: 'framework::backend/admin/site/users',
             data: [
                 'title' => t__(msgid: 'Manage Site Users', domain: 'devflow'),
@@ -342,20 +325,20 @@ final class AdminSiteController extends BaseController
      * @param ServerRequest $request
      * @param string $userId
      * @return ResponseInterface
+     * @throws CommandPropertyNotFoundException
      * @throws ContainerExceptionInterface
      * @throws Exception
      * @throws InvalidArgumentException
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
-     * @throws SessionException
      * @throws TypeException
-     * @throws \Exception
+     * @throws UnresolvableQueryHandlerException
      */
     public function siteUsersDelete(ServerRequest $request, string $userId): ResponseInterface
     {
         if (
-            false === $this->user->can(permissionName: 'delete:users') &&
-            false === $this->user->can(permissionName: 'manage:sites')
+            false === current_user_can(perm: 'delete:users') &&
+            false === current_user_can(perm: 'manage:sites')
         ) {
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
@@ -365,7 +348,7 @@ final class AdminSiteController extends BaseController
 
         if (!is_multisite()) {
             Devflow::$PHP->flash->error(
-                message: t__(msgid: 'Access denied.', domain: 'devflow')
+                message: t__(msgid: 'Multisite is not enabled.', domain: 'devflow')
             );
             return $this->redirect(admin_url());
         }
@@ -402,7 +385,7 @@ final class AdminSiteController extends BaseController
             ContainerExceptionInterface |
             ReflectionException $e
         ) {
-            FileLoggerFactory::getLogger()->error($e->getMessage());
+            logger(level: 'error', message: $e->getMessage());
             Devflow::$PHP->flash->error(
                 t__(msgid: 'Delete exception occurred and was logged.', domain: 'devflow')
             );
@@ -415,17 +398,18 @@ final class AdminSiteController extends BaseController
      * @param ServerRequest $request
      * @param string $siteId
      * @return ResponseInterface
+     * @throws CommandPropertyNotFoundException
      * @throws ContainerExceptionInterface
      * @throws Exception
      * @throws InvalidArgumentException
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
-     * @throws SessionException
      * @throws TypeException
+     * @throws UnresolvableQueryHandlerException
      */
     public function siteDelete(ServerRequest $request, string $siteId): ResponseInterface
     {
-        if (false === $this->user->can(permissionName: 'delete:sites')) {
+        if (false === current_user_can(perm: 'delete:sites')) {
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
@@ -434,20 +418,20 @@ final class AdminSiteController extends BaseController
 
         if (!is_multisite()) {
             Devflow::$PHP->flash->error(
-                message: t__(msgid: 'Access denied.', domain: 'devflow')
+                message: t__(msgid: 'Multisite is not enabled.', domain: 'devflow')
             );
             return $this->redirect(admin_url());
         }
 
         try {
-            $connection = config(key: 'database.default');
+            $connection = config()->string(key: 'database.default');
 
             /** @var Site $checkSite */
             $checkSite = get_site_by('id', $siteId);
 
             if (
-                    $checkSite->key === config(key: "database.connections.$connection.prefix") ||
-                    $checkSite->domain === config(key: 'cms.main_site_url')
+                    $checkSite->key === config()->string(key: "database.connections.$connection.prefix") ||
+                    $checkSite->domain === config()->string(key: 'cms.main_site_url')
             ) {
                 Devflow::$PHP->flash->error(
                     message: t__(msgid: 'This action is not allowed.', domain: 'devflow')
@@ -461,7 +445,7 @@ final class AdminSiteController extends BaseController
             ReflectionException |
             Exception $e
         ) {
-            FileLoggerFactory::getLogger()->error($e->getMessage());
+            logger(level: 'error', message: $e->getMessage());
             Devflow::$PHP->flash->error(
                 t__(msgid: 'A site check exception occurred and was logged.', domain: 'devflow')
             );
@@ -484,7 +468,7 @@ final class AdminSiteController extends BaseController
             Exception |
             ReflectionException $e
         ) {
-            FileLoggerFactory::getLogger()->error($e->getMessage());
+            logger(level: 'error', message: $e->getMessage());
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'A site deletion exception occurred and was logged.', domain: 'devflow')
             );

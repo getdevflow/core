@@ -19,108 +19,107 @@ use Qubus\ValueObjects\Money\Money;
 use Qubus\ValueObjects\Number\IntegerNumber;
 use Qubus\ValueObjects\StringLiteral\StringLiteral;
 
-use function Qubus\Support\Helpers\is_null__;
-
 final class ProductWasCreated extends AggregateChanged
 {
-    private ?ProductId $productId = null;
-    private ?StringLiteral $productTitle = null;
+    private ProductId $id;
+    private StringLiteral $title;
 
-    private ?StringLiteral $productSlug = null;
+    private StringLiteral $slug;
 
-    private ?StringLiteral $productBody = null;
+    private StringLiteral $body;
 
-    private ?UserId $productAuthor = null;
+    private UserId $author;
 
-    private ?StringLiteral $productSku = null;
+    private StringLiteral $sku;
 
-    private ?Money $productPrice = null;
+    private Money $price;
 
-    private ?StringLiteral $productPurchaseUrl = null;
+    private StringLiteral $purchaseUrl;
 
-    private ?IntegerNumber $productShowInMenu = null;
+    private IntegerNumber $showInMenu;
 
-    private ?IntegerNumber $productShowInSearch = null;
+    private IntegerNumber $showInSearch;
 
-    private ?StringLiteral $productFeaturedImage = null;
+    private StringLiteral $featuredImage;
 
-    private ?StringLiteral $productStatus = null;
+    private StringLiteral $status;
 
-    private ?ArrayLiteral $meta = null;
+    private ArrayLiteral $attribute;
 
-    private ?DateTimeInterface $productCreated = null;
+    private DateTimeInterface $created;
 
-    private ?DateTimeInterface $productCreatedGmt = null;
+    private DateTimeInterface $createdGmt;
 
-    private ?DateTimeInterface $productPublished = null;
+    private DateTimeInterface $published;
 
-    private ?DateTimeInterface $productPublishedGmt = null;
+    private DateTimeInterface $publishedGmt;
 
     /**
      * @throws TypeException
      */
     public static function withData(
-        ProductId $productId,
-        StringLiteral $productTitle,
-        StringLiteral $productSlug,
-        StringLiteral $productBody,
-        UserId $productAuthor,
-        StringLiteral $productSku,
-        Money $productPrice,
-        StringLiteral $productPurchaseUrl,
-        IntegerNumber $productShowInMenu,
-        IntegerNumber $productShowInSearch,
-        StringLiteral $productFeaturedImage,
-        StringLiteral $productStatus,
-        DateTimeInterface $productCreated,
-        DateTimeInterface $productCreatedGmt,
-        DateTimeInterface $productPublished,
-        DateTimeInterface $productPublishedGmt,
-        ?ArrayLiteral $meta = null,
+        ProductId $id,
+        StringLiteral $title,
+        StringLiteral $slug,
+        StringLiteral $body,
+        UserId $author,
+        StringLiteral $sku,
+        Money $price,
+        StringLiteral $purchaseUrl,
+        IntegerNumber $showInMenu,
+        IntegerNumber $showInSearch,
+        StringLiteral $featuredImage,
+        StringLiteral $status,
+        DateTimeInterface $created,
+        DateTimeInterface $createdGmt,
+        DateTimeInterface $published,
+        DateTimeInterface $publishedGmt,
+        ArrayLiteral $attribute,
     ): ProductWasCreated|DomainEvent|AggregateChanged {
         $event = self::occur(
-            aggregateId: $productId,
+            aggregateId: $id,
             payload: [
-                'product_title' => $productTitle->toNative(),
-                'product_slug' => $productSlug->toNative(),
-                'product_body' => $productBody->toNative(),
-                'product_author' => $productAuthor->toNative(),
-                'product_sku' => $productSku->toNative(),
-                'product_price' => $productPrice->getAmount()->toNative(),
-                'product_currency' => $productPrice->getCurrency()->getCode()->toNative(),
-                'product_purchase_url' => $productPurchaseUrl->toNative(),
-                'product_show_in_menu' => $productShowInMenu->toNative(),
-                'product_show_in_search' => $productShowInSearch->toNative(),
-                'product_featured_image' => $productFeaturedImage->toNative(),
-                'product_status' => $productStatus->toNative(),
-                'product_created' => $productCreated->format('Y-m-d H:i:s'),
-                'product_created_gmt' => $productCreatedGmt->format('Y-m-d H:i:s'),
-                'product_published' => $productPublished->format('Y-m-d H:i:s'),
-                'product_published_gmt' => $productPublishedGmt->format('Y-m-d H:i:s'),
-                'meta' => $meta->toNative(),
+                'product_id' => $id->toNative(),
+                'product_title' => $title->toNative(),
+                'product_slug' => $slug->toNative(),
+                'product_body' => $body->toNative(),
+                'product_attribute' => $attribute->toNative(),
+                'product_author' => $author->toNative(),
+                'product_sku' => $sku->toNative(),
+                'product_price' => $price->getAmount()->toNative(),
+                'product_currency' => $price->getCurrency()->getCode()->toNative(),
+                'product_purchase_url' => $purchaseUrl->toNative(),
+                'product_show_in_menu' => $showInMenu->toNative(),
+                'product_show_in_search' => $showInSearch->toNative(),
+                'product_featured_image' => $featuredImage->toNative(),
+                'product_status' => $status->toNative(),
+                'product_created' => $created->format('Y-m-d H:i:s'),
+                'product_created_gmt' => $createdGmt->format('Y-m-d H:i:s'),
+                'product_published' => $published->format('Y-m-d H:i:s'),
+                'product_published_gmt' => $publishedGmt->format('Y-m-d H:i:s'),
             ],
             metadata: [
                 Metadata::AGGREGATE_TYPE => 'product',
             ],
         );
 
-        $event->productId = $productId;
-        $event->productTitle = $productTitle;
-        $event->productSlug = $productSlug;
-        $event->productBody = $productBody;
-        $event->productAuthor = $productAuthor;
-        $event->productSku = $productSku;
-        $event->productPrice = $productPrice;
-        $event->productPurchaseUrl = $productPurchaseUrl;
-        $event->productShowInMenu = $productShowInMenu;
-        $event->productShowInSearch = $productShowInSearch;
-        $event->productFeaturedImage = $productFeaturedImage;
-        $event->productStatus = $productStatus;
-        $event->productCreated = $productCreated;
-        $event->productCreatedGmt = $productCreatedGmt;
-        $event->productPublished = $productPublished;
-        $event->productPublishedGmt = $productPublishedGmt;
-        $event->meta = $meta;
+        $event->id = $id;
+        $event->title = $title;
+        $event->slug = $slug;
+        $event->body = $body;
+        $event->author = $author;
+        $event->sku = $sku;
+        $event->price = $price;
+        $event->purchaseUrl = $purchaseUrl;
+        $event->showInMenu = $showInMenu;
+        $event->showInSearch = $showInSearch;
+        $event->featuredImage = $featuredImage;
+        $event->status = $status;
+        $event->created = $created;
+        $event->createdGmt = $createdGmt;
+        $event->published = $published;
+        $event->publishedGmt = $publishedGmt;
+        $event->attribute = $attribute;
 
         return $event;
     }
@@ -130,47 +129,38 @@ final class ProductWasCreated extends AggregateChanged
      */
     public function productId(): ProductId|AggregateId
     {
-        if (is_null__($this->productId)) {
-            $this->productId = ProductId::fromString(productId: $this->aggregateId()->__toString());
+        if (!isset($this->id)) {
+            $this->id = ProductId::fromString(productId: $this->aggregateId()->__toString());
         }
 
-        return $this->productId;
+        return $this->id;
     }
 
-    /**
-     * @throws TypeException
-     */
     public function productTitle(): StringLiteral
     {
-        if (is_null__($this->productTitle)) {
-            $this->productTitle = StringLiteral::fromNative($this->payload()['product_title']);
+        if (!isset($this->title)) {
+            $this->title = StringLiteral::fromNative($this->payload()['product_title']);
         }
 
-        return $this->productTitle;
+        return $this->title;
     }
 
-    /**
-     * @throws TypeException
-     */
     public function productSlug(): StringLiteral
     {
-        if (is_null__($this->productSlug)) {
-            $this->productSlug = StringLiteral::fromNative($this->payload()['product_slug']);
+        if (!isset($this->slug)) {
+            $this->slug = StringLiteral::fromNative($this->payload()['product_slug']);
         }
 
-        return $this->productSlug;
+        return $this->slug;
     }
 
-    /**
-     * @throws TypeException
-     */
     public function productBody(): StringLiteral
     {
-        if (is_null__($this->productBody)) {
-            $this->productBody = StringLiteral::fromNative($this->payload()['product_body']);
+        if (!isset($this->body)) {
+            $this->body = StringLiteral::fromNative($this->payload()['product_body']);
         }
 
-        return $this->productBody;
+        return $this->body;
     }
 
     /**
@@ -178,23 +168,20 @@ final class ProductWasCreated extends AggregateChanged
      */
     public function productAuthor(): UserId
     {
-        if (is_null__($this->productAuthor)) {
-            $this->productAuthor = UserId::fromString($this->payload()['product_author']);
+        if (!isset($this->author)) {
+            $this->author = UserId::fromString($this->payload()['product_author']);
         }
 
-        return $this->productAuthor;
+        return $this->author;
     }
 
-    /**
-     * @throws TypeException
-     */
     public function productSku(): StringLiteral
     {
-        if (is_null__($this->productSku)) {
-            $this->productSku = StringLiteral::fromNative($this->payload()['product_sku']);
+        if (!isset($this->sku)) {
+            $this->sku = StringLiteral::fromNative($this->payload()['product_sku']);
         }
 
-        return $this->productSku;
+        return $this->sku;
     }
 
     /**
@@ -202,120 +189,117 @@ final class ProductWasCreated extends AggregateChanged
      */
     public function productPrice(): Money
     {
-        if (is_null__($this->productPrice)) {
-            $this->productPrice = Money::fromNative(
+        if (!isset($this->price)) {
+            $this->price = Money::fromNative(
                 $this->payload()['product_price'],
                 $this->payload()['product_currency']
             );
         }
 
-        return $this->productPrice;
+        return $this->price;
     }
 
     public function productPurchaseUrl(): StringLiteral
     {
-        if (is_null__($this->productPurchaseUrl)) {
-            $this->productPurchaseUrl = StringLiteral::fromNative($this->payload()['product_purchase_url']);
+        if (!isset($this->purchaseUrl)) {
+            $this->purchaseUrl = StringLiteral::fromNative($this->payload()['product_purchase_url']);
         }
 
-        return $this->productPurchaseUrl;
+        return $this->purchaseUrl;
     }
 
+    /**
+     * @throws TypeException
+     */
     public function productShowInMenu(): IntegerNumber
     {
-        if (is_null__($this->productShowInMenu)) {
-            $this->productShowInMenu = IntegerNumber::fromNative($this->payload()['product_show_in_menu']);
+        if (!isset($this->showInMenu)) {
+            $this->showInMenu = IntegerNumber::fromNative($this->payload()['product_show_in_menu']);
         }
 
-        return $this->productShowInMenu;
+        return $this->showInMenu;
     }
 
+    /**
+     * @throws TypeException
+     */
     public function productShowInSearch(): IntegerNumber
     {
-        if (is_null__($this->productShowInSearch)) {
-            $this->productShowInSearch = IntegerNumber::fromNative($this->payload()['product_show_in_search']);
+        if (!isset($this->showInSearch)) {
+            $this->showInSearch = IntegerNumber::fromNative($this->payload()['product_show_in_search']);
         }
 
-        return $this->productShowInSearch;
+        return $this->showInSearch;
     }
 
-    /**
-     * @throws TypeException
-     */
     public function productFeaturedImage(): StringLiteral
     {
-        if (is_null__($this->productFeaturedImage)) {
-            $this->productFeaturedImage = StringLiteral::fromNative($this->payload()['product_featured_image']);
+        if (!isset($this->featuredImage)) {
+            $this->featuredImage = StringLiteral::fromNative($this->payload()['product_featured_image']);
         }
 
-        return $this->productFeaturedImage;
+        return $this->featuredImage;
     }
 
-    /**
-     * @throws TypeException
-     */
     public function productStatus(): StringLiteral
     {
-        if (is_null__($this->productStatus)) {
-            $this->productStatus = StringLiteral::fromNative($this->payload()['product_status']);
+        if (!isset($this->status)) {
+            $this->status = StringLiteral::fromNative($this->payload()['product_status']);
         }
 
-        return $this->productStatus;
+        return $this->status;
     }
 
     public function productCreated(): DateTimeInterface
     {
-        if (is_null__($this->productCreated)) {
-            $this->productCreated = QubusDateTimeImmutable::createFromInterface(
-                (new DateTime($this->payload()['product_created']))->getDateTime()
+        if (!isset($this->created)) {
+            $this->created = QubusDateTimeImmutable::createFromInterface(
+                new DateTime($this->payload()['product_created'])->getDateTime()
             );
         }
 
-        return $this->productCreated;
+        return $this->created;
     }
 
     public function productCreatedGmt(): DateTimeInterface
     {
-        if (is_null__($this->productCreatedGmt)) {
-            $this->productCreatedGmt = QubusDateTimeImmutable::createFromInterface(
-                (new DateTime($this->payload()['product_created_gmt']))->getDateTime()
+        if (!isset($this->createdGmt)) {
+            $this->createdGmt = QubusDateTimeImmutable::createFromInterface(
+                new DateTime($this->payload()['product_created_gmt'])->getDateTime()
             );
         }
 
-        return $this->productCreatedGmt;
+        return $this->createdGmt;
     }
 
     public function productPublished(): DateTimeInterface
     {
-        if (is_null__($this->productPublished)) {
-            $this->productPublished = QubusDateTimeImmutable::createFromInterface(
-                (new DateTime($this->payload()['product_published']))->getDateTime()
+        if (!isset($this->published)) {
+            $this->published = QubusDateTimeImmutable::createFromInterface(
+                new DateTime($this->payload()['product_published'])->getDateTime()
             );
         }
 
-        return $this->productPublished;
+        return $this->published;
     }
 
     public function productPublishedGmt(): DateTimeInterface
     {
-        if (is_null__($this->productPublishedGmt)) {
-            $this->productPublishedGmt = QubusDateTimeImmutable::createFromInterface(
-                (new DateTime($this->payload()['product_published_gmt']))->getDateTime()
+        if (!isset($this->publishedGmt)) {
+            $this->publishedGmt = QubusDateTimeImmutable::createFromInterface(
+                new DateTime($this->payload()['product_published_gmt'])->getDateTime()
             );
         }
 
-        return $this->productPublishedGmt;
+        return $this->publishedGmt;
     }
 
-    /**
-     * @throws TypeException
-     */
-    public function productMeta(): ArrayLiteral
+    public function productAttribute(): ArrayLiteral
     {
-        if (is_null__($this->meta)) {
-            $this->meta = ArrayLiteral::fromNative($this->payload()['meta']);
+        if (!isset($this->attribute)) {
+            $this->attribute = ArrayLiteral::fromNative($this->payload()['product_attribute']);
         }
 
-        return $this->meta;
+        return $this->attribute;
     }
 }

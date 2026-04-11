@@ -11,30 +11,28 @@ use Codefy\Domain\Metadata;
 use Qubus\Exception\Data\TypeException;
 use Qubus\ValueObjects\Number\IntegerNumber;
 
-use function Qubus\Support\Helpers\is_null__;
-
 final class ContentSidebarWasChanged extends AggregateChanged
 {
-    private ?ContentId $contentId = null;
+    private ContentId $id;
 
-    private ?IntegerNumber $contentSidebar = null;
+    private IntegerNumber $sidebar;
 
     public static function withData(
-        ContentId $contentId,
-        IntegerNumber $contentSidebar,
+        ContentId $id,
+        IntegerNumber $sidebar,
     ): ContentSidebarWasChanged|DomainEvent|AggregateChanged {
         $event = self::occur(
-            aggregateId: $contentId,
+            aggregateId: $id,
             payload: [
-                'content_sidebar' => $contentSidebar->toNative(),
+                'content_sidebar' => $sidebar->toNative(),
             ],
             metadata: [
                 Metadata::AGGREGATE_TYPE => 'content',
             ]
         );
 
-        $event->contentId = $contentId;
-        $event->contentSidebar = $contentSidebar;
+        $event->id = $id;
+        $event->sidebar = $sidebar;
 
         return $event;
     }
@@ -44,19 +42,22 @@ final class ContentSidebarWasChanged extends AggregateChanged
      */
     public function contentId(): ContentId
     {
-        if (is_null__($this->contentId)) {
-            $this->contentId = ContentId::fromString($this->aggregateId()->__toString());
+        if (!isset($this->id)) {
+            $this->id = ContentId::fromString($this->aggregateId()->__toString());
         }
 
-        return $this->contentId;
+        return $this->id;
     }
 
+    /**
+     * @throws TypeException
+     */
     public function contentSidebar(): IntegerNumber
     {
-        if (is_null__($this->contentSidebar)) {
-            $this->contentSidebar = IntegerNumber::fromNative($this->payload()['content_sidebar']);
+        if (!isset($this->sidebar)) {
+            $this->sidebar = IntegerNumber::fromNative($this->payload()['content_sidebar']);
         }
 
-        return $this->contentSidebar;
+        return $this->sidebar;
     }
 }

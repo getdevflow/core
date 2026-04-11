@@ -21,6 +21,6 @@ final class FindProductByIdQueryHandler implements QueryHandler
      */
     public function handle(FindProductByIdQuery|Query $query): array|object
     {
-        return $this->repository->findById($query->productId->toNative());
+        return $this->repository->findById($query->id->toNative());
     }
 }

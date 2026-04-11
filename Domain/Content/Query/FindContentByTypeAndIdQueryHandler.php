@@ -21,6 +21,6 @@ final class FindContentByTypeAndIdQueryHandler implements QueryHandler
      */
     public function handle(FindContentByTypeAndIdQuery|Query $query): array|object
     {
-        return $this->repository->findByTypeAndId($query->contentTypeSlug->toNative(), $query->contentId->toNative());
+        return $this->repository->findByTypeAndId($query->type->toNative(), $query->id->toNative());
     }
 }

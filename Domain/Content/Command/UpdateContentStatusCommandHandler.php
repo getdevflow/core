@@ -25,12 +25,12 @@ class UpdateContentStatusCommandHandler implements CommandHandler
     public function handle(UpdateContentStatusCommand|Command $command): void
     {
         /** @var Content $content */
-        $content = $this->aggregateRepository->loadAggregateRoot($command->contentId);
+        $content = $this->aggregateRepository->loadAggregateRoot($command->id);
 
-        $content->changeContentStatus($command->contentStatus);
+        $content->changeContentStatus($command->status);
         if ($content->hasRecordedEvents()) {
-            $content->changeContentModified($command->contentModified);
-            $content->changeContentModifiedGmt($command->contentModifiedGmt);
+            $content->changeContentModified($command->modified);
+            $content->changeContentModifiedGmt($command->modifiedGmt);
         }
 
         $this->aggregateRepository->saveAggregateRoot($content);

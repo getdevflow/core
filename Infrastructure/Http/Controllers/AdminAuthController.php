@@ -6,9 +6,8 @@ namespace App\Infrastructure\Http\Controllers;
 
 use App\Application\Devflow;
 use App\Domain\User\Model\User;
-use App\Infrastructure\Persistence\Database;
+use Qubus\Expressive\Database;
 use App\Infrastructure\Services\UserAuth;
-use Codefy\Framework\Factory\FileLoggerFactory;
 use Codefy\Framework\Http\BaseController;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
@@ -34,6 +33,8 @@ use function App\Shared\Helpers\get_user_by;
 use function App\Shared\Helpers\login_url;
 use function App\Shared\Helpers\site_url;
 use function Codefy\Framework\Helpers\config;
+use function Codefy\Framework\Helpers\logger;
+use function Codefy\Framework\Helpers\view;
 use function Qubus\Error\Helpers\is_error;
 use function Qubus\Security\Helpers\__observer;
 use function Qubus\Security\Helpers\t__;
@@ -91,28 +92,26 @@ final class AdminAuthController extends BaseController
             Devflow::$PHP->flash->error($e->getMessage());
         }
 
-        return $this->redirect($request->getServerParams()['HTTP_REFERER']);
+        return $this->redirect($request->getHeaderLine(name: 'Referer'));
     }
 
     /**
      * @param ServerRequest $request
-     * @return ResponseInterface|string
-     * @throws ContainerExceptionInterface
+     * @return ResponseInterface
      * @throws Exception
-     * @throws InvalidArgumentException
      * @throws NamedRouteNotFoundException
-     * @throws NotFoundExceptionInterface
      * @throws ReflectionException
      * @throws RouteParamFailedConstraintException
      * @throws TypeException
+     * @throws \Exception
      */
-    public function login(ServerRequest $request): ResponseInterface|string
+    public function login(ServerRequest $request): ResponseInterface
     {
         if (true === $this->user->can(permissionName: 'access:admin')) {
             return $this->redirect(admin_url());
         }
 
-        return $this->view->render(
+        return view(
             template: 'framework::backend/auth/index',
             data: [
                 'title' => t__(msgid: 'Login', domain: 'devflow'),
@@ -135,8 +134,8 @@ final class AdminAuthController extends BaseController
     public function logout(ServerRequest $request): ResponseInterface
     {
         if (
-            isset($request->getServerParams()['HTTP_REFERER']) &&
-                !str_contains($request->getServerParams()['HTTP_REFERER'], 'admin')
+            $request->getHeaderLine(name: 'Referer')!==null &&
+                !str_contains($request->getHeaderLine(name: 'Referer'), 'admin')
         ) {
             $redirectLink = __observer()->filter->applyFilter(
                 'user.logout.redirect',
@@ -157,7 +156,7 @@ final class AdminAuthController extends BaseController
         }
 
         /**
-         * This function is documented in App/Shared/Helpers/auth.php.
+         * This function is documented in core/Shared/Helpers/auth.php.
          */
         cms_clear_auth_cookie();
 
@@ -174,38 +173,36 @@ final class AdminAuthController extends BaseController
     /**
      * @param ServerRequest $request
      * @return ResponseInterface
+     * @throws Exception
      * @throws InvalidArgumentException
-     * @throws ReflectionException
      */
     public function resetPasswordChange(ServerRequest $request): ResponseInterface
     {
         try {
-            $user = get_user_by('email', $request->getParsedBody()['email']);
-            if (is_false__($user)) {
+            $currentUser = get_user_by('email', $request->getParsedBody()['email']);
+            if (is_false__($currentUser)) {
                 Devflow::$PHP->flash->error(
                     message: t__(msgid: 'Request error.', domain: 'devflow')
                 );
 
-                return $this->redirect($request->getServerParams()['HTTP_REFERER']);
+                return $this->redirect($request->getHeaderLine(name: 'Referer'));
             }
 
-            if ('' !== $user->id) {
-                $password = generate_random_password(config(key: 'cms.password_length'));
-                $_user = new User($this->dfdb)->findBy(field: 'email', value: $user->email);
+            if ('' !== $currentUser->id) {
+                $password = generate_random_password(config()->integer(key: 'cms.password_length'));
+                $newUser = new User($this->dfdb)->findBy(field: 'email', value: $currentUser->email);
 
-                foreach ($user->toArray() as $key => $value) {
-                    unset($_user->pass);
-                    $_user->{$key} = $value;
+                foreach ($currentUser->toArray() as $key => $value) {
+                    unset($newUser->pass);
+                    $newUser->{$key} = $value;
                 }
-                $_user->pass = $password;
-                $update = cms_update_user($_user);
+                $newUser->pass = $password;
+                $update = cms_update_user($newUser);
 
                 if (is_error($update)) {
                     Devflow::$PHP->flash->error(
                         message: t__(msgid: 'Request error.', domain: 'devflow')
                     );
-
-                    return $this->redirect($request->getServerParams()['HTTP_REFERER']);
                 } else {
                     Devflow::$PHP->flash->success(
                         message: t__(
@@ -218,16 +215,20 @@ final class AdminAuthController extends BaseController
 
             return $this->redirect($this->router->url(name: 'admin.login'));
         } catch (\Exception | NotFoundExceptionInterface | ContainerExceptionInterface $e) {
-            FileLoggerFactory::getLogger()->error($e->getMessage());
+            logger('error', $e->getMessage());
             Devflow::$PHP->flash->error(
                 t__(msgid: 'Password reset exception occurred and was logged.', domain: 'devflow')
             );
-            return $this->redirect($request->getServerParams()['HTTP_REFERER']);
         }
+
+        return $this->redirect($request->getHeaderLine(name: 'Referer'));
     }
 
-    public function resetPasswordView(): ?string
+    /**
+     * @throws \Exception
+     */
+    public function resetPasswordView(): ResponseInterface
     {
-        return $this->view->render('framework::backend/auth/reset');
+        return view(template: 'framework::backend/auth/reset');
     }
 }

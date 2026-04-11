@@ -25,11 +25,11 @@ class UpdateContentAuthorCommandHandler implements CommandHandler
     public function handle(UpdateContentAuthorCommand|Command $command): void
     {
         /** @var Content $content */
-        $content = $this->aggregateRepository->loadAggregateRoot($command->contentId);
+        $content = $this->aggregateRepository->loadAggregateRoot($command->id);
 
-        $content->changeContentAuthor($command->contentAuthor);
-        $content->changeContentModified($command->contentModified);
-        $content->changeContentModifiedGmt($command->contentModifiedGmt);
+        $content->changeContentAuthor($command->author);
+        $content->changeContentModified($command->modified);
+        $content->changeContentModifiedGmt($command->modifiedGmt);
 
         $this->aggregateRepository->saveAggregateRoot($content);
     }

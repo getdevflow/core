@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace App\Infrastructure\Http\Controllers;
 
 use App\Application\Devflow;
-use App\Infrastructure\Persistence\Database;
-use App\Infrastructure\Services\UserAuth;
+use Qubus\Expressive\Database;
 use App\Shared\Services\ItemPoolObjectCacheFactory;
 use App\Shared\Services\SimpleCacheObjectCacheFactory;
+use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
 use Codefy\Framework\Http\BaseController;
 use Codefy\QueryBus\UnresolvableQueryHandlerException;
 use Psr\Container\ContainerExceptionInterface;
@@ -18,7 +18,6 @@ use Psr\SimpleCache\InvalidArgumentException;
 use Qubus\EventDispatcher\ActionFilter\Action;
 use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
-use Qubus\Http\Response;
 use Qubus\Http\ServerRequest;
 use Qubus\Http\Session\SessionException;
 use Qubus\Http\Session\SessionService;
@@ -29,7 +28,9 @@ use Qubus\View\Renderer;
 use ReflectionException;
 
 use function App\Shared\Helpers\admin_url;
+use function App\Shared\Helpers\current_user_can;
 use function App\Shared\Helpers\get_all_users;
+use function Codefy\Framework\Helpers\view;
 use function preg_filter;
 use function Qubus\Security\Helpers\esc_html__;
 use function Qubus\Security\Helpers\t__;
@@ -39,7 +40,6 @@ final class AdminDashboardController extends BaseController
     public function __construct(
         protected SessionService $sessionService,
         protected Router $router,
-        protected UserAuth $user,
         protected Database $dfdb,
         protected Renderer $view
     ) {
@@ -47,7 +47,6 @@ final class AdminDashboardController extends BaseController
     }
 
     /**
-     * @param ServerRequest $request
      * @return ResponseInterface|string
      * @throws ContainerExceptionInterface
      * @throws Exception
@@ -58,22 +57,23 @@ final class AdminDashboardController extends BaseController
      * @throws RouteParamFailedConstraintException
      * @throws SessionException
      * @throws TypeException
+     * @throws \Exception
      */
-    public function index(ServerRequest $request): ResponseInterface|string
+    public function index(): ResponseInterface|string
     {
-        if (false === $this->user->can(permissionName: 'access:admin')) {
+        if (false === current_user_can(perm: 'access:admin')) {
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
             return $this->redirect($this->router->url(name: 'admin.login'));
         }
 
-        return $this->view->render(template: 'framework::backend/index', data: ['title' => 'Admin Dashboard']);
+        return view(template: 'framework::backend/index', data: ['title' => 'Admin Dashboard']);
     }
 
     /**
-     * @param ServerRequest $request
      * @return ResponseInterface|string
+     * @throws CommandPropertyNotFoundException
      * @throws ContainerExceptionInterface
      * @throws Exception
      * @throws InvalidArgumentException
@@ -81,13 +81,13 @@ final class AdminDashboardController extends BaseController
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
      * @throws RouteParamFailedConstraintException
-     * @throws SessionException
      * @throws TypeException
      * @throws UnresolvableQueryHandlerException
+     * @throws \Exception
      */
-    public function snapshot(ServerRequest $request): ResponseInterface|string
+    public function snapshot(): ResponseInterface|string
     {
-        if (false === $this->user->can(permissionName: 'access:admin')) {
+        if (false === current_user_can(perm: 'access:admin')) {
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
@@ -96,7 +96,7 @@ final class AdminDashboardController extends BaseController
 
         $users = get_all_users();
 
-        return $this->view->render(
+        return view(
             template: 'framework::backend/snapshot',
             data: ['title' => t__(msgid: 'System Snapshot', domain: 'devflow'), 'users' => count($users)]
         );
@@ -105,35 +105,36 @@ final class AdminDashboardController extends BaseController
     /**
      * @param ServerRequest $request
      * @return ResponseInterface
+     * @throws CommandPropertyNotFoundException
      * @throws ContainerExceptionInterface
      * @throws Exception
      * @throws InvalidArgumentException
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
-     * @throws SessionException
      * @throws TypeException
+     * @throws UnresolvableQueryHandlerException
      */
     public function flushCache(ServerRequest $request): ResponseInterface
     {
-        if (false === $this->user->can(permissionName: 'manage:settings')) {
+        if (false === current_user_can(perm: 'manage:settings')) {
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
         }
 
-        $globalNamespaces = ['useremail','userlogin','users','usertoken','sites','sitekey','siteslug'];
+        $globalNamespaces = ['auto_updater','useremail','userlogin','users','usertoken','sites','sitekey','siteslug'];
         $siteNamespaces = preg_filter(
             pattern: '/^/',
             replacement: $this->dfdb->prefix,
             subject: [
-                'content','contentslug','contenttype','contentmeta','products','productslug','productsku',
-                'productmeta','options','database'
+                'content','contentauthor','contentslug','contenttype','content_attribute','products','productauthor',
+                'productslug','productsku','product_attribute','options','database'
             ]
         );
 
         $namespaces = [...$siteNamespaces, ...$globalNamespaces];
 
-        if (true === SimpleCacheObjectCacheFactory::make(namespace: $this->dfdb->prefix . 'usermeta')->clear()) {
+        if (true === SimpleCacheObjectCacheFactory::make(namespace: $this->dfdb->prefix . 'user_attribute')->clear()) {
             ItemPoolObjectCacheFactory::make()->clear();
 
             foreach ($namespaces as $namespace) {
@@ -150,23 +151,24 @@ final class AdminDashboardController extends BaseController
          */
         Action::getInstance()->doAction('flush_cache');
 
-        return $this->redirect($request->getServerParams()['HTTP_REFERER']);
+        return $this->redirect($request->getHeaderLine(name: 'Referer'));
     }
 
     /**
-     * @param ServerRequest $request
      * @return ResponseInterface|string
+     * @throws CommandPropertyNotFoundException
      * @throws ContainerExceptionInterface
      * @throws Exception
      * @throws InvalidArgumentException
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
-     * @throws SessionException
      * @throws TypeException
+     * @throws UnresolvableQueryHandlerException
+     * @throws \Exception
      */
-    public function media(ServerRequest $request): ResponseInterface|string
+    public function media(): ResponseInterface|string
     {
-        if (false === $this->user->can(permissionName: 'manage:media')) {
+        if (false === current_user_can(perm: 'manage:media')) {
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
@@ -174,6 +176,6 @@ final class AdminDashboardController extends BaseController
             return $this->redirect(admin_url());
         }
 
-        return $this->view->render(template: 'framework::backend/media', data: ['title' => 'Media Library']);
+        return view(template: 'framework::backend/media', data: ['title' => 'Media Library']);
     }
 }

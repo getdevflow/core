@@ -22,6 +22,6 @@ class FindContentTypeBySlugQueryHandler implements QueryHandler
      */
     public function handle(FindContentTypeBySlugQuery|Query $query): array|null|object
     {
-        return $this->repository->findBySlug($query->contentTypeSlug->toNative());
+        return $this->repository->findBySlug($query->slug->toNative());
     }
 }

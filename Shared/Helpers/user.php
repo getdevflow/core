@@ -16,8 +16,10 @@ use App\Domain\User\ValueObject\UserId;
 use App\Domain\User\ValueObject\Username;
 use App\Domain\User\ValueObject\UserToken;
 use App\Infrastructure\Persistence\Cache\UserCachePsr16;
-use App\Infrastructure\Persistence\Database;
+use Qubus\Expressive\Database;
+use App\Infrastructure\Services\AttributesFactory;
 use App\Infrastructure\Services\NativePhpCookies;
+use App\Infrastructure\Services\User\UserAttributeBag;
 use App\Shared\Services\DateTime;
 use App\Shared\Services\MetaData;
 use App\Shared\Services\Sanitizer;
@@ -71,7 +73,7 @@ use function strtolower;
 /**
  * Retrieves all users.
  *
- * @file App/Shared/Helpers/user.php
+ * @file core/Shared/Helpers/user.php
  * @return mixed
  * @throws ReflectionException
  * @throws UnresolvableQueryHandlerException
@@ -84,7 +86,7 @@ function get_all_users(): mixed
 /**
  * Print a dropdown list of users.
  *
- * @file App/Shared/Helpers/user.php
+ * @file core/Shared/Helpers/user.php
  * @param string|null $active If working with active record, it will be the user's id.
  * @return void Dropdown list of users.
  * @throws ContainerExceptionInterface
@@ -109,11 +111,34 @@ function get_users_dropdown(?string $active = null): void
 }
 
 /**
+ * @throws ContainerExceptionInterface
+ * @throws ReflectionException
+ * @throws NotFoundExceptionInterface
+ * @throws Exception
+ */
+function user_lookup(?string $active = null): void
+{
+    $dfdb = dfdb();
+
+    $sql = "SELECT DISTINCT u.user_id, u.user_login, u.user_fname, u.user_lname 
+    FROM {$dfdb->basePrefix}user u 
+    JOIN {$dfdb->basePrefix}site_user su  
+    ON u.user_id = su.user_id 
+    WHERE su.site_id <> ?";
+
+    $users = $dfdb->getResults(query: $dfdb->prepare($sql, [get_current_site_id()]), output: Database::ARRAY_A);
+    foreach ($users as $user) {
+        echo '<option value="' . esc_html($user['user_id'])
+                . '"' . selected(esc_html($user['user_id']), $active, false) . '>'
+                . get_name(esc_html($user['user_id'])) . '</option>';
+    }
+}
+
+/**
  * Get the current user's ID
  *
- * @file App/Shared/Helpers/user.php
+ * @file core/Shared/Helpers/user.php
  * @return string The current user's ID, or '' if no user is logged in.
- * @throws TypeException
  */
 function get_current_user_id(): string
 {
@@ -132,15 +157,15 @@ function get_current_user_id(): string
 /**
  * Returns object of data for current user.
  *
- * @file App/Shared/Helpers/user.php
- * @return object|false
+ * @file core/Shared/Helpers/user.php
+ * @return User|false
  * @throws ContainerExceptionInterface
  * @throws Exception
  * @throws InvalidArgumentException
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  */
-function cms_get_current_user(): false|object
+function cms_get_current_user(): false|User
 {
     return get_userdata(get_current_user_id());
 }
@@ -148,7 +173,7 @@ function cms_get_current_user(): false|object
 /**
  * Retrieve user info by a given field from the user's table.
  *
- * @file App/Shared/Helpers/user.php
+ * @file core/Shared/Helpers/user.php
  * @param string $field The field to retrieve the user with.
  * @param int|string $value A value for $field (id, login or token).
  * @return User|false User array on success, false otherwise.
@@ -174,16 +199,16 @@ function get_user_by(string $field, mixed $value): User|false
 /**
  * Retrieve user info by user_id.
  *
- * @file App/Shared/Helpers/user.php
+ * @file core/Shared/Helpers/user.php
  * @param mixed $userId User's id.
- * @return object|false User array on success, false on failure.
+ * @return User|false User array on success, false on failure.
  * @throws ContainerExceptionInterface
  * @throws Exception
  * @throws InvalidArgumentException
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  */
-function get_userdata(string $userId): false|object
+function get_userdata(string $userId): false|User
 {
     return get_user_by(field: 'id', value: $userId);
 }
@@ -193,7 +218,7 @@ function get_userdata(string $userId): false|object
  *
  * Uses `get_name` filter.
  *
- * @file App/Shared/Helpers/user.php
+ * @file core/Shared/Helpers/user.php
  * @param string $id User ID.
  * @param bool $reverse Reverse order (true = Last Name, First Name).
  * @return string User's name.
@@ -223,7 +248,7 @@ function get_name(string $id, bool $reverse = false): string
  *
  * Uses `get_initials` filter.
  *
- * @file App/Shared/Helpers/user.php
+ * @file core/Shared/Helpers/user.php
  * @param string $id User ID
  * @param int $initials Number of initials to show.
  * @return string User's initials.
@@ -251,7 +276,7 @@ function get_initials(string $id, int $initials = 2): string
 /**
  * Retrieve requested field from user meta table based on user's id.
  *
- * @file App/Shared/Helpers/user.php
+ * @file core/Shared/Helpers/user.php
  * @param string $id User ID.
  * @param string $field Data requested of particular user.
  * @return mixed
@@ -272,7 +297,7 @@ function get_user_value(string $id, string $field): mixed
  *
  * Uses `username_exists` filter.
  *
- * @file App/Shared/Helpers/user.php
+ * @file core/Shared/Helpers/user.php
  * @param string $username Username to check.
  * @return string|false The user's ID on success or false on failure.
  * @throws ContainerExceptionInterface
@@ -294,7 +319,7 @@ function username_exists(string $username): false|string
     /**
      * Filters whether the given username exists or not.
      *
-     * @file App/Shared/Helpers/user.php
+     * @file core/Shared/Helpers/user.php
      * @param string|false $userId  The user's user_id on success or false on failure.
      * @param string    $username   Username to check.
      */
@@ -306,10 +331,12 @@ function username_exists(string $username): false|string
  *
  * Uses `email_exists` filter.
  *
- * @file App/Shared/Helpers/user.php
+ * @file core/Shared/Helpers/user.php
  * @param string $email Email to check.
  * @return string|false The user's ID on success or false on failure.
+ * @throws ContainerExceptionInterface
  * @throws Exception
+ * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  */
 function email_exists(string $email): false|string
@@ -326,7 +353,7 @@ function email_exists(string $email): false|string
     /**
      * Filters whether the given email exists or not.
      *
-     * @file App/Shared/Helpers/user.php
+     * @file core/Shared/Helpers/user.php
      * @param string|false $userId The user's user_id on success, and false on failure.
      * @param string       $email  Email to check.
      */
@@ -336,7 +363,7 @@ function email_exists(string $email): false|string
 /**
  * Adds label to user's status.
  *
- * @file App/Shared/Helpers/user.php
+ * @file core/Shared/Helpers/user.php
  * @param string $status
  * @return array User's status
  * @throws Exception
@@ -373,7 +400,7 @@ function user_status_label(string $status): array
 /**
  * Retrieve a list of system defined user roles.
  *
- * @file App/Shared/Helpers/user.php
+ * @file core/Shared/Helpers/user.php
  * @param string|null $active
  * @return void
  * @throws TypeException
@@ -381,7 +408,7 @@ function user_status_label(string $status): array
  */
 function get_system_roles(?string $active = null): void
 {
-    $roles = config(key: 'rbac.roles');
+    $roles = config()->array(key: 'rbac.roles');
 
     foreach ($roles as $role => $permission) {
         echo '<option value="' . esc_html($role) . '"' . selected($active, esc_html($role), false) . '>' .
@@ -393,7 +420,7 @@ function get_system_roles(?string $active = null): void
 /**
  * Retrieve a list of all users as dropdown options.
  *
- * @file App/Shared/Helpers/user.php
+ * @file core/Shared/Helpers/user.php
  * @param string|null $active
  * @throws ContainerExceptionInterface
  * @throws Exception
@@ -415,7 +442,7 @@ function get_users_dropdown_list(?string $active = null): void
 /**
  * Retrieve user meta field for a user.
  *
- * @file App/Shared/Helpers/user.php
+ * @file core/Shared/Helpers/user.php
  * @param string $userId User ID.
  * @param string $key Optional. The meta key to retrieve. By default, returns data for all keys.
  * @param bool $single Whether to return a single value.
@@ -432,20 +459,25 @@ function get_usermeta(string $userId, string $key = '', bool $single = false): a
 }
 
 /**
- * Get user meta data by entity ID.
+ * Retrieve an attribute for specified user.
  *
- * @file App/Shared/Helpers/user.php
- * @param string $mid
- * @return array|bool
+ * @param string $userId
+ * @param string $key
+ * @param string|null $siteId
+ * @param mixed|null $default
+ * @return mixed
  * @throws ContainerExceptionInterface
  * @throws Exception
+ * @throws InvalidArgumentException
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  */
-function get_usermeta_by_mid(string $mid): bool|array
+function get_user_attribute(string $userId, string $key, ?string $siteId = null, mixed $default = null): mixed
 {
-    return MetaData::factory(dfdb()->prefix . 'usermeta')
-        ->readByMid('user', $mid);
+    if(is_null__($siteId)) {
+        $siteId = get_current_site_id();
+    }
+    return AttributesFactory::user()->get($siteId, $userId, $key, $default);
 }
 
 /**
@@ -456,20 +488,18 @@ function get_usermeta_by_mid(string $mid): bool|array
  *
  * If the meta for the user does not exist, it will be added.
  *
- * @file App/Shared/Helpers/user.php
+ * @file core/Shared/Helpers/user.php
  * @param string $userId User ID.
  * @param string $metaKey Metadata key.
  * @param mixed $value Metadata value.
  * @param mixed $prevValue Optional. Previous value to check before removing.
  * @return bool|string Meta ID if the key didn't exist, true on successful update, false on failure.
- * @throws CommandPropertyNotFoundException
  * @throws ContainerExceptionInterface
  * @throws Exception
  * @throws InvalidArgumentException
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  * @throws TypeException
- * @throws UnresolvableQueryHandlerException
  */
 function update_usermeta(string $userId, string $metaKey, mixed $value, mixed $prevValue = ''): bool|string
 {
@@ -478,30 +508,30 @@ function update_usermeta(string $userId, string $metaKey, mixed $value, mixed $p
 }
 
 /**
- * Update user meta by entity ID.
- *
- * @file App/Shared/Helpers/user.php
- * @param string $mid
- * @param string $metaKey
+ * @param string $userId
+ * @param string $key
  * @param mixed $value
- * @return bool
+ * @param string|null $siteId
+ * @return UserAttributeBag
  * @throws ContainerExceptionInterface
  * @throws Exception
  * @throws InvalidArgumentException
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
- * @throws TypeException
  */
-function update_usermeta_by_mid(string $mid, string $metaKey, mixed $value): bool
+function update_user_attribute(string $userId, string $key, mixed $value, ?string $siteId = null): UserAttributeBag
 {
-    return MetaData::factory(dfdb()->prefix . 'usermeta')
-        ->updateByMid('user', $mid, $value, $metaKey);
+    if(is_null__($siteId)) {
+        $siteId = get_current_site_id();
+    }
+
+    return AttributesFactory::user()->set($siteId, $userId, $key, $value);
 }
 
 /**
  * Adds meta data to a user.
  *
- * @file App/Shared/Helpers/user.php
+ * @file core/Shared/Helpers/user.php
  * @param string $userId User ID.
  * @param string $meta Metadata name.
  * @param mixed $value Metadata value.
@@ -520,6 +550,11 @@ function add_usermeta(string $userId, string $meta, mixed $value, bool $unique =
         ->create('user', $userId, $meta, $value, $unique);
 }
 
+function add_user_attribute()
+{
+    return AttributesFactory::user()->set();
+}
+
 /**
  * Remove meta matching criteria from a user.
  *
@@ -527,7 +562,7 @@ function add_usermeta(string $userId, string $meta, mixed $value, bool $unique =
  * value, will keep from removing duplicate meta with the same key. It also
  * allows removing all meta matching key, if needed.
  *
- * @file App/Shared/Helpers/user.php
+ * @file core/Shared/Helpers/user.php
  * @param string $userId User ID
  * @param string $meta Metadata name.
  * @param mixed $value Optional. Metadata value.
@@ -544,9 +579,25 @@ function delete_usermeta(string $userId, string $meta, mixed $value = ''): bool
 }
 
 /**
+ * Remove attribute from user_attribute.
+ *
+ * @param string $siteId
+ * @param string $userId
+ * @param string $key
+ * @return UserAttributeBag
+ * @throws ContainerExceptionInterface
+ * @throws NotFoundExceptionInterface
+ * @throws ReflectionException
+ */
+function delete_user_attribute(string $siteId, string $userId, string $key): UserAttributeBag
+{
+    return AttributesFactory::user()->remove($siteId, $userId, $key);
+}
+
+/**
  * Delete user meta data by entity ID.
  *
- * @file App/Shared/Helpers/user.php
+ * @file core/Shared/Helpers/user.php
  * @param string $mid
  * @return bool
  * @throws ContainerExceptionInterface
@@ -561,6 +612,19 @@ function delete_usermeta_by_mid(string $mid): bool
 }
 
 /**
+ * @param string $siteId
+ * @param string $userId
+ * @return void
+ * @throws ContainerExceptionInterface
+ * @throws NotFoundExceptionInterface
+ * @throws ReflectionException
+ */
+function delete_site_user_record(string $siteId, string $userId): void
+{
+    AttributesFactory::user()->delete($siteId, $userId);
+}
+
+/**
  * Retrieve user option that can be either per Site or global.
  *
  * If the user ID is not given, then the current user will be used instead. If
@@ -570,9 +634,9 @@ function delete_usermeta_by_mid(string $mid): bool
  *
  * The option will first check for the per site name and then the global name.
  *
- * Uses `get_user_option_$option` filter.
+ * Uses `get_user_site_option_$option` filter.
  *
- * @file App/Shared/Helpers/user.php
+ * @file core/Shared/Helpers/user.php
  * @param string $option User option name.
  * @param string $userId User ID.
  * @return string|false User option value on success or false on failure.
@@ -588,23 +652,10 @@ function get_user_option(string $option, string $userId = ''): false|string
         $userId = get_current_user_id();
     }
 
-    /** @var User $user */
-    if (!$user = get_userdata($userId)) {
-        return false;
-    }
-
-    $prefix = dfdb()->prefix;
-
-    if ($user->isSet(key: $prefix . $option)) {
-        $result = $user->get(key: $prefix . $option);
-    } elseif ($user->isSet(key: $option)) {
-        $result = $user->get(key: $option);
-    } elseif ('' !== get_usermeta($userId, $option, true)) {
-        $result = get_usermeta($userId, $option, true);
-    } elseif ('' !== get_usermeta($userId, $prefix . $option, true)) {
-        $result = get_usermeta($userId, $prefix . $option, true);
+    if (null !== get_user_attribute($userId, $option)) {
+        $result = get_user_attribute($userId, $option);
     } else {
-        return false;
+        $result = false;
     }
 
     /**
@@ -612,7 +663,7 @@ function get_user_option(string $option, string $userId = ''): false|string
      *
      * The dynamic portion of the hook name, `$option`, refers to the user option name.
      *
-     * @file App/Shared/Helpers/user.php
+     * @file core/Shared/Helpers/user.php
      * @param string|false  $result Value for the user's option.
      * @param string $option Name of the option being retrieved.
      * @param string $userId ID of the user whose option is being retrieved.
@@ -621,71 +672,29 @@ function get_user_option(string $option, string $userId = ''): false|string
 }
 
 /**
- * Update user option with global site capability.
- *
- * User options are just like user metadata except that they have support for
- * global site options. If the 'global' parameter is false, which it is by default
- * it will prepend the TriTan CMS table prefix to the option name.
- *
- * Deletes the user option if $newvalue is empty.
- *
- * @file App/Shared/Helpers/user.php
- * @param string $userId User ID.
- * @param string $optionName User option name.
- * @param mixed $newvalue User option value.
- * @param bool $global Optional. Whether option name is global or site specific.
- *                     Default false (site specific).
- * @return bool|int|string User meta ID if the option didn't exist, true on successful update,
- *                         false on failure.
- * @throws CommandPropertyNotFoundException
+ * @param string $option
+ * @param string $userId
+ * @param string|null $siteId
+ * @return mixed
  * @throws ContainerExceptionInterface
  * @throws Exception
  * @throws InvalidArgumentException
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
- * @throws TypeException
- * @throws UnresolvableQueryHandlerException
  */
-function update_user_option(string $userId, string $optionName, mixed $newvalue, bool $global = false): bool|int|string
+function get_user_site_option(string $option, string $userId, ?string $siteId = null): mixed
 {
-    if (!$global) {
-        $optionName = dfdb()->prefix . $optionName;
+    if(is_null__($siteId)) {
+        $siteId = get_current_site_id();
     }
 
-    return update_usermeta($userId, $optionName, $newvalue);
-}
-
-/**
- * Delete user option with global site capability.
- *
- * User options are just like user metadata except that they have support for
- * global site options. If the 'global' parameter is false, which it is by default
- * it will prepend the TriTan CMS table prefix to the option name.
- *
- * @file App/Shared/Helpers/user.php
- * @param string $userId User ID
- * @param string $optionName User option name.
- * @param bool $global Optional. Whether option name is global or site specific.
- *                     Default false (site specific).
- * @return bool True on success or false on failure.
- * @throws ContainerExceptionInterface
- * @throws Exception
- * @throws NotFoundExceptionInterface
- * @throws ReflectionException
- */
-function delete_user_option(string $userId, string $optionName, bool $global = false): bool
-{
-    if (!$global) {
-        $optionName = dfdb()->prefix . $optionName;
-    }
-
-    return delete_usermeta($userId, $optionName);
+    return AttributesFactory::user()->get($siteId, $userId)->{$option};
 }
 
 /**
  * Insert a user into the database.
  *
- * @file App/Shared/Helpers/user.php
+ * @file core/Shared/Helpers/user.php
  * @param array|ServerRequestInterface|User $userdata An array, object or User object of user data arguments.
  *
  *  {
@@ -713,7 +722,6 @@ function delete_user_option(string $userId, string $optionName, bool $global = f
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  * @throws TypeException
- * @throws UnresolvableQueryHandlerException
  * @throws InvalidArgumentException
  */
 function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Error
@@ -803,7 +811,7 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
      *
      * This filter is called before the user is created or updated.
      *
-     * @file App/Shared/Helpers/user.php
+     * @file core/Shared/Helpers/user.php
      * @param string $sanitizedUserLogin Username after it has been sanitized.
      * @param string $rawUserLogin The user's login.
      */
@@ -841,7 +849,7 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
     /**
      * Filters the list of blacklisted usernames.
      *
-     * @file App/Shared/Helpers/user.php
+     * @file core/Shared/Helpers/user.php
      * @param array $usernames Array of blacklisted usernames.
      */
     $illegalLogins = (array) __observer()->filter->applyFilter('illegal.user.logins', blacklisted_usernames());
@@ -865,7 +873,7 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
     /**
      * Filters a user's email before the user is created or updated.
      *
-     * @file App/Shared/Helpers/user.php
+     * @file core/Shared/Helpers/user.php
      * @param string $sanitizedUserEmail User email after it has been sanitized
      * @param string $rawUserEmail The user's email.
      */
@@ -900,7 +908,7 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
     /**
      * Filters a user's first name before the user is created or updated.
      *
-     * @file App/Shared/Helpers/user.php
+     * @file core/Shared/Helpers/user.php
      * @param string $sanitizedUserFname User first name after it has been sanitized.
      * @param string $rawUserFname The user's first name.
      */
@@ -915,7 +923,7 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
     /**
      * Filters a user's middle name before the user is created or updated.
      *
-     * @file App/Shared/Helpers/user.php
+     * @file core/Shared/Helpers/user.php
      * @param string $sanitizedUserMname User middlename after it has been sanitized.
      * @param string $rawUserMname The user's middle name.
      */
@@ -930,7 +938,7 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
     /**
      * Filters a user's last name before the user is created or updated.
      *
-     * @file App/Shared/Helpers/user.php
+     * @file core/Shared/Helpers/user.php
      * @param string $sanitizedUserLname User last name after it has been sanitized.
      * @param string $rawUserLname The user's last name.
      */
@@ -945,11 +953,11 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
     /**
      * Filters a user's bio before the user is created or updated.
      *
-     * @file App/Shared/Helpers/user.php
+     * @file core/Shared/Helpers/user.php
      * @param string $sanitizedUserBio User bio after it has been sanitized.
      * @param string $rawUserBio The user's bio.
      */
-    $meta['bio'] = __observer()->filter->applyFilter(
+    $userBio = __observer()->filter->applyFilter(
         'pre.user.bio',
         (string) $sanitizedUserBio,
         (string) $rawUserBio
@@ -960,7 +968,7 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
     /**
      * Filters a user's timezone before the user is created or updated.
      *
-     * @file App/Shared/Helpers/user.php
+     * @file core/Shared/Helpers/user.php
      * @param string $sanitizedUserTimezone User timezone after it has been sanitized.
      * @param string $rawUserTimezone The user's timezone.
      */
@@ -975,7 +983,7 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
     /**
      * Filters a user's date format before the user is created or updated.
      *
-     * @file App/Shared/Helpers/user.php
+     * @file core/Shared/Helpers/user.php
      * @param string $sanitizedUserDateFormat User date format after it has been sanitized.
      * @param string $rawUserDateFormat The user's date format.
      */
@@ -990,7 +998,7 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
     /**
      * Filters a user's time format before the user is created or updated.
      *
-     * @file App/Shared/Helpers/user.php
+     * @file core/Shared/Helpers/user.php
      * @param string $sanitizedUserTimeFormat User time format after it has been sanitized.
      * @param string $rawUserTimeFormat The user's time format.
      */
@@ -1005,7 +1013,7 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
     /**
      * Filters a user's locale before the user is created or updated.
      *
-     * @file App/Shared/Helpers/user.php
+     * @file core/Shared/Helpers/user.php
      * @param string $sanitizedUserLocale User locale after it has been sanitized.
      * @param string $rawUserLocale       The user's locale.
      */
@@ -1020,29 +1028,29 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
     /**
      * Filters a user's status before the user is created or updated.
      *
-     * @file App/Shared/Helpers/user.php
+     * @file core/Shared/Helpers/user.php
      * @param string $sanitizedUserStatus User status after it has been sanitized.
      * @param string $rawUserStatus The user's status.
      */
-    $meta['status'] = __observer()->filter->applyFilter(
+    $attribute['status'] = __observer()->filter->applyFilter(
         'pre.user.status',
         (string) $sanitizedUserStatus,
         (string) $rawUserStatus
     );
 
-    $meta['role'] = $user->role;
+    $attribute['role'] = $user->role;
 
     $userAdminLayout = '0';
 
-    $meta['admin_layout'] = isset($userdata['admin_layout']) ? (int) $userdata['admin_layout'] : $userAdminLayout;
+    $attribute['admin.layout'] = isset($userdata['admin_layout']) ? (int) $userdata['admin_layout'] : $userAdminLayout;
 
     $userAdminSidebar = '0';
 
-    $meta['admin_sidebar'] = isset($userdata['admin_sidebar']) ? (int) $userdata['admin_sidebar'] : $userAdminSidebar;
+    $attribute['admin.sidebar'] = isset($userdata['admin_sidebar']) ? (int) $userdata['admin_sidebar'] : $userAdminSidebar;
 
     $userAdminSkin = 'skin-red';
 
-    $meta['admin_skin'] = $userdata['admin_skin'] ?? $userAdminSkin;
+    $attribute['admin.skin'] = $userdata['admin_skin'] ?? $userAdminSkin;
 
     $userRegistered = QubusDateTimeImmutable::now();
 
@@ -1058,6 +1066,7 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
         'pass' => $userPass,
         'email' => $userEmail,
         'url' => $userUrl,
+        'bio' => $userBio,
         'timezone' => $userTimezone,
         'dateFormat' => $userDateFormat,
         'timeFormat' => $userTimeFormat,
@@ -1072,7 +1081,7 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
      *
      * It only includes data in the user's table, not any user metadata.
      *
-     * @file App/Shared/Helpers/user.php
+     * @file core/Shared/Helpers/user.php
      * @param array    $userdata {
      *     Values and keys for the user.
      *
@@ -1083,6 +1092,7 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
      *      @type string $pass         The user's password.
      *      @type string $email        The user's email.
      *      @type string $url          The user's url.
+     *      @type string $bio          The user's bio.
      *      @type string $timezone     The user's timezone.
      *      @type string $dateFormat   The user's date format.
      *      @type string $timeFormat   The user's time format.
@@ -1105,11 +1115,11 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
      * Filters a user's meta values and keys immediately after the user is created or updated
      * and before any user meta is inserted or updated.
      *
-     * @file App/Shared/Helpers/user.php
-     * @param array $meta {
+     * @file core/Shared/Helpers/user.php
+     * @param array $attribute {
      *     Default meta values and keys for the user.
      *
-     *     @type string $bio            The user's bio.
+     *     @type string $role           The user's role.
      *     @type string $status         The user's status.
      *     @type int    $admin_layout   The user's layout option.
      *     @type int    $admin_sidebar  The user's sidebar option.
@@ -1118,7 +1128,7 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
      * @param object $user  User object.
      * @param bool $update  Whether the user is being updated rather than created.
      */
-    $meta = __observer()->filter->applyFilter('insert.usermeta', $meta, $user, $update);
+    $attributes = __observer()->filter->applyFilter('insert.usermeta', $attribute, $user, $update);
 
     if (is_false__($update)) {
 
@@ -1133,12 +1143,13 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
                 'token' => UserToken::fromString($user->token),
                 'pass' => new StringLiteral($user->pass),
                 'url' => new StringLiteral($userUrl ?? ''),
+                'bio' => new StringLiteral($userBio),
                 'timezone' => new StringLiteral($userTimezone),
                 'dateFormat' => new StringLiteral($userDateFormat ?? 'd F Y'),
                 'timeFormat' => new StringLiteral($userTimeFormat ?? 'h:i A'),
                 'locale' => new StringLiteral($userLocale ?? 'en'),
+                'activationKey' => new StringLiteral($userActivationKey),
                 'registered' => $userRegistered,
-                'meta' => ArrayLiteral::fromNative($meta),
             ]);
 
             command($command);
@@ -1164,18 +1175,24 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
                 'token' => UserToken::fromString($user->token),
                 'pass' => new StringLiteral($user->pass),
                 'url' => new StringLiteral($userUrl ?? ''),
+                'bio' => new StringLiteral($user->bio),
                 'timezone' => new StringLiteral($user->timezone),
                 'dateFormat' => new StringLiteral($user->dateFormat ?? 'd F Y'),
                 'timeFormat' => new StringLiteral($user->timeFormat ?? 'h:i A'),
                 'locale' => new StringLiteral($userLocale ?? 'en'),
                 'modified' => $userModified,
                 'activationKey' => new StringLiteral($userActivationKey),
-                'meta' => ArrayLiteral::fromNative($meta),
             ]);
 
             command($command);
         } catch (CommandCouldNotBeHandledException | UnresolvableCommandHandlerException | ReflectionException $e) {
             FileLoggerFactory::getLogger()->error($e->getMessage());
+        }
+    }
+
+    if (!empty($attributes)) {
+        foreach ($attributes as $key => $value) {
+            update_user_attribute($user->id, $key, $value);
         }
     }
 
@@ -1188,7 +1205,7 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
         /**
          * Fires immediately after an existing user is updated.
          *
-         * @file App/Shared/Helpers/user.php
+         * @file core/Shared/Helpers/user.php
          * @param string $userId    User ID.
          * @param User $oldUserData Object containing user's data prior to update.
          */
@@ -1197,7 +1214,7 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
         /**
          * Fires immediately after a new user is registered.
          *
-         * @file App/Shared/Helpers/user.php
+         * @file core/Shared/Helpers/user.php
          * @param string $userId User ID.
          */
         __observer()->action->doAction('user_register', $userId->toNative());
@@ -1214,7 +1231,7 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
  *
  * See {@see cms_insert_user()} For what fields can be set in $userdata.
  *
- * @file App/Shared/Helpers/user.php
+ * @file core/Shared/Helpers/user.php
  * @param array|ServerRequestInterface|User $userdata An array of user data or a user object of type stdClass or User.
  * @return string|Error The updated user's id or return an Error if the user could not be updated.
  * @throws CommandPropertyNotFoundException
@@ -1224,7 +1241,6 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  * @throws TypeException
- * @throws UnresolvableQueryHandlerException
  */
 function cms_update_user(array|ServerRequestInterface|User $userdata): string|UserError
 {
@@ -1249,16 +1265,12 @@ function cms_update_user(array|ServerRequestInterface|User $userdata): string|Us
     $user = get_object_vars($userObj);
 
     $userAttributes = [
-        'timezone',
-        'date_format',
-        'time_format',
-        'locale',
         'bio',
         'role',
         'status',
-        'admin_layout',
-        'admin_sidebar',
-        'admin_skin'
+        'adminLayout',
+        'adminSidebar',
+        'adminSkin'
     ];
 
     foreach ($userAttributes as $key) {
@@ -1273,7 +1285,7 @@ function cms_update_user(array|ServerRequestInterface|User $userdata): string|Us
         /**
          * Filters whether to send the password change email.
          *
-         * @file App/Shared/Helpers/user.php
+         * @file core/Shared/Helpers/user.php
          * @see cms_insert_user() For `$user` and `$userdata` fields.
          *
          * @param bool  $send     Whether to send the email.
@@ -1293,7 +1305,7 @@ function cms_update_user(array|ServerRequestInterface|User $userdata): string|Us
         /**
          * Filters whether to send the email change email.
          *
-         * @file App/Shared/Helpers/user.php
+         * @file core/Shared/Helpers/user.php
          * @see cms_insert_user() For `$user` and `$userdata` fields.
          *
          * @param bool  $send     Whether to send the email.
@@ -1318,7 +1330,7 @@ function cms_update_user(array|ServerRequestInterface|User $userdata): string|Us
             /**
              * Fires when user is updated successfully.
              *
-             * @file App/Shared/Helpers/user.php
+             * @file core/Shared/Helpers/user.php
              * @param array  $user          The original user array before changes.
              * @param string $plaintextPass Plaintext password before hashing.
              * @param array  $userdata      The updated user array.
@@ -1330,7 +1342,7 @@ function cms_update_user(array|ServerRequestInterface|User $userdata): string|Us
             /**
              * Fires when user is updated successfully.
              *
-             * @file App/Shared/Helpers/user.php
+             * @file core/Shared/Helpers/user.php
              * @param array $user     The original user array before changes.
              * @param array $userdata The updated user array.
              */
@@ -1368,7 +1380,7 @@ function cms_update_user(array|ServerRequestInterface|User $userdata): string|Us
  * Deletes a user from the user meta table. To delete user entirely from the system,
  * see `delete_site_user`.
  *
- * @file App/Shared/Helpers/user.php
+ * @file core/Shared/Helpers/user.php
  * @param string $userId ID of user being deleted.
  * @param string|null $assignId ID of user to whom posts will be assigned.
  *                              Default: NULL.
@@ -1398,7 +1410,7 @@ function cms_delete_user(string $userId, ?string $assignId = null): bool
          *
          * Content will be reassigned before the user is deleted.
          *
-         * @file App/Shared/Helpers/user.php
+         * @file core/Shared/Helpers/user.php
          * @param string $userId   ID of user to be deleted.
          * @param string $assignId ID of user to reassign content to.
          *                         Default: NULL.
@@ -1409,7 +1421,7 @@ function cms_delete_user(string $userId, ?string $assignId = null): bool
     /**
      * Action hook fires immediately before a user is deleted from the user meta table.
      *
-     * @file App/Shared/Helpers/user.php
+     * @file core/Shared/Helpers/user.php
      * @param string      $userId   ID of the user to delete.
      * @param string|null $reassign ID of the user to reassign posts to.
      *                              Default: NULL.
@@ -1449,7 +1461,7 @@ function cms_delete_user(string $userId, ?string $assignId = null): bool
     /**
      * Action hook fires immediately after a user has been deleted from the user meta table.
      *
-     * @file App/Shared/Helpers/user.php
+     * @file core/Shared/Helpers/user.php
      * @param string $userId   ID of the user who was deleted.
      * @param string $assignId ID of the user to whom posts were assigned. Default: null.
      */
@@ -1461,7 +1473,7 @@ function cms_delete_user(string $userId, ?string $assignId = null): bool
 /**
  * New user email queued when account is created.
  *
- * @file App/Shared/Helpers/user.php
+ * @file core/Shared/Helpers/user.php
  * @param string $userId User id.
  * @param string $pass Plaintext password.
  * @return bool True on success, false on failure or Exception.
@@ -1516,7 +1528,7 @@ function queue_new_user_email(string $userId, string $pass): bool
 /**
  * Reset password email queued when reset button is clicked on the user's screen.
  *
- * @file App/Shared/Helpers/user.php
+ * @file core/Shared/Helpers/user.php
  * @param User $user User object.
  * @return string|bool User id on success, false on failure.
  * @throws EnvironmentIsBrokenException
@@ -1570,14 +1582,12 @@ function queue_reset_user_password(User $user): bool|string
 /**
  * Email sent to user with new generated password.
  *
- * @file App/Shared/Helpers/user.php
+ * @file core/Shared/Helpers/user.php
  * @param object|array $user User object|array.
  * @param string $password Plaintext password.
  * @return bool True on success, false on failure or Exception.
- * @throws ContainerExceptionInterface
  * @throws Exception
  * @throws InvalidArgumentException
- * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  * @throws SessionException
  */
@@ -1585,9 +1595,7 @@ function send_reset_password_email(object|array $user, string $password): bool
 {
     $message = '';
 
-    $option = option();
-
-    $siteName = $option->read(optionKey: 'sitename');
+    $siteName = get_option(key: 'sitename');
 
     if ($user instanceof User) {
         $user = $user->toArray();
@@ -1606,8 +1614,8 @@ function send_reset_password_email(object|array $user, string $password): bool
             msgid: 'If you still have problems with logging in, please contact us at <a href="mailto:%s">%s</a>.',
             domain: 'devflow'
         ),
-        $option->read(optionKey: 'admin_email'),
-        $option->read(optionKey: 'admin_email')
+        get_option(key: 'admin_email'),
+        get_option(key: 'admin_email')
     ) . "</p>";
 
     $message = process_email_html($message, esc_html__(string: 'Password Reset', domain: 'devflow'));
@@ -1637,15 +1645,13 @@ function send_reset_password_email(object|array $user, string $password): bool
 /**
  * Email sent to user with changed/updated password.
  *
- * @file App/Shared/Helpers/user.php
+ * @file core/Shared/Helpers/user.php
  * @param object|array $user User array.
  * @param string $password Plaintext password.
  * @param array $userdata Updated user array.
  * @return bool True on success, false on failure or Exception.
- * @throws ContainerExceptionInterface
  * @throws Exception
  * @throws InvalidArgumentException
- * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  * @throws SessionException
  */
@@ -1653,9 +1659,7 @@ function send_password_change_email(object|array $user, string $password, array 
 {
     $message = '';
 
-    $option = option();
-
-    $siteName = $option->read(optionKey: 'sitename');
+    $siteName = get_option(key: 'sitename');
 
     if ($user instanceof User) {
         $user = $user->toArray();
@@ -1667,7 +1671,7 @@ function send_password_change_email(object|array $user, string $password, array 
             domain: 'devflow'
         ),
         $user['fname'],
-        $option->read(optionKey: 'sitename')
+        get_option(key: 'sitename')
     );
     $message .= sprintf(esc_html__(string: 'Password: %s', domain: 'devflow'), $password) . "</p>";
     $message .= "<p>" . sprintf(
@@ -1675,8 +1679,8 @@ function send_password_change_email(object|array $user, string $password, array 
             msgid: 'If you did not initiate a password change/update, please contact us at <a href="mailto:%s">%s</a>.',
             domain: 'devflow'
         ),
-        $option->read(optionKey: 'admin_email'),
-        $option->read(optionKey: 'admin_email')
+        get_option(key: 'admin_email'),
+        get_option(key: 'admin_email')
     ) . "</p>";
 
     $message = process_email_html($message, esc_html__(string: 'Notice of Password Change', domain: 'devflow'));
@@ -1706,14 +1710,12 @@ function send_password_change_email(object|array $user, string $password, array 
 /**
  * Email sent to user with changed/updated email.
  *
- * @file App/Shared/Helpers/user.php
+ * @file core/Shared/Helpers/user.php
  * @param object|array $user Original user array.
  * @param array $userdata Updated user array.
  * @return bool True on success, false on failure or Exception.
- * @throws ContainerExceptionInterface
  * @throws Exception
  * @throws InvalidArgumentException
- * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  * @throws SessionException
  */
@@ -1721,9 +1723,7 @@ function send_email_change_email(object|array $user, array $userdata): bool
 {
     $message = '';
 
-    $option = option();
-
-    $siteName = $option->read(optionKey: 'sitename');
+    $siteName = get_option(key: 'sitename');
 
     if ($user instanceof User) {
         $user = $user->toArray();
@@ -1743,8 +1743,8 @@ function send_email_change_email(object|array $user, array $userdata): bool
             msgid: 'If you did not initiate an email change/update, please contact us at <a href="mailto:%s">%s</a>.',
             domain: 'devflow'
         ),
-        $option->read(optionKey: 'admin_email'),
-        $option->read(optionKey: 'admin_email')
+        get_option(key: 'admin_email'),
+        get_option(key: 'admin_email')
     ) . "</p>";
 
     $message = process_email_html($message, esc_html__(string: 'Notice of Email Change', domain: 'devflow'));
@@ -1776,7 +1776,7 @@ function send_email_change_email(object|array $user, array $userdata): bool
  *
  * Uses `blacklisted_usernames` filter.
  *
- * @file App/Shared/Helpers/user.php
+ * @file core/Shared/Helpers/user.php
  * @return array Array of blacklisted usernames.
  * @throws Exception
  */
@@ -1862,7 +1862,7 @@ function blacklisted_usernames(): array
         'username', 'users', 'uucp', 'var', 'verify', 'video', 'view',
         'void', 'vote', 'webmail', 'webmaster', 'website', 'widget', 'widgets',
         'wiki', 'wordpress', 'wpad', 'write', 'www', 'www-data', 'www1', 'www2',
-        'www3', 'www4', 'you', 'yourname', 'yourusername', 'zlib'
+        'www3', 'www4', 'you', 'yourname', 'yourusername', 'zlib', 'getdevflow'
     ];
 
     return __observer()->filter->applyFilter('blacklisted_usernames', $blacklist);
@@ -1871,7 +1871,7 @@ function blacklisted_usernames(): array
 /**
  * Resets a user's password.
  *
- * @file App/Shared/Helpers/user.php
+ * @file core/Shared/Helpers/user.php
  * @param string $userId ID of user whose password is to be reset.
  * @return bool|string User id on success or Exception on failure.
  * @throws EnvironmentIsBrokenException
@@ -1883,10 +1883,10 @@ function blacklisted_usernames(): array
  */
 function reset_password(string $userId): bool|string
 {
-    $password = generate_random_password(config(key: 'cms.password_length'));
+    $password = generate_random_password(config()->integer(key: 'cms.password_length'));
 
     /** @var User $user */
-    $user = Devflow::$PHP->make(User::class);
+    $user = Devflow::$PHP->make(name: User::class);
     $user->id = $userId;
     $user->pass = $password;
 
@@ -1899,14 +1899,14 @@ function reset_password(string $userId): bool|string
 
         command($command);
 
-        $_userId = queue_reset_user_password($user);
+        $id = queue_reset_user_password($user);
         Devflow::$PHP->flash->success(
             t__(
                 msgid: "The password reset email has been queued for sending.",
                 domain: 'devflow'
             )
         );
-        return $_userId;
+        return $id;
     } catch (SessionException | CommandPropertyNotFoundException $e) {
         FileLoggerFactory::getLogger()->error($e->getMessage());
         Devflow::$PHP->flash->error($e->getMessage());
@@ -1918,8 +1918,8 @@ function reset_password(string $userId): bool|string
 /**
  * Print a dropdown list of users.
  *
- * @file App/Shared/Helpers/user.php
- * @param string $userId If working with active record, it will be the user's id.
+ * @file core/Shared/Helpers/user.php
+ * @param string $userId The user's ID to ignore.
  * @return void Dropdown list of users.
  * @throws ContainerExceptionInterface
  * @throws Exception
@@ -1931,12 +1931,12 @@ function get_users_reassign(string $userId = ''): void
 {
     $dfdb = dfdb();
 
-    $sql = "SELECT user_id FROM {$dfdb->basePrefix}user WHERE user_id IN " .
-    "(SELECT DISTINCT user_id FROM {$dfdb->basePrefix}usermeta WHERE " .
-    "meta_key LIKE '%$dfdb->prefix%') AND " .
-    "user_id NOT IN ('$userId')";
+    $sql = "SELECT u.user_id FROM {$dfdb->basePrefix}user u " .
+            "JOIN {$dfdb->basePrefix}site_user s " .
+            "ON u.user_id = s.user_id " .
+            "WHERE u.user_id NOT IN (?)";
 
-    $listUsers = $dfdb->getResults($sql, Database::ARRAY_A);
+    $listUsers = $dfdb->getResults($dfdb->prepare($sql, [$userId]), Database::ARRAY_A);
 
     foreach ($listUsers as $user) {
         echo '<option value="' . esc_html($user['user_id']) . '">' . get_name(esc_html($user['user_id'])) . '</option>';
@@ -1946,27 +1946,31 @@ function get_users_reassign(string $userId = ''): void
 /**
  * Retrieves a list of users by site_key.
  *
- * @file App/Shared/Helpers/user.php
+ * @file core/Shared/Helpers/user.php
  * @param string $siteKey Site key.
  * @return array|false|string User array on success.
+ * @throws ContainerExceptionInterface
+ * @throws NotFoundExceptionInterface
  * @throws ReflectionException
- * @throws TypeException
+ * @throws Exception
  */
 function get_users_by_site_key(string $siteKey = ''): array|string|bool
 {
     $dfdb = dfdb();
 
-    $sql = "SELECT * FROM {$dfdb->basePrefix}user WHERE user_id IN " .
-    "(SELECT DISTINCT user_id FROM {$dfdb->basePrefix}usermeta WHERE " .
-    "meta_key LIKE '%{$siteKey}%')";
+    $sql = "SELECT u.user_id, u.user_login, u.user_token, u.user_email " .
+            "FROM {$dfdb->basePrefix}user u " .
+            "JOIN {$dfdb->basePrefix}site_user su ON u.user_id = su.user_id " .
+            "JOIN {$dfdb->basePrefix}site s ON su.site_id = s.site_id " .
+            "WHERE s.site_key = ?";
 
-    return $dfdb->getResults($sql, Database::ARRAY_A);
+    return $dfdb->getResults($dfdb->prepare($sql, [$siteKey]), Database::ARRAY_A);
 }
 
 /**
  * Returns the logged-in user's timezone.
  *
- * @file App/Shared/Helpers/user.php
+ * @file core/Shared/Helpers/user.php
  * @return mixed Logged in user's timezone or system's timezone if false.
  * @throws ContainerExceptionInterface
  * @throws Exception
@@ -1980,13 +1984,13 @@ function get_user_timezone(): mixed
     if (is_user_logged_in() && $userTimezone !== false) {
         return $userTimezone->timezone;
     }
-    return option()->read(optionKey: 'site_timezone') ?? config(key: 'app.timezone');
+    return get_option(key: 'site_timezone') ?: config()->string(key: 'app.timezone');
 }
 
 /**
  * Returns the logged-in user's date format.
  *
- * @file App/Shared/Helpers/user.php
+ * @file core/Shared/Helpers/user.php
  * @return mixed Logged in user's date format or system's date format if false.
  * @throws ContainerExceptionInterface
  * @throws Exception
@@ -2000,13 +2004,13 @@ function get_user_date_format(): mixed
     if (is_user_logged_in() && $userDateFormat !== false) {
         return $userDateFormat->dateFormat;
     }
-    return option()->read(optionKey: 'date_format');
+    return get_option(key: 'date_format');
 }
 
 /**
  * Returns the logged-in user's time format.
  *
- * @file App/Shared/Helpers/user.php
+ * @file core/Shared/Helpers/user.php
  * @return mixed Logged in user's time format or system's time format if false.
  * @throws ContainerExceptionInterface
  * @throws Exception
@@ -2020,13 +2024,13 @@ function get_user_time_format(): mixed
     if (is_user_logged_in() && $userTimeFormat !== false) {
         return $userTimeFormat->timeFormat;
     }
-    return option()->read(optionKey: 'time_format');
+    return get_option(key: 'time_format');
 }
 
 /**
  * Returns the logged in user's datetime format.
  *
- * @file App/Shared/Helpers/user.php
+ * @file core/Shared/Helpers/user.php
  * @return string Logged in user's datetime format or system's datetime format.
  * @throws ContainerExceptionInterface
  * @throws Exception
@@ -2049,7 +2053,7 @@ function get_user_datetime_format(): string
 /**
  * Returns datetime based on user's date format, time format, and timezone.
  *
- * @file App/Shared/Helpers/user.php
+ * @file core/Shared/Helpers/user.php
  * @param string $string Datetime string.
  * @param string $format Format of the datetime string.
  * @return string Datetime string based on logged in user's date format,

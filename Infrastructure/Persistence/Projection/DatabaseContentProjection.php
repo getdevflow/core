@@ -7,7 +7,7 @@ namespace App\Infrastructure\Persistence\Projection;
 use App\Domain\Content\Event\ContentAuthorWasChanged;
 use App\Domain\Content\Event\ContentBodyWasChanged;
 use App\Domain\Content\Event\ContentFeaturedImageWasChanged;
-use App\Domain\Content\Event\ContentMetaWasChanged;
+use App\Domain\Content\Event\ContentAttributeWasChanged;
 use App\Domain\Content\Event\ContentModifiedGmtWasChanged;
 use App\Domain\Content\Event\ContentModifiedWasChanged;
 use App\Domain\Content\Event\ContentParentWasChanged;
@@ -24,24 +24,23 @@ use App\Domain\Content\Event\ContentTypeWasChanged;
 use App\Domain\Content\Event\ContentWasCreated;
 use App\Domain\Content\Event\ContentWasDeleted;
 use App\Domain\Content\Services\ContentProjection;
-use App\Infrastructure\Persistence\Database;
-use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
+use Qubus\Expressive\Database;
 use Codefy\Domain\EventSourcing\BaseProjection;
-use Codefy\QueryBus\UnresolvableQueryHandlerException;
 use Exception as NativeException;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
 use Qubus\Expressive\QueryBuilderException;
 use ReflectionException;
 
-use function App\Shared\Helpers\add_contentmeta;
-use function App\Shared\Helpers\update_contentmeta;
+use function App\Shared\Helpers\add_content_attribute;
+use function App\Shared\Helpers\update_content_attribute;
 
 final class DatabaseContentProjection extends BaseProjection implements ContentProjection
 {
-    public function __construct(protected Database $dfdb)
+    public function __construct(protected Database $dfdb, protected EventDispatcherInterface $event)
     {
     }
 
@@ -52,8 +51,6 @@ final class DatabaseContentProjection extends BaseProjection implements ContentP
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
      * @throws TypeException
-     * @throws CommandPropertyNotFoundException
-     * @throws UnresolvableQueryHandlerException
      * @throws Exception
      * @throws NativeException
      */
@@ -62,32 +59,32 @@ final class DatabaseContentProjection extends BaseProjection implements ContentP
         try {
             $this->dfdb->qb()->transactional(callback: function () use ($event) {
                 $this->dfdb->qb()
-                        ->table(tableName: $this->dfdb->prefix . 'content')
-                        ->set([
-                            'content_id' => $event->contentId()->toNative(),
-                            'content_title' => $event->contentTitle()->toNative(),
-                            'content_slug' => $event->contentSlug()->toNative(),
-                            'content_body' => $event->contentBody() === null ? null : $event->contentBody()->toNative(),
-                            'content_author' => $event->contentAuthor()->toNative(),
-                            'content_type' => $event->contentTypeSlug()->toNative(),
-                            'content_parent' => $event->contentParent() === null ?
-                                    null : $event->contentParent()->toNative(),
-                            'content_sidebar' => $event->contentSidebar()->toNative(),
-                            'content_show_in_menu' => $event->contentShowInMenu()->toNative(),
-                            'content_show_in_search' => $event->contentShowInSearch()->toNative(),
-                            'content_featured_image' => $event->contentFeaturedImage()->toNative(),
-                            'content_status' => $event->contentStatus()->toNative(),
-                            'content_created' => $event->contentCreated()->format('Y-m-d H:i:s'),
-                            'content_created_gmt' => $event->contentCreatedGmt()->format('Y-m-d H:i:s'),
-                            'content_published' => $event->contentPublished()->format('Y-m-d H:i:s'),
-                            'content_published_gmt' => $event->contentPublishedGmt()->format('Y-m-d H:i:s'),
-                        ])
-                        ->save();
+                    ->table(tableName: $this->dfdb->prefix . 'content')
+                    ->set([
+                        'content_id' => $event->contentId()->toNative(),
+                        'content_title' => $event->contentTitle()->toNative(),
+                        'content_slug' => $event->contentSlug()->toNative(),
+                        'content_body' => $event->contentBody() === null ? null : $event->contentBody()->toNative(),
+                        'content_author' => $event->contentAuthor()->toNative(),
+                        'content_type' => $event->contentTypeSlug()->toNative(),
+                        'content_parent' => $event->contentParent() === null ?
+                                null : $event->contentParent()->toNative(),
+                        'content_sidebar' => $event->contentSidebar()->toNative(),
+                        'content_show_in_menu' => $event->contentShowInMenu()->toNative(),
+                        'content_show_in_search' => $event->contentShowInSearch()->toNative(),
+                        'content_featured_image' => $event->contentFeaturedImage()->toNative(),
+                        'content_status' => $event->contentStatus()->toNative(),
+                        'content_created' => $event->contentCreated()->format('Y-m-d H:i:s'),
+                        'content_created_gmt' => $event->contentCreatedGmt()->format('Y-m-d H:i:s'),
+                        'content_published' => $event->contentPublished()->format('Y-m-d H:i:s'),
+                        'content_published_gmt' => $event->contentPublishedGmt()->format('Y-m-d H:i:s'),
+                    ])
+                    ->save();
             });
 
-            if (!$event->contentmeta()->isEmpty()) {
-                foreach ($event->contentmeta()->toNative() as $meta => $value) {
-                    add_contentmeta($event->aggregateId()->__toString(), $meta, $value);
+            if (!$event->contentAttribute()->isEmpty()) {
+                foreach ($event->contentAttribute()->toNative() as $key => $value) {
+                    add_content_attribute($event->aggregateId()->__toString(), $key, $value);
                 }
             }
         } catch (QueryBuilderException $e) {
@@ -106,12 +103,12 @@ final class DatabaseContentProjection extends BaseProjection implements ContentP
         try {
             $this->dfdb->qb()->transactional(callback: function () use ($event) {
                 $this->dfdb->qb()
-                        ->table(tableName: $this->dfdb->prefix . 'content')
-                        ->set([
-                            'content_title' => $event->contentTitle()->toNative(),
-                        ])
-                        ->where('content_id = ?', $event->contentId()->toNative())
-                        ->update();
+                    ->table(tableName: $this->dfdb->prefix . 'content')
+                    ->set([
+                        'content_title' => $event->contentTitle()->toNative(),
+                    ])
+                    ->where('content_id = ?', $event->contentId()->toNative())
+                    ->update();
             });
         } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
@@ -129,12 +126,12 @@ final class DatabaseContentProjection extends BaseProjection implements ContentP
         try {
             $this->dfdb->qb()->transactional(callback: function () use ($event) {
                 $this->dfdb->qb()
-                        ->table(tableName: $this->dfdb->prefix . 'content')
-                        ->set([
-                            'content_slug' => $event->contentSlug()->toNative(),
-                        ])
-                        ->where('content_id = ?', $event->contentId()->toNative())
-                        ->update();
+                    ->table(tableName: $this->dfdb->prefix . 'content')
+                    ->set([
+                        'content_slug' => $event->contentSlug()->toNative(),
+                    ])
+                    ->where('content_id = ?', $event->contentId()->toNative())
+                    ->update();
             });
         } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
@@ -152,12 +149,12 @@ final class DatabaseContentProjection extends BaseProjection implements ContentP
         try {
             $this->dfdb->qb()->transactional(callback: function () use ($event) {
                 $this->dfdb->qb()
-                        ->table(tableName: $this->dfdb->prefix . 'content')
-                        ->set([
-                            'content_body' => $event->contentBody() === null ? null : $event->contentBody()->toNative(),
-                        ])
-                        ->where('content_id = ?', $event->contentId()->toNative())
-                        ->update();
+                    ->table(tableName: $this->dfdb->prefix . 'content')
+                    ->set([
+                        'content_body' => $event->contentBody() === null ? null : $event->contentBody()->toNative(),
+                    ])
+                    ->where('content_id = ?', $event->contentId()->toNative())
+                    ->update();
             });
         } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
@@ -175,12 +172,12 @@ final class DatabaseContentProjection extends BaseProjection implements ContentP
         try {
             $this->dfdb->qb()->transactional(callback: function () use ($event) {
                 $this->dfdb->qb()
-                        ->table(tableName: $this->dfdb->prefix . 'content')
-                        ->set([
-                            'content_author' => $event->contentAuthor()->toNative(),
-                        ])
-                        ->where('content_id = ?', $event->contentId()->toNative())
-                        ->update();
+                    ->table(tableName: $this->dfdb->prefix . 'content')
+                    ->set([
+                        'content_author' => $event->contentAuthor()->toNative(),
+                    ])
+                    ->where('content_id = ?', $event->contentId()->toNative())
+                    ->update();
             });
         } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
@@ -198,12 +195,12 @@ final class DatabaseContentProjection extends BaseProjection implements ContentP
         try {
             $this->dfdb->qb()->transactional(callback: function () use ($event) {
                 $this->dfdb->qb()
-                        ->table(tableName: $this->dfdb->prefix . 'content')
-                        ->set([
-                            'content_type' => $event->contentTypeSlug()->toNative(),
-                        ])
-                        ->where('content_id = ?', $event->contentId()->toNative())
-                        ->update();
+                    ->table(tableName: $this->dfdb->prefix . 'content')
+                    ->set([
+                        'content_type' => $event->contentTypeSlug()->toNative(),
+                    ])
+                    ->where('content_id = ?', $event->contentId()->toNative())
+                    ->update();
             });
         } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
@@ -221,13 +218,13 @@ final class DatabaseContentProjection extends BaseProjection implements ContentP
         try {
             $this->dfdb->qb()->transactional(callback: function () use ($event) {
                 $this->dfdb->qb()
-                        ->table(tableName: $this->dfdb->prefix . 'content')
-                        ->set([
-                            'content_parent' => $event->contentParent() === null ?
-                                    null : $event->contentParent()->toNative(),
-                        ])
-                        ->where('content_id = ?', $event->contentId()->toNative())
-                        ->update();
+                    ->table(tableName: $this->dfdb->prefix . 'content')
+                    ->set([
+                        'content_parent' => $event->contentParent() === null ?
+                                null : $event->contentParent()->toNative(),
+                    ])
+                    ->where('content_id = ?', $event->contentId()->toNative())
+                    ->update();
             });
         } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
@@ -245,12 +242,12 @@ final class DatabaseContentProjection extends BaseProjection implements ContentP
         try {
             $this->dfdb->qb()->transactional(callback: function () use ($event) {
                 $this->dfdb->qb()
-                        ->table(tableName: $this->dfdb->prefix . 'content')
-                        ->set([
-                            'content_parent' => null,
-                        ])
-                        ->where('content_id = ?', $event->contentId()->toNative())
-                        ->update();
+                    ->table(tableName: $this->dfdb->prefix . 'content')
+                    ->set([
+                        'content_parent' => null,
+                    ])
+                    ->where('content_id = ?', $event->contentId()->toNative())
+                    ->update();
             });
         } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
@@ -268,12 +265,12 @@ final class DatabaseContentProjection extends BaseProjection implements ContentP
         try {
             $this->dfdb->qb()->transactional(callback: function () use ($event) {
                 $this->dfdb->qb()
-                        ->table(tableName: $this->dfdb->prefix . 'content')
-                        ->set([
-                            'content_sidebar' => $event->contentSidebar()->toNative(),
-                        ])
-                        ->where('content_id = ?', $event->contentId()->toNative())
-                        ->update();
+                    ->table(tableName: $this->dfdb->prefix . 'content')
+                    ->set([
+                        'content_sidebar' => $event->contentSidebar()->toNative(),
+                    ])
+                    ->where('content_id = ?', $event->contentId()->toNative())
+                    ->update();
             });
         } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
@@ -291,12 +288,12 @@ final class DatabaseContentProjection extends BaseProjection implements ContentP
         try {
             $this->dfdb->qb()->transactional(callback: function () use ($event) {
                 $this->dfdb->qb()
-                        ->table(tableName: $this->dfdb->prefix . 'content')
-                        ->set([
-                            'content_show_in_menu' => $event->contentShowInMenu()->toNative(),
-                        ])
-                        ->where('content_id = ?', $event->contentId()->toNative())
-                        ->update();
+                    ->table(tableName: $this->dfdb->prefix . 'content')
+                    ->set([
+                        'content_show_in_menu' => $event->contentShowInMenu()->toNative(),
+                    ])
+                    ->where('content_id = ?', $event->contentId()->toNative())
+                    ->update();
             });
         } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
@@ -314,12 +311,12 @@ final class DatabaseContentProjection extends BaseProjection implements ContentP
         try {
             $this->dfdb->qb()->transactional(callback: function () use ($event) {
                 $this->dfdb->qb()
-                        ->table(tableName: $this->dfdb->prefix . 'content')
-                        ->set([
-                            'content_show_in_search' => $event->contentShowInSearch()->toNative(),
-                        ])
-                        ->where('content_id = ?', $event->contentId()->toNative())
-                        ->update();
+                    ->table(tableName: $this->dfdb->prefix . 'content')
+                    ->set([
+                        'content_show_in_search' => $event->contentShowInSearch()->toNative(),
+                    ])
+                    ->where('content_id = ?', $event->contentId()->toNative())
+                    ->update();
             });
         } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
@@ -337,12 +334,12 @@ final class DatabaseContentProjection extends BaseProjection implements ContentP
         try {
             $this->dfdb->qb()->transactional(callback: function () use ($event) {
                 $this->dfdb->qb()
-                        ->table(tableName: $this->dfdb->prefix . 'content')
-                        ->set([
-                            'content_featured_image' => $event->contentFeaturedImage()->toNative(),
-                        ])
-                        ->where('content_id = ?', $event->contentId()->toNative())
-                        ->update();
+                    ->table(tableName: $this->dfdb->prefix . 'content')
+                    ->set([
+                        'content_featured_image' => $event->contentFeaturedImage()->toNative(),
+                    ])
+                    ->where('content_id = ?', $event->contentId()->toNative())
+                    ->update();
             });
         } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
@@ -360,12 +357,12 @@ final class DatabaseContentProjection extends BaseProjection implements ContentP
         try {
             $this->dfdb->qb()->transactional(callback: function () use ($event) {
                 $this->dfdb->qb()
-                        ->table(tableName: $this->dfdb->prefix . 'content')
-                        ->set([
-                                'content_status' => $event->contentStatus()->toNative(),
-                        ])
-                        ->where('content_id = ?', $event->contentId()->toNative())
-                        ->update();
+                    ->table(tableName: $this->dfdb->prefix . 'content')
+                    ->set([
+                        'content_status' => $event->contentStatus()->toNative(),
+                    ])
+                    ->where('content_id = ?', $event->contentId()->toNative())
+                    ->update();
             });
         } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
@@ -383,12 +380,12 @@ final class DatabaseContentProjection extends BaseProjection implements ContentP
         try {
             $this->dfdb->qb()->transactional(callback: function () use ($event) {
                 $this->dfdb->qb()
-                        ->table(tableName: $this->dfdb->prefix . 'content')
-                        ->set([
-                                'content_published' => $event->contentPublished()->format('Y-m-d H:i:s'),
-                        ])
-                        ->where('content_id = ?', $event->contentId()->toNative())
-                        ->update();
+                    ->table(tableName: $this->dfdb->prefix . 'content')
+                    ->set([
+                        'content_published' => $event->contentPublished()->format('Y-m-d H:i:s'),
+                    ])
+                    ->where('content_id = ?', $event->contentId()->toNative())
+                    ->update();
             });
         } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
@@ -406,12 +403,12 @@ final class DatabaseContentProjection extends BaseProjection implements ContentP
         try {
             $this->dfdb->qb()->transactional(callback: function () use ($event) {
                 $this->dfdb->qb()
-                        ->table(tableName: $this->dfdb->prefix . 'content')
-                        ->set([
-                                'content_published_gmt' => $event->contentPublishedGmt()->format('Y-m-d H:i:s'),
-                        ])
-                        ->where('content_id = ?', $event->contentId()->toNative())
-                        ->update();
+                    ->table(tableName: $this->dfdb->prefix . 'content')
+                    ->set([
+                        'content_published_gmt' => $event->contentPublishedGmt()->format('Y-m-d H:i:s'),
+                    ])
+                    ->where('content_id = ?', $event->contentId()->toNative())
+                    ->update();
             });
         } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
@@ -429,12 +426,12 @@ final class DatabaseContentProjection extends BaseProjection implements ContentP
         try {
             $this->dfdb->qb()->transactional(callback: function () use ($event) {
                 $this->dfdb->qb()
-                        ->table(tableName: $this->dfdb->prefix . 'content')
-                        ->set([
-                                'content_modified' => $event->contentModified()->format('Y-m-d H:i:s'),
-                        ])
-                        ->where('content_id = ?', $event->contentId()->toNative())
-                        ->update();
+                    ->table(tableName: $this->dfdb->prefix . 'content')
+                    ->set([
+                        'content_modified' => $event->contentModified()->format('Y-m-d H:i:s'),
+                    ])
+                    ->where('content_id = ?', $event->contentId()->toNative())
+                    ->update();
             });
         } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
@@ -452,12 +449,12 @@ final class DatabaseContentProjection extends BaseProjection implements ContentP
         try {
             $this->dfdb->qb()->transactional(callback: function () use ($event) {
                 $this->dfdb->qb()
-                    ->table(tableName: $this->dfdb->prefix . 'content')
-                    ->set([
-                        'content_modified_gmt' => $event->contentModifiedGmt()->format('Y-m-d H:i:s'),
-                    ])
-                    ->where('content_id = ?', $event->contentId()->toNative())
-                    ->update();
+                ->table(tableName: $this->dfdb->prefix . 'content')
+                ->set([
+                    'content_modified_gmt' => $event->contentModifiedGmt()->format('Y-m-d H:i:s'),
+                ])
+                ->where('content_id = ?', $event->contentId()->toNative())
+                ->update();
             });
         } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
@@ -465,21 +462,17 @@ final class DatabaseContentProjection extends BaseProjection implements ContentP
     }
 
     /**
-     * @param ContentMetaWasChanged $event
+     * @param ContentAttributeWasChanged $event
      * @return void
-     * @throws CommandPropertyNotFoundException
      * @throws ContainerExceptionInterface
-     * @throws Exception
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
-     * @throws TypeException
-     * @throws UnresolvableQueryHandlerException
      */
-    public function projectWhenContentMetaWasChanged(ContentMetaWasChanged $event): void
+    public function projectWhenContentAttributeWasChanged(ContentAttributeWasChanged $event): void
     {
-        if (!$event->contentmeta()->isEmpty()) {
-            foreach ($event->contentmeta()->toNative() as $meta => $value) {
-                update_contentmeta($event->aggregateId()->__toString(), $meta, $value);
+        if (!$event->contentAttribute()->isEmpty()) {
+            foreach ($event->contentAttribute()->toNative() as $key => $value) {
+                update_content_attribute($event->aggregateId()->__toString(), $key, $value);
             }
         }
     }
@@ -487,7 +480,6 @@ final class DatabaseContentProjection extends BaseProjection implements ContentP
     /**
      * @param ContentWasDeleted $event
      * @return void
-     * @throws TypeException
      * @throws NativeException
      */
     public function projectWhenContentWasDeleted(ContentWasDeleted $event): void
@@ -496,11 +488,11 @@ final class DatabaseContentProjection extends BaseProjection implements ContentP
             $this->dfdb->qb()->transactional(callback: function () use ($event) {
 
                 $this->dfdb->qb()
-                        ->table(tableName: $this->dfdb->prefix . 'content')
-                        ->where('content_id = ?', $event->contentId()->toNative())
-                        ->delete();
+                    ->table(tableName: $this->dfdb->prefix . 'content')
+                    ->where('content_id = ?', $event->contentId()->toNative())
+                    ->delete();
             });
-        } catch (QueryBuilderException $e) {
+        } catch (QueryBuilderException|Exception $e) {
             throw new NativeException(message: $e->getMessage());
         }
     }

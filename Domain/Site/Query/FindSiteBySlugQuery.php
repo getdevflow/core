@@ -10,5 +10,5 @@ use Qubus\ValueObjects\StringLiteral\StringLiteral;
 
 class FindSiteBySlugQuery extends PropertyCommand implements Query
 {
-    public ?StringLiteral $siteSlug = null;
+    public StringLiteral $slug;
 }

@@ -12,30 +12,28 @@ use Codefy\Domain\Metadata;
 use Qubus\Exception\Data\TypeException;
 use Qubus\ValueObjects\StringLiteral\StringLiteral;
 
-use function Qubus\Support\Helpers\is_null__;
-
 final class SiteNameWasChanged extends AggregateChanged
 {
-    private ?SiteId $siteId = null;
+    private SiteId $id;
 
-    private ?StringLiteral $siteName = null;
+    private StringLiteral $name;
 
     public static function withData(
-        SiteId $siteId,
-        StringLiteral $siteName
+        SiteId $id,
+        StringLiteral $name
     ): SiteNameWasChanged|DomainEvent|AggregateChanged {
         $event = self::occur(
-            aggregateId: $siteId,
+            aggregateId: $id,
             payload: [
-                    'site_name' => $siteName->toNative(),
-                ],
+                'site_name' => $name->toNative(),
+            ],
             metadata: [
-                    Metadata::AGGREGATE_TYPE => 'site'
-                ],
+                Metadata::AGGREGATE_TYPE => 'site'
+            ],
         );
 
-        $event->siteId = $siteId;
-        $event->siteName = $siteName;
+        $event->id = $id;
+        $event->name = $name;
 
         return $event;
     }
@@ -45,22 +43,19 @@ final class SiteNameWasChanged extends AggregateChanged
      */
     public function siteId(): SiteId|AggregateId
     {
-        if (is_null__($this->siteId)) {
-            $this->siteId = SiteId::fromString(siteId: $this->aggregateId()->__toString());
+        if (!isset($this->id)) {
+            $this->id = SiteId::fromString(siteId: $this->aggregateId()->__toString());
         }
 
-        return $this->siteId;
+        return $this->id;
     }
 
-    /**
-     * @throws TypeException
-     */
     public function siteName(): StringLiteral
     {
-        if (is_null__($this->siteName)) {
-            $this->siteName = StringLiteral::fromNative($this->payload()['site_name']);
+        if (!isset($this->name)) {
+            $this->name = StringLiteral::fromNative($this->payload()['site_name']);
         }
 
-        return $this->siteName;
+        return $this->name;
     }
 }

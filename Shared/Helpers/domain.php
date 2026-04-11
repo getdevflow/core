@@ -28,7 +28,7 @@ use function sprintf;
 /**
  * Retrieves a list of available locales.
  *
- * @file App/Shared/Helpers/domain.php
+ * @file core/Shared/Helpers/domain.php
  * @param string $active
  */
 function cms_dropdown_languages(string $active = ''): void
@@ -44,14 +44,14 @@ function cms_dropdown_languages(string $active = ''): void
 /**
  * Load's core, themes, and plugins translated strings.
  *
- * @file App/Shared/Helpers/domain.php
+ * @file core/Shared/Helpers/domain.php
  * @return bool
- * @throws ContainerExceptionInterface
  * @throws Exception
  * @throws InvalidArgumentException
- * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  * @throws TypeException
+ * @throws ContainerExceptionInterface
+ * @throws NotFoundExceptionInterface
  */
 function load_devflow_textdomain(): bool
 {
@@ -114,7 +114,7 @@ function load_devflow_textdomain(): bool
 /**
  * Loads the current or default locale.
  *
- * @file App/Shared/Helpers/domain.php
+ * @file core/Shared/Helpers/domain.php
  * @return string The locale.
  * @throws Exception
  * @throws InvalidArgumentException
@@ -122,7 +122,7 @@ function load_devflow_textdomain(): bool
  */
 function load_core_locale(): string
 {
-    $option = option();
-    $locale = $option->read(optionKey: 'site_locale', default: config()->string(key: 'app.locale'));
+    /** @var string $locale */
+    $locale = get_option(key: 'site_locale', default: config()->string(key: 'app.locale'));
     return __observer()->filter->applyFilter('core.locale', $locale);
 }

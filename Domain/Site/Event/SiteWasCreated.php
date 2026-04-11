@@ -16,71 +16,69 @@ use Qubus\Exception\Data\TypeException;
 use Qubus\Support\DateTime\QubusDateTimeImmutable;
 use Qubus\ValueObjects\StringLiteral\StringLiteral;
 
-use function Qubus\Support\Helpers\is_null__;
-
 final class SiteWasCreated extends AggregateChanged
 {
-    private ?SiteId $siteId = null;
+    private SiteId $id;
 
-    private ?StringLiteral $siteKey = null;
+    private StringLiteral $key;
 
-    private ?StringLiteral $siteName = null;
+    private StringLiteral $name;
 
-    private ?StringLiteral $siteSlug = null;
+    private StringLiteral $slug;
 
-    private ?StringLiteral $siteDomain = null;
+    private StringLiteral $domain;
 
-    private ?StringLiteral $siteMapping = null;
+    private StringLiteral $mapping;
 
-    private ?StringLiteral $sitePath = null;
+    private StringLiteral $path;
 
-    private ?UserId $siteOwner = null;
+    private UserId $owner;
 
-    private ?StringLiteral $siteStatus = null;
+    private StringLiteral $status;
 
-    private ?DateTimeInterface $siteRegistered = null;
+    private DateTimeInterface $registered;
 
     public static function withData(
-        SiteId $siteId,
-        StringLiteral $siteKey,
-        StringLiteral $siteName,
-        StringLiteral $siteSlug,
-        StringLiteral $siteDomain,
-        StringLiteral $siteMapping,
-        StringLiteral $sitePath,
-        UserId $siteOwner,
-        StringLiteral $siteStatus,
-        DateTimeInterface $siteRegistered,
+        SiteId $id,
+        StringLiteral $key,
+        StringLiteral $name,
+        StringLiteral $slug,
+        StringLiteral $domain,
+        StringLiteral $mapping,
+        StringLiteral $path,
+        UserId $owner,
+        StringLiteral $status,
+        DateTimeInterface $registered,
     ): SiteWasCreated|DomainEvent|AggregateChanged {
         $event = self::occur(
-            aggregateId: $siteId,
+            aggregateId: $id,
             payload: [
-                'site_id' => $siteId->toNative(),
-                'site_key' => $siteKey->toNative(),
-                'site_name' => $siteName->toNative(),
-                'site_slug' => $siteSlug->toNative(),
-                'site_domain' => $siteDomain->toNative(),
-                'site_mapping' => $siteMapping->toNative(),
-                'site_path' => $sitePath->toNative(),
-                'site_owner' => $siteOwner->toNative(),
-                'site_status' => $siteStatus->toNative(),
-                'site_registered' => (string) $siteRegistered,
+                'site_id' => $id->toNative(),
+                'site_key' => $key->toNative(),
+                'site_name' => $name->toNative(),
+                'site_slug' => $slug->toNative(),
+                'site_domain' => $domain->toNative(),
+                'site_mapping' => $mapping->toNative(),
+                'site_path' => $path->toNative(),
+                'site_owner' => $owner->toNative(),
+                'site_status' => $status->toNative(),
+                'site_registered' => (string) $registered,
             ],
             metadata: [
                 Metadata::AGGREGATE_TYPE => 'site',
             ],
         );
 
-        $event->siteId = $siteId;
-        $event->siteKey = $siteKey;
-        $event->siteName = $siteName;
-        $event->siteSlug = $siteSlug;
-        $event->siteDomain = $siteDomain;
-        $event->siteMapping = $siteMapping;
-        $event->sitePath = $sitePath;
-        $event->siteOwner = $siteOwner;
-        $event->siteStatus = $siteStatus;
-        $event->siteRegistered = $siteRegistered;
+        $event->id = $id;
+        $event->key = $key;
+        $event->name = $name;
+        $event->slug = $slug;
+        $event->domain = $domain;
+        $event->mapping = $mapping;
+        $event->path = $path;
+        $event->owner = $owner;
+        $event->status = $status;
+        $event->registered = $registered;
 
         return $event;
     }
@@ -90,83 +88,65 @@ final class SiteWasCreated extends AggregateChanged
      */
     public function siteId(): SiteId|AggregateId
     {
-        if (is_null__($this->siteId)) {
-            $this->siteId = SiteId::fromString(siteId: $this->aggregateId()->__toString());
+        if (!isset($this->id)) {
+            $this->id = SiteId::fromString(siteId: $this->aggregateId()->__toString());
         }
 
-        return $this->siteId;
+        return $this->id;
     }
 
-    /**
-     * @throws TypeException
-     */
     public function siteKey(): StringLiteral
     {
-        if (is_null__($this->siteKey)) {
-            $this->siteKey = StringLiteral::fromNative($this->payload()['site_key']);
+        if (!isset($this->key)) {
+            $this->key = StringLiteral::fromNative($this->payload()['site_key']);
         }
 
-        return $this->siteKey;
+        return $this->key;
     }
 
-    /**
-     * @throws TypeException
-     */
     public function siteName(): StringLiteral
     {
-        if (is_null__($this->siteName)) {
-            $this->siteName = StringLiteral::fromNative($this->payload()['site_name']);
+        if (!isset($this->name)) {
+            $this->name = StringLiteral::fromNative($this->payload()['site_name']);
         }
 
-        return $this->siteName;
+        return $this->name;
     }
 
-    /**
-     * @throws TypeException
-     */
     public function siteSlug(): StringLiteral
     {
-        if (is_null__($this->siteSlug)) {
-            $this->siteSlug = StringLiteral::fromNative($this->payload()['site_slug']);
+        if (!isset($this->slug)) {
+            $this->slug = StringLiteral::fromNative($this->payload()['site_slug']);
         }
 
-        return $this->siteSlug;
+        return $this->slug;
     }
 
-    /**
-     * @throws TypeException
-     */
     public function siteDomain(): StringLiteral
     {
-        if (is_null__($this->siteDomain)) {
-            $this->siteDomain = StringLiteral::fromNative($this->payload()['site_domain']);
+        if (!isset($this->domain)) {
+            $this->domain = StringLiteral::fromNative($this->payload()['site_domain']);
         }
 
-        return $this->siteDomain;
+        return $this->domain;
     }
 
-    /**
-     * @throws TypeException
-     */
     public function siteMapping(): StringLiteral
     {
-        if (is_null__($this->siteMapping)) {
-            $this->siteMapping = StringLiteral::fromNative($this->payload()['site_mapping']);
+        if (!isset($this->mapping)) {
+            $this->mapping = StringLiteral::fromNative($this->payload()['site_mapping']);
         }
 
-        return $this->siteMapping;
+        return $this->mapping;
     }
 
-    /**
-     * @throws TypeException
-     */
     public function sitePath(): StringLiteral
     {
-        if (is_null__($this->sitePath)) {
-            $this->sitePath = StringLiteral::fromNative($this->payload()['site_path']);
+        if (!isset($this->path)) {
+            $this->path = StringLiteral::fromNative($this->payload()['site_path']);
         }
 
-        return $this->sitePath;
+        return $this->path;
     }
 
     /**
@@ -174,33 +154,30 @@ final class SiteWasCreated extends AggregateChanged
      */
     public function siteOwner(): UserId
     {
-        if (is_null__($this->siteOwner)) {
-            $this->siteOwner = UserId::fromString($this->payload()['site_owner']);
+        if (!isset($this->owner)) {
+            $this->owner = UserId::fromString($this->payload()['site_owner']);
         }
 
-        return $this->siteOwner;
+        return $this->owner;
     }
 
-    /**
-     * @throws TypeException
-     */
     public function siteStatus(): StringLiteral
     {
-        if (is_null__($this->siteStatus)) {
-            $this->siteStatus = StringLiteral::fromNative($this->payload()['site_status']);
+        if (!isset($this->status)) {
+            $this->status = StringLiteral::fromNative($this->payload()['site_status']);
         }
 
-        return $this->siteStatus;
+        return $this->status;
     }
 
     public function siteRegistered(): DateTimeInterface
     {
-        if (is_null__($this->siteRegistered)) {
-            $this->siteRegistered = QubusDateTimeImmutable::createFromInterface(
-                (new DateTime($this->payload()['site_registered']))->getDateTime()
+        if (!isset($this->registered)) {
+            $this->registered = QubusDateTimeImmutable::createFromInterface(
+                new DateTime($this->payload()['site_registered'])->getDateTime()
             );
         }
 
-        return $this->siteRegistered;
+        return $this->registered;
     }
 }

@@ -4,13 +4,12 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Providers;
 
-use App\Infrastructure\Persistence\Database;
-use App\Shared\Services\Registry;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
+use Qubus\Expressive\Database;
 use Codefy\Framework\Support\CodefyServiceProvider;
 use Gettext\Translator;
 use Gettext\TranslatorFunctions;
-use Psr\Container\ContainerExceptionInterface;
-use Psr\Container\NotFoundExceptionInterface;
 use Psr\SimpleCache\InvalidArgumentException;
 use Qubus\EventDispatcher\ActionFilter\Filter;
 use Qubus\Exception\Data\TypeException;
@@ -22,12 +21,12 @@ use function App\Shared\Helpers\load_devflow_textdomain;
 class TranslatorServiceProvider extends CodefyServiceProvider
 {
     /**
+     * @throws Exception
+     * @throws InvalidArgumentException
      * @throws ReflectionException
+     * @throws TypeException
      * @throws ContainerExceptionInterface
      * @throws NotFoundExceptionInterface
-     * @throws InvalidArgumentException
-     * @throws TypeException
-     * @throws Exception
      */
     public function register(): void
     {

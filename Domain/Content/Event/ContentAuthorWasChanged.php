@@ -11,30 +11,28 @@ use Codefy\Domain\EventSourcing\DomainEvent;
 use Codefy\Domain\Metadata;
 use Qubus\Exception\Data\TypeException;
 
-use function Qubus\Support\Helpers\is_null__;
-
 final class ContentAuthorWasChanged extends AggregateChanged
 {
-    private ?ContentId $contentId = null;
+    private ContentId $id;
 
-    private ?UserId $contentAuthor = null;
+    private UserId $author;
 
     public static function withData(
-        ContentId $contentId,
-        UserId $contentAuthor,
+        ContentId $id,
+        UserId $author,
     ): ContentAuthorWasChanged|DomainEvent|AggregateChanged {
         $event = self::occur(
-            aggregateId: $contentId,
+            aggregateId: $id,
             payload: [
-                'content_author' => $contentAuthor->toNative(),
+                'content_author' => $author->toNative(),
             ],
             metadata: [
                 Metadata::AGGREGATE_TYPE => 'content',
             ]
         );
 
-        $event->contentId = $contentId;
-        $event->contentAuthor = $contentAuthor;
+        $event->id = $id;
+        $event->author = $author;
 
         return $event;
     }
@@ -44,11 +42,11 @@ final class ContentAuthorWasChanged extends AggregateChanged
      */
     public function contentId(): ContentId
     {
-        if (is_null__($this->contentId)) {
-            $this->contentId = ContentId::fromString($this->aggregateId()->__toString());
+        if (!isset($this->id)) {
+            $this->id = ContentId::fromString($this->aggregateId()->__toString());
         }
 
-        return $this->contentId;
+        return $this->id;
     }
 
     /**
@@ -56,10 +54,10 @@ final class ContentAuthorWasChanged extends AggregateChanged
      */
     public function contentAuthor(): UserId
     {
-        if (is_null__($this->contentAuthor)) {
-            $this->contentAuthor = UserId::fromString($this->payload()['content_author']);
+        if (!isset($this->author)) {
+            $this->author = UserId::fromString($this->payload()['content_author']);
         }
 
-        return $this->contentAuthor;
+        return $this->author;
     }
 }

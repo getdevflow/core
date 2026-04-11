@@ -12,30 +12,28 @@ use Codefy\Domain\Metadata;
 use Qubus\Exception\Data\TypeException;
 use Qubus\ValueObjects\StringLiteral\StringLiteral;
 
-use function Qubus\Support\Helpers\is_null__;
-
 final class SiteMappingWasChanged extends AggregateChanged
 {
-    private ?SiteId $siteId = null;
+    private SiteId $id;
 
-    private ?StringLiteral $siteMapping = null;
+    private StringLiteral $mapping;
 
     public static function withData(
-        SiteId $siteId,
-        StringLiteral $siteMapping
+        SiteId $id,
+        StringLiteral $mapping
     ): SiteMappingWasChanged|DomainEvent|AggregateChanged {
         $event = self::occur(
-            aggregateId: $siteId,
+            aggregateId: $id,
             payload: [
-                'site_mapping' => $siteMapping->toNative(),
+                'site_mapping' => $mapping->toNative(),
             ],
             metadata: [
-                    Metadata::AGGREGATE_TYPE => 'site'
-                ],
+                Metadata::AGGREGATE_TYPE => 'site'
+            ],
         );
 
-        $event->siteId = $siteId;
-        $event->siteMapping = $siteMapping;
+        $event->id = $id;
+        $event->mapping = $mapping;
 
         return $event;
     }
@@ -45,22 +43,19 @@ final class SiteMappingWasChanged extends AggregateChanged
      */
     public function siteId(): SiteId|AggregateId
     {
-        if (is_null__($this->siteId)) {
-            $this->siteId = SiteId::fromString(siteId: $this->aggregateId()->__toString());
+        if (!isset($this->id)) {
+            $this->id = SiteId::fromString(siteId: $this->aggregateId()->__toString());
         }
 
-        return $this->siteId;
+        return $this->id;
     }
 
-    /**
-     * @throws TypeException
-     */
     public function siteMapping(): StringLiteral
     {
-        if (is_null__($this->siteMapping)) {
-            $this->siteMapping = StringLiteral::fromNative($this->payload()['site_mapping']);
+        if (!isset($this->mapping)) {
+            $this->mapping = StringLiteral::fromNative($this->payload()['site_mapping']);
         }
 
-        return $this->siteMapping;
+        return $this->mapping;
     }
 }

@@ -121,11 +121,11 @@ final class NativePhpCookies
         return setcookie(
             name: $key,
             value: '',
-            expires_or_options: time() - (432000 + config(key: 'cookies.lifetime')),
+            expires_or_options: time() - (432000 + config()->integer(key: 'cookies.lifetime')),
             path: config(key: 'cookies.path'),
             domain: config(key: 'cookies.domain'),
             secure: config()->boolean(key: 'cookies.secure'),
-            httponly: config(key: 'cookies.httponly') ?? true,
+            httponly: config()->boolean(key: 'cookies.httponly') ?? true,
         );
     }
 

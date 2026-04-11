@@ -14,37 +14,37 @@ use Qubus\ValueObjects\StringLiteral\StringLiteral;
 
 class UpdateContentCommand extends PropertyCommand
 {
-    public ?ContentId $contentId = null;
+    public ContentId $id;
 
-    public ?StringLiteral $contentTitle = null;
+    public StringLiteral $title;
 
-    public ?StringLiteral $contentSlug = null;
+    public StringLiteral $slug;
 
-    public ?StringLiteral $contentBody = null;
+    public StringLiteral $body;
 
-    public ?UserId $contentAuthor = null;
+    public UserId $author;
 
-    public ?StringLiteral $contentTypeSlug = null;
+    public StringLiteral $type;
 
-    public ?ContentId $contentParent = null;
+    public ?ContentId $parent = null;
 
-    public ?IntegerNumber $contentSidebar = null;
+    public IntegerNumber $sidebar;
 
-    public ?IntegerNumber $contentShowInMenu = null;
+    public IntegerNumber $showInMenu;
 
-    public ?IntegerNumber $contentShowInSearch = null;
+    public IntegerNumber $showInSearch;
 
-    public ?StringLiteral $contentFeaturedImage = null;
+    public StringLiteral $featuredImage;
 
-    public ?ArrayLiteral $meta = null;
+    public ArrayLiteral $attribute;
 
-    public ?StringLiteral $contentStatus = null;
+    public StringLiteral $status;
 
-    public ?DateTimeInterface $contentPublished = null;
+    public DateTimeInterface $published;
 
-    public ?DateTimeInterface $contentPublishedGmt = null;
+    public DateTimeInterface $publishedGmt;
 
-    public ?DateTimeInterface $contentModified = null;
+    public DateTimeInterface $modified;
 
-    public ?DateTimeInterface $contentModifiedGmt = null;
+    public DateTimeInterface $modifiedGmt;
 }

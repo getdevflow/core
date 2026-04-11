@@ -11,30 +11,28 @@ use Codefy\Domain\EventSourcing\DomainEvent;
 use Codefy\Domain\Metadata;
 use Qubus\Exception\Data\TypeException;
 
-use function Qubus\Support\Helpers\is_null__;
-
 final class ProductAuthorWasChanged extends AggregateChanged
 {
-    private ?ProductId $productId = null;
+    private ProductId $id;
 
-    private ?UserId $productAuthor = null;
+    private UserId $author;
 
     public static function withData(
-        ProductId $productId,
-        UserId $productAuthor,
+        ProductId $id,
+        UserId $author,
     ): ProductAuthorWasChanged|DomainEvent|AggregateChanged {
         $event = self::occur(
-            aggregateId: $productId,
+            aggregateId: $id,
             payload: [
-                'product_author' => $productAuthor->toNative(),
+                'product_author' => $author->toNative(),
             ],
             metadata: [
                 Metadata::AGGREGATE_TYPE => 'product',
             ]
         );
 
-        $event->productId = $productId;
-        $event->productAuthor = $productAuthor;
+        $event->id = $id;
+        $event->author = $author;
 
         return $event;
     }
@@ -44,11 +42,11 @@ final class ProductAuthorWasChanged extends AggregateChanged
      */
     public function productId(): ProductId
     {
-        if (is_null__($this->productId)) {
-            $this->productId = ProductId::fromString($this->aggregateId()->__toString());
+        if (!isset($this->id)) {
+            $this->id = ProductId::fromString($this->aggregateId()->__toString());
         }
 
-        return $this->productId;
+        return $this->id;
     }
 
     /**
@@ -56,10 +54,10 @@ final class ProductAuthorWasChanged extends AggregateChanged
      */
     public function productAuthor(): UserId
     {
-        if (is_null__($this->productAuthor)) {
-            $this->productAuthor = UserId::fromString($this->payload()['product_author']);
+        if (!isset($this->author)) {
+            $this->author = UserId::fromString($this->payload()['product_author']);
         }
 
-        return $this->productAuthor;
+        return $this->author;
     }
 }

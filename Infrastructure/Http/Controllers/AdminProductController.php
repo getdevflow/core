@@ -5,21 +5,23 @@ declare(strict_types=1);
 namespace App\Infrastructure\Http\Controllers;
 
 use App\Application\Devflow;
-use App\Domain\Product\Command\RemoveFeaturedImageCommand;
+use App\Domain\Product\Validator\FeaturedImageValidator;
 use App\Domain\Product\Model\Product;
-use App\Domain\Product\ValueObject\ProductId;
-use App\Infrastructure\Persistence\Database;
-use App\Infrastructure\Services\UserAuth;
+use App\Domain\Product\Validator\DestroyProductValidator;
+use App\Domain\Product\Validator\StoreProductValidator;
+use App\Domain\Product\Validator\UpdateProductValidator;
+use App\Infrastructure\Services\Product\Pipes\UniqueProductSlug;
+use App\Infrastructure\Services\Product\ProductService;
+use App\Shared\Pipes\CastShowInAttributesToInt;
+use App\Shared\Pipes\CheckForScheduledStatus;
+use App\Shared\Pipes\FormatCreatedDateTime;
+use App\Shared\Pipes\FormatPublishedDateTime;
+use App\Shared\Pipes\OptimizeFeaturedImage;
 use Application\Service\Forms\ProductForm;
-use Codefy\CommandBus\Busses\SynchronousCommandBus;
-use Codefy\CommandBus\Containers\ContainerFactory;
-use Codefy\CommandBus\Exceptions\CommandCouldNotBeHandledException;
 use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
 use Codefy\CommandBus\Exceptions\UnresolvableCommandHandlerException;
-use Codefy\CommandBus\Odin;
-use Codefy\CommandBus\Resolvers\NativeCommandHandlerResolver;
-use Codefy\Framework\Factory\FileLoggerFactory;
 use Codefy\Framework\Http\BaseController;
+use Codefy\Framework\Pipeline\Pipeline;
 use Codefy\QueryBus\UnresolvableQueryHandlerException;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
@@ -30,133 +32,85 @@ use Qubus\Exception\Exception;
 use Qubus\Http\Factories\JsonResponseFactory;
 use Qubus\Http\ServerRequest;
 use Qubus\Http\Session\SessionException;
-use Qubus\Http\Session\SessionService;
-use Qubus\Routing\Router;
-use Qubus\ValueObjects\StringLiteral\StringLiteral;
-use Qubus\View\Renderer;
 use ReflectionException;
 
 use function App\Shared\Helpers\admin_url;
-use function App\Shared\Helpers\cms_delete_product;
-use function App\Shared\Helpers\cms_insert_product;
-use function App\Shared\Helpers\cms_update_product;
+use function App\Shared\Helpers\current_user_can;
 use function App\Shared\Helpers\get_product_by_id;
-use function App\Shared\Helpers\get_products;
-use function Codefy\Framework\Helpers\config;
-use function Qubus\Error\Helpers\is_error;
+use function Codefy\Framework\Helpers\logger;
+use function Codefy\Framework\Helpers\view;
 use function Qubus\Security\Helpers\esc_html__;
 use function Qubus\Security\Helpers\t__;
 use function Qubus\Support\Helpers\is_false__;
 
 final class AdminProductController extends BaseController
 {
-    public function __construct(
-        protected SessionService $sessionService,
-        protected Router $router,
-        protected UserAuth $user,
-        protected Database $dfdb,
-        protected Renderer $view
-    ) {
-        parent::__construct($sessionService, $router, $view);
-    }
-
     /**
-     * @param ServerRequest $request
-     * @return string|ResponseInterface
+     * @param ProductService $service
+     * @return ResponseInterface
      * @throws CommandPropertyNotFoundException
      * @throws ContainerExceptionInterface
      * @throws Exception
      * @throws InvalidArgumentException
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
-     * @throws SessionException
      * @throws TypeException
+     * @throws UnresolvableQueryHandlerException
      * @throws \Exception
      */
-    public function products(ServerRequest $request): string|ResponseInterface
+    public function products(ProductService $service): ResponseInterface
     {
-        if (false === $this->user->can(permissionName: 'manage:product')) {
+        if (false === current_user_can(perm: 'manage:product')) {
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow'),
             );
             return $this->redirect(admin_url());
         }
 
-        try {
-            $products = get_products();
+        $products = $service->findProducts();
 
-            return $this->view->render(
-                template: 'framework::backend/admin/product/index',
-                data: [
-                    'title' => esc_html__(string: 'Products', domain: 'devflow'),
-                    'products' => $products,
-                ]
-            );
-        } catch (UnresolvableQueryHandlerException | ReflectionException $e) {
-            FileLoggerFactory::getLogger()->error($e->getMessage());
-            Devflow::$PHP->flash->error(
-                message: t__(msgid: 'Query error.', domain: 'devflow')
-            );
-        }
-
-        return JsonResponseFactory::create(data: t__(msgid: 'Products error', domain: 'devflow'), status: 404);
+        return view(
+            template: 'framework::backend/admin/product/index',
+            data: [
+                'title' => esc_html__(string: 'Products', domain: 'devflow'),
+                'products' => $products,
+            ]
+        );
     }
 
     /**
      * @param ServerRequest $request
-     * @return ResponseInterface|null
-     * @throws ContainerExceptionInterface
+     * @param ProductService $service
+     * @return ResponseInterface
      * @throws Exception
-     * @throws InvalidArgumentException
-     * @throws NotFoundExceptionInterface
-     * @throws ReflectionException
-     * @throws SessionException
-     * @throws TypeException
+     * @throws \Exception
      */
-    public function productCreate(ServerRequest $request): ?ResponseInterface
+    public function productCreate(ServerRequest $request, ProductService $service): ResponseInterface
     {
-        if (false === $this->user->can(permissionName: 'create:product')) {
-            Devflow::$PHP->flash->error(
-                message: t__(msgid: 'Access denied.', domain: 'devflow')
-            );
-            return $this->redirect(admin_url());
-        }
+        $request = Devflow::$PHP->make(name: Pipeline::class)
+            ->send($request)
+            ->through([
+                FormatPublishedDateTime::class,
+                FormatCreatedDateTime::class,
+                UniqueProductSlug::class,
+                CheckForScheduledStatus::class,
+                OptimizeFeaturedImage::class,
+                CastShowInAttributesToInt::class,
+            ])
+            ->thenReturn();
 
-        try {
-            $id = cms_insert_product($request);
-            if (is_error($id)) {
-                Devflow::$PHP->flash->error(
-                    message: t__(msgid: 'Insertion error occurred.', domain: 'devflow')
-                );
-            } else {
-                Devflow::$PHP->flash->success(Devflow::$PHP->flash->notice(num: 201));
-            }
+        $id = $service->createProduct(
+            data: StoreProductValidator::make(
+                request: $request
+            )
+        );
 
-            return $this->redirect(admin_url(path: "product/{$id}/"));
-        } catch (
-            CommandCouldNotBeHandledException |
-            CommandPropertyNotFoundException |
-            InvalidArgumentException |
-            UnresolvableCommandHandlerException |
-            UnresolvableQueryHandlerException |
-            TypeException |
-            Exception |
-            ReflectionException |
-            NotFoundExceptionInterface |
-            ContainerExceptionInterface $e
-        ) {
-            FileLoggerFactory::getLogger()->error($e->getMessage());
-            Devflow::$PHP->flash->error(
-                message: t__(msgid: 'Insertion exception occurred and was logged.', domain: 'devflow')
-            );
-        }
-
-        return $this->redirect($request->getServerParams()['HTTP_REFERER']);
+        return $this->redirect(admin_url(path: "product/{$id}/"));
     }
 
     /**
      * @param ServerRequest $request
-     * @return ResponseInterface|string|null
+     * @return ResponseInterface
      * @throws CommandPropertyNotFoundException
      * @throws ContainerExceptionInterface
      * @throws Exception
@@ -168,16 +122,16 @@ final class AdminProductController extends BaseController
      * @throws UnresolvableQueryHandlerException
      * @throws \Exception
      */
-    public function productCreateView(ServerRequest $request): ResponseInterface|null|string
+    public function productCreateView(ServerRequest $request): ResponseInterface
     {
-        if (false === $this->user->can(permissionName: 'create:product')) {
+        if (false === current_user_can(perm: 'create:product')) {
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
             return $this->redirect(admin_url());
         }
 
-        return $this->view->render(
+        return view(
             template: 'framework::backend/admin/product/create',
             data: [
                 'title' => t__(msgid: 'Create Product', domain: 'devflow'),
@@ -189,164 +143,35 @@ final class AdminProductController extends BaseController
 
     /**
      * @param ServerRequest $request
+     * @param ProductService $service
      * @param string $productId
-     * @return ResponseInterface|null
-     * @throws ContainerExceptionInterface
+     * @return ResponseInterface
      * @throws Exception
-     * @throws InvalidArgumentException
-     * @throws NotFoundExceptionInterface
-     * @throws ReflectionException
-     * @throws SessionException
-     * @throws TypeException
      */
     public function productChange(
         ServerRequest $request,
+        ProductService $service,
         string $productId
-    ): ?ResponseInterface {
-        if (false === $this->user->can(permissionName: 'update:product')) {
-            Devflow::$PHP->flash->error(
-                message: t__(msgid: 'Access denied.', domain: 'devflow')
-            );
-            return $this->redirect(admin_url());
-        }
+    ): ResponseInterface {
+        $request = Devflow::$PHP->make(name: Pipeline::class)
+            ->send($request)
+            ->through([
+                FormatPublishedDateTime::class,
+                FormatCreatedDateTime::class,
+                UniqueProductSlug::class,
+                CheckForScheduledStatus::class,
+                OptimizeFeaturedImage::class,
+                CastShowInAttributesToInt::class,
+            ])
+            ->thenReturn();
 
-        $dataArrayMerge = array_merge(['id' => $productId], $request->getParsedBody());
-
-        try {
-            $id = cms_update_product($dataArrayMerge);
-            if (is_error($id)) {
-                Devflow::$PHP->flash->error(
-                    message: t__(msgid: 'Change error occurred.', domain: 'devflow')
-                );
-            }
-
-            Devflow::$PHP->flash->success(Devflow::$PHP->flash->notice(num: 200));
-        } catch (
-            CommandCouldNotBeHandledException |
-            ContainerExceptionInterface |
-            InvalidArgumentException |
-            CommandPropertyNotFoundException |
-            UnresolvableCommandHandlerException |
-            UnresolvableQueryHandlerException |
-            TypeException |
-            Exception |
-            ReflectionException $e
-        ) {
-            FileLoggerFactory::getLogger()->error($e->getMessage());
-            Devflow::$PHP->flash->error(
-                message: t__(msgid: 'Change exception occurred and was logged.', domain: 'devflow')
-            );
-        }
+        $service->updateProduct(
+            data: UpdateProductValidator::make(
+                request: $request
+            )
+        );
 
         return $this->redirect(admin_url(path: "product/{$productId}/"));
-    }
-
-    /**
-     * @param ServerRequest $request
-     * @param string $productId
-     * @return string|ResponseInterface
-     * @throws ContainerExceptionInterface
-     * @throws Exception
-     * @throws InvalidArgumentException
-     * @throws NotFoundExceptionInterface
-     * @throws ReflectionException
-     * @throws SessionException
-     * @throws TypeException
-     * @throws \Exception
-     */
-    public function productView(ServerRequest $request, string $productId): string|ResponseInterface
-    {
-        if (false === $this->user->can(permissionName: 'update:product')) {
-            Devflow::$PHP->flash->error(
-                message: t__(msgid: 'Access denied.', domain: 'devflow')
-            );
-            return $this->redirect(admin_url());
-        }
-
-        try {
-            /** @var Product $product */
-            $product = get_product_by_id($productId);
-
-            if (empty($product->id) || is_false__($product)) {
-                return JsonResponseFactory::create(
-                    data: t__('The product does not exist.', domain: 'devflow'),
-                    status: 404
-                );
-            }
-
-            return $this->view->render(
-                template: 'framework::backend/admin/product/view',
-                data: [
-                    'title' => $product->title,
-                    'product' => $product,
-                    'form' => new ProductForm()->buildForm($request->getParsedBody(), $product->id),
-                ]
-            );
-        } catch (
-            ContainerExceptionInterface |
-            CommandPropertyNotFoundException |
-            Exception |
-            InvalidArgumentException |
-            UnresolvableQueryHandlerException |
-            ReflectionException $e
-        ) {
-            FileLoggerFactory::getLogger()->error($e->getMessage());
-        }
-
-        return JsonResponseFactory::create(data: t__('The product does not exist.', domain: 'devflow'), status: 404);
-    }
-
-    /**
-     * @param ServerRequest $request
-     * @param string $productId
-     * @return ResponseInterface|null
-     * @throws ContainerExceptionInterface
-     * @throws Exception
-     * @throws InvalidArgumentException
-     * @throws NotFoundExceptionInterface
-     * @throws ReflectionException
-     * @throws SessionException
-     * @throws TypeException
-     */
-    public function removeFeaturedImage(ServerRequest $request, string $productId): ?ResponseInterface
-    {
-        if (false === $this->user->can(permissionName: 'update:product')) {
-            Devflow::$PHP->flash->error(
-                message: t__(msgid: 'Access denied.', domain: 'devflow')
-            );
-            return $this->redirect(admin_url());
-        }
-
-        try {
-            $resolver = new NativeCommandHandlerResolver(
-                container: ContainerFactory::make(config: config('commandbus.container'))
-            );
-            $odin = new Odin(bus: new SynchronousCommandBus($resolver));
-
-            $command = new RemoveFeaturedImageCommand([
-                'productId'  => ProductId::fromString($productId),
-                'productFeaturedImage' => new StringLiteral('')
-            ]);
-
-            $odin->execute($command);
-
-            Devflow::$PHP->flash->success(
-                message: t__(msgid: 'Removal of featured image was successful.', domain: 'devflow')
-            );
-        } catch (
-            CommandCouldNotBeHandledException |
-            CommandPropertyNotFoundException |
-            UnresolvableCommandHandlerException |
-            TypeException |
-            ReflectionException $e
-        ) {
-            FileLoggerFactory::getLogger()->error($e->getMessage());
-            Devflow::$PHP->flash->error(
-                message: t__(msgid: 'Removal exception error and was logged.', domain: 'devflow')
-            );
-        }
-
-        return $this->redirect($request->getServerParams()['HTTP_REFERER']);
     }
 
     /**
@@ -360,10 +185,11 @@ final class AdminProductController extends BaseController
      * @throws ReflectionException
      * @throws SessionException
      * @throws TypeException
+     * @throws \Exception
      */
-    public function productDelete(ServerRequest $request, string $productId): ResponseInterface
+    public function productView(ServerRequest $request, string $productId): ResponseInterface
     {
-        if (false === $this->user->can(permissionName: 'delete:product')) {
+        if (false === current_user_can(perm: 'update:product')) {
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
@@ -371,33 +197,85 @@ final class AdminProductController extends BaseController
         }
 
         try {
-            $delete = cms_delete_product($productId);
+            /** @var Product $product */
+            $product = get_product_by_id($productId);
 
-            if (is_error($delete) || is_false__($delete)) {
-                Devflow::$PHP->flash->error(
-                    message: t__(msgid: 'A deletion error occurred.', domain: 'devflow')
+            if (empty($product->id) || is_false__($product)) {
+                return JsonResponseFactory::create(
+                    data: t__(msgid: 'The product does not exist.', domain: 'devflow'),
+                    status: 404
                 );
             }
-        } catch (
-            CommandCouldNotBeHandledException |
-            CommandPropertyNotFoundException |
-            ContainerExceptionInterface |
-            InvalidArgumentException |
-            UnresolvableCommandHandlerException |
-            TypeException |
-            Exception |
-            ReflectionException $e
-        ) {
-            FileLoggerFactory::getLogger()->error($e->getMessage());
-            Devflow::$PHP->flash->error(
-                message: t__(msgid: 'A deletion exception occurred and was logged.', domain: 'devflow')
+
+            return view(
+                template: 'framework::backend/admin/product/view',
+                data: [
+                    'title' => $product->title,
+                    'product' => $product,
+                    'form' => new ProductForm()->buildForm($request->getParsedBody(), $product->id),
+                ]
             );
+        } catch (
+            ContainerExceptionInterface |
+            CommandPropertyNotFoundException |
+            InvalidArgumentException |
+            UnresolvableQueryHandlerException |
+            ReflectionException |
+            Exception $e
+        ) {
+            logger('error', $e->getMessage());
         }
 
-        Devflow::$PHP->flash->success(
-            message: t__(msgid: 'Removal was successful.', domain: 'devflow')
+        return JsonResponseFactory::create(data: t__(msgid: 'The product does not exist.', domain: 'devflow'), status: 404);
+    }
+
+    /**
+     * @param ServerRequest $request
+     * @param ProductService $service
+     * @param string $productId
+     * @return ResponseInterface
+     * @throws ContainerExceptionInterface
+     * @throws Exception
+     * @throws InvalidArgumentException
+     * @throws NotFoundExceptionInterface
+     */
+    public function removeFeaturedImage(ServerRequest $request, ProductService $service, string $productId): ResponseInterface
+    {
+        $request = $request->withParsedBody(['id' => $productId, 'featuredImage' => '']);
+
+        $service->removeFeaturedImage(
+            data: FeaturedImageValidator::make(
+                request: $request
+            )
         );
 
-        return $this->redirect(admin_url("product/"));
+        return $this->redirect($request->getHeaderLine(name: 'Referer'));
+    }
+
+    /**
+     * @param ServerRequest $request
+     * @param ProductService $service
+     * @param string $productId
+     * @return ResponseInterface
+     * @throws CommandPropertyNotFoundException
+     * @throws ContainerExceptionInterface
+     * @throws Exception
+     * @throws InvalidArgumentException
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
+     * @throws TypeException
+     * @throws UnresolvableCommandHandlerException
+     */
+    public function productDelete(ServerRequest $request, ProductService $service, string $productId): ResponseInterface
+    {
+        $request = $request->withParsedBody(['id' => $productId]);
+
+        $service->deleteProduct(
+            data: DestroyProductValidator::make(
+                request: $request
+            )
+        );
+
+        return $this->redirect(admin_url('product/'));
     }
 }

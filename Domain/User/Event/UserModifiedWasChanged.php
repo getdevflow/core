@@ -14,30 +14,28 @@ use DateTimeInterface;
 use Qubus\Exception\Data\TypeException;
 use Qubus\Support\DateTime\QubusDateTimeImmutable;
 
-use function Qubus\Support\Helpers\is_null__;
-
 class UserModifiedWasChanged extends AggregateChanged
 {
-    private ?UserId $userId = null;
+    private UserId $id;
 
-    private ?DateTimeInterface $userModified = null;
+    private DateTimeInterface $modified;
 
     public static function withData(
-        UserId $userId,
-        DateTimeInterface $userModified
+        UserId $id,
+        DateTimeInterface $modified
     ): UserModifiedWasChanged|DomainEvent|AggregateChanged {
         $event = self::occur(
-            aggregateId: $userId,
+            aggregateId: $id,
             payload: [
-                'user_modified' => (string) $userModified
+                'user_modified' => (string) $modified
             ],
             metadata: [
                 Metadata::AGGREGATE_TYPE => 'user'
             ]
         );
 
-        $event->userId = $userId;
-        $event->userModified = $userModified;
+        $event->id = $id;
+        $event->modified = $modified;
 
         return $event;
     }
@@ -47,21 +45,21 @@ class UserModifiedWasChanged extends AggregateChanged
      */
     public function userId(): UserId|AggregateId
     {
-        if (is_null__($this->userId)) {
-            $this->userId = UserId::fromString(userId: $this->aggregateId()->__toString());
+        if (!isset($this->id)) {
+            $this->id = UserId::fromString(userId: $this->aggregateId()->__toString());
         }
 
-        return $this->userId;
+        return $this->id;
     }
 
     public function userModified(): DateTimeInterface
     {
-        if (is_null__($this->userModified)) {
-            $this->userModified = QubusDateTimeImmutable::createFromInterface(
-                (new DateTime($this->payload()['user_modified']))->getDateTime()
+        if (!isset($this->modified)) {
+            $this->modified = QubusDateTimeImmutable::createFromInterface(
+                new DateTime($this->payload()['user_modified'])->getDateTime()
             );
         }
 
-        return $this->userModified;
+        return $this->modified;
     }
 }

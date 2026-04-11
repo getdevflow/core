@@ -5,13 +5,15 @@ declare(strict_types=1);
 namespace App\Shared\Helpers;
 
 use App\Application\Devflow;
-use App\Infrastructure\Persistence\Database;
+use Qubus\Expressive\Database;
 use App\Infrastructure\Services\Options;
 use App\Shared\Services\PhpFileParser;
 use Codefy\Framework\Application;
 use Codefy\Framework\Factory\FileLoggerFactory;
 use Exception;
 use PDOException;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
 use Qubus\Exception\Data\TypeException;
 use Qubus\ValueObjects\Identity\Ulid;
 use Qubus\View\Renderer;
@@ -28,7 +30,6 @@ use function preg_quote;
 use function preg_replace;
 use function Qubus\Security\Helpers\__observer;
 use function Qubus\Support\Helpers\add_trailing_slash;
-use function Qubus\Support\Helpers\is_false__;
 use function sprintf;
 use function trim;
 
@@ -98,8 +99,9 @@ function plugin_dir_path(string $filename): string
  * Returns a list of all plugins that have been activated.
  *
  * @return array|false
- * @throws TypeException
  * @throws ReflectionException
+ * @throws ContainerExceptionInterface
+ * @throws NotFoundExceptionInterface
  */
 function active_plugins(): array|false
 {
@@ -117,8 +119,9 @@ function active_plugins(): array|false
  * Activates a specific plugin that is called by $_GET['id'] variable.
  *
  * @param string $plugin ID of the plugin to activate
+ * @throws ContainerExceptionInterface
+ * @throws NotFoundExceptionInterface
  * @throws ReflectionException
- * @throws TypeException
  */
 function activate_plugin(string $plugin): void
 {
@@ -148,8 +151,9 @@ function activate_plugin(string $plugin): void
  *
  * @param string $plugin
  * @return void
+ * @throws ContainerExceptionInterface
+ * @throws NotFoundExceptionInterface
  * @throws ReflectionException
- * @throws TypeException
  */
 function deactivate_plugin(string $plugin): void
 {
@@ -158,9 +162,9 @@ function deactivate_plugin(string $plugin): void
     try {
         $dfdb->qb()->transactional(function () use ($dfdb, $plugin) {
             $dfdb->qb()
-                    ->table(tableName: "{$dfdb->prefix}plugin")
-                    ->where(condition: 'plugin_classname = ?', parameters: $plugin)
-                    ->delete();
+                ->table(tableName: "{$dfdb->prefix}plugin")
+                ->where(condition: 'plugin_classname = ?', parameters: $plugin)
+                ->delete();
         });
     } catch (PDOException | Exception $ex) {
         FileLoggerFactory::getLogger()->error(
@@ -180,8 +184,9 @@ function deactivate_plugin(string $plugin): void
  *
  * @param string $plugin
  * @return bool
+ * @throws ContainerExceptionInterface
+ * @throws NotFoundExceptionInterface
  * @throws ReflectionException
- * @throws TypeException
  * @throws \Qubus\Exception\Exception
  */
 function is_plugin_activated(string $plugin): bool
@@ -200,6 +205,8 @@ function is_plugin_activated(string $plugin): bool
 }
 
 /**
+ * @throws ContainerExceptionInterface
+ * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  * @throws TypeException
  * @throws \Qubus\Exception\Exception
@@ -243,8 +250,8 @@ function load_active_plugins(): void
  */
 function plugin_url(string $path = '', string $plugin = ''): string
 {
-    $path = normalize_path($path ?? '');
-    $plugin = normalize_path($plugin ?? '');
+    $path = normalize_path($path);
+    $plugin = normalize_path($plugin);
 
     $pluginUrl = site_url('plugins/');
 

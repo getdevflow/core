@@ -21,6 +21,6 @@ class FindSiteByIdQueryHandler implements QueryHandler
      */
     public function handle(FindSiteByIdQuery|Query $query): array|object
     {
-        return $this->repository->findById($query->siteId->toNative());
+        return $this->repository->findById($query->id->toNative());
     }
 }

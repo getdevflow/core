@@ -10,5 +10,5 @@ use Qubus\ValueObjects\Web\EmailAddress;
 
 final class FindUserByEmailQuery extends PropertyCommand implements Query
 {
-    public ?EmailAddress $userEmail = null;
+    public EmailAddress $email;
 }

@@ -19,6 +19,10 @@ final class DebugBarServiceProvider extends CodefyServiceProvider
 {
     public function register(): void
     {
+        if($this->codefy->isRunningInConsole()) {
+            return;
+        }
+
         $this->codefy->singleton(DebugBar::class, function () {
             $request = RequestContext::get();
 

@@ -15,33 +15,35 @@ use Qubus\ValueObjects\Web\EmailAddress;
 
 final class CreateUserCommand extends PropertyCommand
 {
-    public ?UserId $id = null;
+    public UserId $id;
 
-    public ?StringLiteral $fname = null;
+    public StringLiteral $fname;
 
-    public ?StringLiteral $mname = null;
+    public StringLiteral $mname;
 
-    public ?StringLiteral $lname = null;
+    public StringLiteral $lname;
 
-    public ?EmailAddress $email = null;
+    public EmailAddress $email;
 
-    public ?Username $login = null;
+    public Username $login;
 
-    public ?UserToken $token = null;
+    public UserToken $token;
 
-    public ?StringLiteral $pass = null;
+    public StringLiteral $pass;
 
-    public ?StringLiteral $url = null;
+    public StringLiteral $url;
 
-    public ?StringLiteral $timezone = null;
+    public StringLiteral $bio;
 
-    public ?StringLiteral $dateFormat = null;
+    public StringLiteral $timezone;
 
-    public ?StringLiteral $timeFormat = null;
+    public StringLiteral $dateFormat;
 
-    public ?StringLiteral $locale = null;
+    public StringLiteral $timeFormat;
 
-    public ?DateTimeInterface $registered = null;
+    public StringLiteral $locale;
 
-    public ?ArrayLiteral $meta = null;
+    public ?StringLiteral $activationKey = null;
+
+    public DateTimeInterface $registered;
 }

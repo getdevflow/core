@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Domain\User\ValueObject;
 
-use Qubus\Exception\Data\TypeException;
 use Qubus\Support\Assertion;
 use Qubus\ValueObjects\StringLiteral\StringLiteral;
 
@@ -24,12 +23,9 @@ class Username extends StringLiteral
             message: 'Username must have a length between 3 to 60 characters.'
         );
 
-        $this->value = $username;
+        parent::__construct($username);
     }
 
-    /**
-     * @throws TypeException
-     */
     public static function fromString(string $userToken): Username
     {
         return new self(value: $userToken);

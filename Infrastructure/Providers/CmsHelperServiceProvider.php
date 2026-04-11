@@ -5,10 +5,15 @@ declare(strict_types=1);
 namespace App\Infrastructure\Providers;
 
 use App\Application\Devflow;
+use App\Infrastructure\Persistence\Cache\ContentCachePsr16;
+use App\Infrastructure\Persistence\Cache\ProductCachePsr16;
+use App\Infrastructure\Services\Content\Event\ContentUpdated;
+use App\Infrastructure\Services\Product\Event\ProductUpdated;
 use App\Shared\Services\Parsecode;
 use Codefy\Framework\Support\CodefyServiceProvider;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
+use Psr\EventDispatcher\ListenerProviderInterface;
 use Psr\SimpleCache\InvalidArgumentException;
 use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
@@ -109,11 +114,6 @@ final class CmsHelperServiceProvider extends CodefyServiceProvider
         );
         __observer()->action->addAction('before_router_login', 'App\Shared\Helpers\does_site_exist', 6);
         __observer()->action->addAction('enqueue_cms_editor', 'App\Shared\Helpers\cms_editor', 5);
-        __observer()->action->addAction('flush_cache', 'App\Shared\Helpers\populate_usermeta_cache', 5);
-        __observer()->action->addAction('login_init', 'App\Shared\Helpers\populate_usermeta_cache', 5);
-        __observer()->action->addAction('update_user_init', 'App\Shared\Helpers\populate_usermeta_cache', 5);
-        __observer()->action->addAction('flush_cache', 'App\Shared\Helpers\populate_contentmeta_cache', 5);
-        __observer()->action->addAction('update_post_init', 'App\Shared\Helpers\populate_contentmeta_cache', 5);
         __observer()->action->addAction('flush_cache', 'App\Shared\Helpers\populate_options_cache', 5);
         __observer()->action->addAction('maintenance_mode', 'App\Shared\Helpers\cms_maintenance_mode', 1);
         __observer()->filter->addFilter('the.body', [Parsecode::getInstance(), 'autop']);
@@ -144,5 +144,28 @@ final class CmsHelperServiceProvider extends CodefyServiceProvider
          * Fires after the site's theme is loaded.
          */
         __observer()->action->doAction('after_setup_theme');
+    }
+
+    /**
+     * @return void
+     * @throws ContainerExceptionInterface
+     * @throws Exception
+     * @throws InvalidArgumentException
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
+     * @throws TypeException
+     */
+    public function boot(): void
+    {
+        /** @var ListenerProviderInterface $provider */
+        $provider = $this->codefy->make(name: ListenerProviderInterface::class);
+
+        $provider->listen(ContentUpdated::class, function (ContentUpdated $event): void {
+            ContentCachePsr16::clean($event->content);
+        });
+
+        $provider->listen(ProductUpdated::class, function (ProductUpdated $event): void {
+            ProductCachePsr16::clean($event->product);
+        });
     }
 }

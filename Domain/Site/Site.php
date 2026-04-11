@@ -29,54 +29,54 @@ use function Qubus\Support\Helpers\is_null__;
 
 final class Site extends EventSourcedAggregate implements AggregateRoot
 {
-    private ?SiteId $siteId = null;
+    private SiteId $id;
 
-    private ?StringLiteral $siteKey = null;
+    private StringLiteral $key;
 
-    private ?StringLiteral $siteName = null;
+    private StringLiteral $name;
 
-    private ?StringLiteral $siteSlug = null;
+    private StringLiteral $slug;
 
-    private ?StringLiteral $siteDomain = null;
+    private StringLiteral $domain;
 
-    private ?StringLiteral $siteMapping = null;
+    private StringLiteral $mapping;
 
-    private ?StringLiteral $sitePath = null;
+    private StringLiteral $path;
 
-    private ?UserId $siteOwner = null;
+    private UserId $owner;
 
-    private ?StringLiteral $siteStatus = null;
+    private StringLiteral $status;
 
-    private ?DateTimeInterface $siteRegistered = null;
+    private DateTimeInterface $registered;
 
-    private ?DateTimeInterface $siteModified = null;
+    private DateTimeInterface $modified;
 
     public static function createSite(
-        SiteId $siteId,
-        StringLiteral $siteKey,
-        StringLiteral $siteName,
-        StringLiteral $siteSlug,
-        StringLiteral $siteDomain,
-        StringLiteral $siteMapping,
-        StringLiteral $sitePath,
-        UserId $siteOwner,
-        StringLiteral $siteStatus,
-        DateTimeInterface $siteRegistered,
+        SiteId $id,
+        StringLiteral $key,
+        StringLiteral $name,
+        StringLiteral $slug,
+        StringLiteral $domain,
+        StringLiteral $mapping,
+        StringLiteral $path,
+        UserId $owner,
+        StringLiteral $status,
+        DateTimeInterface $registered,
     ): Site {
-        $site = self::root($siteId);
+        $site = self::root($id);
 
         $site->recordApplyAndPublishThat(
             SiteWasCreated::withData(
-                $siteId,
-                $siteKey,
-                $siteName,
-                $siteSlug,
-                $siteDomain,
-                $siteMapping,
-                $sitePath,
-                $siteOwner,
-                $siteStatus,
-                $siteRegistered,
+                $id,
+                $key,
+                $name,
+                $slug,
+                $domain,
+                $mapping,
+                $path,
+                $owner,
+                $status,
+                $registered,
             )
         );
 
@@ -90,57 +90,57 @@ final class Site extends EventSourcedAggregate implements AggregateRoot
 
     public function siteId(): SiteId|AggregateId
     {
-        return $this->siteId;
+        return $this->id;
     }
 
     public function siteKey(): StringLiteral
     {
-        return $this->siteKey;
+        return $this->key;
     }
 
     public function siteName(): StringLiteral
     {
-        return $this->siteName;
+        return $this->name;
     }
 
     public function siteSlug(): StringLiteral
     {
-        return $this->siteSlug;
+        return $this->slug;
     }
 
     public function siteDomain(): StringLiteral
     {
-        return $this->siteDomain;
+        return $this->domain;
     }
 
     public function siteMapping(): StringLiteral
     {
-        return $this->siteMapping;
+        return $this->mapping;
     }
 
     public function sitePath(): StringLiteral
     {
-        return $this->sitePath;
+        return $this->path;
     }
 
     public function siteOwner(): UserId
     {
-        return $this->siteOwner;
+        return $this->owner;
     }
 
     public function siteStatus(): StringLiteral
     {
-        return $this->siteStatus;
+        return $this->status;
     }
 
     public function siteRegistered(): DateTimeInterface
     {
-        return $this->siteRegistered;
+        return $this->registered;
     }
 
     public function siteModified(): DateTimeInterface
     {
-        return $this->siteModified;
+        return $this->modified;
     }
 
     /**
@@ -152,12 +152,12 @@ final class Site extends EventSourcedAggregate implements AggregateRoot
             throw new Exception(message: t__(msgid: 'Site name cannot be empty.', domain: 'devflow'));
         }
 
-        if ($siteName->equals($this->siteName)) {
+        if ($siteName->equals($this->name)) {
             return;
         }
 
         $this->recordApplyAndPublishThat(
-            SiteNameWasChanged::withData($this->siteId, $siteName)
+            SiteNameWasChanged::withData($this->id, $siteName)
         );
     }
 
@@ -170,11 +170,11 @@ final class Site extends EventSourcedAggregate implements AggregateRoot
             throw new Exception(message: t__(msgid: 'Site slug cannot be empty.', domain: 'devflow'));
         }
 
-        if ($siteSlug->equals($this->siteSlug)) {
+        if ($siteSlug->equals($this->slug)) {
             return;
         }
 
-        $this->recordApplyAndPublishThat(SiteSlugWasChanged::withData($this->siteId, $siteSlug));
+        $this->recordApplyAndPublishThat(SiteSlugWasChanged::withData($this->id, $siteSlug));
     }
 
     /**
@@ -186,11 +186,11 @@ final class Site extends EventSourcedAggregate implements AggregateRoot
             throw new Exception(message: t__(msgid: 'Site domain cannot be empty.', domain: 'devflow'));
         }
 
-        if ($siteDomain->equals($this->siteDomain)) {
+        if ($siteDomain->equals($this->domain)) {
             return;
         }
 
-        $this->recordApplyAndPublishThat(SiteDomainWasChanged::withData($this->siteId, $siteDomain));
+        $this->recordApplyAndPublishThat(SiteDomainWasChanged::withData($this->id, $siteDomain));
     }
 
     /**
@@ -198,11 +198,11 @@ final class Site extends EventSourcedAggregate implements AggregateRoot
      */
     public function changeSiteMapping(StringLiteral $siteMapping): void
     {
-        if ($siteMapping->equals($this->siteMapping)) {
+        if ($siteMapping->equals($this->mapping)) {
             return;
         }
 
-        $this->recordApplyAndPublishThat(SiteMappingWasChanged::withData($this->siteId, $siteMapping));
+        $this->recordApplyAndPublishThat(SiteMappingWasChanged::withData($this->id, $siteMapping));
     }
 
     /**
@@ -214,11 +214,11 @@ final class Site extends EventSourcedAggregate implements AggregateRoot
             throw new Exception(message: t__(msgid: 'Site path cannot be empty.', domain: 'devflow'));
         }
 
-        if ($sitePath->equals($this->sitePath)) {
+        if ($sitePath->equals($this->path)) {
             return;
         }
 
-        $this->recordApplyAndPublishThat(SitePathWasChanged::withData($this->siteId, $sitePath));
+        $this->recordApplyAndPublishThat(SitePathWasChanged::withData($this->id, $sitePath));
     }
 
     /**
@@ -230,11 +230,11 @@ final class Site extends EventSourcedAggregate implements AggregateRoot
             throw new Exception(message: t__(msgid: 'Owner cannot be empty.', domain: 'devflow'));
         }
 
-        if ($siteOwner->equals($this->siteOwner)) {
+        if ($siteOwner->equals($this->owner)) {
             return;
         }
 
-        $this->recordApplyAndPublishThat(SiteOwnerWasChanged::withData($this->siteId, $siteOwner));
+        $this->recordApplyAndPublishThat(SiteOwnerWasChanged::withData($this->id, $siteOwner));
     }
 
     /**
@@ -246,11 +246,11 @@ final class Site extends EventSourcedAggregate implements AggregateRoot
             throw new Exception(message: t__(msgid: 'Site status cannot be empty.', domain: 'devflow'));
         }
 
-        if ($siteStatus->equals($this->siteStatus)) {
+        if ($siteStatus->equals($this->status)) {
             return;
         }
 
-        $this->recordApplyAndPublishThat(SiteStatusWasChanged::withData($this->siteId, $siteStatus));
+        $this->recordApplyAndPublishThat(SiteStatusWasChanged::withData($this->id, $siteStatus));
     }
 
     /**
@@ -258,15 +258,15 @@ final class Site extends EventSourcedAggregate implements AggregateRoot
      */
     public function changeSiteModified(DateTimeInterface $siteModified): void
     {
-        if (empty($this->siteModified)) {
+        if (empty($this->modified)) {
             return;
         }
 
-        if ($this->siteModified->getTimestamp() === $siteModified->getTimestamp()) {
+        if ($this->modified->getTimestamp() === $siteModified->getTimestamp()) {
             return;
         }
 
-        $this->recordApplyAndPublishThat(SiteWasModified::withData($this->siteId, $siteModified));
+        $this->recordApplyAndPublishThat(SiteWasModified::withData($this->id, $siteModified));
     }
 
     /**
@@ -278,11 +278,11 @@ final class Site extends EventSourcedAggregate implements AggregateRoot
             throw new Exception(message: t__(msgid: 'Site id cannot be null.', domain: 'devflow'));
         }
 
-        if (!$siteId->equals($this->siteId)) {
+        if (!$siteId->equals($this->id)) {
             return;
         }
 
-        $this->recordApplyAndPublishThat(SiteWasDeleted::withData($this->siteId));
+        $this->recordApplyAndPublishThat(SiteWasDeleted::withData($this->id));
     }
 
     /**
@@ -290,16 +290,16 @@ final class Site extends EventSourcedAggregate implements AggregateRoot
      */
     public function whenSiteWasCreated(SiteWasCreated $event): void
     {
-        $this->siteId = $event->siteId();
-        $this->siteKey = $event->siteKey();
-        $this->siteName = $event->siteName();
-        $this->siteSlug = $event->siteSlug();
-        $this->siteDomain = $event->siteDomain();
-        $this->siteMapping = $event->siteMapping();
-        $this->sitePath = $event->sitePath();
-        $this->siteOwner = $event->siteOwner();
-        $this->siteStatus = $event->siteStatus();
-        $this->siteRegistered = $event->siteRegistered();
+        $this->id = $event->siteId();
+        $this->key = $event->siteKey();
+        $this->name = $event->siteName();
+        $this->slug = $event->siteSlug();
+        $this->domain = $event->siteDomain();
+        $this->mapping = $event->siteMapping();
+        $this->path = $event->sitePath();
+        $this->owner = $event->siteOwner();
+        $this->status = $event->siteStatus();
+        $this->registered = $event->siteRegistered();
     }
 
     /**
@@ -307,8 +307,8 @@ final class Site extends EventSourcedAggregate implements AggregateRoot
      */
     public function whenSiteNameWasChanged(SiteNameWasChanged $event): void
     {
-        $this->siteId = $event->siteId();
-        $this->siteName = $event->siteName();
+        $this->id = $event->siteId();
+        $this->name = $event->siteName();
     }
 
     /**
@@ -316,8 +316,8 @@ final class Site extends EventSourcedAggregate implements AggregateRoot
      */
     public function whenSiteSlugWasChanged(SiteSlugWasChanged $event): void
     {
-        $this->siteId = $event->siteId();
-        $this->siteSlug = $event->siteSlug();
+        $this->id = $event->siteId();
+        $this->slug = $event->siteSlug();
     }
 
     /**
@@ -325,8 +325,8 @@ final class Site extends EventSourcedAggregate implements AggregateRoot
      */
     public function whenSiteDomainWasChanged(SiteDomainWasChanged $event): void
     {
-        $this->siteId = $event->siteId();
-        $this->siteDomain = $event->siteDomain();
+        $this->id = $event->siteId();
+        $this->domain = $event->siteDomain();
     }
 
     /**
@@ -334,8 +334,8 @@ final class Site extends EventSourcedAggregate implements AggregateRoot
      */
     public function whenSiteMappingWasChanged(SiteMappingWasChanged $event): void
     {
-        $this->siteId = $event->siteId();
-        $this->siteMapping = $event->siteMapping();
+        $this->id = $event->siteId();
+        $this->mapping = $event->siteMapping();
     }
 
     /**
@@ -343,8 +343,8 @@ final class Site extends EventSourcedAggregate implements AggregateRoot
      */
     public function whenSitePathWasChanged(SitePathWasChanged $event): void
     {
-        $this->siteId = $event->siteId();
-        $this->sitePath = $event->sitePath();
+        $this->id = $event->siteId();
+        $this->path = $event->sitePath();
     }
 
     /**
@@ -352,8 +352,8 @@ final class Site extends EventSourcedAggregate implements AggregateRoot
      */
     public function whenSiteOwnerWasChanged(SiteOwnerWasChanged $event): void
     {
-        $this->siteId = $event->siteId();
-        $this->siteOwner = $event->siteOwner();
+        $this->id = $event->siteId();
+        $this->owner = $event->siteOwner();
     }
 
     /**
@@ -361,8 +361,8 @@ final class Site extends EventSourcedAggregate implements AggregateRoot
      */
     public function whenSiteStatusWasChanged(SiteStatusWasChanged $event): void
     {
-        $this->siteId = $event->siteId();
-        $this->siteStatus = $event->siteStatus();
+        $this->id = $event->siteId();
+        $this->status = $event->siteStatus();
     }
 
     /**
@@ -370,8 +370,8 @@ final class Site extends EventSourcedAggregate implements AggregateRoot
      */
     public function whenSiteWasModified(SiteWasModified $event): void
     {
-        $this->siteId = $event->siteId();
-        $this->siteModified = $event->siteModified();
+        $this->id = $event->siteId();
+        $this->modified = $event->siteModified();
     }
 
     /**
@@ -379,6 +379,6 @@ final class Site extends EventSourcedAggregate implements AggregateRoot
      */
     public function whenSiteWasDeleted(SiteWasDeleted $event): void
     {
-        $this->siteId = $event->siteId();
+        $this->id = $event->siteId();
     }
 }

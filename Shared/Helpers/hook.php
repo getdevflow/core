@@ -66,7 +66,7 @@ function sanitize_meta(string $metaKey, mixed $metaValue, string $arrayType, str
          * and `$arraySubtype`, refer to the metadata object type (content, user or site),
          * the meta key value, and the object subtype respectively.
          *
-         * @file App/Shared/Helpers/hook.php
+         * @file core/Shared/Helpers/hook.php
          * @param mixed  $metaValue    Meta value to sanitize.
          * @param string $metaKey      Meta key.
          * @param string $arrayType    Object type.
@@ -88,7 +88,7 @@ function sanitize_meta(string $metaKey, mixed $metaValue, string $arrayType, str
      * refer to the metadata object type (content, user or site), the meta key
      * value respectively.
      *
-     * @file App/Shared/Helpers/hook.php
+     * @file core/Shared/Helpers/hook.php
      * @param mixed  $metaValue Meta value to sanitize.
      * @param string $metaKey   Meta key.
      * @param string $arrayType Object type.
@@ -104,7 +104,7 @@ function sanitize_meta(string $metaKey, mixed $metaValue, string $arrayType, str
 /**
  * Prints copyright in the admin footer.
  *
- * @file App/Shared/Helpers/hook.php
+ * @file core/Shared/Helpers/hook.php
  * @return mixed
  * @throws Exception
  */
@@ -123,7 +123,7 @@ function cms_admin_copyright_footer(): mixed
 /**
  * Large logo. Filterable.
  *
- * @file App/Shared/Helpers/hook.php
+ * @file core/Shared/Helpers/hook.php
  * @return string
  * @throws Exception
  */
@@ -136,7 +136,7 @@ function get_logo_large(): string
 /**
  * Mini logo. Filterable.
  *
- * @file App/Shared/Helpers/hook.php
+ * @file core/Shared/Helpers/hook.php
  * @return string
  * @throws Exception
  */
@@ -149,7 +149,7 @@ function get_logo_mini(): string
 /**
  * Returns full base url of a site's public url.
  *
- * @file App/Shared/Helpers/hook.php
+ * @file core/Shared/Helpers/hook.php
  * @param string $path
  * @return string Site's public base url.
  * @throws ContainerExceptionInterface
@@ -167,7 +167,7 @@ function public_site_url(string $path = ''): string
 /**
  * Returns full base url of a site's public upload url.
  *
- * @file App/Shared/Helpers/hook.php
+ * @file core/Shared/Helpers/hook.php
  * @param string $path
  * @return string Site's public upload base url.
  * @throws ContainerExceptionInterface
@@ -189,7 +189,7 @@ function public_site_upload_url(string $path = ''): string
  * Regular expression is based on John Gruber's Markdown.
  * http://daringfireball.net/projects/markdown/
  *
- * @file App/Shared/Helpers/hook.php
+ * @file core/Shared/Helpers/hook.php
  * @param string $string Text with email addresses to encode
  * @return string $string Given text with encoded email addresses
  * @throws Exception
@@ -247,7 +247,7 @@ function cms_encode_email(string $string): string
  * Whose code is based on a filter by Matthew Wickline, posted to
  * the BBEdit-Talk with some optimizations by Milian Wolff.
  *
- * @file App/Shared/Helpers/hook.php
+ * @file core/Shared/Helpers/hook.php
  * @param string $string Text with email addresses to encode
  * @return string $string Given text with encoded email addresses
  */
@@ -278,7 +278,7 @@ function cms_encode_email_str(string $string): string
 /**
  * Renders an editor.
  *
- * @file App/Shared/Helpers/hook.php
+ * @file core/Shared/Helpers/hook.php
  * @param string|null $selector HTML ID attribute value for the textarea and TinyMCE. Can only be /[a-z]+/.
  * @throws Exception
  * @throws ReflectionException
@@ -301,9 +301,9 @@ function cms_editor(?string $selector = null): void
     $mceTheme = __observer()->filter->applyFilter('tiny.mce.theme', 'modern');
 
     $plugins = [
-            'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview', 'anchor',
-            'searchreplace', 'visualblocks', 'code', 'codesample',
-            'insertdatetime', 'media', 'table', 'contextmenu', 'paste', 'pagebreak'
+        'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview', 'anchor',
+        'searchreplace', 'visualblocks', 'code', 'codesample',
+        'insertdatetime', 'media', 'table', 'contextmenu', 'paste', 'pagebreak'
     ];
     /**
      * Filters the list of default TinyMCE plugins.
@@ -434,7 +434,7 @@ function cms_editor(?string $selector = null): void
     /**
      * Fires immediately after TinyMCE is printed.
      *
-     * @file App/Shared/Helpers/hook.php
+     * @file core/Shared/Helpers/hook.php
      */
     __observer()->action->doAction('after_cms_tiny_mce');
 }
@@ -442,7 +442,7 @@ function cms_editor(?string $selector = null): void
 /**
  * Returns an optimized image for use.
  *
- * @file App/Shared/Helpers/hook.php
+ * @file core/Shared/Helpers/hook.php
  * @param string $image Original image file.
  * @return string|null Optimized image file.
  * @throws ContainerExceptionInterface
@@ -471,7 +471,7 @@ function cms_optimized_image_upload(string $image): ?string
 /**
  * Loads javascript for backend dashboard.
  *
- * @file App/Shared/Helpers/hook.php
+ * @file core/Shared/Helpers/hook.php
  * @throws Exception
  */
 function admin_dashboard_js(): void
@@ -482,7 +482,7 @@ function admin_dashboard_js(): void
 /**
  * CMS charset.
  *
- * @file App/Shared/Helpers/hook.php
+ * @file core/Shared/Helpers/hook.php
  * @param string|null $charset
  * @return mixed
  * @throws Exception
@@ -536,7 +536,7 @@ function cms_charset(?string $charset = null): mixed
 /**
  * Returns the auth screen logo.
  *
- * @file App/Shared/Helpers/hook.php
+ * @file core/Shared/Helpers/hook.php
  * @return string The auth screen logo.
  * @throws ContainerExceptionInterface
  * @throws Exception
@@ -589,7 +589,7 @@ function get_auth_screen_logo(): string
 /**
  * Retrieve the avatar `<img>` tag for user.
  *
- * @file App/Shared/Helpers/hook.php
+ * @file core/Shared/Helpers/hook.php
  * @param string $email User's email address.
  * @param int $s Height and width of the avatar image file in pixels. Default 80.
  * @param string $class Class to add to `<img>` element.
@@ -607,7 +607,7 @@ function get_user_avatar(string $email, int $s = 80, string $class = ''): string
 /**
  * Retrieves the avatar url.
  *
- * @file App/Shared/Helpers/hook.php
+ * @file core/Shared/Helpers/hook.php
  * @param string $email Email address of user.
  * @return string The url of the avatar that was found, or default if not found.
  * @throws Exception
@@ -623,7 +623,7 @@ function get_user_avatar_url(string $email): string
 /**
  * Upload image button.
  *
- * @file App/Shared/Helpers/hook.php
+ * @file core/Shared/Helpers/hook.php
  */
 function cms_upload_image()
 {
@@ -707,7 +707,7 @@ function cms_upload_image()
 /**
  * Compares release values.
  *
- * @file App/Shared/Helpers/hook.php
+ * @file core/Shared/Helpers/hook.php
  * @param string $current Current installed release.
  * @param string $latest The latest cms release.
  * @param string $operator Operand use to compare current and latest release values.
@@ -720,7 +720,7 @@ function compare_releases(string $current, string $latest, string $operator = '>
     /**
      * Filters the comparison between two releases.
      *
-     * @file App/Shared/Helpers/hook.php
+     * @file core/Shared/Helpers/hook.php
      * @param bool|int $phpFunction PHP function for comparing two release values.
      */
     $release = __observer()->filter->applyFilter('compare.releases', $phpFunction);
@@ -736,7 +736,7 @@ function compare_releases(string $current, string $latest, string $operator = '>
  * Retrieves a response code from the header
  * of a given resource.
  *
- * @file App/Shared/Helpers/hook.php
+ * @file core/Shared/Helpers/hook.php
  * @param string $url URL of resource/website.
  * @return int HTTP response code.
  * @throws Exception
@@ -748,7 +748,7 @@ function get_http_response_code(string $url): int
     /**
      * Filters the http response code.
      *
-     * @file App/Shared/Helpers/hook.php
+     * @file core/Shared/Helpers/hook.php
      * @param int $status The http response code from external resource.
      */
     return __observer()->filter->applyFilter('http.response.code', (int) $status);
@@ -757,8 +757,9 @@ function get_http_response_code(string $url): int
 /**
  * Shows an error message when system is in DEV mode.
  *
- * @file App/Shared/Helpers/hook.php
+ * @file core/Shared/Helpers/hook.php
  * @throws TypeException
+ * @throws Exception
  */
 function cms_dev_mode(): void
 {
@@ -774,7 +775,7 @@ function cms_dev_mode(): void
  * Fires the admin_head action.
  *
  * @access private
- * @file App/Shared/Helpers/hook.php
+ * @file core/Shared/Helpers/hook.php
  * @throws Exception
  */
 function admin_head(): void
@@ -793,7 +794,7 @@ function admin_head(): void
  * Fires the frontend cms_head action.
  *
  * @access private
- * @file App/Shared/Helpers/hook.php
+ * @file core/Shared/Helpers/hook.php
  * @throws Exception
  */
 function cms_head(): void
@@ -812,7 +813,7 @@ function cms_head(): void
  * Fires the admin_footer action via backend.
  *
  * @access private
- * @file App/Shared/Helpers/hook.php
+ * @file core/Shared/Helpers/hook.php
  * @throws Exception
  */
 function admin_footer(): void
@@ -831,7 +832,7 @@ function admin_footer(): void
  * Fires the cms_footer action via the admin.
  *
  * @access private
- * @file App/Shared/Helpers/hook.php
+ * @file core/Shared/Helpers/hook.php
  * @throws Exception
  */
 function cms_footer(): void

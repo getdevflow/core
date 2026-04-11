@@ -11,30 +11,28 @@ use Codefy\Domain\Metadata;
 use Qubus\Exception\Data\TypeException;
 use Qubus\ValueObjects\StringLiteral\StringLiteral;
 
-use function Qubus\Support\Helpers\is_null__;
-
 final class ProductSlugWasChanged extends AggregateChanged
 {
-    private ?ProductId $productId = null;
+    private ProductId $id;
 
-    private ?StringLiteral $productSlug = null;
+    private StringLiteral $slug;
 
     public static function withData(
-        ProductId $productId,
-        StringLiteral $productSlug,
+        ProductId $id,
+        StringLiteral $slug,
     ): ProductSlugWasChanged|DomainEvent|AggregateChanged {
         $event = self::occur(
-            aggregateId: $productId,
+            aggregateId: $id,
             payload: [
-                'product_slug' => $productSlug->toNative(),
+                'product_slug' => $slug->toNative(),
             ],
             metadata: [
                 Metadata::AGGREGATE_TYPE => 'product',
             ]
         );
 
-        $event->productId = $productId;
-        $event->productSlug = $productSlug;
+        $event->id = $id;
+        $event->slug = $slug;
 
         return $event;
     }
@@ -44,22 +42,19 @@ final class ProductSlugWasChanged extends AggregateChanged
      */
     public function productId(): ProductId
     {
-        if (is_null__($this->productId)) {
-            $this->productId = ProductId::fromString($this->aggregateId()->__toString());
+        if (!isset($this->id)) {
+            $this->id = ProductId::fromString($this->aggregateId()->__toString());
         }
 
-        return $this->productId;
+        return $this->id;
     }
 
-    /**
-     * @throws TypeException
-     */
     public function productSlug(): StringLiteral
     {
-        if (is_null__($this->productSlug)) {
-            $this->productSlug = StringLiteral::fromNative($this->payload()['product_slug']);
+        if (!isset($this->slug)) {
+            $this->slug = StringLiteral::fromNative($this->payload()['product_slug']);
         }
 
-        return $this->productSlug;
+        return $this->slug;
     }
 }

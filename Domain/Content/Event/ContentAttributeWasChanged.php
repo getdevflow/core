@@ -12,20 +12,20 @@ use Codefy\Domain\EventSourcing\DomainEvent;
 use Codefy\Domain\Metadata;
 use Qubus\Exception\Data\TypeException;
 
-class ContentMetaWasChanged extends AggregateChanged
+class ContentAttributeWasChanged extends AggregateChanged
 {
     private ContentId $id;
 
-    private ArrayLiteral $meta;
+    private ArrayLiteral $attribute;
 
     public static function withData(
         ContentId $id,
-        ArrayLiteral $meta
-    ): ContentMetaWasChanged|DomainEvent|AggregateChanged {
+        ArrayLiteral $attribute
+    ): ContentAttributeWasChanged|DomainEvent|AggregateChanged {
         $event = self::occur(
             aggregateId: $id,
             payload: [
-                'meta' => $meta->toNative()
+                'content_attribute' => $attribute->toNative()
             ],
             metadata: [
                 Metadata::AGGREGATE_TYPE => 'content',
@@ -33,7 +33,7 @@ class ContentMetaWasChanged extends AggregateChanged
         );
 
         $event->id = $id;
-        $event->meta = $meta;
+        $event->attribute = $attribute;
 
         return $event;
     }
@@ -50,12 +50,12 @@ class ContentMetaWasChanged extends AggregateChanged
         return $this->id;
     }
 
-    public function contentmeta(): ArrayLiteral
+    public function contentAttribute(): ArrayLiteral
     {
-        if (!isset($this->meta)) {
-            $this->meta = ArrayLiteral::fromNative($this->payload()['meta']);
+        if (!isset($this->attribute)) {
+            $this->attribute = ArrayLiteral::fromNative($this->payload()['content_attribute']);
         }
 
-        return $this->meta;
+        return $this->attribute;
     }
 }

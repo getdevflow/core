@@ -38,9 +38,9 @@ class RemoveFeaturedImageCommandHandler implements CommandHandler
     public function handle(RemoveFeaturedImageCommand|Command $command): void
     {
         /** @var Content $content */
-        $content = $this->aggregateRepository->loadAggregateRoot($command->contentId);
+        $content = $this->aggregateRepository->loadAggregateRoot($command->id);
 
-        $content->changeContentFeaturedImage($command->contentFeaturedImage);
+        $content->changeContentFeaturedImage($command->featuredImage);
         $content->changeContentModified(QubusDateTimeImmutable::now(tz: get_user_timezone()));
         $content->changeContentModifiedGmt(QubusDateTimeImmutable::now(tz: 'GMT'));
 

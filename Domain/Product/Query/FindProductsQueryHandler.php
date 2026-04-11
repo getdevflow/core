@@ -20,7 +20,7 @@ final class FindProductsQueryHandler implements QueryHandler
     public function handle(FindProductsQuery|Query $query): array
     {
         return $this->repository->findByFilters(
-            productSku: $query->productSku,
+            sku: $query->sku,
             limit: $query->limit,
             offset: $query->offset,
             status: $query->status

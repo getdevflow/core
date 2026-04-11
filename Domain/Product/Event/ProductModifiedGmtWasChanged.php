@@ -13,30 +13,28 @@ use DateTimeInterface;
 use Qubus\Exception\Data\TypeException;
 use Qubus\Support\DateTime\QubusDateTimeImmutable;
 
-use function Qubus\Support\Helpers\is_null__;
-
 final class ProductModifiedGmtWasChanged extends AggregateChanged
 {
-    private ?ProductId $productId = null;
+    private ProductId $id;
 
-    private ?DateTimeInterface $productModifiedGmt = null;
+    private DateTimeInterface $modifiedGmt;
 
     public static function withData(
-        ProductId $productId,
-        DateTimeInterface $productModifiedGmt
+        ProductId $id,
+        DateTimeInterface $modifiedGmt
     ): ProductModifiedGmtWasChanged|DomainEvent|AggregateChanged {
         $event = self::occur(
-            aggregateId: $productId,
+            aggregateId: $id,
             payload: [
-                'product_modified_gmt' => (string) $productModifiedGmt
+                'product_modified_gmt' => (string) $modifiedGmt
             ],
             metadata: [
                 Metadata::AGGREGATE_TYPE => 'product',
             ]
         );
 
-        $event->productId = $productId;
-        $event->productModifiedGmt = $productModifiedGmt;
+        $event->id = $id;
+        $event->modifiedGmt = $modifiedGmt;
 
         return $event;
     }
@@ -46,21 +44,21 @@ final class ProductModifiedGmtWasChanged extends AggregateChanged
      */
     public function productId(): ProductId
     {
-        if (is_null__($this->productId)) {
-            $this->productId = ProductId::fromString($this->aggregateId()->__toString());
+        if (!isset($this->id)) {
+            $this->id = ProductId::fromString($this->aggregateId()->__toString());
         }
 
-        return $this->productId;
+        return $this->id;
     }
 
     public function productModifiedGmt(): DateTimeInterface
     {
-        if (is_null__($this->productModifiedGmt)) {
-            $this->productModifiedGmt = QubusDateTimeImmutable::createFromInterface(
-                (new DateTime($this->payload()['product_modified_gmt']))->getDateTime()
+        if (!isset($this->modifiedGmt)) {
+            $this->modifiedGmt = QubusDateTimeImmutable::createFromInterface(
+                new DateTime($this->payload()['product_modified_gmt'])->getDateTime()
             );
         }
 
-        return $this->productModifiedGmt;
+        return $this->modifiedGmt;
     }
 }

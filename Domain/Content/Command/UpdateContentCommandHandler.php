@@ -27,29 +27,29 @@ class UpdateContentCommandHandler implements CommandHandler
     public function handle(UpdateContentCommand|Command $command): void
     {
         /** @var Content $content */
-        $content = $this->aggregateRepository->loadAggregateRoot($command->contentId);
+        $content = $this->aggregateRepository->loadAggregateRoot($command->id);
 
-        $content->changeContentTitle($command->contentTitle);
-        $content->changeContentSlug($command->contentSlug);
-        $content->changeContentBody($command->contentBody);
-        $content->changeContentAuthor($command->contentAuthor);
-        $content->changeContentType($command->contentTypeSlug);
-        if (!is_null__($command->contentParent)) {
-            $content->changeContentParent($command->contentParent);
+        $content->changeContentTitle($command->title);
+        $content->changeContentSlug($command->slug);
+        $content->changeContentBody($command->body);
+        $content->changeContentAuthor($command->author);
+        $content->changeContentType($command->type);
+        if (!is_null__($command->parent)) {
+            $content->changeContentParent($command->parent);
         } else {
-            $content->changeContentParentWasRemoved($command->contentParent);
+            $content->changeContentParentWasRemoved($command->parent);
         }
-        $content->changeContentSidebar($command->contentSidebar);
-        $content->changeContentShowInMenu($command->contentShowInMenu);
-        $content->changeContentShowInSearch($command->contentShowInSearch);
-        $content->changeContentFeaturedImage($command->contentFeaturedImage);
-        $content->changeContentStatus($command->contentStatus);
-        $content->changeContentMeta($command->meta);
-        $content->changeContentPublished($command->contentPublished);
-        $content->changeContentPublishedGmt($command->contentPublishedGmt);
+        $content->changeContentSidebar($command->sidebar);
+        $content->changeContentShowInMenu($command->showInMenu);
+        $content->changeContentShowInSearch($command->showInSearch);
+        $content->changeContentFeaturedImage($command->featuredImage);
+        $content->changeContentStatus($command->status);
+        $content->changeContentAttribute($command->attribute);
+        $content->changeContentPublished($command->published);
+        $content->changeContentPublishedGmt($command->publishedGmt);
         if ($content->hasRecordedEvents()) {
-            $content->changeContentModified($command->contentModified);
-            $content->changeContentModifiedGmt($command->contentModifiedGmt);
+            $content->changeContentModified($command->modified);
+            $content->changeContentModifiedGmt($command->modifiedGmt);
         }
 
         $this->aggregateRepository->saveAggregateRoot($content);

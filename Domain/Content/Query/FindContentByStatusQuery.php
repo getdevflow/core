@@ -10,5 +10,5 @@ use Qubus\ValueObjects\StringLiteral\StringLiteral;
 
 final class FindContentByStatusQuery extends PropertyCommand implements Query
 {
-    public ?StringLiteral $contentStatus = null;
+    public StringLiteral $status;
 }

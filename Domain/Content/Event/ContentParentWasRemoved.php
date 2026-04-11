@@ -14,26 +14,26 @@ use function Qubus\Support\Helpers\is_null__;
 
 final class ContentParentWasRemoved extends AggregateChanged
 {
-    private ?ContentId $contentId = null;
+    private ContentId $id;
 
-    private ?ContentId $contentParent = null;
+    private ?ContentId $parent = null;
 
     public static function withData(
-        ContentId $contentId,
-        ?ContentId $contentParent = null,
+        ContentId $id,
+        ?ContentId $parent = null,
     ): ContentParentWasRemoved|DomainEvent|AggregateChanged {
         $event = self::occur(
-            aggregateId: $contentId,
+            aggregateId: $id,
             payload: [
-                'content_parent' => is_null__($contentParent) ? null : $contentParent->toNative(),
+                'content_parent' => is_null__($parent) ? null : $parent->toNative(),
             ],
             metadata: [
                 Metadata::AGGREGATE_TYPE => 'content',
             ]
         );
 
-        $event->contentId = $contentId;
-        $event->contentParent = $contentParent;
+        $event->id = $id;
+        $event->parent = $parent;
 
         return $event;
     }
@@ -43,11 +43,11 @@ final class ContentParentWasRemoved extends AggregateChanged
      */
     public function contentId(): ContentId
     {
-        if (is_null__($this->contentId)) {
-            $this->contentId = ContentId::fromString($this->aggregateId()->__toString());
+        if (!isset($this->id)) {
+            $this->id = ContentId::fromString($this->aggregateId()->__toString());
         }
 
-        return $this->contentId;
+        return $this->id;
     }
 
     /**
@@ -55,10 +55,12 @@ final class ContentParentWasRemoved extends AggregateChanged
      */
     public function contentParent(): ?ContentId
     {
-        if (is_null__($this->contentParent)) {
-            $this->contentParent = ContentId::fromString($this->payload()['content_parent']);
+        if (is_null__($this->parent)) {
+            $this->parent = null;
+        } else {
+            $this->parent = ContentId::fromString($this->payload()['content_parent']);
         }
 
-        return $this->contentParent;
+        return $this->parent;
     }
 }

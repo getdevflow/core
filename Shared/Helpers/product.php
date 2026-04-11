@@ -15,8 +15,9 @@ use App\Domain\Product\ProductError;
 use App\Domain\Product\ValueObject\ProductId;
 use App\Domain\User\ValueObject\UserId;
 use App\Infrastructure\Persistence\Cache\ProductCachePsr16;
+use App\Infrastructure\Services\Attribute\AttributeBag;
+use App\Infrastructure\Services\AttributesFactory;
 use App\Shared\Services\DateTime;
-use App\Shared\Services\MetaData;
 use App\Shared\Services\Sanitizer;
 use App\Shared\Services\Utils;
 use App\Shared\ValueObject\ArrayLiteral;
@@ -71,7 +72,7 @@ function get_products(): array
 /**
  * Retrieve all products or a product based on filters.
  *
- * @file App/Shared/Helpers/product.php
+ * @file core/Shared/Helpers/product.php
  * @param string|null $productSku Product sku.
  * @param int $limit Number of products to show.
  * @param int|null $offset The offset of the first row to be returned.
@@ -88,7 +89,7 @@ function get_all_products_with_filters(
     string $status = 'all'
 ): array {
     $query = new FindProductsQuery([
-        'productSku' => $productSku,
+        'sku' => $productSku,
         'limit' => $limit,
         'offset' => $offset,
         'status' => $status,
@@ -100,7 +101,7 @@ function get_all_products_with_filters(
 /**
  * Retrieve product by a given field from the product table.
  *
- * @file App/Shared/Helpers/product.php
+ * @file core/Shared/Helpers/product.php
  * @param string $field The field to retrieve the product with
  *                      (id = product_id, sku = product_sku, slug = product_slug).
  * @param string $value A value for $field (product_id, product_sku, product_slug).
@@ -127,7 +128,7 @@ function get_product_by(string $field, string $value): false|object
 /**
  * Retrieve product by the product id.
  *
- * @file App/Shared/Helpers/product.php
+ * @file core/Shared/Helpers/product.php
  * @param string $productId
  * @return false|object
  * @throws ContainerExceptionInterface
@@ -144,10 +145,10 @@ function get_product_by_id(string $productId): object|false
 /**
  * A function which retrieves product datetime.
  *
- * Purpose of this function is for the `product_datetime`
+ * Purpose of this function is for the `product.datetime`
  * filter.
  *
- * @file App/Shared/Helpers/product.php
+ * @file core/Shared/Helpers/product.php
  * @param string|null $product
  * @return string Product datetime.
  * @throws Exception
@@ -162,7 +163,7 @@ function get_product_datetime(?string $product = null): string
     /**
      * Filters the product's datetime.
      *
-     * @file App/Shared/Helpers/product.php
+     * @file core/Shared/Helpers/product.php
      * @param string $datetime  The product's datetime.
      * @param string $productId Product id or product object.
      */
@@ -172,10 +173,10 @@ function get_product_datetime(?string $product = null): string
 /**
  * A function which retrieves product modified datetime.
  *
- * Purpose of this function is for the `product_modified`
+ * Purpose of this function is for the `product.modified`
  * filter.
  *
- * @file App/Shared/Helpers/product.php
+ * @file core/Shared/Helpers/product.php
  * @param string $productId Product id.
  * @return string Product modified datetime or '' on failure.
  * @throws ContainerExceptionInterface
@@ -200,7 +201,7 @@ function get_product_modified(string $productId): string
     /**
      * Filters the product date.
      *
-     * @file App/Shared/Helpers/product.php
+     * @file core/Shared/Helpers/product.php
      * @param string $modified The product's modified datetime.
      * @param string $format   Format to return datetime string.
      * @param string $productId Product id or product object.
@@ -211,10 +212,10 @@ function get_product_modified(string $productId): string
 /**
  * A function which retrieves a product body.
  *
- * Purpose of this function is for the `product_body`
+ * Purpose of this function is for the `product.body`
  * filter.
  *
- * @file App/Shared/Helpers/product.php
+ * @file core/Shared/Helpers/product.php
  * @param string $productId Product id.
  * @return string Product body or '' on failure.
  * @throws ContainerExceptionInterface
@@ -236,7 +237,7 @@ function get_product_body(string $productId): string
     /**
      * Filters the product date.
      *
-     * @file App/Shared/Helpers/product.php
+     * @file core/Shared/Helpers/product.php
      * @param string $body The product's body content.
      * @param string $productId Product id or product object.
      */
@@ -246,10 +247,10 @@ function get_product_body(string $productId): string
 /**
  * A function which retrieves a product product_type name.
  *
- * Purpose of this function is for the `product_sku`
+ * Purpose of this function is for the `product.sku`
  * filter.
  *
- * @file App/Shared/Helpers/product.php
+ * @file core/Shared/Helpers/product.php
  * @param string $productId Product id.
  * @return string|false Product type name or '' on failure.
  * @throws ContainerExceptionInterface
@@ -271,7 +272,7 @@ function get_product_sku(string $productId): false|string
     /**
      * Filters the product product_sku name.
      *
-     * @file App/Shared/Helpers/product.php
+     * @file core/Shared/Helpers/product.php
      * @param string $sku The product's sku.
      * @param string $productId  Product id.
      */
@@ -281,10 +282,10 @@ function get_product_sku(string $productId): false|string
 /**
  * A function which retrieves a product title.
  *
- * Purpose of this function is for the `product_title`
+ * Purpose of this function is for the `product.title`
  * filter.
  *
- * @file App/Shared/Helpers/product.php
+ * @file core/Shared/Helpers/product.php
  * @param string $productId Product id.
  * @return string Product title or '' on failure.
  * @throws ContainerExceptionInterface
@@ -306,7 +307,7 @@ function get_product_title(string $productId): string
     /**
      * Filters the product title.
      *
-     * @file App/Shared/Helpers/product.php
+     * @file core/Shared/Helpers/product.php
      * @param string   $title The product's title.
      * @param string $product  Product object.
      */
@@ -316,10 +317,10 @@ function get_product_title(string $productId): string
 /**
  * A function which retrieves a product slug.
  *
- * Purpose of this function is for the `product_slug`
+ * Purpose of this function is for the `product.slug`
  * filter.
  *
- * @file App/Shared/Helpers/product.php
+ * @file core/Shared/Helpers/product.php
  * @param string $productId Product id.
  * @return string Product slug or ''.
  * @throws ContainerExceptionInterface
@@ -341,7 +342,7 @@ function get_product_slug(string $productId): string
     /**
      * Filters the product's slug.
      *
-     * @file App/Shared/Helpers/product.php
+     * @file core/Shared/Helpers/product.php
      * @param string $slug The product's slug.
      * @param string $product   Product object.
      */
@@ -351,7 +352,7 @@ function get_product_slug(string $productId): string
 /**
  * Adds label to product's status.
  *
- * @file App/Shared/Helpers/product.php
+ * @file core/Shared/Helpers/product.php
  * @param string $status
  * @return string Product status label.
  */
@@ -369,251 +370,84 @@ function product_status_label(string $status): string
 }
 
 /**
- * Sanitize product meta value.
+ * Retrieve product attribute for a product.
  *
- * @file App/Shared/Helpers/product.php
- * @param string $metaKey Meta key.
- * @param mixed $metaValue Meta value to sanitize.
- * @param string $objectSubtype Optional. The subtype of the object type.
- * @return mixed Sanitized $metaValue.
- * @throws Exception
- */
-function sanitize_product_meta(string $metaKey, mixed $metaValue, string $objectSubtype = ''): mixed
-{
-    return sanitize_meta($metaKey, $metaValue, 'product', $objectSubtype);
-}
-
-/**
- * Retrieve product meta field for a product.
- *
- * @file App/Shared/Helpers/product.php
+ * @file core/Shared/Helpers/product.php
  * @param string $productId Product ID.
- * @param string $key Optional. The meta key to retrieve.
- * @param bool $single Optional. Whether to return a single value. Default false.
- * @return mixed Will be an array if $single is false. Will be value of metadata
- *               field if $single is true.
+ * @param string $key The attribute key to retrieve.
+ * @param mixed $default Optional. Whether to return a single value. Default false.
+ * @return mixed Attribute value.
  * @throws ContainerExceptionInterface
- * @throws Exception
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  */
-function get_productmeta(string $productId, string $key = '', bool $single = false): mixed
+function get_product_attribute(string $productId, string $key, mixed $default = null): mixed
 {
-    return MetaData::factory(dfdb()->prefix . 'productmeta')
-            ->read('product', $productId, $key, $single);
+    return AttributesFactory::product()->get(id: $productId, key: $key, default: $default);
 }
 
 /**
- * Get product metadata by meta ID.
+ * Update product attribute based on product ID.
  *
- * @file App/Shared/Helpers/product.php
- * @param string $mid
- * @return array|bool
- * @throws ContainerExceptionInterface
- * @throws Exception
- * @throws NotFoundExceptionInterface
- * @throws ReflectionException
- */
-function get_productmeta_by_mid(string $mid): bool|array
-{
-    return MetaData::factory(dfdb()->prefix . 'productmeta')->readByMid('product', $mid);
-}
-
-/**
- * Update product meta field based on product ID.
+ * If the attribute for the product does not exist, it will be added.
  *
- * Use the $prevValue parameter to differentiate between meta fields with the
- * same key and product ID.
- *
- * If the meta field for the product does not exist, it will be added.
- *
- * @file App/Shared/Helpers/product.php
+ * @file core/Shared/Helpers/product.php
  * @param string $productId Product ID.
- * @param string $metaKey Metadata key.
- * @param mixed $metaValue Metadata value. Must be serializable if non-scalar.
- * @param mixed $prevValue Optional. Previous value to check before removing.
- *                         Default empty.
- * @return bool|string Meta ID if the key didn't exist, true on successful update,
- *                     false on failure.
- * @throws CommandPropertyNotFoundException
+ * @param string $key Attribute key.
+ * @param mixed $value Attribute value. Must be serializable if non-scalar.
+ * @return AttributeBag
  * @throws ContainerExceptionInterface
- * @throws Exception
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
- * @throws TypeException
- * @throws UnresolvableQueryHandlerException
- * @throws InvalidArgumentException
  */
-function update_productmeta(
+function update_product_attribute(
     string $productId,
-    string $metaKey,
-    mixed $metaValue,
-    mixed $prevValue = ''
-): bool|string {
-    return MetaData::factory(dfdb()->prefix . 'productmeta')
-            ->update('product', $productId, $metaKey, $metaValue, $prevValue);
+    string $key,
+    mixed $value,
+): AttributeBag {
+    return AttributesFactory::product()->set(id: $productId, key: $key, value: $value);
 }
 
 /**
- * Update product metadata by meta ID.
+ * Add attribute to a product.
  *
- * @file App/Shared/Helpers/product.php
- * @param string $mid
- * @param string $metaKey
- * @param string $metaValue
- * @return bool
- * @throws ContainerExceptionInterface
- * @throws Exception
- * @throws NotFoundExceptionInterface
- * @throws ReflectionException
- * @throws TypeException
- * @throws InvalidArgumentException
- */
-function update_productmeta_by_mid(string $mid, string $metaKey, string $metaValue): bool
-{
-    $_metaKey = unslash($metaKey);
-    $_metaValue = unslash($metaValue);
-
-    return MetaData::factory(dfdb()->prefix . 'productmeta')
-        ->updateByMid('product', $mid, $_metaValue, $_metaKey);
-}
-
-/**
- * Add metadata field to a product.
- *
- * @file App/Shared/Helpers/product.php
+ * @file core/Shared/Helpers/product.php
  * @param string $productId Product ID.
- * @param string $metaKey Metadata name.
- * @param mixed $metaValue Metadata value. Must be serializable if non-scalar.
- * @param bool $unique Optional. Whether the same key should not be added.
- *                     Default false.
- * @return false|string Meta ID on success, false on failure.
+ * @param string $key Attribute name.
+ * @param mixed $value Attribute value. Must be serializable if non-scalar.
+ * @return AttributeBag
  * @throws ContainerExceptionInterface
- * @throws Exception
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
- * @throws TypeException
- * @throws InvalidArgumentException
  */
-function add_productmeta(string $productId, string $metaKey, mixed $metaValue, bool $unique = false): false|string
+function add_product_attribute(string $productId, string $key, mixed $value): AttributeBag
 {
-    return MetaData::factory(dfdb()->prefix . 'productmeta')
-        ->create('product', $productId, $metaKey, $metaValue, $unique);
+    return AttributesFactory::product()->set(id: $productId, key: $key, value: $value);
 }
 
 /**
- * Remove metadata matching criteria from a product.
+ * Remove attribute matching criteria from a product.
  *
- * You can match based on the key, or key and value. Removing based on key and
- * value, will keep from removing duplicate metadata with the same key. It also
- * allows removing all metadata matching key, if needed.
- *
- * @file App/Shared/Helpers/product.php
+ * @file core/Shared/Helpers/product.php
  * @param string $productId Product ID.
- * @param string $metaKey Metadata name.
- * @param mixed $metaValue Optional. Metadata value. Must be serializable if
- *                         non-scalar. Default empty.
- * @return bool True on success, false on failure.
+ * @param string $key Attribute name.
+ * @return AttributeBag
  * @throws ContainerExceptionInterface
- * @throws Exception
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  */
-function delete_productmeta(string $productId, string $metaKey, mixed $metaValue = ''): bool
+function delete_product_attribute(string $productId, string $key): AttributeBag
 {
-    return MetaData::factory(dfdb()->prefix . 'productmeta')
-        ->delete('product', $productId, $metaKey, $metaValue);
-}
-
-/**
- * Delete product meta data by meta ID.
- *
- * @file App/Shared/Helpers/product.php
- * @param string $mid
- * @return bool
- * @throws ContainerExceptionInterface
- * @throws Exception
- * @throws NotFoundExceptionInterface
- * @throws ReflectionException
- */
-function delete_productmeta_by_mid(string $mid): bool
-{
-    return MetaData::factory(dfdb()->prefix . 'productmeta')->deleteByMid('product', $mid);
-}
-
-/**
- * Retrieve product meta fields, based on product ID.
- *
- * The product meta fields are retrieved from the cache where possible,
- * so the function is optimized to be called more than once.
- *
- * @file App/Shared/Helpers/product.php
- * @param string $productId The product's id.
- * @return mixed Product meta for the given product.
- * @throws ContainerExceptionInterface
- * @throws Exception
- * @throws NotFoundExceptionInterface
- * @throws ReflectionException
- */
-function get_product_custom(string $productId): mixed
-{
-    return get_productmeta($productId);
-}
-
-/**
- * Retrieve meta field names for a product.
- *
- * If there are no meta fields, then nothing (null) will be returned.
- *
- * @file App/Shared/Helpers/product.php
- * @param string $productId The product's id.
- * @return array Array of the keys, if retrieved.
- * @throws ContainerExceptionInterface
- * @throws Exception
- * @throws NotFoundExceptionInterface
- * @throws ReflectionException
- */
-function get_product_custom_keys(string $productId): array
-{
-    $custom = get_product_custom($productId);
-    if (!is_array($custom)) {
-        return [];
-    }
-    if ($keys = array_keys($custom)) {
-        return $keys;
-    }
-
-    return [];
-}
-
-/**
- * Retrieve values for a custom product field.
- *
- * The parameters must not be considered optional. All the product meta fields
- * will be retrieved and only the meta field key values returned.
- *
- * @file App/Shared/Helpers/product.php
- * @param string $productId The product's id.
- * @param string $key Meta field key.
- * @return array Meta field values or [].
- * @throws ContainerExceptionInterface
- * @throws Exception
- * @throws NotFoundExceptionInterface
- * @throws ReflectionException
- */
-function get_product_custom_values(string $productId, string $key): array
-{
-    $custom = get_product_custom($productId);
-    return $custom[$key] ?? [];
+    return AttributesFactory::product()->remove(id: $productId, key: $key);
 }
 
 /**
  * A function which retrieves a product author id.
  *
- * Purpose of this function is for the `product_author_id`
+ * Purpose of this function is for the `product.author.id`
  * filter.
  *
- * @file App/Shared/Helpers/product.php
+ * @file core/Shared/Helpers/product.php
  * @param string $productId Product id.
  * @return false|string Product author id or false on failure.
  * @throws ContainerExceptionInterface
@@ -635,7 +469,7 @@ function get_product_author_id(string $productId): false|string
     /**
      * Filters the product author id.
      *
-     * @file App/Shared/Helpers/product.php
+     * @file core/Shared/Helpers/product.php
      * @param string $authorId The product's author id.
      * @param object $product Product object.
      */
@@ -645,10 +479,10 @@ function get_product_author_id(string $productId): false|string
 /**
  * A function which retrieves a product author.
  *
- * Purpose of this function is for the `product_author`
+ * Purpose of this function is for the `product.author`
  * filter.
  *
- * @file App/Shared/Helpers/product.php
+ * @file core/Shared/Helpers/product.php
  * @param string $productId Optional Product id or product object.
  * @param bool $reverse If first name should appear first or not. Default is false.
  * @return string|false Product author or false on failure.
@@ -671,7 +505,7 @@ function get_product_author(string $productId, bool $reverse = false): false|str
     /**
      * Filters the product author.
      *
-     * @file App/Shared/Helpers/product.php
+     * @file core/Shared/Helpers/product.php
      * @param string $author The product's author.
      * @param object $product Product object.
      */
@@ -681,10 +515,10 @@ function get_product_author(string $productId, bool $reverse = false): false|str
 /**
  * A function which retrieves a product status.
  *
- * Purpose of this function is for the `product_status`
+ * Purpose of this function is for the `product.status`
  * filter.
  *
- * @file App/Shared/Helpers/product.php
+ * @file core/Shared/Helpers/product.php
  * @param string $productId Product id.
  * @return string|false Product status or false on failure.
  * @throws ContainerExceptionInterface
@@ -706,7 +540,7 @@ function get_product_status(string $productId): false|string
     /**
      * Filters the product status.
      *
-     * @file App/Shared/Helpers/product.php
+     * @file core/Shared/Helpers/product.php
      * @param string  $status The product's status.
      * @param Product $product Product object.
      */
@@ -719,7 +553,7 @@ function get_product_status(string $productId): false|string
  * Uses `call_user_func_array()` function to return appropriate product date function.
  * Dynamic part is the variable $type, which calls the date function you need.
  *
- * @file App/Shared/Helpers/product.php
+ * @file core/Shared/Helpers/product.php
  * @param string $type Type of date to return: created, published, modified. Default: published.
  * @param string $productId Product id.
  * @return string Product date.
@@ -735,7 +569,7 @@ function get_product_date(string $type = 'published', string $productId = ''): s
  * Uses `call_user_func_array()` function to return appropriate product time function.
  * Dynamic part is the variable $type, which calls the date function you need.
  *
- * @file App/Shared/Helpers/product.php
+ * @file core/Shared/Helpers/product.php
  * @param string $type Type of date to return: created, published, modified. Default: published.
  * @param string $productId Product id.
  * @return string Product time.
@@ -748,7 +582,7 @@ function get_product_time(string $type = 'published', string $productId = ''): s
 /**
  * Retrieves product created date.
  *
- * @file App/Shared/Helpers/product.php
+ * @file core/Shared/Helpers/product.php
  * @param string $productId Product id.
  * @param string $format Format to use for retrieving the date the product was created.
  *                       Accepts 'G', 'U', or php date format value specified
@@ -793,7 +627,7 @@ function get_product_created_date(
     /**
      * Filters the product created date.
      *
-     * @file App/Shared/Helpers/product.php
+     * @file core/Shared/Helpers/product.php
      * @param string $theDate The product's formatted date.
      * @param bool   $format Format to use for retrieving the date the product was written.
      *                       Accepts 'G', 'U', or php date format. Default 'U'.
@@ -805,7 +639,7 @@ function get_product_created_date(
 /**
  * Retrieves product created date.
  *
- * @file App/Shared/Helpers/product.php
+ * @file core/Shared/Helpers/product.php
  * @param string $productId Product id.
  * @param string $format Format to use for retrieving the date the product was created.
  *                       Accepts 'G', 'U', or php date format value specified
@@ -841,7 +675,7 @@ function the_product_created_date(string $productId, string $format = ''): strin
     /**
      * Filters the date the product was written.
      *
-     * @file App/Shared/Helpers/product.php
+     * @file core/Shared/Helpers/product.php
      * @param string    $theDate The formatted date.
      * @param string    $format  Format to use for retrieving the date the product was written.
      *                           Accepts 'G', 'U', or php date format value specified
@@ -854,10 +688,10 @@ function the_product_created_date(string $productId, string $format = ''): strin
 /**
  * A function which retrieves product created time.
  *
- * Purpose of this function is for the `product_created_time`
+ * Purpose of this function is for the `get.product.created.time`
  * filter.
  *
- * @file App/Shared/Helpers/product.php
+ * @file core/Shared/Helpers/product.php
  * @param string $productId Product id.
  * @param string $format Format to use for retrieving the time the product was created.
  *                        Accepts 'G', 'U', or php date format value specified
@@ -902,7 +736,7 @@ function get_product_created_time(
     /**
      * Filters the product created time.
      *
-     * @file App/Shared/Helpers/product.php
+     * @file core/Shared/Helpers/product.php
      * @param string $theTime The product's formatted time.
      * @param bool   $format   Format to use for retrieving the time the product was written.
      *                         Accepts 'G', 'U', or php date format. Default 'U'.
@@ -914,7 +748,7 @@ function get_product_created_time(
 /**
  * Retrieves product created time.
  *
- * @file App/Shared/Helpers/product.php
+ * @file core/Shared/Helpers/product.php
  * @param string $productId Product id.
  * @param string $format Format to use for retrieving the time the product was written.
  *                       Accepts 'G', 'U', or php date format value specified
@@ -954,7 +788,7 @@ function the_product_created_time(string $productId, string $format = ''): strin
     /**
      * Filters the time the product was written.
      *
-     * @file App/Shared/Helpers/product.php
+     * @file core/Shared/Helpers/product.php
      * @param string    $theTime The formatted time.
      * @param string    $format  Format to use for retrieving the time the product was written.
      *                           Accepts 'G', 'U', or php date format value specified
@@ -967,7 +801,7 @@ function the_product_created_time(string $productId, string $format = ''): strin
 /**
  * A function which retrieves product published date.
  *
- * @file App/Shared/Helpers/product.php
+ * @file core/Shared/Helpers/product.php
  * @param string $productId Product id.
  * @param string $format Format to use for retrieving the date the product was published.
  *                        Accepts 'G', 'U', or php date format value specified
@@ -1012,7 +846,7 @@ function get_product_published_date(
     /**
      * Filters the product published date.
      *
-     * @file App/Shared/Helpers/product.php
+     * @file core/Shared/Helpers/product.php
      * @param string $theDate The product's formatted date.
      * @param bool $format Format to use for retrieving the date the product was published.
      *                     Accepts 'G', 'U', or php date format. Default 'U'.
@@ -1024,7 +858,7 @@ function get_product_published_date(
 /**
  * Retrieves product published date.
  *
- * @file App/Shared/Helpers/product.php
+ * @file core/Shared/Helpers/product.php
  * @param string $productId Product id.
  * @param string $format Format to use for retrieving the date the product was published.
  *                       Accepts 'G', 'U', or php date format value specified
@@ -1064,7 +898,7 @@ function the_product_published_date(string $productId, string $format = ''): str
     /**
      * Filters the time the product was written.
      *
-     * @file App/Shared/Helpers/product.php
+     * @file core/Shared/Helpers/product.php
      * @param string    $theDate The formatted date.
      * @param string    $format   Format to use for retrieving the date the product was published.
      *                            Accepts 'G', 'U', or php date format value specified
@@ -1077,7 +911,7 @@ function the_product_published_date(string $productId, string $format = ''): str
 /**
  * A function which retrieves product published time.
  *
- * @file App/Shared/Helpers/product.php
+ * @file core/Shared/Helpers/product.php
  * @param string $productId Product id.
  * @param string $format Format to use for retrieving the time the product was published.
  *                        Accepts 'G', 'U', or php date format value specified
@@ -1122,7 +956,7 @@ function get_product_published_time(
     /**
      * Filters the product published time.
      *
-     * @file App/Shared/Helpers/product.php
+     * @file core/Shared/Helpers/product.php
      * @param string $theTime The product's formatted time.
      * @param bool   $format   Format to use for retrieving the time the product was written.
      *                         Accepts 'G', 'U', or php date format. Default 'U'.
@@ -1134,7 +968,7 @@ function get_product_published_time(
 /**
  * Retrieves product published time.
  *
- * @file App/Shared/Helpers/product.php
+ * @file core/Shared/Helpers/product.php
  * @param string $productId Product id.
  * @param string $format Format to use for retrieving the time the product was published.
  *                       Accepts 'G', 'U', or php date format value specified
@@ -1173,7 +1007,7 @@ function the_product_published_time(string $productId, string $format = ''): str
     /**
      * Filters the time the product was published.
      *
-     * @file App/Shared/Helpers/product.php
+     * @file core/Shared/Helpers/product.php
      * @param string    $theTime  The formatted time.
      * @param string    $format   Format to use for retrieving the time the product was published.
      *                            Accepts 'G', 'U', or php date format value specified
@@ -1186,7 +1020,7 @@ function the_product_published_time(string $productId, string $format = ''): str
 /**
  * A function which retrieves product modified date.
  *
- * @file App/Shared/Helpers/product.php
+ * @file core/Shared/Helpers/product.php
  * @param string $productId Product id.
  * @param string $format Format to use for retrieving the date the product was modified.
  *                        Accepts 'G', 'U', or php date format value specified
@@ -1231,7 +1065,7 @@ function get_product_modified_date(
     /**
      * Filters the product modified date.
      *
-     * @file App/Shared/Helpers/product.php
+     * @file core/Shared/Helpers/product.php
      * @param string $theDate The product's formatted date.
      * @param bool   $format  Format to use for retrieving the date the product was published.
      *                        Accepts 'G', 'U', or php date format. Default 'U'.
@@ -1243,7 +1077,7 @@ function get_product_modified_date(
 /**
  * Retrieves product published date.
  *
- * @file App/Shared/Helpers/product.php
+ * @file core/Shared/Helpers/product.php
  * @param string $productId Product id.
  * @param string $format Format to use for retrieving the date the product was published.
  *                       Accepts 'G', 'U', or php date format value specified
@@ -1283,7 +1117,7 @@ function the_product_modified_date(string $productId, string $format = ''): stri
     /**
      * Filters the date the product was modified.
      *
-     * @file App/Shared/Helpers/product.php
+     * @file core/Shared/Helpers/product.php
      * @param string    $theDate The formatted date.
      * @param string    $format  Format to use for retrieving the date the product was modified.
      *                           Accepts 'G', 'U', or php date format value specified
@@ -1296,7 +1130,7 @@ function the_product_modified_date(string $productId, string $format = ''): stri
 /**
  * A function which retrieves product modified time.
  *
- * @file App/Shared/Helpers/product.php
+ * @file core/Shared/Helpers/product.php
  * @param string $productId Product id.
  * @param string $format Format to use for retrieving the time the product was modified.
  *                       Accepts 'G', 'U', or php date format value specified
@@ -1341,7 +1175,7 @@ function get_product_modified_time(
     /**
      * Filters the product modified time.
      *
-     * @file App/Shared/Helpers/product.php
+     * @file core/Shared/Helpers/product.php
      * @param string $theTime The product's formatted time.
      * @param bool   $format   Format to use for retrieving the time the product was modified.
      *                         Accepts 'G', 'U', or php date format. Default 'U'.
@@ -1353,7 +1187,7 @@ function get_product_modified_time(
 /**
  * Retrieves product modified time.
  *
- * @file App/Shared/Helpers/product.php
+ * @file core/Shared/Helpers/product.php
  * @param string $productId Product id.
  * @param string $format Format to use for retrieving the time the product was modified.
  *                       Accepts 'G', 'U', or php date format value specified
@@ -1393,7 +1227,7 @@ function the_product_modified_time(string $productId, string $format = ''): stri
     /**
      * Filters the time the product was modified.
      *
-     * @file App/Shared/Helpers/product.php
+     * @file core/Shared/Helpers/product.php
      * @param string    $theTime The formatted time.
      * @param string    $format  Format to use for retrieving the time the product was modified.
      *                           Accepts 'G', 'U', or php date format value specified
@@ -1406,10 +1240,10 @@ function the_product_modified_time(string $productId, string $format = ''): stri
 /**
  * A function which retrieves product show in menu.
  *
- * Purpose of this function is for the `product_show_in_menu`
+ * Purpose of this function is for the `product.show.in.menu`
  * filter.
  *
- * @file App/Shared/Helpers/product.php
+ * @file core/Shared/Helpers/product.php
  * @param string $productId Product id.
  * @return int Product show in menu integer or 0 on failure.
  * @throws ContainerExceptionInterface
@@ -1431,7 +1265,7 @@ function get_product_show_in_menu(string $productId): int
     /**
      * Filters the product show in menu.
      *
-     * @file App/Shared/Helpers/product.php
+     * @file core/Shared/Helpers/product.php
      * @param int    $menu      The product's show in menu option.
      * @param string $productId The product ID.
      */
@@ -1441,10 +1275,10 @@ function get_product_show_in_menu(string $productId): int
 /**
  * A function which retrieves product show in search.
  *
- * Purpose of this function is for the `product_show_in_search`
+ * Purpose of this function is for the `product.show.in.search`
  * filter.
  *
- * @file App/Shared/Helpers/product.php
+ * @file core/Shared/Helpers/product.php
  * @param string $productId Product id.
  * @return int Product show in search integer or 0 on failure.
  * @throws ContainerExceptionInterface
@@ -1466,7 +1300,7 @@ function get_product_show_in_search(string $productId): int
     /**
      * Filters the product show in search.
      *
-     * @file App/Shared/Helpers/product.php
+     * @file core/Shared/Helpers/product.php
      * @param int    $search    The product's show in search option.
      * @param string $productId The product ID.
      */
@@ -1476,12 +1310,14 @@ function get_product_show_in_search(string $productId): int
 /**
  * Creates a unique product slug.
  *
- * @file App/Shared/Helpers/product.php
+ * @file core/Shared/Helpers/product.php
  * @param string $originalSlug Original slug of product.
  * @param string $originalTitle Original title of product.
  * @param string|null $productId Unique product id or null.
  * @return string Unique product slug.
+ * @throws ContainerExceptionInterface
  * @throws Exception
+ * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  */
 function cms_unique_product_slug(
@@ -1499,7 +1335,7 @@ function cms_unique_product_slug(
     /**
      * Filters the unique product slug before returned.
      *
-     * @file App/Shared/Helpers/product.php
+     * @file core/Shared/Helpers/product.php
      * @param string    $productSlug   Unique product slug.
      * @param string    $originalSlug  The product's original slug.
      * @param string    $originalTitle The product's original title before slugified.
@@ -1518,10 +1354,10 @@ function cms_unique_product_slug(
  * Insert or update a product.
  *
  * All the `$productdata` array fields have filters associated with the values. The filters
- * have the prefix 'pre_' followed by the field name. An example using 'product_status' would have
- * the filter called, 'pre_product_status' that can be hooked into.
+ * have the prefix 'pre.' followed by the field name. An example using 'product_status' would have
+ * the filter called, 'pre.product.status' that can be hooked into.
  *
- * @file App/Shared/Helpers/product.php
+ * @file core/Shared/Helpers/product.php
  * @param array|ServerRequestInterface|Product $productdata An array of data that is used for insert or update.
  *
  *      @type string $productTitle The product's title.
@@ -1923,14 +1759,14 @@ function cms_insert_product(array|ServerRequestInterface|Product $productdata): 
     $productDataArray = unslash($dataArray);
 
     // Product custom fields.
-    $metaFields = $productdata['product_field'] ?? [];
+    $attributeFields = $productdata['product_field'] ?? [];
 
     /**
      * Filters product data before the record is created or updated.
      *
-     * It only includes data in the product table, not any product metadata.
+     * It only includes data in the product table, not any product attributes.
      *
-     * @param array    $productDataArray
+     * @param array $productDataArray
      *     Values and keys for the user.
      *
      *      @type string $productTitle         The product's title.
@@ -1982,6 +1818,7 @@ function cms_insert_product(array|ServerRequestInterface|Product $productdata): 
                 'title' => new StringLiteral($productTitle),
                 'slug' => new StringLiteral($productSlug),
                 'body' => new StringLiteral($productBody ?? ''),
+                'attribute' => new ArrayLiteral($attributeFields),
                 'author' => UserId::fromString($productAuthor),
                 'sku' => new StringLiteral($productSku),
                 'price' => new Money(new IntegerNumber($productPrice), new Currency(CurrencyCode::$productCurrency())),
@@ -1989,7 +1826,6 @@ function cms_insert_product(array|ServerRequestInterface|Product $productdata): 
                 'showInMenu' => new IntegerNumber($productShowInMenu),
                 'showInSearch' => new IntegerNumber($productShowInSearch),
                 'featuredImage' => new StringLiteral($productFeaturedImage ?? ''),
-                'meta' => new ArrayLiteral($metaFields),
                 'status' => new StringLiteral($productStatus),
                 'created' => $productCreated,
                 'createdGmt' => $productCreatedGmt,
@@ -2031,6 +1867,7 @@ function cms_insert_product(array|ServerRequestInterface|Product $productdata): 
                 'title' => new StringLiteral($productTitle),
                 'slug' => new StringLiteral($productSlug),
                 'body' => new StringLiteral($productBody),
+                'attribute' => new ArrayLiteral($attributeFields),
                 'author' => UserId::fromString($productAuthor),
                 'sku' => new StringLiteral($productSku),
                 'price' => new Money(new IntegerNumber($productPrice), new Currency(CurrencyCode::$productCurrency())),
@@ -2038,7 +1875,6 @@ function cms_insert_product(array|ServerRequestInterface|Product $productdata): 
                 'showInMenu' => new IntegerNumber($productShowInMenu),
                 'showInSearch' => new IntegerNumber($productShowInSearch),
                 'featuredImage' => new StringLiteral($productFeaturedImage ?? ''),
-                'meta' => new ArrayLiteral($metaFields),
                 'status' => new StringLiteral($productStatus),
                 'published' => $productPublished,
                 'publishedGmt' => $productPublishedGmt,
@@ -2144,7 +1980,7 @@ function cms_insert_product(array|ServerRequestInterface|Product $productdata): 
  *
  * See {@see cms_insert_product()} For what fields can be set in $productdata.
  *
- * @file App/Shared/Helpers/product.php
+ * @file core/Shared/Helpers/product.php
  * @param array|ServerRequestInterface|Product $productdata An array of product data or a product object.
  * @return string|Error The updated product's id or return Error if product could not be updated.
  * @throws CommandCouldNotBeHandledException
@@ -2183,7 +2019,7 @@ function cms_update_product(array|ServerRequestInterface|Product $productdata): 
 /**
  * Deletes product from the product document.
  *
- * @file App/Shared/Helpers/product.php
+ * @file core/Shared/Helpers/product.php
  * @param string $productId The id of the product to delete.
  * @return bool|Product Product on success or false on failure.
  * @throws CommandPropertyNotFoundException
@@ -2211,13 +2047,6 @@ function cms_delete_product(string $productId): Product|bool
      */
     __observer()->action->doAction('before_delete_product', $productId);
 
-    $productMetaKeys = get_productmeta($productId);
-    if ($productMetaKeys) {
-        foreach ($productMetaKeys as $metaKey => $metaValue) {
-            delete_productmeta($productId, $metaKey, $metaValue);
-        }
-    }
-
     /**
      * Action hook fires immediately before a product is deleted from the
      * product document.
@@ -2227,11 +2056,11 @@ function cms_delete_product(string $productId): Product|bool
     __observer()->action->doAction('delete_product', $productId);
 
     try {
-        $command = new DeleteProductCommand([
-            'productId' => ProductId::fromString($product->id),
-        ]);
-
-        command($command);
+        command(
+            new DeleteProductCommand([
+                'id' => ProductId::fromString($product->id),
+            ])
+        );
     } catch (PDOException $ex) {
         FileLoggerFactory::getLogger()->error(
             sprintf(
@@ -2252,20 +2081,13 @@ function cms_delete_product(string $productId): Product|bool
      */
     __observer()->action->doAction('deleted_product', $productId);
 
-    /**
-     * Action hook fires after a product is deleted.
-     *
-     * @param string $productId Product id.
-     */
-    __observer()->action->doAction('after_delete_product', $productId);
-
     return $product;
 }
 
 /**
  * Retrieves an array of css class names.
  *
- * @file App/Shared/Helpers/product.php
+ * @file core/Shared/Helpers/product.php
  * @param string $productId Product id of current product.
  * @param string|array $class One or more css class names to add to element list.
  * @return array An array of css class names.
@@ -2311,20 +2133,20 @@ function get_product_class(string $productId, string|array $class = ''): array
 }
 
 /**
- * Retrieves and displays product meta value.
+ * Retrieves and displays product attribute value.
  *
- * Uses `the_product_meta` filter.
+ * Uses `the.product.attribute` filter.
  *
- * @file App/Shared/Helpers/product.php
+ * @file core/Shared/Helpers/product.php
  * @param string|Product|ProductId $product Product object or id.
- * @param string $key Product meta key.
- * @return string Product meta value.
+ * @param string $key Product attribute key.
+ * @return string Product attribute value.
  * @throws ContainerExceptionInterface
  * @throws Exception
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  */
-function the_product_meta(string|Product|ProductId $product, string $key): string
+function the_product_attribute(string|Product|ProductId $product, string $key): string
 {
     if ($product instanceof Product) {
         $product = $product->id;
@@ -2334,15 +2156,15 @@ function the_product_meta(string|Product|ProductId $product, string $key): strin
         $product = $product->toNative();
     }
 
-    $theMeta = get_productmeta(productId: $product, key: $key, single: true);
+    $theAttribute = get_product_attribute(productId: $product, key: $key);
     /**
-     * Filters product meta.
+     * Filters product attribute.
      *
-     * @file App/Shared/Helpers/product.php
-     * @param mixed  $theMeta Product meta value.
-     * @param string $key     Product meta key.
+     * @file core/Shared/Helpers/product.php
+     * @param mixed  $theAttribute Product attribute value.
+     * @param string $key     Product attribute key.
      */
-    return __observer()->filter->applyFilter('the.product.meta', $theMeta, $key);
+    return __observer()->filter->applyFilter('the.product.attribute', $theAttribute, $key);
 }
 
 /**
@@ -2350,10 +2172,11 @@ function the_product_meta(string|Product|ProductId $product, string $key): strin
  *
  * @param string|null $active Currency selected.
  * @return void
+ * @throws TypeException
  */
 function currency_option(?string $active = null): void
 {
-    foreach (config(key: 'currency') as $code => $currency) {
+    foreach (config()->array(key: 'currency') as $code => $currency) {
         echo '<option value="' . $code . '"' . selected($code, $active, false) . '>' . $code . '</option>' . "\r\n";
     }
 }
@@ -2381,10 +2204,10 @@ function publish_scheduled_product(): void
                 ($now->format('Y-m-d H:i:s') >= new DateTime($product['published'], get_user_timezone())->format())
             ) {
                 $command = new UpdateProductStatusCommand([
-                    'productId' => ProductId::fromString($product['id']),
-                    'productStatus' => new StringLiteral(value: 'published'),
-                    'productModified' => $now,
-                    'productModifiedGmt' => new DateTime(time: 'now', timezone: 'GMT')->getDateTime(),
+                    'id' => ProductId::fromString($product['id']),
+                    'status' => new StringLiteral(value: 'published'),
+                    'modified' => $now,
+                    'modifiedGmt' => new DateTime(time: 'now', timezone: 'GMT')->getDateTime(),
                 ]);
 
                 command($command);

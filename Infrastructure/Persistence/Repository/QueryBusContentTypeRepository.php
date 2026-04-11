@@ -6,7 +6,7 @@ namespace App\Infrastructure\Persistence\Repository;
 
 use App\Domain\ContentType\Query\Trait\PopulateContentTypeQueryAware;
 use App\Domain\ContentType\Repository\ContentTypeQueryRepository;
-use App\Infrastructure\Persistence\Database;
+use Qubus\Expressive\Database;
 use Qubus\Exception\Exception;
 use ReflectionException;
 

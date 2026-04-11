@@ -10,5 +10,5 @@ use Codefy\QueryBus\Query;
 
 class FindSitesByOwnerQuery extends PropertyCommand implements Query
 {
-    public ?UserId $siteOwner = null;
+    public UserId $owner;
 }

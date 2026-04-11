@@ -38,9 +38,9 @@ class RemoveContentParentCommandHandler implements CommandHandler
     public function handle(RemoveContentParentCommand|Command $command): void
     {
         /** @var Content $content */
-        $content = $this->aggregateRepository->loadAggregateRoot($command->contentId);
+        $content = $this->aggregateRepository->loadAggregateRoot($command->id);
 
-        $content->changeContentParentWasRemoved($command->contentParent);
+        $content->changeContentParentWasRemoved($command->parent);
         $content->changeContentModified(QubusDateTimeImmutable::now(tz: get_user_timezone()));
         $content->changeContentModifiedGmt(QubusDateTimeImmutable::now(tz: 'GMT'));
 

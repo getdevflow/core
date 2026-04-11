@@ -10,5 +10,5 @@ use Qubus\ValueObjects\StringLiteral\StringLiteral;
 
 final class FindProductBySlugQuery extends PropertyCommand implements Query
 {
-    public ?StringLiteral $productSlug = null;
+    public StringLiteral $slug;
 }

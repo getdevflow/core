@@ -16,6 +16,8 @@ final class FindUserByEmailQueryHandler implements QueryHandler
 
     public function handle(FindUserByEmailQuery|Query $query): array|null|object
     {
-        return $this->repository->findByEmail($query->userEmail->toNative());
+        /** @var FindUserByEmailQuery $query */
+
+        return $this->repository->findByEmail($query->email->toNative());
     }
 }

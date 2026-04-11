@@ -25,12 +25,12 @@ class UpdateProductStatusCommandHandler implements CommandHandler
     public function handle(UpdateProductStatusCommand|Command $command): void
     {
         /** @var Product $product */
-        $product = $this->aggregateRepository->loadAggregateRoot($command->productId);
+        $product = $this->aggregateRepository->loadAggregateRoot($command->id);
 
-        $product->changeProductStatus($command->productStatus);
+        $product->changeProductStatus($command->status);
         if ($product->hasRecordedEvents()) {
-            $product->changeProductModified($command->productModified);
-            $product->changeProductModifiedGmt($command->productModifiedGmt);
+            $product->changeProductModified($command->modified);
+            $product->changeProductModifiedGmt($command->modifiedGmt);
         }
 
         $this->aggregateRepository->saveAggregateRoot($product);

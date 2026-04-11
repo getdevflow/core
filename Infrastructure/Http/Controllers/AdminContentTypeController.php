@@ -6,12 +6,11 @@ namespace App\Infrastructure\Http\Controllers;
 
 use App\Application\Devflow;
 use App\Domain\ContentType\Model\ContentType;
-use App\Infrastructure\Persistence\Database;
-use App\Infrastructure\Services\UserAuth;
-use Codefy\CommandBus\Exceptions\CommandCouldNotBeHandledException;
+use App\Domain\ContentType\Validator\DestroyContentTypeValidator;
+use App\Domain\ContentType\Validator\StoreContentTypeValidator;
+use App\Domain\ContentType\Validator\UpdateContentTypeValidator;
+use App\Infrastructure\Services\ContentType\ContentTypeService;
 use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
-use Codefy\CommandBus\Exceptions\UnresolvableCommandHandlerException;
-use Codefy\Framework\Factory\FileLoggerFactory;
 use Codefy\Framework\Http\BaseController;
 use Codefy\QueryBus\UnresolvableQueryHandlerException;
 use Psr\Container\ContainerExceptionInterface;
@@ -20,283 +19,155 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\SimpleCache\InvalidArgumentException;
 use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
-use Qubus\Http\Factories\JsonResponseFactory;
 use Qubus\Http\ServerRequest;
-use Qubus\Http\Session\SessionException;
-use Qubus\Http\Session\SessionService;
-use Qubus\Routing\Router;
-use Qubus\View\Renderer;
 use ReflectionException;
 
 use function App\Shared\Helpers\admin_url;
-use function App\Shared\Helpers\cms_delete_content_type;
-use function App\Shared\Helpers\cms_insert_content_type;
-use function App\Shared\Helpers\cms_update_content_type;
-use function App\Shared\Helpers\get_all_content_types;
+use function App\Shared\Helpers\current_user_can;
 use function App\Shared\Helpers\get_content_type_by;
-use function Qubus\Error\Helpers\is_error;
+use function Codefy\Framework\Helpers\abort;
+use function Codefy\Framework\Helpers\view;
 use function Qubus\Security\Helpers\t__;
 use function Qubus\Support\Helpers\is_false__;
 
 final class AdminContentTypeController extends BaseController
 {
-    public function __construct(
-        protected SessionService $sessionService,
-        protected Router $router,
-        protected UserAuth $user,
-        protected Database $dfdb,
-        protected Renderer $view
-    ) {
-        parent::__construct($sessionService, $router, $view);
-    }
-
     /**
      * @param ServerRequest $request
-     * @return ResponseInterface|null
-     * @throws Exception
-     * @throws ReflectionException
-     * @throws SessionException
-     * @throws TypeException
-     * @throws ContainerExceptionInterface
-     * @throws NotFoundExceptionInterface
-     * @throws InvalidArgumentException
+     * @param ContentTypeService $service
+     * @return ResponseInterface
      */
-    public function contentTypeCreate(ServerRequest $request): ?ResponseInterface
+    public function contentTypeCreate(ServerRequest $request, ContentTypeService $service): ResponseInterface
     {
-        if (false === $this->user->can(permissionName: 'create:content')) {
-            Devflow::$PHP->flash->error(
-                message: t__(msgid: 'Access denied.', domain: 'devflow')
-            );
-            return $this->redirect(admin_url());
-        }
+        $service->createContentType(
+            data: StoreContentTypeValidator::make(
+                request: $request
+            )
+        );
 
-        try {
-            $id = cms_insert_content_type($request);
-            if (is_error($id)) {
-                Devflow::$PHP->flash->error(
-                    message: t__(msgid: 'Insertion error occurred.', domain: 'devflow')
-                );
-            }
-
-            Devflow::$PHP->flash->success(Devflow::$PHP->flash->notice(num: 201));
-        } catch (
-            CommandCouldNotBeHandledException |
-            CommandPropertyNotFoundException |
-            UnresolvableCommandHandlerException |
-            UnresolvableQueryHandlerException |
-            TypeException |
-            Exception |
-            ReflectionException $e
-        ) {
-            FileLoggerFactory::getLogger()->error($e->getMessage());
-            Devflow::$PHP->flash->error(
-                message: t__(msgid: 'Insertion exception occurred and was logged.', domain: 'devflow')
-            );
-        }
-
-        return $this->redirect($request->getServerParams()['HTTP_REFERER']);
+        return $this->redirect($request->getHeaderLine(name: 'Referer'));
     }
 
     /**
      * @param ServerRequest $request
-     * @return string|ResponseInterface
+     * @param ContentTypeService $service
+     * @return ResponseInterface
+     * @throws CommandPropertyNotFoundException
      * @throws ContainerExceptionInterface
      * @throws Exception
      * @throws InvalidArgumentException
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
-     * @throws SessionException
      * @throws TypeException
+     * @throws UnresolvableQueryHandlerException
      * @throws \Exception
      */
-    public function contentTypes(ServerRequest $request): string|ResponseInterface
+    public function contentTypes(ServerRequest $request, ContentTypeService $service): ResponseInterface
     {
-        if (false === $this->user->can(permissionName: 'manage:content')) {
+        if (false === current_user_can(perm: 'manage:content')) {
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
             return $this->redirect(admin_url());
         }
 
-        try {
-            /** @var ContentType[] $contentTypes */
-            $contentTypes = get_all_content_types();
+        $contentTypes = $service->findContentTypes();
 
-            return $this->view->render(
-                template: 'framework::backend/admin/content-type/content-type',
-                data: [
-                    'title' => t__(msgid: 'Content Types', domain: 'devflow'),
-                    'types' => $contentTypes,
-                    'request' => $request->getParsedBody(),
-                ]
-            );
-        } catch (UnresolvableQueryHandlerException | ReflectionException $e) {
-            FileLoggerFactory::getLogger()->error($e->getMessage());
-            Devflow::$PHP->flash->error(
-                message: t__(msgid: 'Error fetching content types.', domain: 'devflow')
-            );
-        }
-
-        return JsonResponseFactory::create(data: t__(msgid: 'Content types error', domain: 'devflow'), status: 404);
-    }
-
-    /**
-     * @param ServerRequest $request
-     * @param string $contentTypeId
-     * @return ResponseInterface|null
-     * @throws ContainerExceptionInterface
-     * @throws Exception
-     * @throws InvalidArgumentException
-     * @throws NotFoundExceptionInterface
-     * @throws ReflectionException
-     * @throws SessionException
-     * @throws TypeException
-     */
-    public function contentTypeChange(ServerRequest $request, string $contentTypeId): ?ResponseInterface
-    {
-        if (false === $this->user->can(permissionName: 'update:content')) {
-            Devflow::$PHP->flash->error(
-                message: t__(msgid: 'Access denied.', domain: 'devflow')
-            );
-            return $this->redirect(admin_url());
-        }
-
-        $dataArrayMerge = array_merge(['id' => $contentTypeId], $request->getParsedBody());
-
-        try {
-            $id = cms_update_content_type($dataArrayMerge);
-            if (is_error($id)) {
-                Devflow::$PHP->flash->error(
-                    message: t__(msgid: 'Change error occurred.', domain: 'devflow')
-                );
-            }
-
-            Devflow::$PHP->flash->success(Devflow::$PHP->flash->notice(num: 200));
-        } catch (
-            CommandCouldNotBeHandledException |
-            CommandPropertyNotFoundException |
-            UnresolvableCommandHandlerException |
-            UnresolvableQueryHandlerException |
-            TypeException |
-            Exception |
-            ReflectionException $e
-        ) {
-            FileLoggerFactory::getLogger()->error($e->getMessage());
-            Devflow::$PHP->flash->error(
-                message: t__(msgid: 'Change exception occurred and was logged.', domain: 'devflow')
-            );
-        }
-
-        return $this->redirect($request->getServerParams()['HTTP_REFERER']);
-    }
-
-    /**
-     * @param ServerRequest $request
-     * @param string $contentTypeId
-     * @return string|ResponseInterface
-     * @throws ContainerExceptionInterface
-     * @throws Exception
-     * @throws InvalidArgumentException
-     * @throws NotFoundExceptionInterface
-     * @throws ReflectionException
-     * @throws SessionException
-     * @throws TypeException
-     * @throws \Exception
-     */
-    public function contentTypeView(ServerRequest $request, string $contentTypeId): string|ResponseInterface
-    {
-        if (false === $this->user->can(permissionName: 'update:content')) {
-            Devflow::$PHP->flash->error(
-                message: t__(msgid: 'Access denied.', domain: 'devflow')
-            );
-            return $this->redirect(admin_url());
-        }
-
-        try {
-            /** @var ContentType $contentType */
-            $contentType = get_content_type_by('id', $contentTypeId);
-
-            if (empty($contentType->id)) {
-                return JsonResponseFactory::create(
-                    data: t__(msgid: 'The content type does not exist.', domain: 'devflow'),
-                    status: 404
-                );
-            }
-
-            if (is_false__($contentType)) {
-                return JsonResponseFactory::create(
-                    data: t__(msgid: 'The content type does not exist.', domain: 'devflow'),
-                    status: 404
-                );
-            }
-
-            return $this->view->render(
-                template: 'framework::backend/admin/content-type/update-content-type',
-                data: [
-                    'title' => $contentType->title,
-                    'type' => $contentType,
-                ]
-            );
-        } catch (
-            CommandPropertyNotFoundException |
-            UnresolvableQueryHandlerException |
-            TypeException |
-            ReflectionException $e
-        ) {
-            FileLoggerFactory::getLogger()->error($e->getMessage());
-        }
-
-        return JsonResponseFactory::create(
-            data: t__(msgid: 'The content type does not exist.', domain: 'devflow'),
-            status: 404
+        return view(
+            template: 'framework::backend/admin/content-type/content-type',
+            data: [
+                'title' => t__(msgid: 'Content Types', domain: 'devflow'),
+                'types' => $contentTypes,
+                'request' => $request->getParsedBody(),
+            ]
         );
     }
 
     /**
      * @param ServerRequest $request
+     * @param ContentTypeService $service
      * @param string $contentTypeId
      * @return ResponseInterface
+     */
+    public function contentTypeChange(ServerRequest $request, ContentTypeService $service, string $contentTypeId): ResponseInterface
+    {
+        $request = $request->withParsedBody(['id' => $contentTypeId]);
+
+        $service->updateContentType(
+            data: UpdateContentTypeValidator::make(
+                request: $request
+            )
+        );
+
+        return $this->redirect($request->getHeaderLine(name: 'Referer'));
+    }
+
+    /**
+     * @param string $contentTypeId
+     * @return string|ResponseInterface
+     * @throws CommandPropertyNotFoundException
      * @throws ContainerExceptionInterface
      * @throws Exception
      * @throws InvalidArgumentException
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
-     * @throws SessionException
      * @throws TypeException
+     * @throws UnresolvableQueryHandlerException
+     * @throws \Exception
      */
-    public function contentTypeDelete(ServerRequest $request, string $contentTypeId): ResponseInterface
+    public function contentTypeView(string $contentTypeId): string|ResponseInterface
     {
-        if (false === $this->user->can(permissionName: 'delete:content')) {
+        if (false === current_user_can(perm: 'update:content')) {
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
             return $this->redirect(admin_url());
         }
 
-        try {
-            $delete = cms_delete_content_type($contentTypeId);
+        /** @var ContentType $contentType */
+        $contentType = get_content_type_by('id', $contentTypeId);
 
-            if (is_error($delete) || is_false__($delete)) {
-                Devflow::$PHP->flash->error(
-                    message: t__(msgid: 'Delete error occurred.', domain: 'devflow')
-                );
-            } else {
-                Devflow::$PHP->flash->success(Devflow::$PHP->flash->notice(num: 200));
-            }
-        } catch (
-            CommandCouldNotBeHandledException |
-            CommandPropertyNotFoundException |
-            UnresolvableCommandHandlerException |
-            UnresolvableQueryHandlerException |
-            TypeException |
-            Exception |
-            ReflectionException $e
-        ) {
-            FileLoggerFactory::getLogger()->error($e->getMessage());
-            Devflow::$PHP->flash->error(
-                message: t__(msgid: 'Delete exception occurred and was logged.', domain: 'devflow')
+        if (empty($contentType->id)) {
+            abort(
+                code: 404,
+                uri: admin_url('content-type'),
+                message: t__(msgid: 'The content type does not exist.', domain: 'devflow')
             );
         }
+
+        if (is_false__($contentType)) {
+            abort(
+                code: 404,
+                uri: admin_url('content-type'),
+                message: t__(msgid: 'The content type does not exist.', domain: 'devflow')
+            );
+        }
+
+        return view(
+            template: 'framework::backend/admin/content-type/update-content-type',
+            data: [
+                'title' => $contentType->title,
+                'type' => $contentType,
+            ]
+        );
+    }
+
+    /**
+     * @param ServerRequest $request
+     * @param ContentTypeService $service
+     * @param string $contentTypeId
+     * @return ResponseInterface
+     * @throws Exception
+     */
+    public function contentTypeDelete(ServerRequest $request, ContentTypeService $service, string $contentTypeId): ResponseInterface
+    {
+        $request = $request->withParsedBody(['id' => $contentTypeId]);
+
+        $service->deleteContentType(
+            data: DestroyContentTypeValidator::make(
+                request: $request
+            )
+        );
 
         return $this->redirect(admin_url('content-type'));
     }

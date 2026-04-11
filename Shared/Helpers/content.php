@@ -5,35 +5,28 @@ declare(strict_types=1);
 namespace App\Shared\Helpers;
 
 use App\Application\Devflow;
+use App\Domain\Content\Command\DeleteContentCommand;
+use App\Domain\Content\Command\RemoveContentParentCommand;
 use App\Domain\Content\Command\UpdateContentStatusCommand;
 use App\Domain\Content\Model\Content;
 use App\Domain\Content\Command\CreateContentCommand;
-use App\Domain\Content\Command\DeleteContentCommand;
-use App\Domain\Content\Command\RemoveContentParentCommand;
 use App\Domain\Content\Command\UpdateContentCommand;
 use App\Domain\Content\ContentError;
 use App\Domain\Content\Query\FindContentByTypeAndIdQuery;
 use App\Domain\Content\Query\FindContentQuery;
 use App\Domain\Content\ValueObject\ContentId;
-use App\Domain\ContentType\ContentType;
+use App\Domain\ContentType\Model\ContentType;
 use App\Domain\User\ValueObject\UserId;
 use App\Infrastructure\Persistence\Cache\ContentCachePsr16;
+use App\Infrastructure\Services\Attribute\AttributeBag;
+use App\Infrastructure\Services\AttributesFactory;
 use App\Shared\Services\DateTime;
-use App\Shared\Services\MetaData;
 use App\Shared\Services\Sanitizer;
 use App\Shared\Services\Utils;
 use App\Shared\ValueObject\ArrayLiteral;
-use Codefy\CommandBus\Busses\SynchronousCommandBus;
-use Codefy\CommandBus\Containers\ContainerFactory;
-use Codefy\CommandBus\Exceptions\CommandCouldNotBeHandledException;
 use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
 use Codefy\CommandBus\Exceptions\UnresolvableCommandHandlerException;
-use Codefy\CommandBus\Odin;
-use Codefy\CommandBus\Resolvers\NativeCommandHandlerResolver;
 use Codefy\Framework\Factory\FileLoggerFactory;
-use Codefy\QueryBus\Busses\SynchronousQueryBus;
-use Codefy\QueryBus\Enquire;
-use Codefy\QueryBus\Resolvers\NativeQueryHandlerResolver;
 use Codefy\QueryBus\UnresolvableQueryHandlerException;
 use PDOException;
 use Psr\Container\ContainerExceptionInterface;
@@ -49,7 +42,8 @@ use Qubus\ValueObjects\StringLiteral\StringLiteral;
 use ReflectionException;
 
 use function array_map;
-use function Codefy\Framework\Helpers\config;
+use function Codefy\Framework\Helpers\ask;
+use function Codefy\Framework\Helpers\command;
 use function is_array;
 use function preg_split;
 use function Qubus\Security\Helpers\__observer;
@@ -71,23 +65,18 @@ use function str_replace;
  */
 function get_content(): array
 {
-    $resolver = new NativeQueryHandlerResolver(container: ContainerFactory::make(config: config('querybus.aliases')));
-    $enquirer = new Enquire(bus: new SynchronousQueryBus($resolver));
-
-    $query = new FindContentQuery();
-
-    return $enquirer->execute($query);
+    return ask(new FindContentQuery());
 }
 
 /**
  * Retrieve all content or content based on filters.
  *
- * @file App/Shared/Helpers/content.php
+ * @file core/Shared/Helpers/content.php
  * @param string|null $contentTypeSlug Content type slug.
  * @param int $limit Number of content to show.
  * @param int|null $offset The offset of the first row to be returned.
  * @param string $status Returned unescaped content based on status (all, draft, published, pending, archived)
- * @return array Array of published content or content by particular content type.
+ * @return Content[] Array of published content or content by particular content type.
  * @throws CommandPropertyNotFoundException
  * @throws ReflectionException
  * @throws UnresolvableQueryHandlerException
@@ -98,23 +87,20 @@ function get_all_content_with_filters(
     ?int $offset = null,
     string $status = 'all'
 ): array {
-    $resolver = new NativeQueryHandlerResolver(container: ContainerFactory::make(config: config('querybus.aliases')));
-    $enquirer = new Enquire(bus: new SynchronousQueryBus($resolver));
-
     $query = new FindContentQuery([
-        'contentTypeSlug' => $contentTypeSlug,
+        'type' => $contentTypeSlug,
         'limit' => $limit,
         'offset' => $offset,
         'status' => $status,
     ]);
 
-    return $enquirer->execute($query);
+    return ask($query);
 }
 
 /**
  * Retrieves content by content type slug and content id.
  *
- * @file App/Shared/Helpers/content.php
+ * @file core/Shared/Helpers/content.php
  * @param string $contentTypeSlug
  * @param string $contentId
  * @return false|object
@@ -125,17 +111,12 @@ function get_all_content_with_filters(
  */
 function get_content_by_type_and_id(string $contentTypeSlug, string $contentId): false|object
 {
-    $resolver = new NativeQueryHandlerResolver(
-        container: ContainerFactory::make(config: config(key: 'querybus.aliases'))
-    );
-    $enquirer = new Enquire(bus: new SynchronousQueryBus($resolver));
-
     $query = new FindContentByTypeAndIdQuery([
-        'contentType' => new StringLiteral($contentTypeSlug),
-        'contentId' => ContentId::fromString($contentId),
+        'type' => new StringLiteral($contentTypeSlug),
+        'id' => ContentId::fromString($contentId),
     ]);
 
-    $results = $enquirer->execute($query);
+    $results = ask($query);
 
     if (is_null__($results) || is_false__($results)) {
         return false;
@@ -147,7 +128,7 @@ function get_content_by_type_and_id(string $contentTypeSlug, string $contentId):
 /**
  * Retrieve content by a given field from the content table.
  *
- * @file App/Shared/Helpers/content.php
+ * @file core/Shared/Helpers/content.php
  * @param string $field The field to retrieve the content with
  *                      (id = content_id, type = content_content_type, slug = content_slug).
  * @param string $value A value for $field (content_id, content_content_type, content_slug).
@@ -174,7 +155,7 @@ function get_content_by(string $field, string $value): false|object
 /**
  * Retrieve content by the content id.
  *
- * @file App/Shared/Helpers/content.php
+ * @file core/Shared/Helpers/content.php
  * @param string $contentId
  * @return false|object
  * @throws ContainerExceptionInterface
@@ -191,10 +172,10 @@ function get_content_by_id(string $contentId): object|false
 /**
  * A function which retrieves content datetime.
  *
- * Purpose of this function is for the `content_datetime`
+ * Purpose of this function is for the `content.datetime`
  * filter.
  *
- * @file App/Shared/Helpers/content.php
+ * @file core/Shared/Helpers/content.php
  * @param string|null $content
  * @return string Content datetime.
  * @throws Exception
@@ -209,7 +190,7 @@ function get_content_datetime(?string $content = null): string
     /**
      * Filters the content's datetime.
      *
-     * @file App/Shared/Helpers/content.php
+     * @file core/Shared/Helpers/content.php
      * @param string $datetime  The content's datetime.
      * @param string $contentId Content id or content object.
      */
@@ -219,10 +200,10 @@ function get_content_datetime(?string $content = null): string
 /**
  * A function which retrieves content modified datetime.
  *
- * Purpose of this function is for the `content_modified`
+ * Purpose of this function is for the `content.modified`
  * filter.
  *
- * @file App/Shared/Helpers/content.php
+ * @file core/Shared/Helpers/content.php
  * @param string $contentId Content id.
  * @return string Content modified datetime or '' on failure.
  * @throws ContainerExceptionInterface
@@ -247,7 +228,7 @@ function get_content_modified(string $contentId): string
     /**
      * Filters the content date.
      *
-     * @file App/Shared/Helpers/content.php
+     * @file core/Shared/Helpers/content.php
      * @param string $modified The content's modified datetime.
      * @param string $format   Format to return datetime string.
      * @param string $contentId Content id or content object.
@@ -258,10 +239,10 @@ function get_content_modified(string $contentId): string
 /**
  * A function which retrieves a content body.
  *
- * Purpose of this function is for the `content_body`
+ * Purpose of this function is for the `content.body`
  * filter.
  *
- * @file App/Shared/Helpers/content.php
+ * @file core/Shared/Helpers/content.php
  * @param string $contentId Content id.
  * @return string Content body or '' on failure.
  * @throws ContainerExceptionInterface
@@ -283,7 +264,7 @@ function get_content_body(string $contentId): string
     /**
      * Filters the content date.
      *
-     * @file App/Shared/Helpers/content.php
+     * @file core/Shared/Helpers/content.php
      * @param string $body    The content's body.
      * @param string $content Content object.
      */
@@ -293,10 +274,10 @@ function get_content_body(string $contentId): string
 /**
  * A function which retrieves a content content_type name.
  *
- * Purpose of this function is for the `content_content_type_name`
+ * Purpose of this function is for the `content.contenttype.name`
  * filter.
  *
- * @file App/Shared/Helpers/content.php
+ * @file core/Shared/Helpers/content.php
  * @param string $contentId Content id.
  * @return string|false Content type name or '' on failure.
  * @throws CommandPropertyNotFoundException
@@ -317,12 +298,13 @@ function get_content_contenttype_name(string $contentId): false|string
         return '';
     }
 
+    /** @var ContentType $contentType */
     $contentType = get_content_type_by('slug', $content->type);
     $contentTypeName = $contentType->title;
     /**
      * Filters the content content_type name.
      *
-     * @file App/Shared/Helpers/content.php
+     * @file core/Shared/Helpers/content.php
      * @param string $contentTypeName The content's content_type name.
      * @param string $content         Content object.
      */
@@ -332,10 +314,10 @@ function get_content_contenttype_name(string $contentId): false|string
 /**
  * A function which retrieves a content content_type link.
  *
- * Purpose of this function is for the `content_content_type_link`
+ * Purpose of this function is for the `content.contenttype.link`
  * filter.
  *
- * @file App/Shared/Helpers/content.php
+ * @file core/Shared/Helpers/content.php
  * @param string $contentId Content id.
  * @return string Content Type link.
  * @throws ContainerExceptionInterface
@@ -350,7 +332,7 @@ function get_content_contenttype_link(string $contentId): string
     /**
      * Filters the content content_type link.
      *
-     * @file App/Shared/Helpers/content.php
+     * @file core/Shared/Helpers/content.php
      * @param string $link      The content's content_type link.
      * @param string $contentId Content id.
      */
@@ -360,10 +342,10 @@ function get_content_contenttype_link(string $contentId): string
 /**
  * A function which retrieves a content title.
  *
- * Purpose of this function is for the `content_title`
+ * Purpose of this function is for the `content.title`
  * filter.
  *
- * @file App/Shared/Helpers/content.php
+ * @file core/Shared/Helpers/content.php
  * @param string $contentId Content id.
  * @return string Content title or '' on failure.
  * @throws ContainerExceptionInterface
@@ -385,7 +367,7 @@ function get_content_title(string $contentId): string
     /**
      * Filters the content title.
      *
-     * @file App/Shared/Helpers/content.php
+     * @file core/Shared/Helpers/content.php
      * @param string $title The content's title.
      * @param string $content  Content object.
      */
@@ -395,10 +377,10 @@ function get_content_title(string $contentId): string
 /**
  * A function which retrieves a content slug.
  *
- * Purpose of this function is for the `content_slug`
+ * Purpose of this function is for the `content.slug`
  * filter.
  *
- * @file App/Shared/Helpers/content.php
+ * @file core/Shared/Helpers/content.php
  * @param string $contentId Content id.
  * @return string Content slug or ''.
  * @throws ContainerExceptionInterface
@@ -420,7 +402,7 @@ function get_content_slug(string $contentId): string
     /**
      * Filters the content's slug.
      *
-     * @file App/Shared/Helpers/content.php
+     * @file core/Shared/Helpers/content.php
      * @param string $slug The content's slug.
      * @param string $content   Content object.
      */
@@ -430,10 +412,10 @@ function get_content_slug(string $contentId): string
 /**
  * A function which retrieves a content's relative url.
  *
- * Purpose of this function is for the `{$contenttype}_relative_url`
+ * Purpose of this function is for the `{$contenttype}.relative.url`
  * filter.
  *
- * @file App/Shared/Helpers/content.php
+ * @file core/Shared/Helpers/content.php
  * @param string $contentId Content id.
  * @return string Content relative url or '' on failure.
  * @throws ContainerExceptionInterface
@@ -455,7 +437,7 @@ function get_content_relative_url(string $contentId): string
     /**
      * Filters the content's relative_url.
      *
-     * @file App/Shared/Helpers/content.php
+     * @file core/Shared/Helpers/content.php
      * @param string $relativeUrl The content's relative url.
      * @param string $content   The content object.
      */
@@ -469,10 +451,10 @@ function get_content_relative_url(string $contentId): string
 /**
  * A function which retrieves a content's permalink.
  *
- * Purpose of this function is for the `{$contenttype}_link`
+ * Purpose of this function is for the `{$contenttype}.link`
  * filter.
  *
- * @file App/Shared/Helpers/content.php
+ * @file core/Shared/Helpers/content.php
  * @param string $contentId Content id.
  * @return string Content permalink or '' on failure.
  * @throws ContainerExceptionInterface
@@ -494,7 +476,7 @@ function get_permalink(string $contentId): string
     /**
      * Filters the content's link based on its content_type.
      *
-     * @file App/Shared/Helpers/content.php
+     * @file core/Shared/Helpers/content.php
      * @param string $link The content's link.
      * @param object $content Content object.
      */
@@ -504,7 +486,7 @@ function get_permalink(string $contentId): string
 /**
  * Wrapper function for `get_all_content_with_filters`.
  *
- * @file App/Shared/Helpers/content.php
+ * @file core/Shared/Helpers/content.php
  * @param string|null $contentType The content type.
  * @param int $limit Number of content to show.
  * @param int|null $offset The offset of the first row to be returned.
@@ -512,7 +494,7 @@ function get_permalink(string $contentId): string
  * @return array Content.
  * @throws CommandPropertyNotFoundException
  * @throws ReflectionException
- * @throws UnresolvableQueryHandlerException|TypeException
+ * @throws UnresolvableQueryHandlerException
  */
 function get_all_content(
     ?string $contentType = null,
@@ -526,7 +508,7 @@ function get_all_content(
 /**
  * Adds label to content's status.
  *
- * @file App/Shared/Helpers/content.php
+ * @file core/Shared/Helpers/content.php
  * @param string $status
  * @return string Content status label.
  */
@@ -544,234 +526,84 @@ function content_status_label(string $status): string
 }
 
 /**
- * Retrieve content meta field for a content.
+ * Retrieve content attribute field for a content.
  *
- * @file App/Shared/Helpers/content.php
+ * @file core/Shared/Helpers/content.php
  * @param string $contentId Content ID.
- * @param string $key Optional. The meta key to retrieve.
- * @param bool $single Optional. Whether to return a single value. Default false.
- * @return mixed Will be an array if $single is false. Will be value of metadata
- *               field if $single is true.
+ * @param string $key Optional. The attribute key to retrieve.
+ * @param bool $default Optional. Default value.
+ * @return mixed
  * @throws ContainerExceptionInterface
- * @throws Exception
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  */
-function get_contentmeta(string $contentId, string $key = '', bool $single = false): mixed
+function get_content_attribute(string $contentId, string $key, mixed $default = null): mixed
 {
-    return MetaData::factory(dfdb()->prefix . 'contentmeta')->read('content', $contentId, $key, $single);
+    return AttributesFactory::content()->get(id: $contentId, key: $key, default: $default);
 }
 
 /**
- * Get content meta data by meta ID.
+ * Update content attribute field based on content ID.
  *
- * @file App/Shared/Helpers/content.php
- * @param string $mid
- * @return array|bool
- * @throws ContainerExceptionInterface
- * @throws Exception
- * @throws NotFoundExceptionInterface
- * @throws ReflectionException
- */
-function get_contentmeta_by_mid(string $mid): bool|array
-{
-    return MetaData::factory(dfdb()->prefix . 'contentmeta')->readByMid('content', $mid);
-}
-
-/**
- * Update content meta field based on content ID.
+ * If the attribute field for the content does not exist, it will be added.
  *
- * Use the $prevValue parameter to differentiate between meta fields with the
- * same key and content ID.
- *
- * If the meta field for the content does not exist, it will be added.
- *
- * @file App/Shared/Helpers/content.php
+ * @file core/Shared/Helpers/content.php
  * @param string $contentId Content ID.
- * @param string $metaKey Metadata key.
- * @param mixed $metaValue Metadata value. Must be serializable if non-scalar.
- * @param mixed $prevValue Optional. Previous value to check before removing.
- *                         Default empty.
- * @return bool|string Meta ID if the key didn't exist, true on successful update,
- *                     false on failure.
- * @throws CommandPropertyNotFoundException
+ * @param string $key Attribute key.
+ * @param mixed $value Attribute value.
+ * @return AttributeBag
  * @throws ContainerExceptionInterface
- * @throws Exception
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
- * @throws TypeException
- * @throws UnresolvableQueryHandlerException
  */
-function update_contentmeta(
+function update_content_attribute(
     string $contentId,
-    string $metaKey,
-    mixed $metaValue,
-    mixed $prevValue = ''
-): bool|string {
-    return MetaData::factory(dfdb()->prefix . 'contentmeta')
-            ->update('content', $contentId, $metaKey, $metaValue, $prevValue);
+    string $key,
+    mixed $value,
+): AttributeBag {
+    return AttributesFactory::content()->set(id: $contentId, key: $key, value: $value);
 }
 
 /**
- * Update content meta data by meta ID.
+ * Add attribute data field to a content.
  *
- * @file App/Shared/Helpers/content.php
- * @param string $mid
- * @param string $metaKey
- * @param string $metaValue
- * @return bool
- * @throws CommandPropertyNotFoundException
- * @throws ContainerExceptionInterface
- * @throws Exception
- * @throws NotFoundExceptionInterface
- * @throws ReflectionException
- * @throws TypeException
- * @throws UnresolvableQueryHandlerException
- */
-function update_contentmeta_by_mid(string $mid, string $metaKey, string $metaValue): bool
-{
-    $_metaKey = unslash($metaKey);
-    $_metaValue = unslash($metaValue);
-
-    return MetaData::factory(dfdb()->prefix . 'contentmeta')->updateByMid('content', $mid, $_metaValue, $_metaKey);
-}
-
-/**
- * Add meta data field to a content.
- *
- * @file App/Shared/Helpers/content.php
+ * @file core/Shared/Helpers/content.php
  * @param string $contentId Content ID.
- * @param string $metaKey Metadata name.
- * @param mixed $metaValue Metadata value. Must be serializable if non-scalar.
- * @param bool $unique Optional. Whether the same key should not be added.
- *                     Default false.
- * @return false|string Meta ID on success, false on failure.
- * @throws CommandPropertyNotFoundException
+ * @param string $key Attribute name.
+ * @param mixed $value Attribute value. Must be serializable if non-scalar.
+ * @return AttributeBag
  * @throws ContainerExceptionInterface
- * @throws Exception
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
- * @throws TypeException
- * @throws UnresolvableQueryHandlerException
  */
-function add_contentmeta(string $contentId, string $metaKey, mixed $metaValue, bool $unique = false): false|string
+function add_content_attribute(string $contentId, string $key, mixed $value): AttributeBag
 {
-    return MetaData::factory(dfdb()->prefix . 'contentmeta')
-            ->create('content', $contentId, $metaKey, $metaValue, $unique);
+    return AttributesFactory::content()->set(id: $contentId, key: $key, value: $value);
 }
 
 /**
- * Remove metadata matching criteria from a content.
+ * Remove attribute matching criteria from a content.
  *
- * You can match based on the key, or key and value. Removing based on key and
- * value, will keep from removing duplicate metadata with the same key. It also
- * allows removing all metadata matching key, if needed.
- *
- * @file App/Shared/Helpers/content.php
+ * @file core/Shared/Helpers/content.php
  * @param string $contentId Content ID.
- * @param string $metaKey Metadata name.
- * @param mixed $metaValue Optional. Metadata value. Must be serializable if
- *                         non-scalar. Default empty.
- * @return bool True on success, false on failure.
+ * @param string $key Attribute name.
+ * @return AttributeBag
  * @throws ContainerExceptionInterface
- * @throws Exception
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  */
-function delete_contentmeta(string $contentId, string $metaKey, mixed $metaValue = ''): bool
+function delete_content_attribute(string $contentId, string $key): AttributeBag
 {
-    return MetaData::factory(dfdb()->prefix . 'contentmeta')->delete('content', $contentId, $metaKey, $metaValue);
-}
-
-/**
- * Delete content meta data by meta ID.
- *
- * @file App/Shared/Helpers/content.php
- * @param string $mid
- * @return bool
- * @throws ContainerExceptionInterface
- * @throws Exception
- * @throws NotFoundExceptionInterface
- * @throws ReflectionException
- */
-function delete_contentmeta_by_mid(string $mid): bool
-{
-    return MetaData::factory(dfdb()->prefix . 'contentmeta')->deleteByMid('content', $mid);
-}
-
-/**
- * Retrieve content meta fields, based on content ID.
- *
- * The content meta fields are retrieved from the cache where possible,
- * so the function is optimized to be called more than once.
- *
- * @file App/Shared/Helpers/content.php
- * @param string $contentId The content's id.
- * @return mixed Content meta for the given content.
- * @throws ContainerExceptionInterface
- * @throws Exception
- * @throws NotFoundExceptionInterface
- * @throws ReflectionException
- */
-function get_content_custom(string $contentId): mixed
-{
-    return get_contentmeta($contentId);
-}
-
-/**
- * Retrieve meta field names for a content.
- *
- * If there are no meta fields, then nothing (null) will be returned.
- *
- * @file App/Shared/Helpers/content.php
- * @param string $contentId The content's id.
- * @return array Array of the keys, if retrieved.
- * @throws ContainerExceptionInterface
- * @throws Exception
- * @throws NotFoundExceptionInterface
- * @throws ReflectionException
- */
-function get_content_custom_keys(string $contentId): array
-{
-    $custom = get_content_custom($contentId);
-    if (!is_array($custom)) {
-        return [];
-    }
-    if ($keys = array_keys($custom)) {
-        return $keys;
-    }
-
-    return [];
-}
-
-/**
- * Retrieve values for a custom content field.
- *
- * The parameters must not be considered optional. All the content meta fields
- * will be retrieved and only the meta field key values returned.
- *
- * @file App/Shared/Helpers/content.php
- * @param string $contentId The content's id.
- * @param string $key Meta field key.
- * @return array Meta field values or [].
- * @throws ContainerExceptionInterface
- * @throws Exception
- * @throws NotFoundExceptionInterface
- * @throws ReflectionException
- */
-function get_content_custom_values(string $contentId, string $key): array
-{
-    $custom = get_content_custom($contentId);
-    return $custom[$key] ?? [];
+    return AttributesFactory::content()->remove(id: $contentId, key: $key);
 }
 
 /**
  * A function which retrieves a content author id.
  *
- * Purpose of this function is for the `content_author_id`
+ * Purpose of this function is for the `content.author.id`
  * filter.
  *
- * @file App/Shared/Helpers/content.php
+ * @file core/Shared/Helpers/content.php
  * @param string $contentId Content id.
  * @return false|string Content author id or false on failure.
  * @throws ContainerExceptionInterface
@@ -793,7 +625,7 @@ function get_content_author_id(string $contentId): false|string
     /**
      * Filters the content author id.
      *
-     * @file App/Shared/Helpers/content.php
+     * @file core/Shared/Helpers/content.php
      * @param string $authorId The content's author id.
      * @param object $content Content object.
      */
@@ -803,10 +635,10 @@ function get_content_author_id(string $contentId): false|string
 /**
  * A function which retrieves a content author.
  *
- * Purpose of this function is for the `content_author`
+ * Purpose of this function is for the `content.author`
  * filter.
  *
- * @file App/Shared/Helpers/content.php
+ * @file core/Shared/Helpers/content.php
  * @param string $contentId Optional Content id or content object.
  * @param bool $reverse If first name should appear first or not. Default is false.
  * @return string|false Content author or false on failure.
@@ -829,7 +661,7 @@ function get_content_author(string $contentId, bool $reverse = false): false|str
     /**
      * Filters the content author.
      *
-     * @file App/Shared/Helpers/content.php
+     * @file core/Shared/Helpers/content.php
      * @param string $author The content's author.
      * @param object   $content Content object.
      */
@@ -839,10 +671,10 @@ function get_content_author(string $contentId, bool $reverse = false): false|str
 /**
  * A function which retrieves a content status.
  *
- * Purpose of this function is for the `content_status`
+ * Purpose of this function is for the `content.status`
  * filter.
  *
- * @file App/Shared/Helpers/content.php
+ * @file core/Shared/Helpers/content.php
  * @param string $contentId Content id.
  * @return string|false Content status or false on failure.
  * @throws ContainerExceptionInterface
@@ -864,7 +696,7 @@ function get_content_status(string $contentId): false|string
     /**
      * Filters the content status.
      *
-     * @file App/Shared/Helpers/content.php
+     * @file core/Shared/Helpers/content.php
      * @param string $status The content's status.
      * @param Content   $content Content object.
      */
@@ -877,7 +709,7 @@ function get_content_status(string $contentId): false|string
  * Uses `call_user_func_array()` function to return appropriate content date function.
  * Dynamic part is the variable $type, which calls the date function you need.
  *
- * @file App/Shared/Helpers/content.php
+ * @file core/Shared/Helpers/content.php
  * @param string $type Type of date to return: created, published, modified. Default: published.
  * @param string $contentId Content id.
  * @return string Content date.
@@ -893,7 +725,7 @@ function get_content_date(string $type = 'published', string $contentId = ''): s
  * Uses `call_user_func_array()` function to return appropriate content time function.
  * Dynamic part is the variable $type, which calls the date function you need.
  *
- * @file App/Shared/Helpers/content.php
+ * @file core/Shared/Helpers/content.php
  * @param string $type Type of date to return: created, published, modified. Default: published.
  * @param string $contentId Content id.
  * @return string Content time.
@@ -906,7 +738,7 @@ function get_content_time(string $type = 'published', string $contentId = ''): s
 /**
  * Retrieves content created date.
  *
- * @file App/Shared/Helpers/content.php
+ * @file core/Shared/Helpers/content.php
  * @param string $contentId Content id.
  * @param string $format Format to use for retrieving the date the content was created.
  *                       Accepts 'G', 'U', or php date format value specified
@@ -951,7 +783,7 @@ function get_content_created_date(
     /**
      * Filters the content created date.
      *
-     * @file App/Shared/Helpers/content.php
+     * @file core/Shared/Helpers/content.php
      * @param string $theDate The content's formatted date.
      * @param bool   $format Format to use for retrieving the date the content was written.
      *                       Accepts 'G', 'U', or php date format. Default 'U'.
@@ -963,7 +795,7 @@ function get_content_created_date(
 /**
  * Retrieves content created date.
  *
- * @file App/Shared/Helpers/content.php
+ * @file core/Shared/Helpers/content.php
  * @param string $contentId Content id.
  * @param string $format Format to use for retrieving the date the content was created.
  *                       Accepts 'G', 'U', or php date format value specified
@@ -999,7 +831,7 @@ function the_created_date(string $contentId, string $format = ''): string
     /**
      * Filters the date the content was written.
      *
-     * @file App/Shared/Helpers/content.php
+     * @file core/Shared/Helpers/content.php
      * @param string    $theDate The formatted date.
      * @param string    $format  Format to use for retrieving the date the content was written.
      *                           Accepts 'G', 'U', or php date format value specified
@@ -1012,10 +844,10 @@ function the_created_date(string $contentId, string $format = ''): string
 /**
  * A function which retrieves content created time.
  *
- * Purpose of this function is for the `content_created_time`
+ * Purpose of this function is for the `content.created.time`
  * filter.
  *
- * @file App/Shared/Helpers/content.php
+ * @file core/Shared/Helpers/content.php
  * @param string $contentId Content id.
  * @param string $format Format to use for retrieving the time the content was created.
  *                        Accepts 'G', 'U', or php date format value specified
@@ -1060,7 +892,7 @@ function get_content_created_time(
     /**
      * Filters the content created time.
      *
-     * @file App/Shared/Helpers/content.php
+     * @file core/Shared/Helpers/content.php
      * @param string $theTime The content's formatted time.
      * @param bool   $format   Format to use for retrieving the time the content was written.
      *                         Accepts 'G', 'U', or php date format. Default 'U'.
@@ -1072,7 +904,7 @@ function get_content_created_time(
 /**
  * Retrieves content created time.
  *
- * @file App/Shared/Helpers/content.php
+ * @file core/Shared/Helpers/content.php
  * @param string $contentId Content id.
  * @param string $format Format to use for retrieving the time the content was written.
  *                       Accepts 'G', 'U', or php date format value specified
@@ -1112,7 +944,7 @@ function the_created_time(string $contentId, string $format = ''): string
     /**
      * Filters the time the content was written.
      *
-     * @file App/Shared/Helpers/content.php
+     * @file core/Shared/Helpers/content.php
      * @param string    $theTime The formatted time.
      * @param string    $format  Format to use for retrieving the time the content was written.
      *                           Accepts 'G', 'U', or php date format value specified
@@ -1125,7 +957,7 @@ function the_created_time(string $contentId, string $format = ''): string
 /**
  * A function which retrieves content published date.
  *
- * @file App/Shared/Helpers/content.php
+ * @file core/Shared/Helpers/content.php
  * @param string $contentId Content id.
  * @param string $format Format to use for retrieving the date the content was published.
  *                        Accepts 'G', 'U', or php date format value specified
@@ -1170,7 +1002,7 @@ function get_content_published_date(
     /**
      * Filters the content published date.
      *
-     * @file App/Shared/Helpers/content.php
+     * @file core/Shared/Helpers/content.php
      * @param string $theDate The content's formatted date.
      * @param bool $format Format to use for retrieving the date the content was published.
      *                     Accepts 'G', 'U', or php date format. Default 'U'.
@@ -1182,7 +1014,7 @@ function get_content_published_date(
 /**
  * Retrieves content published date.
  *
- * @file App/Shared/Helpers/content.php
+ * @file core/Shared/Helpers/content.php
  * @param string $contentId Content id.
  * @param string $format Format to use for retrieving the date the content was published.
  *                       Accepts 'G', 'U', or php date format value specified
@@ -1222,7 +1054,7 @@ function the_published_date(string $contentId, string $format = ''): string
     /**
      * Filters the time the content was written.
      *
-     * @file App/Shared/Helpers/content.php
+     * @file core/Shared/Helpers/content.php
      * @param string    $theDate The formatted date.
      * @param string    $format   Format to use for retrieving the date the content was published.
      *                            Accepts 'G', 'U', or php date format value specified
@@ -1235,7 +1067,7 @@ function the_published_date(string $contentId, string $format = ''): string
 /**
  * A function which retrieves content published time.
  *
- * @file App/Shared/Helpers/content.php
+ * @file core/Shared/Helpers/content.php
  * @param string $contentId Content id.
  * @param string $format Format to use for retrieving the time the content was published.
  *                        Accepts 'G', 'U', or php date format value specified
@@ -1280,7 +1112,7 @@ function get_content_published_time(
     /**
      * Filters the content published time.
      *
-     * @file App/Shared/Helpers/content.php
+     * @file core/Shared/Helpers/content.php
      * @param string $theTime The content's formatted time.
      * @param bool   $format   Format to use for retrieving the time the content was written.
      *                         Accepts 'G', 'U', or php date format. Default 'U'.
@@ -1292,7 +1124,7 @@ function get_content_published_time(
 /**
  * Retrieves content published time.
  *
- * @file App/Shared/Helpers/content.php
+ * @file core/Shared/Helpers/content.php
  * @param string $contentId Content id.
  * @param string $format Format to use for retrieving the time the content was published.
  *                       Accepts 'G', 'U', or php date format value specified
@@ -1331,7 +1163,7 @@ function the_published_time(string $contentId, string $format = ''): string
     /**
      * Filters the time the content was published.
      *
-     * @file App/Shared/Helpers/content.php
+     * @file core/Shared/Helpers/content.php
      * @param string    $theTime  The formatted time.
      * @param string    $format   Format to use for retrieving the time the content was published.
      *                            Accepts 'G', 'U', or php date format value specified
@@ -1344,7 +1176,7 @@ function the_published_time(string $contentId, string $format = ''): string
 /**
  * A function which retrieves content modified date.
  *
- * @file App/Shared/Helpers/content.php
+ * @file core/Shared/Helpers/content.php
  * @param string $contentId Content id.
  * @param string $format Format to use for retrieving the date the content was modified.
  *                        Accepts 'G', 'U', or php date format value specified
@@ -1389,7 +1221,7 @@ function get_content_modified_date(
     /**
      * Filters the content modified date.
      *
-     * @file App/Shared/Helpers/content.php
+     * @file core/Shared/Helpers/content.php
      * @param string $theDate The content's formatted date.
      * @param bool   $format  Format to use for retrieving the date the content was published.
      *                        Accepts 'G', 'U', or php date format. Default 'U'.
@@ -1401,7 +1233,7 @@ function get_content_modified_date(
 /**
  * Retrieves content published date.
  *
- * @file App/Shared/Helpers/content.php
+ * @file core/Shared/Helpers/content.php
  * @param string $contentId Content id.
  * @param string $format Format to use for retrieving the date the content was published.
  *                       Accepts 'G', 'U', or php date format value specified
@@ -1441,7 +1273,7 @@ function the_modified_date(string $contentId, string $format = ''): string
     /**
      * Filters the date the content was modified.
      *
-     * @file App/Shared/Helpers/content.php
+     * @file core/Shared/Helpers/content.php
      * @param string    $theDate The formatted date.
      * @param string    $format  Format to use for retrieving the date the content was modified.
      *                           Accepts 'G', 'U', or php date format value specified
@@ -1454,7 +1286,7 @@ function the_modified_date(string $contentId, string $format = ''): string
 /**
  * A function which retrieves content modified time.
  *
- * @file App/Shared/Helpers/content.php
+ * @file core/Shared/Helpers/content.php
  * @param string $contentId Content id.
  * @param string $format Format to use for retrieving the time the content was modified.
  *                       Accepts 'G', 'U', or php date format value specified
@@ -1499,7 +1331,7 @@ function get_content_modified_time(
     /**
      * Filters the content modified time.
      *
-     * @file App/Shared/Helpers/content.php
+     * @file core/Shared/Helpers/content.php
      * @param string $theTime The content's formatted time.
      * @param bool   $format   Format to use for retrieving the time the content was modified.
      *                         Accepts 'G', 'U', or php date format. Default 'U'.
@@ -1511,7 +1343,7 @@ function get_content_modified_time(
 /**
  * Retrieves content modified time.
  *
- * @file App/Shared/Helpers/content.php
+ * @file core/Shared/Helpers/content.php
  * @param string $contentId Content id.
  * @param string $format Format to use for retrieving the time the content was modified.
  *                       Accepts 'G', 'U', or php date format value specified
@@ -1551,7 +1383,7 @@ function the_modified_time(string $contentId, string $format = ''): string
     /**
      * Filters the time the content was modified.
      *
-     * @file App/Shared/Helpers/content.php
+     * @file core/Shared/Helpers/content.php
      * @param string    $theTime The formatted time.
      * @param string    $format  Format to use for retrieving the time the content was modified.
      *                           Accepts 'G', 'U', or php date format value specified
@@ -1564,18 +1396,20 @@ function the_modified_time(string $contentId, string $format = ''): string
 /**
  * A function which retrieves content content_type id.
  *
- * Purpose of this function is for the `content_content_type_id`
+ * Purpose of this function is for the `content.content.type.id`
  * filter.
  *
- * @file App/Shared/Helpers/content.php
+ * @file core/Shared/Helpers/content.php
  * @param string $contentId Content id.
  * @return string Content Type id or '' on failure.
+ * @throws CommandPropertyNotFoundException
  * @throws ContainerExceptionInterface
  * @throws Exception
  * @throws InvalidArgumentException
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  * @throws TypeException
+ * @throws UnresolvableQueryHandlerException
  */
 function get_content_content_type_id(string $contentId): string
 {
@@ -1586,24 +1420,25 @@ function get_content_content_type_id(string $contentId): string
         return '';
     }
 
-    $contentTypeId = ContentType::fromNative($content->type)->contentTypeId()->toNative();
+    /** @var ContentType $contentType */
+    $contentType = get_content_type_by('slug', $content->type);
     /**
      * Filters the content content_type id.
      *
-     * @file App/Shared/Helpers/content.php
+     * @file core/Shared/Helpers/content.php
      * @param string $contentTypeId The content's content_type id.
      * @param string $contentId  The content ID.
      */
-    return __observer()->filter->applyFilter('content.content.type.id', $contentTypeId, $contentId);
+    return __observer()->filter->applyFilter('content.content.type.id', $contentType->id, $contentId);
 }
 
 /**
  * A function which retrieves content content_type.
  *
- * Purpose of this function is for the `content_content_type`
+ * Purpose of this function is for the `content.content.type`
  * filter.
  *
- * @file App/Shared/Helpers/content.php
+ * @file core/Shared/Helpers/content.php
  * @param string $contentId Content id.
  * @return string Content Type or '' on failure
  * @throws ContainerExceptionInterface
@@ -1625,7 +1460,7 @@ function get_content_contenttype(string $contentId): string
     /**
      * Filters the content content_type.
      *
-     * @file App/Shared/Helpers/content.php
+     * @file core/Shared/Helpers/content.php
      * @param string   $contenttype  The content's content_type.
      * @param string   $contentId    The content ID.
      */
@@ -1635,10 +1470,10 @@ function get_content_contenttype(string $contentId): string
 /**
  * A function which retrieves a content's parent id.
  *
- * Purpose of this function is for the `content_parent_id`
+ * Purpose of this function is for the `content.parent.id`
  * filter.
  *
- * @file App/Shared/Helpers/content.php
+ * @file core/Shared/Helpers/content.php
  * @param string $contentId Content id.
  * @return string Content parent id or '' on failure.
  * @throws ContainerExceptionInterface
@@ -1664,7 +1499,7 @@ function get_content_parent_id(string $contentId): string
     /**
      * Filters the content parent id.
      *
-     * @file App/Shared/Helpers/content.php
+     * @file core/Shared/Helpers/content.php
      * @param string $parentId  The content's parent id.
      * @param string $contentId The content ID.
      */
@@ -1674,10 +1509,10 @@ function get_content_parent_id(string $contentId): string
 /**
  * A function which retrieves content parent.
  *
- * Purpose of this function is for the `content_parent`
+ * Purpose of this function is for the `content.parent`
  * filter.
  *
- * @file App/Shared/Helpers/content.php
+ * @file core/Shared/Helpers/content.php
  * @param string $contentId Content id.
  * @return string Content parent or '' on failure.
  * @throws ContainerExceptionInterface
@@ -1699,7 +1534,7 @@ function get_content_parent(string $contentId): string
     /**
      * Filters the content parent.
      *
-     * @file App/Shared/Helpers/content.php
+     * @file core/Shared/Helpers/content.php
      * @param string $parent    The content's parent.
      * @param string $contentId The content ID.
      */
@@ -1709,10 +1544,10 @@ function get_content_parent(string $contentId): string
 /**
  * A function which retrieves content sidebar.
  *
- * Purpose of this function is for the `content_sidebar`
+ * Purpose of this function is for the `content.sidebar`
  * filter.
  *
- * @file App/Shared/Helpers/content.php
+ * @file core/Shared/Helpers/content.php
  * @param string $contentId Content id.
  * @return int Content sidebar integer or 0 on failure.
  * @throws ContainerExceptionInterface
@@ -1734,7 +1569,7 @@ function get_content_sidebar(string $contentId): int
     /**
      * Filters the content sidebar.
      *
-     * @file App/Shared/Helpers/content.php
+     * @file core/Shared/Helpers/content.php
      * @param int    $sidebar   The content's sidebar option.
      * @param string $contentId The content ID.
      */
@@ -1744,10 +1579,10 @@ function get_content_sidebar(string $contentId): int
 /**
  * A function which retrieves content show in menu.
  *
- * Purpose of this function is for the `content_show_in_menu`
+ * Purpose of this function is for the `content.show.in.menu`
  * filter.
  *
- * @file App/Shared/Helpers/content.php
+ * @file core/Shared/Helpers/content.php
  * @param string $contentId Content id.
  * @return int Content show in menu integer or 0 on failure.
  * @throws ContainerExceptionInterface
@@ -1769,7 +1604,7 @@ function get_content_show_in_menu(string $contentId): int
     /**
      * Filters the content show in menu.
      *
-     * @file App/Shared/Helpers/content.php
+     * @file core/Shared/Helpers/content.php
      * @param int    $menu      The content's show in menu option.
      * @param string $contentId The content ID.
      */
@@ -1779,10 +1614,10 @@ function get_content_show_in_menu(string $contentId): int
 /**
  * A function which retrieves content show in search.
  *
- * Purpose of this function is for the `content_show_in_search`
+ * Purpose of this function is for the `content.show.in.search`
  * filter.
  *
- * @file App/Shared/Helpers/content.php
+ * @file core/Shared/Helpers/content.php
  * @param string $contentId Content id.
  * @return int Content show in search integer or 0 on failure.
  * @throws ContainerExceptionInterface
@@ -1803,7 +1638,7 @@ function get_content_show_in_search(string $contentId): int
     /**
      * Filters the content show in search.
      *
-     * @file App/Shared/Helpers/content.php
+     * @file core/Shared/Helpers/content.php
      * @param int    $search    The content's show in search option.
      * @param string $contentId The content ID.
      */
@@ -1813,14 +1648,17 @@ function get_content_show_in_search(string $contentId): int
 /**
  * Creates a unique content slug.
  *
- * @file App/Shared/Helpers/content.php
+ * @file core/Shared/Helpers/content.php
  * @param string $originalSlug Original slug of content.
  * @param string $originalTitle Original title of content.
  * @param string|null $contentId Unique content id or null.
  * @param string|null $contentType Content type of content.
  * @return string Unique content slug.
+ * @throws ContainerExceptionInterface
  * @throws Exception
+ * @throws NotFoundExceptionInterface
  * @throws ReflectionException
+ * @throws TypeException
  */
 function cms_unique_content_slug(
     string $originalSlug,
@@ -1838,7 +1676,7 @@ function cms_unique_content_slug(
     /**
      * Filters the unique content slug before returned.
      *
-     * @file App/Shared/Helpers/content.php
+     * @file core/Shared/Helpers/content.php
      * @param string    $contentSlug   Unique content slug.
      * @param string    $originalSlug  The content's original slug.
      * @param string    $originalTitle The content's original title before slugified.
@@ -1859,10 +1697,11 @@ function cms_unique_content_slug(
  * Insert or update a content.
  *
  * All the `$contentdata` array fields have filters associated with the values. The filters
- * have the prefix 'pre_' followed by the field name. An example using 'content_status' would have
- * the filter called, 'pre_content_status' that can be hooked into.
+ * have the prefix 'pre.' followed by the field name. An example using 'content_status' would have
+ * the filter called, 'pre.content.status' that can be hooked into.
  *
- * @file App/Shared/Helpers/content.php
+ * @file core/Shared/Helpers/content.php
+ * @internal Should only be used for rest API's.
  * @param array|ServerRequestInterface|Content $contentdata An array of data that is used for insert or update.
  *
  *      @type string $contentTitle The content's title.
@@ -1881,14 +1720,12 @@ function cms_unique_content_slug(
  *                                     was published. Defaults to Y-m-d h:i A.
  * @return Error|string|null The newly created content's content_id or throws an error or returns null
  *                     if the content could not be created or updated.
- * @throws CommandCouldNotBeHandledException
  * @throws CommandPropertyNotFoundException
  * @throws Exception
  * @throws InvalidArgumentException
  * @throws ReflectionException
  * @throws TypeException
  * @throws UnresolvableCommandHandlerException
- * @throws UnresolvableQueryHandlerException
  * @throws ContainerExceptionInterface
  * @throws NotFoundExceptionInterface
  */
@@ -2242,12 +2079,12 @@ function cms_insert_content(array|ServerRequestInterface|Content $contentdata): 
     $contentData = unslash($contentDataArray);
 
     // Content custom fields.
-    $metaFields = $contentdata['content_field'] ?? [];
+    $attributeFields = $contentdata['content_field'] ?? [];
 
     /**
      * Filters content data before the record is created or updated.
      *
-     * It only includes data in the content table, not any content metadata.
+     * It only includes data in the content table, not any content attribute.
      *
      * @param array    $contentData
      *     Values and keys for the user.
@@ -2286,11 +2123,6 @@ function cms_insert_content(array|ServerRequestInterface|Content $contentdata): 
         $update ? $contentBefore->id : $contentId,
     );
 
-    $resolver = new NativeCommandHandlerResolver(
-        container: ContainerFactory::make(config: config(key: 'commandbus.container'))
-    );
-    $odin = new Odin(bus: new SynchronousCommandBus($resolver));
-
     if (!$update) {
         /**
          * Fires immediately before a content is inserted into the content document.
@@ -2301,26 +2133,26 @@ function cms_insert_content(array|ServerRequestInterface|Content $contentdata): 
 
         try {
             $command = new CreateContentCommand([
-                'contentId' => ContentId::fromString($contentId->toNative()),
-                'contentTitle' => new StringLiteral($contentTitle),
-                'contentSlug' => new StringLiteral($contentSlug),
-                'contentBody' => new StringLiteral($contentBody ?? ''),
-                'contentAuthor' => UserId::fromString($contentAuthor),
-                'contentTypeSlug' => new StringLiteral($contentType),
-                'contentParent' => 'NULL' !== $contentParent ? ContentId::fromString($contentParent) : null,
-                'contentSidebar' => new IntegerNumber($contentSidebar),
-                'contentShowInMenu' => new IntegerNumber($contentShowInMenu),
-                'contentShowInSearch' => new IntegerNumber($contentShowInSearch),
-                'contentFeaturedImage' => new StringLiteral($contentFeaturedImage),
-                'meta' => new ArrayLiteral($metaFields),
-                'contentStatus' => new StringLiteral($contentStatus),
-                'contentCreated' => $contentCreated,
-                'contentCreatedGmt' => $contentCreatedGmt,
-                'contentPublished' => $contentPublished,
-                'contentPublishedGmt' => $contentPublishedGmt,
+                'id' => ContentId::fromString($contentId->toNative()),
+                'title' => new StringLiteral($contentTitle),
+                'slug' => new StringLiteral($contentSlug),
+                'body' => new StringLiteral($contentBody ?? ''),
+                'attribute' => new ArrayLiteral($attributeFields),
+                'author' => UserId::fromString($contentAuthor),
+                'type' => new StringLiteral($contentType),
+                'parent' => 'NULL' !== $contentParent ? ContentId::fromString($contentParent) : null,
+                'sidebar' => new IntegerNumber($contentSidebar),
+                'showInMenu' => new IntegerNumber($contentShowInMenu),
+                'showInSearch' => new IntegerNumber($contentShowInSearch),
+                'featuredImage' => new StringLiteral($contentFeaturedImage),
+                'status' => new StringLiteral($contentStatus),
+                'created' => $contentCreated,
+                'createdGmt' => $contentCreatedGmt,
+                'published' => $contentPublished,
+                'publishedGmt' => $contentPublishedGmt,
             ]);
 
-            $odin->execute($command);
+            command($command);
         } catch (PDOException $ex) {
             FileLoggerFactory::getLogger()->error(
                 sprintf(
@@ -2350,26 +2182,26 @@ function cms_insert_content(array|ServerRequestInterface|Content $contentdata): 
 
         try {
             $command = new UpdateContentCommand([
-                'contentId' => ContentId::fromString($contentId->toNative()),
-                'contentTitle' => new StringLiteral($contentTitle),
-                'contentSlug' => new StringLiteral($contentSlug),
-                'contentBody' => new StringLiteral($contentBody),
-                'contentAuthor' => UserId::fromString($contentAuthor),
-                'contentTypeSlug' => new StringLiteral($contentType),
-                'contentParent' => 'NULL' !== $contentParent ? ContentId::fromString($contentParent) : null,
-                'contentSidebar' => new IntegerNumber($contentSidebar),
-                'contentShowInMenu' => new IntegerNumber($contentShowInMenu),
-                'contentShowInSearch' => new IntegerNumber($contentShowInSearch),
-                'contentFeaturedImage' => new StringLiteral($contentFeaturedImage),
-                'meta' => new ArrayLiteral($metaFields),
-                'contentStatus' => new StringLiteral($contentStatus),
-                'contentPublished' => $contentPublished,
-                'contentPublishedGmt' => $contentPublishedGmt,
-                'contentModified' => $contentModified,
-                'contentModifiedGmt' => $contentModifiedGmt,
+                'id' => ContentId::fromString($contentId->toNative()),
+                'title' => new StringLiteral($contentTitle),
+                'slug' => new StringLiteral($contentSlug),
+                'body' => new StringLiteral($contentBody),
+                'attribute' => new ArrayLiteral($attributeFields),
+                'author' => UserId::fromString($contentAuthor),
+                'type' => new StringLiteral($contentType),
+                'parent' => 'NULL' !== $contentParent ? ContentId::fromString($contentParent) : null,
+                'sidebar' => new IntegerNumber($contentSidebar),
+                'showInMenu' => new IntegerNumber($contentShowInMenu),
+                'showInSearch' => new IntegerNumber($contentShowInSearch),
+                'featuredImage' => new StringLiteral($contentFeaturedImage),
+                'status' => new StringLiteral($contentStatus),
+                'published' => $contentPublished,
+                'publishedGmt' => $contentPublishedGmt,
+                'modified' => $contentModified,
+                'modifiedGmt' => $contentModifiedGmt,
             ]);
 
-            $odin->execute($command);
+            command($command);
         } catch (PDOException $ex) {
             FileLoggerFactory::getLogger()->error(
                 sprintf(
@@ -2386,12 +2218,6 @@ function cms_insert_content(array|ServerRequestInterface|Content $contentdata): 
                 string: 'Could not update content within the content table.',
                 domain: 'devflow'
             ));
-        }
-    }
-
-    if (!empty($metaFields)) {
-        foreach ($metaFields as $key => $value) {
-            update_contentmeta($contentId->toNative(), $key, $value);
         }
     }
 
@@ -2473,10 +2299,10 @@ function cms_insert_content(array|ServerRequestInterface|Content $contentdata): 
  *
  * See {@see cms_insert_content()} For what fields can be set in $contentdata.
  *
- * @file App/Shared/Helpers/content.php
+ * @file core/Shared/Helpers/content.php
+ * @internal Should only be used for rest API's.
  * @param array|ServerRequestInterface|Content $contentdata An array of content data or a content object.
  * @return string|Error The updated content's id or return Error if content could not be updated.
- * @throws CommandCouldNotBeHandledException
  * @throws CommandPropertyNotFoundException
  * @throws ContainerExceptionInterface
  * @throws Exception
@@ -2485,7 +2311,6 @@ function cms_insert_content(array|ServerRequestInterface|Content $contentdata): 
  * @throws ReflectionException
  * @throws TypeException
  * @throws UnresolvableCommandHandlerException
- * @throws UnresolvableQueryHandlerException
  */
 function cms_update_content(array|ServerRequestInterface|Content $contentdata): string|Error
 {
@@ -2512,10 +2337,10 @@ function cms_update_content(array|ServerRequestInterface|Content $contentdata): 
 /**
  * Deletes content from the content document.
  *
- * @file App/Shared/Helpers/content.php
+ * @file core/Shared/Helpers/content.php
+ * @internal Should only be used for rest API's.
  * @param string $contentId The id of the content to delete.
  * @return bool|Content Content on success or false on failure.
- * @throws CommandCouldNotBeHandledException
  * @throws ContainerExceptionInterface
  * @throws Exception
  * @throws InvalidArgumentException
@@ -2534,11 +2359,6 @@ function cms_delete_content(string $contentId): Content|bool
         return false;
     }
 
-    $resolver = new NativeCommandHandlerResolver(
-        container: ContainerFactory::make(config: config(key: 'commandbus.container'))
-    );
-    $odin = new Odin(bus: new SynchronousCommandBus($resolver));
-
     /**
      * Action hook fires before a content is deleted.
      *
@@ -2547,15 +2367,17 @@ function cms_delete_content(string $contentId): Content|bool
     __observer()->action->doAction('before_delete_content', $contentId);
 
     if (is_content_parent($contentId)) {
-        foreach (is_content_parent($contentId) as $parent) {
+        foreach (is_content_parent($contentId) as $children) {
             try {
-                $command = new RemoveContentParentCommand([
-                    'contentId' => ContentId::fromString($contentId),
-                    'contentParent' => ContentId::fromString($parent['content_id']),
-                ]);
+                command(
+                    new RemoveContentParentCommand([
+                        'id' => ContentId::fromString($contentId),
+                        'parent' => ContentId::fromString($children['content_id']),
+                    ])
+                );
 
-                $odin->execute($command);
-            } catch (PDOException $ex) {
+                ContentCachePsr16::clean((array) $children);
+            } catch (PDOException|\InvalidArgumentException $ex) {
                 FileLoggerFactory::getLogger()->error(
                     sprintf(
                         'SQLSTATE[%s]: %s',
@@ -2571,13 +2393,6 @@ function cms_delete_content(string $contentId): Content|bool
         }
     }
 
-    $contentMetaKeys = get_contentmeta($contentId);
-    if ($contentMetaKeys) {
-        foreach ($contentMetaKeys as $metaKey => $metaValue) {
-            delete_contentmeta($contentId, $metaKey, $metaValue);
-        }
-    }
-
     /**
      * Action hook fires immediately before a content is deleted from the
      * content document.
@@ -2587,12 +2402,14 @@ function cms_delete_content(string $contentId): Content|bool
     __observer()->action->doAction('delete_content', $contentId);
 
     try {
-        $command = new DeleteContentCommand([
-            'contentId' => ContentId::fromString($content->id),
-        ]);
+        command(
+            new DeleteContentCommand([
+                'id' => ContentId::fromString($content->id),
+            ])
+        );
 
-        $odin->execute($command);
-    } catch (PDOException $ex) {
+        ContentCachePsr16::clean($content->toArray());
+    } catch (PDOException|\InvalidArgumentException $ex) {
         FileLoggerFactory::getLogger()->error(
             sprintf(
                 'SQLSTATE[%s]: %s',
@@ -2606,24 +2423,11 @@ function cms_delete_content(string $contentId): Content|bool
     }
 
     /**
-     * Action hook fires immediately after a content is deleted from the content document.
+     * Action hook fires immediately after a content is deleted from the database.
      *
      * @param string $contentId Content id.
      */
     __observer()->action->doAction('deleted_content', $contentId);
-
-    if (is_content_parent($contentId)) {
-        foreach (is_content_parent($contentId) as $children) {
-            ContentCachePsr16::clean((array) $children);
-        }
-    }
-
-    /**
-     * Action hook fires after a content is deleted.
-     *
-     * @param string $contentId Content id.
-     */
-    __observer()->action->doAction('after_delete_content', $contentId);
 
     return $content;
 }
@@ -2631,10 +2435,12 @@ function cms_delete_content(string $contentId): Content|bool
 /**
  * Returns the number of content rows within a given content type.
  *
- * @file App/Shared/Helpers/content.php
+ * @file core/Shared/Helpers/content.php
  * @param string $slug Content type slug.
  * @return int Number of content rows based on content type.
+ * @throws ContainerExceptionInterface
  * @throws Exception
+ * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  */
 function number_content_by_type(string $slug): int
@@ -2665,25 +2471,18 @@ function number_content_by_type(string $slug): int
 /**
  * Retrieves all posts
  *
- * @file App/Shared/Helpers/content.php
+ * @file core/Shared/Helpers/content.php
  * @access private
  * @param string|null $parentId Content parent id
  * @param string $contentId Content id.
  * @return void
  * @throws ReflectionException
- * @throws UnresolvableQueryHandlerException|TypeException
+ * @throws UnresolvableQueryHandlerException
  */
 function get_content_parent_dropdown_list(?string $parentId = null, string $contentId = ''): void
 {
-    $resolver = new NativeQueryHandlerResolver(
-        container: ContainerFactory::make(config: config(key: 'querybus.aliases'))
-    );
-    $enquirer = new Enquire(bus: new SynchronousQueryBus($resolver));
-
     try {
-        $query = new FindContentQuery();
-
-        $content = $enquirer->execute($query);
+        $content = ask(new FindContentQuery());
 
         foreach ($content as $value) {
             if ($contentId !== $value['id']) {
@@ -2709,7 +2508,7 @@ function get_content_parent_dropdown_list(?string $parentId = null, string $cont
 /**
  * Retrieves an array of css class names.
  *
- * @file App/Shared/Helpers/content.php
+ * @file core/Shared/Helpers/content.php
  * @param string $contentId Content id of current content.
  * @param string|array $class One or more css class names to add to html element list.
  * @return array An array of css class names.
@@ -2758,9 +2557,9 @@ function get_content_class(string $contentId, string|array $class = ''): array
 /**
  * Displays the permalink for the current content.
  *
- * Uses `the_permalink` filter.
+ * Uses `the.permalink` filter.
  *
- * @file App/Shared/Helpers/content.php
+ * @file core/Shared/Helpers/content.php
  * @param string|Content|ContentId $content Content object or content id.
  * @return string Content permalink.
  * @throws ContainerExceptionInterface
@@ -2782,7 +2581,7 @@ function the_permalink(string|Content|ContentId $content): string
     /**
      * Filters the display of the permalink for the current content.
      *
-     * @file App/Shared/Helpers/content.php
+     * @file core/Shared/Helpers/content.php
      * @param string         $permalink The permalink for the current content.
      * @param string|Content $content   Content object or id.
      */
@@ -2792,9 +2591,9 @@ function the_permalink(string|Content|ContentId $content): string
 /**
  * The cms content filter.
  *
- * Uses `the_body` filter.
+ * Uses `the.body` filter.
  *
- * @file App/Shared/Helpers/content.php
+ * @file core/Shared/Helpers/content.php
  * @param string|Content|ContentId $content Content object or content id.
  * @return string Content body.
  * @throws ContainerExceptionInterface
@@ -2820,20 +2619,20 @@ function the_body(string|Content|ContentId $content): string
 }
 
 /**
- * Retrieves and displays content meta value.
+ * Retrieves and displays content attribute value.
  *
- * Uses `the_meta` filter.
+ * Uses `the.attribute` filter.
  *
- * @file App/Shared/Helpers/content.php
+ * @file core/Shared/Helpers/content.php
  * @param string|Content|ContentId $content Content object or id.
- * @param string $key Content meta key.
- * @return string Content meta value.
+ * @param string $key Content attribute key.
+ * @return string Content attribute value.
  * @throws ContainerExceptionInterface
  * @throws Exception
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  */
-function the_meta(string|Content|ContentId $content, string $key): string
+function the_attribute(string|Content|ContentId $content, string $key): string
 {
     if ($content instanceof Content) {
         $content = $content->id;
@@ -2843,25 +2642,25 @@ function the_meta(string|Content|ContentId $content, string $key): string
         $content = $content->toNative();
     }
 
-    $theMeta = get_contentmeta(contentId: $content, key: $key, single: true);
+    $theAttribute = get_content_attribute(contentId: $content, key: $key);
     /**
-     * Filters content meta.
+     * Filters content attribute.
      *
-     * @file App/Shared/Helpers/content.php
-     * @param mixed  $theMeta Content meta value.
-     * @param string $key     Content meta key.
+     * @file core/Shared/Helpers/content.php
+     * @param mixed  $theAttribute Content attribute value.
+     * @param string $key          Content attribute key.
      */
-    return __observer()->filter->applyFilter('the.meta', $theMeta, $key);
+    return __observer()->filter->applyFilter('the.attribute', $theAttribute, $key);
 }
 
 /**
  * Retrieves and displays content title.
  *
- * Uses `the_title` filter.
+ * Uses `the.title` filter.
  *
- * @file App/Shared/Helpers/content.php
+ * @file core/Shared/Helpers/content.php
  * @param string|Content|ContentId $content Content object or id.
- * @return string Content meta value.
+ * @return string Content attribute value.
  * @throws ContainerExceptionInterface
  * @throws Exception
  * @throws InvalidArgumentException
@@ -2880,9 +2679,9 @@ function the_title(string|Content|ContentId $content): string
 
     $theTitle = get_content_title($content);
     /**
-     * Filters content meta.
+     * Filters content attribute.
      *
-     * @file App/Shared/Helpers/content.php
+     * @file core/Shared/Helpers/content.php
      * @param mixed  $theTitle Content title.
      */
     return __observer()->filter->applyFilter('the.title', $theTitle);
@@ -2901,11 +2700,6 @@ function the_title(string|Content|ContentId $content): string
  */
 function publish_scheduled_content(): void
 {
-    $resolver = new NativeCommandHandlerResolver(
-        container: ContainerFactory::make(config: config(key: 'commandbus.container'))
-    );
-    $odin = new Odin(bus: new SynchronousCommandBus($resolver));
-
     $contents = get_all_content();
     $now = new DateTime('now', get_user_timezone())->getDateTime();
 
@@ -2916,13 +2710,13 @@ function publish_scheduled_content(): void
                 ($now->format('Y-m-d H:i:s') >= new DateTime($content['published'], get_user_timezone())->format())
             ) {
                 $command = new UpdateContentStatusCommand([
-                    'contentId' => ContentId::fromString($content['id']),
-                    'contentStatus' => new StringLiteral('published'),
-                    'contentModified' => $now,
-                    'contentModifiedGmt' => new DateTime('now', 'GMT')->getDateTime(),
+                    'id' => ContentId::fromString($content['id']),
+                    'status' => new StringLiteral('published'),
+                    'modified' => $now,
+                    'modifiedGmt' => new DateTime('now', 'GMT')->getDateTime(),
                 ]);
 
-                $odin->execute($command);
+                command($command);
             }
         }
     } catch (PDOException $ex) {

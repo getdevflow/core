@@ -14,36 +14,37 @@ use Qubus\ValueObjects\StringLiteral\StringLiteral;
 
 class CreateContentCommand extends PropertyCommand
 {
-    public ?ContentId $contentId = null;
-    public ?StringLiteral $contentTitle = null;
+    public ContentId $id;
 
-    public ?StringLiteral $contentSlug = null;
+    public StringLiteral $title;
 
-    public ?StringLiteral $contentBody = null;
+    public StringLiteral $slug;
 
-    public ?UserId $contentAuthor = null;
+    public StringLiteral $body;
 
-    public ?StringLiteral $contentTypeSlug = null;
+    public UserId $author;
 
-    public ?ContentId $contentParent = null;
+    public StringLiteral $type;
 
-    public ?IntegerNumber $contentSidebar = null;
+    public ?ContentId $parent = null;
 
-    public ?IntegerNumber $contentShowInMenu = null;
+    public IntegerNumber $sidebar;
 
-    public ?IntegerNumber $contentShowInSearch = null;
+    public IntegerNumber $showInMenu;
 
-    public ?StringLiteral $contentFeaturedImage = null;
+    public IntegerNumber $showInSearch;
 
-    public ?ArrayLiteral $meta = null;
+    public StringLiteral $featuredImage;
 
-    public ?StringLiteral $contentStatus = null;
+    public ArrayLiteral $attribute;
 
-    public ?DateTimeInterface $contentCreated = null;
+    public StringLiteral $status;
 
-    public ?DateTimeInterface $contentCreatedGmt = null;
+    public DateTimeInterface $created;
 
-    public ?DateTimeInterface $contentPublished = null;
+    public DateTimeInterface $createdGmt;
 
-    public ?DateTimeInterface $contentPublishedGmt = null;
+    public DateTimeInterface $published;
+
+    public DateTimeInterface $publishedGmt;
 }

@@ -8,13 +8,13 @@ abstract class BaseShortcode implements Shortcode
 {
     protected array $defaultAttributes = [];
 
-    public function render(array $attrs = [], string $content = null): string
+    public function render(array $attrs = [], ?string $content = null): string
     {
         $attrs = array_merge($this->defaultAttributes, $attrs);
         return $this->handle($attrs, $content);
     }
 
-    abstract protected function handle(array $attrs, ?string $content): string;
+    abstract protected function handle(array $attrs, ?string $content = null): string;
 
     public function isSafe(): bool
     {

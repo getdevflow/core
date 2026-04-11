@@ -25,11 +25,11 @@ class UpdateContentTypeCommandHandler implements CommandHandler
     public function handle(UpdateContentTypeCommand|Command $command): void
     {
         /** @var ContentType $contentType */
-        $contentType = $this->aggregateRepository->loadAggregateRoot($command->contentTypeId);
+        $contentType = $this->aggregateRepository->loadAggregateRoot($command->id);
 
-        $contentType->changeTitle($command->contentTypeTitle);
-        $contentType->changeContentTypeSlug($command->contentTypeSlug);
-        $contentType->changeContentTypeDescription($command->contentTypeDescription);
+        $contentType->changeTitle($command->title);
+        $contentType->changeContentTypeSlug($command->slug);
+        $contentType->changeContentTypeDescription($command->description);
 
         $this->aggregateRepository->saveAggregateRoot($contentType);
     }

@@ -10,7 +10,7 @@ use Qubus\ValueObjects\StringLiteral\StringLiteral;
 
 class RemoveFeaturedImageCommand extends PropertyCommand
 {
-    public ?ContentId $contentId = null;
+    public ContentId $id;
 
-    public ?StringLiteral $contentFeaturedImage = null;
+    public StringLiteral $featuredImage;
 }

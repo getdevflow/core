@@ -9,7 +9,7 @@ use App\Domain\Product\Event\ProductSlugWasChanged;
 use App\Domain\Product\Event\ProductAuthorWasChanged;
 use App\Domain\Product\Event\ProductBodyWasChanged;
 use App\Domain\Product\Event\ProductFeaturedImageWasChanged;
-use App\Domain\Product\Event\ProductMetaWasChanged;
+use App\Domain\Product\Event\ProductAttributeWasChanged;
 use App\Domain\Product\Event\ProductModifiedGmtWasChanged;
 use App\Domain\Product\Event\ProductModifiedWasChanged;
 use App\Domain\Product\Event\ProductPriceWasChanged;
@@ -23,21 +23,18 @@ use App\Domain\Product\Event\ProductTitleWasChanged;
 use App\Domain\Product\Event\ProductWasCreated;
 use App\Domain\Product\Event\ProductWasDeleted;
 use App\Domain\Product\Service\ProductProjection;
-use App\Infrastructure\Persistence\Database;
-use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
+use Qubus\Expressive\Database;
 use Codefy\Domain\EventSourcing\BaseProjection;
-use Codefy\QueryBus\UnresolvableQueryHandlerException;
 use Exception as NativeException;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
-use Psr\SimpleCache\InvalidArgumentException;
 use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
 use Qubus\Expressive\QueryBuilderException;
 use ReflectionException;
 
-use function App\Shared\Helpers\add_productmeta;
-use function App\Shared\Helpers\update_productmeta;
+use function App\Shared\Helpers\add_product_attribute;
+use function App\Shared\Helpers\update_product_attribute;
 
 class DatabaseProductProjection extends BaseProjection implements ProductProjection
 {
@@ -48,14 +45,11 @@ class DatabaseProductProjection extends BaseProjection implements ProductProject
     /**
      * @param ProductWasCreated $event
      * @return void
-     * @throws CommandPropertyNotFoundException
      * @throws ContainerExceptionInterface
      * @throws Exception
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
      * @throws TypeException
-     * @throws UnresolvableQueryHandlerException
-     * @throws InvalidArgumentException
      * @throws NativeException
      */
     public function projectWhenProductWasCreated(ProductWasCreated $event): void
@@ -88,9 +82,9 @@ class DatabaseProductProjection extends BaseProjection implements ProductProject
                     ->save();
             });
 
-            if (!$event->productMeta()->isEmpty()) {
-                foreach ($event->productMeta()->toNative() as $meta => $value) {
-                    add_productmeta($event->aggregateId()->__toString(), $meta, $value);
+            if (!$event->productAttribute()->isEmpty()) {
+                foreach ($event->productAttribute()->toNative() as $key => $value) {
+                    add_product_attribute($event->aggregateId()->__toString(), $key, $value);
                 }
             }
         } catch (QueryBuilderException $e) {
@@ -111,7 +105,7 @@ class DatabaseProductProjection extends BaseProjection implements ProductProject
                 $this->dfdb->qb()
                     ->table(tableName: $this->dfdb->prefix . 'product')
                     ->set([
-                            'product_title' => $event->productTitle()->toNative(),
+                        'product_title' => $event->productTitle()->toNative(),
                     ])
                     ->where('product_id = ?', $event->productId()->toNative())
                     ->update();
@@ -134,7 +128,7 @@ class DatabaseProductProjection extends BaseProjection implements ProductProject
                 $this->dfdb->qb()
                     ->table(tableName: $this->dfdb->prefix . 'product')
                     ->set([
-                            'product_slug' => $event->productSlug()->toNative(),
+                        'product_slug' => $event->productSlug()->toNative(),
                     ])
                     ->where('product_id = ?', $event->productId()->toNative())
                     ->update();
@@ -157,7 +151,7 @@ class DatabaseProductProjection extends BaseProjection implements ProductProject
                 $this->dfdb->qb()
                     ->table(tableName: $this->dfdb->prefix . 'product')
                     ->set([
-                            'product_body' => $event->productBody()->toNative(),
+                        'product_body' => $event->productBody()->toNative(),
                     ])
                     ->where('product_id = ?', $event->productId()->toNative())
                     ->update();
@@ -180,7 +174,7 @@ class DatabaseProductProjection extends BaseProjection implements ProductProject
                 $this->dfdb->qb()
                     ->table(tableName: $this->dfdb->prefix . 'product')
                     ->set([
-                            'product_author' => $event->productAuthor()->toNative(),
+                        'product_author' => $event->productAuthor()->toNative(),
                     ])
                     ->where('product_id = ?', $event->productId()->toNative())
                     ->update();
@@ -203,7 +197,7 @@ class DatabaseProductProjection extends BaseProjection implements ProductProject
                 $this->dfdb->qb()
                     ->table(tableName: $this->dfdb->prefix . 'product')
                     ->set([
-                            'product_sku' => $event->productSku()->toNative(),
+                        'product_sku' => $event->productSku()->toNative(),
                     ])
                     ->where('product_id = ?', $event->productId()->toNative())
                     ->update();
@@ -248,12 +242,12 @@ class DatabaseProductProjection extends BaseProjection implements ProductProject
         try {
             $this->dfdb->qb()->transactional(callback: function () use ($event) {
                 $this->dfdb->qb()
-                        ->table(tableName: $this->dfdb->prefix . 'product')
-                        ->set([
-                            'product_purchase_url' => $event->productPurchaseUrl()->toNative(),
-                        ])
-                        ->where('product_id = ?', $event->productId()->toNative())
-                        ->update();
+                    ->table(tableName: $this->dfdb->prefix . 'product')
+                    ->set([
+                        'product_purchase_url' => $event->productPurchaseUrl()->toNative(),
+                    ])
+                    ->where('product_id = ?', $event->productId()->toNative())
+                    ->update();
             });
         } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
@@ -271,12 +265,12 @@ class DatabaseProductProjection extends BaseProjection implements ProductProject
         try {
             $this->dfdb->qb()->transactional(callback: function () use ($event) {
                 $this->dfdb->qb()
-                        ->table(tableName: $this->dfdb->prefix . 'product')
-                        ->set([
-                            'product_show_in_menu' => $event->productShowInMenu()->toNative(),
-                        ])
-                        ->where('product_id = ?', $event->productId()->toNative())
-                        ->update();
+                    ->table(tableName: $this->dfdb->prefix . 'product')
+                    ->set([
+                        'product_show_in_menu' => $event->productShowInMenu()->toNative(),
+                    ])
+                    ->where('product_id = ?', $event->productId()->toNative())
+                    ->update();
             });
         } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
@@ -294,12 +288,12 @@ class DatabaseProductProjection extends BaseProjection implements ProductProject
         try {
             $this->dfdb->qb()->transactional(callback: function () use ($event) {
                 $this->dfdb->qb()
-                        ->table(tableName: $this->dfdb->prefix . 'product')
-                        ->set([
-                            'product_show_in_search' => $event->productShowInSearch()->toNative(),
-                        ])
-                        ->where('product_id = ?', $event->productId()->toNative())
-                        ->update();
+                    ->table(tableName: $this->dfdb->prefix . 'product')
+                    ->set([
+                        'product_show_in_search' => $event->productShowInSearch()->toNative(),
+                    ])
+                    ->where('product_id = ?', $event->productId()->toNative())
+                    ->update();
             });
         } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
@@ -317,12 +311,12 @@ class DatabaseProductProjection extends BaseProjection implements ProductProject
         try {
             $this->dfdb->qb()->transactional(callback: function () use ($event) {
                 $this->dfdb->qb()
-                        ->table(tableName: $this->dfdb->prefix . 'product')
-                        ->set([
-                                'product_featured_image' => $event->productFeaturedImage()->toNative(),
-                        ])
-                        ->where('product_id = ?', $event->productId()->toNative())
-                        ->update();
+                    ->table(tableName: $this->dfdb->prefix . 'product')
+                    ->set([
+                        'product_featured_image' => $event->productFeaturedImage()->toNative(),
+                    ])
+                    ->where('product_id = ?', $event->productId()->toNative())
+                    ->update();
             });
         } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
@@ -340,12 +334,12 @@ class DatabaseProductProjection extends BaseProjection implements ProductProject
         try {
             $this->dfdb->qb()->transactional(callback: function () use ($event) {
                 $this->dfdb->qb()
-                        ->table(tableName: $this->dfdb->prefix . 'product')
-                        ->set([
-                            'product_status' => $event->productStatus()->toNative(),
-                        ])
-                        ->where('product_id = ?', $event->productId()->toNative())
-                        ->update();
+                    ->table(tableName: $this->dfdb->prefix . 'product')
+                    ->set([
+                        'product_status' => $event->productStatus()->toNative(),
+                    ])
+                    ->where('product_id = ?', $event->productId()->toNative())
+                    ->update();
             });
         } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
@@ -353,22 +347,17 @@ class DatabaseProductProjection extends BaseProjection implements ProductProject
     }
 
     /**
-     * @param ProductMetaWasChanged $event
+     * @param ProductAttributeWasChanged $event
      * @return void
-     * @throws CommandPropertyNotFoundException
      * @throws ContainerExceptionInterface
-     * @throws Exception
-     * @throws InvalidArgumentException
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
-     * @throws TypeException
-     * @throws UnresolvableQueryHandlerException
      */
-    public function projectWhenProductMetaWasChanged(ProductMetaWasChanged $event): void
+    public function projectWhenProductAttributeWasChanged(ProductAttributeWasChanged $event): void
     {
-        if (!$event->productMeta()->isEmpty()) {
-            foreach ($event->productMeta()->toNative() as $meta => $value) {
-                update_productmeta($event->aggregateId()->__toString(), $meta, $value);
+        if (!$event->productAttribute()->isEmpty()) {
+            foreach ($event->productAttribute()->toNative() as $key => $value) {
+                update_product_attribute($event->aggregateId()->__toString(), $key, $value);
             }
         }
     }
@@ -384,12 +373,12 @@ class DatabaseProductProjection extends BaseProjection implements ProductProject
         try {
             $this->dfdb->qb()->transactional(callback: function () use ($event) {
                 $this->dfdb->qb()
-                        ->table(tableName: $this->dfdb->prefix . 'product')
-                        ->set([
-                            'product_published' => $event->productPublished()->format('Y-m-d H:i:s'),
-                        ])
-                        ->where('product_id = ?', $event->productId()->toNative())
-                        ->update();
+                    ->table(tableName: $this->dfdb->prefix . 'product')
+                    ->set([
+                        'product_published' => $event->productPublished()->format('Y-m-d H:i:s'),
+                    ])
+                    ->where('product_id = ?', $event->productId()->toNative())
+                    ->update();
             });
         } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
@@ -407,12 +396,12 @@ class DatabaseProductProjection extends BaseProjection implements ProductProject
         try {
             $this->dfdb->qb()->transactional(callback: function () use ($event) {
                 $this->dfdb->qb()
-                        ->table(tableName: $this->dfdb->prefix . 'product')
-                        ->set([
-                            'product_published_gmt' => $event->productPublishedGmt()->format('Y-m-d H:i:s'),
-                        ])
-                        ->where('product_id = ?', $event->productId()->toNative())
-                        ->update();
+                    ->table(tableName: $this->dfdb->prefix . 'product')
+                    ->set([
+                        'product_published_gmt' => $event->productPublishedGmt()->format('Y-m-d H:i:s'),
+                    ])
+                    ->where('product_id = ?', $event->productId()->toNative())
+                    ->update();
             });
         } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
@@ -430,12 +419,12 @@ class DatabaseProductProjection extends BaseProjection implements ProductProject
         try {
             $this->dfdb->qb()->transactional(callback: function () use ($event) {
                 $this->dfdb->qb()
-                        ->table(tableName: $this->dfdb->prefix . 'product')
-                        ->set([
-                            'product_modified' => $event->productModified()->format('Y-m-d H:i:s'),
-                        ])
-                        ->where('product_id = ?', $event->productId()->toNative())
-                        ->update();
+                    ->table(tableName: $this->dfdb->prefix . 'product')
+                    ->set([
+                        'product_modified' => $event->productModified()->format('Y-m-d H:i:s'),
+                    ])
+                    ->where('product_id = ?', $event->productId()->toNative())
+                    ->update();
             });
         } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
@@ -453,12 +442,12 @@ class DatabaseProductProjection extends BaseProjection implements ProductProject
         try {
             $this->dfdb->qb()->transactional(callback: function () use ($event) {
                 $this->dfdb->qb()
-                        ->table(tableName: $this->dfdb->prefix . 'product')
-                        ->set([
-                            'product_modified_gmt' => $event->productModifiedGmt()->format('Y-m-d H:i:s'),
-                        ])
-                        ->where('product_id = ?', $event->productId()->toNative())
-                        ->update();
+                    ->table(tableName: $this->dfdb->prefix . 'product')
+                    ->set([
+                        'product_modified_gmt' => $event->productModifiedGmt()->format('Y-m-d H:i:s'),
+                    ])
+                    ->where('product_id = ?', $event->productId()->toNative())
+                    ->update();
             });
         } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
@@ -468,6 +457,7 @@ class DatabaseProductProjection extends BaseProjection implements ProductProject
     /**
      * @param ProductWasDeleted $event
      * @return void
+     * @throws Exception
      * @throws TypeException
      * @throws NativeException
      */
@@ -476,9 +466,9 @@ class DatabaseProductProjection extends BaseProjection implements ProductProject
         try {
             $this->dfdb->qb()->transactional(callback: function () use ($event) {
                 $this->dfdb->qb()
-                        ->table(tableName: $this->dfdb->prefix . 'product')
-                        ->where('product_id = ?', $event->productId()->toNative())
-                        ->delete();
+                    ->table(tableName: $this->dfdb->prefix . 'product')
+                    ->where('product_id = ?', $event->productId()->toNative())
+                    ->delete();
             });
         } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());

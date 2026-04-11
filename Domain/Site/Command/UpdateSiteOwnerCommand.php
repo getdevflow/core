@@ -11,9 +11,9 @@ use DateTimeInterface;
 
 final class UpdateSiteOwnerCommand extends PropertyCommand
 {
-    public ?SiteId $siteId = null;
+    public SiteId $id;
 
-    public ?UserId $siteOwner = null;
+    public UserId $owner;
 
-    public ?DateTimeInterface $siteModified = null;
+    public DateTimeInterface $modified;
 }

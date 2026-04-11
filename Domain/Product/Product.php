@@ -7,7 +7,7 @@ namespace App\Domain\Product;
 use App\Domain\Product\Event\ProductAuthorWasChanged;
 use App\Domain\Product\Event\ProductBodyWasChanged;
 use App\Domain\Product\Event\ProductFeaturedImageWasChanged;
-use App\Domain\Product\Event\ProductMetaWasChanged;
+use App\Domain\Product\Event\ProductAttributeWasChanged;
 use App\Domain\Product\Event\ProductModifiedGmtWasChanged;
 use App\Domain\Product\Event\ProductModifiedWasChanged;
 use App\Domain\Product\Event\ProductPriceWasChanged;
@@ -39,86 +39,86 @@ use function Qubus\Support\Helpers\is_null__;
 
 class Product extends EventSourcedAggregate implements AggregateRoot
 {
-    private ?ProductId $productId = null;
-    private ?StringLiteral $productTitle = null;
+    private ProductId $id;
+    private StringLiteral $title;
 
-    private ?StringLiteral $productSlug = null;
+    private StringLiteral $slug;
 
-    private ?StringLiteral $productBody = null;
+    private StringLiteral $body;
 
-    private ?UserId $productAuthor = null;
+    private UserId $author;
 
-    private ?StringLiteral $productSku = null;
+    private StringLiteral $sku;
 
-    private ?Money $productPrice = null;
+    private Money $price;
 
-    private ?StringLiteral $productPurchaseUrl = null;
+    private StringLiteral $purchaseUrl;
 
-    private ?IntegerNumber $productShowInMenu = null;
+    private IntegerNumber $showInMenu;
 
-    private ?IntegerNumber $productShowInSearch = null;
+    private IntegerNumber $showInSearch;
 
-    private ?StringLiteral $productFeaturedImage = null;
+    private StringLiteral $featuredImage;
 
-    private ?StringLiteral $productStatus = null;
+    private StringLiteral $status;
 
-    private ?ArrayLiteral $meta = null;
+    private ArrayLiteral $attribute;
 
-    private ?DateTimeInterface $productCreated = null;
+    private DateTimeInterface $created;
 
-    private ?DateTimeInterface $productCreatedGmt = null;
+    private DateTimeInterface $createdGmt;
 
-    private ?DateTimeInterface $productPublished = null;
+    private DateTimeInterface $published;
 
-    private ?DateTimeInterface $productPublishedGmt = null;
+    private DateTimeInterface $publishedGmt;
 
-    private ?DateTimeInterface $productModified = null;
+    private ?DateTimeInterface $modified = null;
 
-    private ?DateTimeInterface $productModifiedGmt = null;
+    private ?DateTimeInterface $modifiedGmt = null;
 
     /**
      * @throws TypeException
      */
     public static function createProduct(
-        ProductId $productId,
-        StringLiteral $productTitle,
-        StringLiteral $productSlug,
-        StringLiteral $productBody,
-        UserId $productAuthor,
-        StringLiteral $productSku,
-        Money $productPrice,
-        StringLiteral $productPurchaseUrl,
-        IntegerNumber $productShowInMenu,
-        IntegerNumber $productShowInSearch,
-        StringLiteral $productFeaturedImage,
-        StringLiteral $productStatus,
-        DateTimeInterface $productCreated,
-        DateTimeInterface $productCreatedGmt,
-        DateTimeInterface $productPublished,
-        DateTimeInterface $productPublishedGmt,
-        ?ArrayLiteral $meta = null,
+        ProductId $id,
+        StringLiteral $title,
+        StringLiteral $slug,
+        StringLiteral $body,
+        UserId $author,
+        StringLiteral $sku,
+        Money $price,
+        StringLiteral $purchaseUrl,
+        IntegerNumber $showInMenu,
+        IntegerNumber $showInSearch,
+        StringLiteral $featuredImage,
+        StringLiteral $status,
+        DateTimeInterface $created,
+        DateTimeInterface $createdGmt,
+        DateTimeInterface $published,
+        DateTimeInterface $publishedGmt,
+        ArrayLiteral $attribute,
     ): Product {
-        $product = self::root(aggregateId: $productId);
+        $product = self::root(aggregateId: $id);
 
         $product->recordApplyAndPublishThat(
             ProductWasCreated::withData(
-                productId: $productId,
-                productTitle: $productTitle,
-                productSlug: $productSlug,
-                productBody: $productBody,
-                productAuthor: $productAuthor,
-                productSku: $productSku,
-                productPrice: $productPrice,
-                productPurchaseUrl: $productPurchaseUrl,
-                productShowInMenu: $productShowInMenu,
-                productShowInSearch: $productShowInSearch,
-                productFeaturedImage: $productFeaturedImage,
-                productStatus: $productStatus,
-                productCreated: $productCreated,
-                productCreatedGmt: $productCreatedGmt,
-                productPublished: $productPublished,
-                productPublishedGmt: $productPublishedGmt,
-                meta: $meta
+                id: $id,
+                title: $title,
+                slug: $slug,
+                body: $body,
+                author: $author,
+                sku: $sku,
+                price: $price,
+                purchaseUrl: $purchaseUrl,
+                showInMenu: $showInMenu,
+                showInSearch: $showInSearch,
+                featuredImage: $featuredImage,
+                status: $status,
+                created: $created,
+                createdGmt: $createdGmt,
+                published: $published,
+                publishedGmt: $publishedGmt,
+                attribute: $attribute
             )
         );
 
@@ -135,82 +135,87 @@ class Product extends EventSourcedAggregate implements AggregateRoot
 
     public function productId(): ProductId
     {
-        return $this->productId;
+        return $this->id;
     }
 
     public function productTitle(): StringLiteral
     {
-        return $this->productTitle;
+        return $this->title;
     }
 
     public function productSlug(): StringLiteral
     {
-        return $this->productSlug;
+        return $this->slug;
     }
 
     public function productBody(): StringLiteral
     {
-        return $this->productBody;
+        return $this->body;
     }
 
     public function productAuthor(): UserId
     {
-        return $this->productAuthor;
+        return $this->author;
     }
 
     public function productSku(): StringLiteral
     {
-        return $this->productSku;
+        return $this->sku;
     }
 
     public function productPrice(): Money
     {
-        return $this->productPrice;
+        return $this->price;
     }
 
     public function productPurchaseUrl(): StringLiteral
     {
-        return $this->productPurchaseUrl;
+        return $this->purchaseUrl;
     }
 
     public function productShowInMenu(): IntegerNumber
     {
-        return $this->productShowInMenu;
+        return $this->showInMenu;
     }
 
     public function productShowInSearch(): IntegerNumber
     {
-        return $this->productShowInSearch;
+        return $this->showInSearch;
     }
 
     public function productFeaturedImage(): StringLiteral
     {
-        return $this->productFeaturedImage;
+        return $this->featuredImage;
     }
 
     public function productStatus(): StringLiteral
     {
-        return $this->productStatus;
+        return $this->status;
     }
 
     public function productCreated(): DateTimeInterface
     {
-        return $this->productCreated;
+        return $this->created;
     }
 
     public function productCreatedGmt(): DateTimeInterface
     {
-        return $this->productCreatedGmt;
+        return $this->createdGmt;
     }
 
     public function productPublished(): DateTimeInterface
     {
-        return $this->productPublished;
+        return $this->published;
     }
 
     public function productPublishedGmt(): DateTimeInterface
     {
-        return $this->productPublishedGmt;
+        return $this->publishedGmt;
+    }
+
+    public function productAttribute(): ArrayLiteral
+    {
+        return $this->attribute;
     }
 
     /**
@@ -221,11 +226,11 @@ class Product extends EventSourcedAggregate implements AggregateRoot
         if ($productTitle->isEmpty()) {
             throw new Exception(message: t__(msgid: 'Product title cannot be empty.', domain: 'devflow'));
         }
-        if ($productTitle->equals($this->productTitle)) {
+        if ($productTitle->equals($this->title)) {
             return;
         }
         $this->recordApplyAndPublishThat(
-            event: ProductTitleWasChanged::withData(productId: $this->productId, productTitle: $productTitle)
+            event: ProductTitleWasChanged::withData(id: $this->id, title: $productTitle)
         );
     }
 
@@ -237,11 +242,11 @@ class Product extends EventSourcedAggregate implements AggregateRoot
         if ($productSlug->isEmpty()) {
             throw new Exception(message: t__(msgid: 'Product slug cannot be empty.', domain: 'devflow'));
         }
-        if ($productSlug->equals($this->productSlug)) {
+        if ($productSlug->equals($this->slug)) {
             return;
         }
         $this->recordApplyAndPublishThat(
-            event: ProductSlugWasChanged::withData(productId: $this->productId, productSlug: $productSlug)
+            event: ProductSlugWasChanged::withData(id: $this->id, slug: $productSlug)
         );
     }
 
@@ -253,10 +258,10 @@ class Product extends EventSourcedAggregate implements AggregateRoot
         if ($productBody->isEmpty()) {
             throw new Exception(message: t__(msgid: 'Product body cannot be empty.', domain: 'devflow'));
         }
-        if ($productBody->equals($this->productBody)) {
+        if ($productBody->equals($this->body)) {
             return;
         }
-        $this->recordApplyAndPublishThat(ProductBodyWasChanged::withData($this->productId, $productBody));
+        $this->recordApplyAndPublishThat(ProductBodyWasChanged::withData($this->id, $productBody));
     }
 
     /**
@@ -267,10 +272,10 @@ class Product extends EventSourcedAggregate implements AggregateRoot
         if ($productAuthor->isEmpty()) {
             throw new Exception(message: t__(msgid: 'Product author cannot be empty.', domain: 'devflow'));
         }
-        if ($productAuthor->equals($this->productAuthor)) {
+        if ($productAuthor->equals($this->author)) {
             return;
         }
-        $this->recordApplyAndPublishThat(ProductAuthorWasChanged::withData($this->productId, $productAuthor));
+        $this->recordApplyAndPublishThat(ProductAuthorWasChanged::withData($this->id, $productAuthor));
     }
 
     /**
@@ -281,10 +286,10 @@ class Product extends EventSourcedAggregate implements AggregateRoot
         if ($productSku->isEmpty()) {
             throw new Exception(message: t__(msgid: 'Product sku cannot be empty.', domain: 'devflow'));
         }
-        if ($productSku->equals($this->productSku)) {
+        if ($productSku->equals($this->sku)) {
             return;
         }
-        $this->recordApplyAndPublishThat(ProductSkuWasChanged::withData($this->productId, $productSku));
+        $this->recordApplyAndPublishThat(ProductSkuWasChanged::withData($this->id, $productSku));
     }
 
     /**
@@ -295,21 +300,18 @@ class Product extends EventSourcedAggregate implements AggregateRoot
         if ($productPrice->getAmount()->toNative() < 0) {
             return;
         }
-        if ($productPrice->equals($this->productPrice)) {
+        if ($productPrice->equals($this->price)) {
             return;
         }
-        $this->recordApplyAndPublishThat(ProductPriceWasChanged::withData($this->productId, $productPrice));
+        $this->recordApplyAndPublishThat(ProductPriceWasChanged::withData($this->id, $productPrice));
     }
 
     public function changeProductPurchaseUrl(StringLiteral $productPurchaseUrl): void
     {
-        if ($productPurchaseUrl->isEmpty()) {
+        if ($productPurchaseUrl->equals($this->purchaseUrl)) {
             return;
         }
-        if ($productPurchaseUrl->equals($this->productPurchaseUrl)) {
-            return;
-        }
-        $this->recordApplyAndPublishThat(ProductPurchaseUrlWasChanged::withData($this->productId, $productPurchaseUrl));
+        $this->recordApplyAndPublishThat(ProductPurchaseUrlWasChanged::withData($this->id, $productPurchaseUrl));
     }
 
     /**
@@ -322,10 +324,10 @@ class Product extends EventSourcedAggregate implements AggregateRoot
                 message: t__(msgid: 'Product show in menu must be an absolute value.', domain: 'devflow')
             );
         }
-        if ($productShowInMenu->equals($this->productShowInMenu)) {
+        if ($productShowInMenu->equals($this->showInMenu)) {
             return;
         }
-        $this->recordApplyAndPublishThat(ProductShowInMenuWasChanged::withData($this->productId, $productShowInMenu));
+        $this->recordApplyAndPublishThat(ProductShowInMenuWasChanged::withData($this->id, $productShowInMenu));
     }
 
     /**
@@ -338,21 +340,21 @@ class Product extends EventSourcedAggregate implements AggregateRoot
                 message: t__(msgid: 'Product show in search must be an absolute value.', domain: 'devflow')
             );
         }
-        if ($productShowInSearch->equals($this->productShowInSearch)) {
+        if ($productShowInSearch->equals($this->showInSearch)) {
             return;
         }
         $this->recordApplyAndPublishThat(
-            ProductShowInSearchWasChanged::withData($this->productId, $productShowInSearch)
+            ProductShowInSearchWasChanged::withData($this->id, $productShowInSearch)
         );
     }
 
     public function changeProductFeaturedImage(StringLiteral $productFeaturedImage): void
     {
-        if ($productFeaturedImage->equals($this->productFeaturedImage)) {
+        if ($productFeaturedImage->equals($this->featuredImage)) {
             return;
         }
         $this->recordApplyAndPublishThat(
-            ProductFeaturedImageWasChanged::withData($this->productId, $productFeaturedImage)
+            ProductFeaturedImageWasChanged::withData($this->id, $productFeaturedImage)
         );
     }
 
@@ -364,23 +366,19 @@ class Product extends EventSourcedAggregate implements AggregateRoot
         if ($productStatus->isEmpty()) {
             throw new Exception(message: t__(msgid: 'Product status cannot be empty.', domain: 'devflow'));
         }
-        if ($productStatus->equals($this->productStatus)) {
+        if ($productStatus->equals($this->status)) {
             return;
         }
-        $this->recordApplyAndPublishThat(ProductStatusWasChanged::withData($this->productId, $productStatus));
+        $this->recordApplyAndPublishThat(ProductStatusWasChanged::withData($this->id, $productStatus));
     }
 
-    public function changeProductMeta(ArrayLiteral $meta): void
+    public function changeProductAttribute(ArrayLiteral $attribute): void
     {
-        if ($meta->isEmpty()) {
+        if ($attribute->equals($this->attribute)) {
             return;
         }
 
-        if ($meta->equals($this->meta)) {
-            return;
-        }
-
-        $this->recordApplyAndPublishThat(ProductMetaWasChanged::withData($this->productId, $meta));
+        $this->recordApplyAndPublishThat(ProductAttributeWasChanged::withData($this->id, $attribute));
     }
 
     /**
@@ -388,13 +386,13 @@ class Product extends EventSourcedAggregate implements AggregateRoot
      */
     public function changeProductPublished(DateTimeInterface $productPublished): void
     {
-        if (empty($this->productPublished)) {
+        if (empty($this->published)) {
             throw new Exception(message: t__(msgid: 'Product published date cannot be empty.', domain: 'devflow'));
         }
-        if ($this->productPublished->getTimestamp() === $productPublished->getTimestamp()) {
+        if ($this->published->getTimestamp() === $productPublished->getTimestamp()) {
             return;
         }
-        $this->recordApplyAndPublishThat(ProductPublishedWasChanged::withData($this->productId, $productPublished));
+        $this->recordApplyAndPublishThat(ProductPublishedWasChanged::withData($this->id, $productPublished));
     }
 
     /**
@@ -402,48 +400,51 @@ class Product extends EventSourcedAggregate implements AggregateRoot
      */
     public function changeProductPublishedGmt(DateTimeInterface $productPublishedGmt): void
     {
-        if (empty($this->productPublishedGmt)) {
+        if (empty($this->publishedGmt)) {
             throw new Exception(message: t__(msgid: 'Product published gmt date cannot be empty.', domain: 'devflow'));
         }
-        if ($this->productPublishedGmt->getTimestamp() === $productPublishedGmt->getTimestamp()) {
+        if ($this->publishedGmt->getTimestamp() === $productPublishedGmt->getTimestamp()) {
             return;
         }
         $this->recordApplyAndPublishThat(
-            ProductPublishedGmtWasChanged::withData($this->productId, $productPublishedGmt)
+            ProductPublishedGmtWasChanged::withData($this->id, $productPublishedGmt)
         );
     }
 
     public function changeProductModified(DateTimeInterface $productModified): void
     {
         if (
-                !is_null__($this->productModified) &&
-                ($this->productModified->getTimestamp() === $productModified->getTimestamp())
+                !is_null__($this->modified) &&
+                ($this->modified->getTimestamp() === $productModified->getTimestamp())
         ) {
             return;
         }
-        $this->recordApplyAndPublishThat(ProductModifiedWasChanged::withData($this->productId, $productModified));
+        $this->recordApplyAndPublishThat(ProductModifiedWasChanged::withData($this->id, $productModified));
     }
 
     public function changeProductModifiedGmt(DateTimeInterface $productModifiedGmt): void
     {
         if (
-                !is_null__($this->productModifiedGmt) &&
-                ($this->productModifiedGmt->getTimestamp() === $productModifiedGmt->getTimestamp())
+                !is_null__($this->modifiedGmt) &&
+                ($this->modifiedGmt->getTimestamp() === $productModifiedGmt->getTimestamp())
         ) {
             return;
         }
-        $this->recordApplyAndPublishThat(ProductModifiedGmtWasChanged::withData($this->productId, $productModifiedGmt));
+        $this->recordApplyAndPublishThat(ProductModifiedGmtWasChanged::withData($this->id, $productModifiedGmt));
     }
 
+    /**
+     * @throws \Exception
+     */
     public function changeProductDeleted(ProductId $productId): void
     {
         if ($productId->isEmpty()) {
+            throw new \Exception(message: t__(msgid: 'Product id cannot be null.', domain: 'devflow'));
+        }
+        if (!$productId->equals($this->id)) {
             return;
         }
-        if (!$productId->equals($this->productId)) {
-            return;
-        }
-        $this->recordApplyAndPublishThat(ProductWasDeleted::withData($this->productId));
+        $this->recordApplyAndPublishThat(ProductWasDeleted::withData($this->id));
     }
 
     /**
@@ -451,23 +452,23 @@ class Product extends EventSourcedAggregate implements AggregateRoot
      */
     public function whenProductWasCreated(ProductWasCreated $event): void
     {
-        $this->productId = $event->productId();
-        $this->productTitle = $event->productTitle();
-        $this->productSlug = $event->productSlug();
-        $this->productBody = $event->productBody();
-        $this->productAuthor = $event->productAuthor();
-        $this->productSku = $event->productSku();
-        $this->productPrice = $event->productPrice();
-        $this->productPurchaseUrl = $event->productPurchaseUrl();
-        $this->productShowInMenu = $event->productShowInMenu();
-        $this->productShowInSearch = $event->productShowInSearch();
-        $this->productFeaturedImage = $event->productFeaturedImage();
-        $this->productStatus = $event->productStatus();
-        $this->productCreated = $event->productCreated();
-        $this->productCreatedGmt = $event->productCreatedGmt();
-        $this->productPublished = $event->productPublished();
-        $this->productPublishedGmt = $event->productPublishedGmt();
-        $this->meta = $event->productMeta();
+        $this->id = $event->productId();
+        $this->title = $event->productTitle();
+        $this->slug = $event->productSlug();
+        $this->body = $event->productBody();
+        $this->author = $event->productAuthor();
+        $this->sku = $event->productSku();
+        $this->price = $event->productPrice();
+        $this->purchaseUrl = $event->productPurchaseUrl();
+        $this->showInMenu = $event->productShowInMenu();
+        $this->showInSearch = $event->productShowInSearch();
+        $this->featuredImage = $event->productFeaturedImage();
+        $this->status = $event->productStatus();
+        $this->created = $event->productCreated();
+        $this->createdGmt = $event->productCreatedGmt();
+        $this->published = $event->productPublished();
+        $this->publishedGmt = $event->productPublishedGmt();
+        $this->attribute = $event->productAttribute();
     }
 
     /**
@@ -475,8 +476,8 @@ class Product extends EventSourcedAggregate implements AggregateRoot
      */
     public function whenProductTitleWasChanged(ProductTitleWasChanged $event): void
     {
-        $this->productId = $event->productId();
-        $this->productTitle = $event->productTitle();
+        $this->id = $event->productId();
+        $this->title = $event->productTitle();
     }
 
     /**
@@ -484,8 +485,8 @@ class Product extends EventSourcedAggregate implements AggregateRoot
      */
     public function whenProductSlugWasChanged(ProductSlugWasChanged $event): void
     {
-        $this->productId = $event->productId();
-        $this->productSlug = $event->productSlug();
+        $this->id = $event->productId();
+        $this->slug = $event->productSlug();
     }
 
     /**
@@ -493,8 +494,8 @@ class Product extends EventSourcedAggregate implements AggregateRoot
      */
     public function whenProductBodyWasChanged(ProductBodyWasChanged $event): void
     {
-        $this->productId = $event->productId();
-        $this->productBody = $event->productBody();
+        $this->id = $event->productId();
+        $this->body = $event->productBody();
     }
 
     /**
@@ -502,8 +503,8 @@ class Product extends EventSourcedAggregate implements AggregateRoot
      */
     public function whenProductAuthorWasChanged(ProductAuthorWasChanged $event): void
     {
-        $this->productId = $event->productId();
-        $this->productAuthor = $event->productAuthor();
+        $this->id = $event->productId();
+        $this->author = $event->productAuthor();
     }
 
     /**
@@ -511,8 +512,8 @@ class Product extends EventSourcedAggregate implements AggregateRoot
      */
     public function whenProductSkuWasChanged(ProductSkuWasChanged $event): void
     {
-        $this->productId = $event->productId();
-        $this->productSku = $event->productSku();
+        $this->id = $event->productId();
+        $this->sku = $event->productSku();
     }
 
     /**
@@ -520,8 +521,8 @@ class Product extends EventSourcedAggregate implements AggregateRoot
      */
     public function whenProductPriceWasChanged(ProductPriceWasChanged $event): void
     {
-        $this->productId = $event->productId();
-        $this->productPrice = $event->productPrice();
+        $this->id = $event->productId();
+        $this->price = $event->productPrice();
     }
 
     /**
@@ -529,8 +530,8 @@ class Product extends EventSourcedAggregate implements AggregateRoot
      */
     public function whenProductPurchaseUrlWasChanged(ProductPurchaseUrlWasChanged $event): void
     {
-        $this->productId = $event->productId();
-        $this->productPurchaseUrl = $event->productPurchaseUrl();
+        $this->id = $event->productId();
+        $this->purchaseUrl = $event->productPurchaseUrl();
     }
 
     /**
@@ -538,8 +539,8 @@ class Product extends EventSourcedAggregate implements AggregateRoot
      */
     public function whenProductShowInMenuWasChanged(ProductShowInMenuWasChanged $event): void
     {
-        $this->productId = $event->productId();
-        $this->productShowInMenu = $event->productShowInMenu();
+        $this->id = $event->productId();
+        $this->showInMenu = $event->productShowInMenu();
     }
 
     /**
@@ -547,8 +548,8 @@ class Product extends EventSourcedAggregate implements AggregateRoot
      */
     public function whenProductShowInSearchWasChanged(ProductShowInSearchWasChanged $event): void
     {
-        $this->productId = $event->productId();
-        $this->productShowInSearch = $event->productShowInSearch();
+        $this->id = $event->productId();
+        $this->showInSearch = $event->productShowInSearch();
     }
 
     /**
@@ -556,8 +557,8 @@ class Product extends EventSourcedAggregate implements AggregateRoot
      */
     public function whenProductFeaturedImageWasChanged(ProductFeaturedImageWasChanged $event): void
     {
-        $this->productId = $event->productId();
-        $this->productFeaturedImage = $event->productFeaturedImage();
+        $this->id = $event->productId();
+        $this->featuredImage = $event->productFeaturedImage();
     }
 
     /**
@@ -565,17 +566,17 @@ class Product extends EventSourcedAggregate implements AggregateRoot
      */
     public function whenProductStatusWasChanged(ProductStatusWasChanged $event): void
     {
-        $this->productId = $event->productId();
-        $this->productStatus = $event->productStatus();
+        $this->id = $event->productId();
+        $this->status = $event->productStatus();
     }
 
     /**
      * @throws TypeException
      */
-    public function whenProductMetaWasChanged(ProductMetaWasChanged $event): void
+    public function whenProductAttributeWasChanged(ProductAttributeWasChanged $event): void
     {
-        $this->productId = $event->productId();
-        $this->meta = $event->productMeta();
+        $this->id = $event->productId();
+        $this->attribute = $event->productAttribute();
     }
 
     /**
@@ -583,8 +584,8 @@ class Product extends EventSourcedAggregate implements AggregateRoot
      */
     public function whenProductPublishedWasChanged(ProductPublishedWasChanged $event): void
     {
-        $this->productId = $event->productId();
-        $this->productPublished = $event->productPublished();
+        $this->id = $event->productId();
+        $this->published = $event->productPublished();
     }
 
     /**
@@ -592,8 +593,8 @@ class Product extends EventSourcedAggregate implements AggregateRoot
      */
     public function whenProductPublishedGmtWasChanged(ProductPublishedGmtWasChanged $event): void
     {
-        $this->productId = $event->productId();
-        $this->productPublishedGmt = $event->productPublishedGmt();
+        $this->id = $event->productId();
+        $this->publishedGmt = $event->productPublishedGmt();
     }
 
     /**
@@ -601,8 +602,8 @@ class Product extends EventSourcedAggregate implements AggregateRoot
      */
     public function whenProductModifiedWasChanged(ProductModifiedWasChanged $event): void
     {
-        $this->productId = $event->productId();
-        $this->productModified = $event->productModified();
+        $this->id = $event->productId();
+        $this->modified = $event->productModified();
     }
 
     /**
@@ -610,8 +611,8 @@ class Product extends EventSourcedAggregate implements AggregateRoot
      */
     public function whenProductModifiedGmtWasChanged(ProductModifiedGmtWasChanged $event): void
     {
-        $this->productId = $event->productId();
-        $this->productModifiedGmt = $event->productModifiedGmt();
+        $this->id = $event->productId();
+        $this->modifiedGmt = $event->productModifiedGmt();
     }
 
     /**
@@ -619,6 +620,6 @@ class Product extends EventSourcedAggregate implements AggregateRoot
      */
     public function whenProductWasDeleted(ProductWasDeleted $event): void
     {
-        $this->productId = $event->productId();
+        $this->id = $event->productId();
     }
 }

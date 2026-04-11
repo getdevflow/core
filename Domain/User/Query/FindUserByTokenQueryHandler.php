@@ -16,6 +16,8 @@ final class FindUserByTokenQueryHandler implements QueryHandler
 
     public function handle(FindUserByTokenQuery|Query $query): array|null|object
     {
-        return $this->repository->findByToken($query->userToken->toNative());
+        /** @var FindUserByTokenQuery $query */
+
+        return $this->repository->findByToken($query->token->toNative());
     }
 }

@@ -12,30 +12,28 @@ use Codefy\Domain\Metadata;
 use Qubus\Exception\Data\TypeException;
 use Qubus\ValueObjects\StringLiteral\StringLiteral;
 
-use function Qubus\Support\Helpers\is_null__;
-
 class UserDateFormatWasChanged extends AggregateChanged
 {
-    private ?UserId $userId = null;
+    private UserId $id;
 
-    private ?StringLiteral $userDateFormat = null;
+    private StringLiteral $dateFormat;
 
     public static function withData(
-        UserId $userId,
-        StringLiteral $userDateFormat
+        UserId $id,
+        StringLiteral $dateFormat
     ): UserDateFormatWasChanged|DomainEvent|AggregateChanged {
         $event = self::occur(
-            aggregateId: $userId,
+            aggregateId: $id,
             payload: [
-                'user_date_format' => $userDateFormat->toNative(),
+                'user_date_format' => $dateFormat->toNative(),
             ],
             metadata: [
                 Metadata::AGGREGATE_TYPE => 'user'
             ]
         );
 
-        $event->userId = $userId;
-        $event->userDateFormat = $userDateFormat;
+        $event->id = $id;
+        $event->dateFormat = $dateFormat;
 
         return $event;
     }
@@ -45,22 +43,19 @@ class UserDateFormatWasChanged extends AggregateChanged
      */
     public function userId(): UserId|AggregateId
     {
-        if (is_null__($this->userId)) {
-            $this->userId = UserId::fromString(userId: $this->aggregateId()->__toString());
+        if (!isset($this->id)) {
+            $this->id = UserId::fromString(userId: $this->aggregateId()->__toString());
         }
 
-        return $this->userId;
+        return $this->id;
     }
 
-    /**
-     * @throws TypeException
-     */
     public function userDateFormat(): StringLiteral
     {
-        if (is_null__($this->userDateFormat)) {
-            $this->userDateFormat = StringLiteral::fromNative($this->payload()['user_date_format']);
+        if (!isset($this->dateFormat)) {
+            $this->dateFormat = StringLiteral::fromNative($this->payload()['user_date_format']);
         }
 
-        return $this->userDateFormat;
+        return $this->dateFormat;
     }
 }

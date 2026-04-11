@@ -21,6 +21,6 @@ final class FindProductBySlugQueryHandler implements QueryHandler
      */
     public function handle(FindProductBySlugQuery|Query $query): array|object
     {
-        return $this->repository->findBySlug($query->productSlug->toNative());
+        return $this->repository->findBySlug($query->slug->toNative());
     }
 }

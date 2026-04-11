@@ -14,17 +14,9 @@ use App\Domain\ContentType\ContentTypeError;
 use App\Domain\ContentType\Query\FindContentTypeBySlugQuery;
 use App\Domain\ContentType\ValueObject\ContentTypeId;
 use App\Shared\Services\Sanitizer;
-use Codefy\CommandBus\Busses\SynchronousCommandBus;
-use Codefy\CommandBus\Containers\ContainerFactory;
-use Codefy\CommandBus\Exceptions\CommandCouldNotBeHandledException;
 use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
 use Codefy\CommandBus\Exceptions\UnresolvableCommandHandlerException;
-use Codefy\CommandBus\Odin;
-use Codefy\CommandBus\Resolvers\NativeCommandHandlerResolver;
 use Codefy\Framework\Factory\FileLoggerFactory;
-use Codefy\QueryBus\Busses\SynchronousQueryBus;
-use Codefy\QueryBus\Enquire;
-use Codefy\QueryBus\Resolvers\NativeQueryHandlerResolver;
 use Codefy\QueryBus\UnresolvableQueryHandlerException;
 use PDOException;
 use Psr\Container\ContainerExceptionInterface;
@@ -37,7 +29,7 @@ use Qubus\ValueObjects\StringLiteral\StringLiteral;
 use ReflectionException;
 
 use function Codefy\Framework\Helpers\ask;
-use function Codefy\Framework\Helpers\config;
+use function Codefy\Framework\Helpers\command;
 use function Qubus\Security\Helpers\__observer;
 use function Qubus\Security\Helpers\esc_html__;
 use function Qubus\Security\Helpers\esc_url;
@@ -47,7 +39,7 @@ use function Qubus\Support\Helpers\is_null__;
 /**
  * Retrieve content type by a given field from the content_type table.
  *
- * @file App/Shared/Helpers/content-type.php
+ * @file core/Shared/Helpers/content-type.php
  * @param string $field The field to retrieve the content_type with
  *                      (id = content_type_id, slug = content_type_slug).
  * @param string $value A value for $field.
@@ -60,8 +52,8 @@ use function Qubus\Support\Helpers\is_null__;
 function get_content_type_by(string $field, string $value): false|object
 {
     $query = match ($field) {
-        'id' => new FindContentTypeByIdQuery(['contentTypeId' => ContentTypeId::fromString($value)]),
-        'slug' => new FindContentTypeBySlugQuery(['contentTypeSlug' => new StringLiteral($value)]),
+        'id' => new FindContentTypeByIdQuery(['id' => ContentTypeId::fromString($value)]),
+        'slug' => new FindContentTypeBySlugQuery(['slug' => new StringLiteral($value)]),
     };
 
     $results = ask($query);
@@ -76,10 +68,10 @@ function get_content_type_by(string $field, string $value): false|object
 /**
  * A function which retrieves a content type title.
  *
- * Purpose of this function is for the `content_type_title`
+ * Purpose of this function is for the `content.type.title`
  * filter.
  *
- * @file App/Shared/Helpers/content-type.php
+ * @file core/Shared/Helpers/content-type.php
  * @param string $contentTypeId The unique id of a content_type.
  * @return string Content Type title or '' on failure.
  * @throws CommandPropertyNotFoundException
@@ -101,7 +93,7 @@ function get_content_type_title(string $contentTypeId): string
     /**
      * Filters the content_type title.
      *
-     * @file App/Shared/Helpers/content-type.php
+     * @file core/Shared/Helpers/content-type.php
      * @param string    $title The content_type's title.
      * @param string    $contentTypeId The content_type id.
      */
@@ -111,10 +103,10 @@ function get_content_type_title(string $contentTypeId): string
 /**
  * A function which retrieves a content_type slug.
  *
- * Purpose of this function is for the `content_type_slug`
+ * Purpose of this function is for the `content.type.slug`
  * filter.
  *
- * @file App/Shared/Helpers/content-type.php
+ * @file core/Shared/Helpers/content-type.php
  * @param string $contentTypeId The unique id of a content_type.
  * @return string Content Type slug or '' on failure.
  * @throws CommandPropertyNotFoundException
@@ -136,7 +128,7 @@ function get_content_type_slug(string $contentTypeId): string
     /**
      * Filters the content_type's slug.
      *
-     * @file App/Shared/Helpers/content-type.php
+     * @file core/Shared/Helpers/content-type.php
      * @param string    $slug The content_type's slug.
      * @param string    $contentTypeId The content_type id.
      */
@@ -146,10 +138,10 @@ function get_content_type_slug(string $contentTypeId): string
 /**
  * A function which retrieves a content_type description.
  *
- * Purpose of this function is for the `content_type_description`
+ * Purpose of this function is for the `content.type.description`
  * filter.
  *
- * @file App/Shared/Helpers/content-type.php
+ * @file core/Shared/Helpers/content-type.php
  * @param string $contentTypeId The unique id of a content_type.
  * @return string Content Type description or '' on failure.
  * @throws CommandPropertyNotFoundException
@@ -171,7 +163,7 @@ function get_content_type_description(string $contentTypeId): string
     /**
      * Filters the content_type's description.
      *
-     * @file App/Shared/Helpers/content-type.php
+     * @file core/Shared/Helpers/content-type.php
      * @param string    $description The content_type's description.
      * @param string    $contentTypeId The content_type id.
      */
@@ -181,10 +173,10 @@ function get_content_type_description(string $contentTypeId): string
 /**
  * A function which retrieves a content_type's permalink.
  *
- * Purpose of this function is for the `content_type_permalink`
+ * Purpose of this function is for the `content.type.permalink`
  * filter.
  *
- * @file App/Shared/Helpers/content-type.php
+ * @file core/Shared/Helpers/content-type.php
  * @param string $contentTypeId Content Type id.
  * @return string
  * @throws CommandPropertyNotFoundException
@@ -199,7 +191,7 @@ function get_content_type_permalink(string $contentTypeId): string
     /**
      * Filters the content_type's link.
      *
-     * @file App/Shared/Helpers/content-type.php
+     * @file core/Shared/Helpers/content-type.php
      * @param string    $link The content_type's permalink.
      * @param string    $contentTypeId The content_type id.
      */
@@ -233,7 +225,7 @@ function cms_unique_content_type_slug(
     /**
      * Filters the unique content_type slug before returned.
      *
-     * @file App/Shared/Helpers/content-type.php
+     * @file core/Shared/Helpers/content-type.php
      * @param string    $contentTypeSlug Unique content_type slug.
      * @param string    $originalSlug    The content_type's original slug.
      * @param string    $originalTitle   The content_type's original title before slugified.
@@ -251,11 +243,10 @@ function cms_unique_content_type_slug(
 /**
  * Insert or update a content_type.
  *
- * @file App/Shared/Helpers/content-type.php
+ * @file core/Shared/Helpers/content-type.php
  * @param array|ServerRequestInterface|ContentType $contentTypeData An array of data that is used for insert or update.
  * @return string|null|Error The newly created content_type's content_type_id, null or Error if the content_type could
  *                           not be created or updated.
- * @throws CommandCouldNotBeHandledException
  * @throws CommandPropertyNotFoundException
  * @throws ContainerExceptionInterface
  * @throws Exception
@@ -289,7 +280,7 @@ function cms_insert_content_type(array|ServerRequestInterface|ContentType $conte
         /**
          * Fires immediately before a content_type is inserted into the content_type table.
          *
-         * @file App/Shared/Helpers/content-type.php
+         * @file core/Shared/Helpers/content-type.php
          * @param string  $previousSlug   Slug of the content before it was created.
          *                                or updated.
          * @param string  $contentTypeId  The content_type's content_type_id.
@@ -312,7 +303,7 @@ function cms_insert_content_type(array|ServerRequestInterface|ContentType $conte
         /**
          * Fires immediately before a content_type is inserted into the content_type table.
          *
-         * @file App/Shared/Helpers/content-type.php
+         * @file core/Shared/Helpers/content-type.php
          * @param string  $previousSlug   Slug of the content_type before it is created.
          *                                or updated.
          * @param string  $contentTypeId  The content_type's content_type_id.
@@ -354,30 +345,25 @@ function cms_insert_content_type(array|ServerRequestInterface|ContentType $conte
         $contentTypeSlug = $contentTypeBefore->slug;
     }
 
-    $resolver = new NativeCommandHandlerResolver(
-        container: ContainerFactory::make(config: config('commandbus.container'))
-    );
-    $odin = new Odin(bus: new SynchronousCommandBus($resolver));
-
     if ($update) {
         $command = new UpdateContentTypeCommand([
-            'contentTypeId' => ContentTypeId::fromString($contentType->id),
-            'contentTypeTitle' => new StringLiteral($contentType->title),
-            'contentTypeSlug' => new StringLiteral($contentTypeSlug),
-            'contentTypeDescription' => new StringLiteral($contentType->description),
+            'id' => ContentTypeId::fromString($contentType->id),
+            'title' => new StringLiteral($contentType->title),
+            'slug' => new StringLiteral($contentTypeSlug),
+            'description' => new StringLiteral($contentType->description),
         ]);
 
-        $odin->execute($command);
+        command($command);
 
     } else {
         $command = new CreateContentTypeCommand([
-            'contentTypeId' => ContentTypeId::fromString($contentType->id),
-            'contentTypeTitle' => new StringLiteral($contentType->title),
-            'contentTypeSlug' => new StringLiteral($contentTypeSlug),
-            'contentTypeDescription' => new StringLiteral($contentType->description),
+            'id' => ContentTypeId::fromString($contentType->id),
+            'title' => new StringLiteral($contentType->title),
+            'slug' => new StringLiteral($contentTypeSlug),
+            'description' => new StringLiteral($contentType->description),
         ]);
 
-        $odin->execute($command);
+        command($command);
     }
 
     $contentType = get_content_type_by('id', $contentTypeId->toNative());
@@ -386,7 +372,7 @@ function cms_insert_content_type(array|ServerRequestInterface|ContentType $conte
         /**
          * Action hook triggered after existing content_type has been updated.
          *
-         * @file App/Shared/Helpers/content-type.php
+         * @file core/Shared/Helpers/content-type.php
          * @param string   $contentTypeId    Content Type id.
          * @param object   $contentType      Content Type object.
          */
@@ -397,7 +383,7 @@ function cms_insert_content_type(array|ServerRequestInterface|ContentType $conte
         /**
          * Action hook triggered after existing content type has been updated.
          *
-         * @file App/Shared/Helpers/content-type.php
+         * @file core/Shared/Helpers/content-type.php
          * @param string    $contentTypeId      Content Type id.
          * @param object    $contentTypeAfter   Content Type object following the update.
          * @param object    $contentTypeBefore  Content Type object before the update.
@@ -413,7 +399,7 @@ function cms_insert_content_type(array|ServerRequestInterface|ContentType $conte
     /**
      * Action hook triggered after content_type has been saved.
      *
-     * @file App/Shared/Helpers/content-type.php
+     * @file core/Shared/Helpers/content-type.php
      * @param string $contentTypeId  The content_type's id.
      * @param array  $contentType    Content Type object.
      * @param bool   $update         Whether this is an existing content_type or a new content_type.
@@ -433,12 +419,11 @@ function cms_insert_content_type(array|ServerRequestInterface|ContentType $conte
  *
  * See {@see cms_insert_content_type()} For what fields can be set in $contentTypeData.
  *
- * @file App/Shared/Helpers/content-type.php
+ * @file core/Shared/Helpers/content-type.php
  * @param array|ServerRequestInterface|ContentType $contentTypeData An array of content_type data
  *                                                                  or a content_type object.
  * @return string|null|Error The updated content_type's id, Exception or return null if
  *                           content_type could not be updated.
- * @throws CommandCouldNotBeHandledException
  * @throws CommandPropertyNotFoundException
  * @throws ContainerExceptionInterface
  * @throws Exception
@@ -473,10 +458,9 @@ function cms_update_content_type(array|ServerRequestInterface|ContentType $conte
 /**
  * Deletes a content_type from the content_type document.
  *
- * @file App/Shared/Helpers/content-type.php
+ * @file core/Shared/Helpers/content-type.php
  * @param string $contentTypeId The id of the content_type to delete.
  * @return false|string|Error ContentType id or false|Error on failure.
- * @throws CommandCouldNotBeHandledException
  * @throws CommandPropertyNotFoundException
  * @throws Exception
  * @throws ReflectionException
@@ -496,7 +480,7 @@ function cms_delete_content_type(string $contentTypeId): false|string|Error
     /**
      * Action hook fires before a content_type is deleted.
      *
-     * @file App/Shared/Helpers/content-type.php
+     * @file core/Shared/Helpers/content-type.php
      * @param string $contentTypeId ContentType id.
      */
     __observer()->action->doAction('before_delete_content_type', $contentTypeId);
@@ -505,24 +489,17 @@ function cms_delete_content_type(string $contentTypeId): false|string|Error
      * Action hook fires immediately before a content_type is deleted from the
      * content_type table.
      *
-     * @file App/Shared/Helpers/content-type.php
+     * @file core/Shared/Helpers/content-type.php
      * @param string $contentTypeId ContentType ID.
      */
     __observer()->action->doAction('delete_content_type', $contentTypeId);
 
-    $resolver = new NativeCommandHandlerResolver(
-        container: ContainerFactory::make(config: config(key: 'commandbus.container'))
-    );
-    $odin = new Odin(bus: new SynchronousCommandBus($resolver));
-
     try {
-        $command = new DeleteContentTypeCommand(
-            [
-                'contentTypeId' => ContentTypeId::fromString($contentTypeId),
-            ]
-        );
+        $command = new DeleteContentTypeCommand([
+            'id' => ContentTypeId::fromString($contentTypeId),
+        ]);
 
-        $odin->execute($command);
+        command($command);
     } catch (PDOException $e) {
         FileLoggerFactory::getLogger()->error(
             sprintf(
@@ -546,7 +523,7 @@ function cms_delete_content_type(string $contentTypeId): false|string|Error
     /**
      * Action hook fires immediately after a content_type is deleted from the content_type table.
      *
-     * @file App/Shared/Helpers/content-type.php
+     * @file core/Shared/Helpers/content-type.php
      * @param string $contentTypeId ContentType id.
      */
     __observer()->action->doAction('deleted_content_type', $contentTypeId);
@@ -554,7 +531,7 @@ function cms_delete_content_type(string $contentTypeId): false|string|Error
     /**
      * Action hook fires after a content_type is deleted.
      *
-     * @file App/Shared/Helpers/content-type.php
+     * @file core/Shared/Helpers/content-type.php
      * @param string $contentTypeId ContentType id.
      */
     __observer()->action->doAction('after_delete_contenttype', $contentTypeId);
@@ -565,19 +542,12 @@ function cms_delete_content_type(string $contentTypeId): false|string|Error
 /**
  * Returns all content types.
  *
- * @file App/Shared/Helpers/content-type.php
+ * @file core/Shared/Helpers/content-type.php
  * @return array
  * @throws ReflectionException
- * @throws UnresolvableQueryHandlerException|TypeException
+ * @throws UnresolvableQueryHandlerException
  */
 function get_all_content_types(): array
 {
-    $resolver = new NativeQueryHandlerResolver(
-        container: ContainerFactory::make(config: config(key: 'querybus.aliases'))
-    );
-    $enquirer = new Enquire(bus: new SynchronousQueryBus($resolver));
-
-    $query = new FindContentTypesQuery();
-
-    return $enquirer->execute($query);
+    return ask(new FindContentTypesQuery());
 }

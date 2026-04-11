@@ -11,30 +11,28 @@ use Codefy\Domain\Metadata;
 use Qubus\Exception\Data\TypeException;
 use Qubus\ValueObjects\StringLiteral\StringLiteral;
 
-use function Qubus\Support\Helpers\is_null__;
-
 final class ContentSlugWasChanged extends AggregateChanged
 {
-    private ?ContentId $contentId = null;
+    private ContentId $id;
 
-    private ?StringLiteral $contentSlug = null;
+    private StringLiteral $slug;
 
     public static function withData(
-        ContentId $contentId,
-        StringLiteral $contentSlug,
+        ContentId $id,
+        StringLiteral $slug,
     ): ContentSlugWasChanged|DomainEvent|AggregateChanged {
         $event = self::occur(
-            aggregateId: $contentId,
+            aggregateId: $id,
             payload: [
-                'content_slug' => $contentSlug->toNative(),
+                'content_slug' => $slug->toNative(),
             ],
             metadata: [
                 Metadata::AGGREGATE_TYPE => 'content',
             ]
         );
 
-        $event->contentId = $contentId;
-        $event->contentSlug = $contentSlug;
+        $event->id = $id;
+        $event->slug = $slug;
 
         return $event;
     }
@@ -44,22 +42,19 @@ final class ContentSlugWasChanged extends AggregateChanged
      */
     public function contentId(): ContentId
     {
-        if (is_null__($this->contentId)) {
-            $this->contentId = ContentId::fromString($this->aggregateId()->__toString());
+        if (!isset($this->id)) {
+            $this->id = ContentId::fromString($this->aggregateId()->__toString());
         }
 
-        return $this->contentId;
+        return $this->id;
     }
 
-    /**
-     * @throws TypeException
-     */
     public function contentSlug(): StringLiteral
     {
-        if (is_null__($this->contentSlug)) {
-            $this->contentSlug = StringLiteral::fromNative($this->payload()['content_slug']);
+        if (!isset($this->slug)) {
+            $this->slug = StringLiteral::fromNative($this->payload()['content_slug']);
         }
 
-        return $this->contentSlug;
+        return $this->slug;
     }
 }

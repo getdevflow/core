@@ -17,6 +17,7 @@ use Codefy\Domain\EventSourcing\TransactionId;
 use Codefy\Domain\Metadata;
 use Exception as NativeException;
 use Qubus\Exception\Data\TypeException;
+use Qubus\Expressive\Database;
 use Qubus\Expressive\QueryBuilder;
 use Qubus\Expressive\QueryBuilderException;
 
@@ -55,8 +56,8 @@ final class QueryBuilderTransactionalEventStore implements TransactionalEventSto
                         'aggregate_type' => $event->metadata()[Metadata::AGGREGATE_TYPE],
                         'aggregate_playhead' => $event->playhead(),
                         'recorded_at' => (string) $event->recordedAt(),
-                ])
-                ->save();
+                    ])
+                    ->save();
             });
         } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
@@ -145,7 +146,7 @@ final class QueryBuilderTransactionalEventStore implements TransactionalEventSto
                     Metadata::AGGREGATE_TYPE => $metadata['__aggregate_type'],
                     Metadata::AGGREGATE_ID => $aggregateId::fromString($metadata['__aggregate_id']),
                     Metadata::AGGREGATE_PLAYHEAD => $metadata['__aggregate_playhead'],
-                    Metadata::EVENT_ID => new EventId(value: $event->event_id),
+                    Metadata::EVENT_ID => new EventId(value: $metadata['__event_id']),
                     Metadata::EVENT_TYPE => $metadata['__event_type'],
                     Metadata::RECORDED_AT => $metadata['__recorded_at']
                 ],

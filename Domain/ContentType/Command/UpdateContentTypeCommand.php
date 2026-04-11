@@ -10,11 +10,11 @@ use Qubus\ValueObjects\StringLiteral\StringLiteral;
 
 class UpdateContentTypeCommand extends PropertyCommand
 {
-    public ?ContentTypeId $contentTypeId = null;
+    public ContentTypeId $id;
 
-    public ?StringLiteral $contentTypeTitle = null;
+    public StringLiteral $title;
 
-    public ?StringLiteral $contentTypeSlug = null;
+    public StringLiteral $slug;
 
-    public ?StringLiteral $contentTypeDescription = null;
+    public StringLiteral $description;
 }

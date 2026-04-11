@@ -6,7 +6,7 @@ namespace App\Infrastructure\Persistence\Repository;
 
 use App\Domain\Content\Query\Trait\PopulateContentQueryAware;
 use App\Domain\Content\Repository\ContentQueryRepository;
-use App\Infrastructure\Persistence\Database;
+use Qubus\Expressive\Database;
 use App\Shared\Services\Sanitizer;
 use Codefy\Framework\Factory\FileLoggerFactory;
 use PDOException;
@@ -31,11 +31,11 @@ class QueryBusContentRepository implements ContentQueryRepository
      * @throws ReflectionException
      * @throws Exception
      */
-    public function findById(string $contentId): array|object
+    public function findById(string $id): array|object
     {
         $sql = "SELECT * FROM {$this->dfdb->prefix}content WHERE content_id = ?";
 
-        $data = $this->dfdb->getRow($this->dfdb->prepare($sql, [$contentId]), Database::ARRAY_A);
+        $data = $this->dfdb->getRow($this->dfdb->prepare($sql, [$id]), Database::ARRAY_A);
 
         if (is_null__($data)) {
             return [];
@@ -54,11 +54,11 @@ class QueryBusContentRepository implements ContentQueryRepository
      * @throws ReflectionException
      * @throws Exception
      */
-    public function findBySlug(string $contentSlug): array|object
+    public function findBySlug(string $slug): array|object
     {
         $sql = "SELECT * FROM {$this->dfdb->prefix}content WHERE content_slug = ?";
 
-        $data = $this->dfdb->getRow($this->dfdb->prepare($sql, [$contentSlug]), Database::ARRAY_A);
+        $data = $this->dfdb->getRow($this->dfdb->prepare($sql, [$slug]), Database::ARRAY_A);
 
         if (is_null__($data)) {
             return [];
@@ -77,12 +77,12 @@ class QueryBusContentRepository implements ContentQueryRepository
      * @throws ReflectionException
      * @throws Exception
      */
-    public function findByStatus(string $contentStatus): array
+    public function findByStatus(string $status): array
     {
         $sql = "SELECT * FROM {$this->dfdb->prefix}content WHERE content_status = ?";
 
         $data = $this->dfdb->getResults(
-            query: $this->dfdb->prepare(query: $sql, params: [$contentStatus]),
+            query: $this->dfdb->prepare(query: $sql, params: [$status]),
             output: Database::ARRAY_A
         );
 
@@ -101,7 +101,7 @@ class QueryBusContentRepository implements ContentQueryRepository
      * @throws ReflectionException
      * @throws Exception
      */
-    public function findByTypeAndId(string $contentTypeSlug, string $contentId): array|object
+    public function findByTypeAndId(string $type, string $id): array|object
     {
         $sql = "SELECT * FROM {$this->dfdb->prefix}content WHERE content_type = ? AND content_id = ?";
 
@@ -109,8 +109,8 @@ class QueryBusContentRepository implements ContentQueryRepository
             $this->dfdb->prepare(
                 $sql,
                 [
-                    $contentTypeSlug,
-                    $contentId
+                    $type,
+                    $id
                 ]
             ),
             Database::ARRAY_A
@@ -133,11 +133,11 @@ class QueryBusContentRepository implements ContentQueryRepository
      * @throws ReflectionException
      * @throws Exception
      */
-    public function findByType(string $contentTypeSlug): array|object
+    public function findByType(string $type): array|object
     {
         $sql = "SELECT * FROM {$this->dfdb->prefix}content WHERE content_type = ?";
 
-        $data = $this->dfdb->getRow($this->dfdb->prepare($sql, [$contentTypeSlug]), Database::ARRAY_A);
+        $data = $this->dfdb->getRow($this->dfdb->prepare($sql, [$type]), Database::ARRAY_A);
 
         if (is_null__($data)) {
             return [];
@@ -157,7 +157,7 @@ class QueryBusContentRepository implements ContentQueryRepository
      * @throws ReflectionException
      */
     public function findByFilters(
-        ?string $contentTypeSlug = null,
+        ?string $type = null,
         int $limit = 0,
         ?int $offset = null,
         string $status = 'all'
@@ -165,7 +165,7 @@ class QueryBusContentRepository implements ContentQueryRepository
         $contents = [];
         $where = '';
 
-        $sanitizeContentType = Sanitizer::item(item: $contentTypeSlug);
+        $sanitizeContentType = Sanitizer::item(item: $type);
         $sanitizeLimit = Sanitizer::item(item: $limit, type: 'int', context: '');
         $sanitizeOffset = Sanitizer::item(item: $offset, type: 'int', context: '');
         $sanitizeStatus = Sanitizer::item(item: $status);
@@ -213,7 +213,7 @@ class QueryBusContentRepository implements ContentQueryRepository
                         $e->getMessage()
                     ),
                     [
-                        'Db Function' => 'get_all_content'
+                        'QueryBusContentRepository' => 'findByFilters'
                     ]
                 );
             }
@@ -256,7 +256,7 @@ class QueryBusContentRepository implements ContentQueryRepository
                         $e->getMessage()
                     ),
                     [
-                        'Query Bus Repository' => 'QueryBusContentRespository',
+                        'QueryBusContentRepository' => 'findByFilters',
                     ]
                 );
             }

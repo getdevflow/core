@@ -25,9 +25,9 @@ class DeleteProductCommandHandler implements CommandHandler
     public function handle(DeleteProductCommand|Command $command): void
     {
         /** @var Product $product */
-        $product = $this->aggregateRepository->loadAggregateRoot($command->productId);
+        $product = $this->aggregateRepository->loadAggregateRoot($command->id);
 
-        $product->changeProductDeleted($command->productId);
+        $product->changeProductDeleted($command->id);
 
         $this->aggregateRepository->saveAggregateRoot($product);
     }

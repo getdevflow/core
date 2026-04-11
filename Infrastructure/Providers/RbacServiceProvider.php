@@ -7,22 +7,18 @@ namespace App\Infrastructure\Providers;
 use App\Infrastructure\Persistence\FileResource;
 use App\Infrastructure\Persistence\Repository\AuthenticationRepository;
 use App\Infrastructure\Services\RbacLoader;
-use App\Shared\Services\Registry;
 use Codefy\Framework\Auth\Auth;
 use Codefy\Framework\Auth\Rbac\Rbac;
 use Codefy\Framework\Auth\Rbac\Resource\StorageResource;
 use Codefy\Framework\Auth\Repository\AuthUserRepository;
 use Codefy\Framework\Auth\Sentinel;
 use Codefy\Framework\Support\CodefyServiceProvider;
-use Gettext\Translator;
-use Gettext\TranslatorFunctions;
 use Qubus\Exception\Exception;
-use ReflectionException;
 
 final class RbacServiceProvider extends CodefyServiceProvider
 {
     /**
-     * @throws Exception|ReflectionException
+     * @throws Exception
      */
     public function register(): void
     {
@@ -38,8 +34,6 @@ final class RbacServiceProvider extends CodefyServiceProvider
         $loader = $this->codefy->make(name: RbacLoader::class);
         $loader->initRbacPermissions();
         $loader->initRbacRoles();
-
-        Registry::getInstance()->set('rbac', $this->codefy->make(name: Rbac::class));
 
         $this->codefy->alias(original: Sentinel::class, alias: Auth::class);
         $this->codefy->share(nameOrInstance: Sentinel::class);

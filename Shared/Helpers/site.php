@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Shared\Helpers;
 
 use App\Application\Devflow;
+use App\Domain\Site\Command\AttributeSiteUserCommand;
 use App\Domain\Site\Command\CreateSiteCommand;
 use App\Domain\Site\Command\DeleteSiteCommand;
+use App\Domain\Site\Command\RemoveSiteUserCommand;
 use App\Domain\Site\Command\UpdateSiteCommand;
 use App\Domain\Site\Model\Site;
 use App\Domain\Site\Query\FindSitesQuery;
@@ -17,7 +19,8 @@ use App\Domain\User\Query\FindMultisiteUniqueUsersQuery;
 use App\Domain\User\ValueObject\UserId;
 use App\Infrastructure\Persistence\Cache\SiteCachePsr16;
 use App\Infrastructure\Persistence\Cache\UserCachePsr16;
-use App\Infrastructure\Persistence\Database;
+use Qubus\Expressive\Database;
+use App\Infrastructure\Services\AttributesFactory;
 use App\Shared\Services\DateTime;
 use App\Shared\Services\Registry;
 use App\Shared\Services\Sanitizer;
@@ -25,6 +28,7 @@ use App\Shared\Services\SimpleCacheObjectCacheFactory;
 use Codefy\CommandBus\Exceptions\CommandCouldNotBeHandledException;
 use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
 use Codefy\CommandBus\Exceptions\UnresolvableCommandHandlerException;
+use Codefy\Domain\Model\EntityNotFoundException;
 use Codefy\Framework\Factory\FileLoggerFactory;
 use Codefy\QueryBus\UnresolvableQueryHandlerException;
 use DateInvalidTimeZoneException;
@@ -51,6 +55,7 @@ use function Codefy\Framework\Helpers\app;
 use function Codefy\Framework\Helpers\ask;
 use function Codefy\Framework\Helpers\command;
 use function Codefy\Framework\Helpers\config;
+use function Codefy\Framework\Helpers\logger;
 use function Codefy\Framework\Helpers\public_path;
 use function Codefy\Framework\Helpers\resource_path;
 use function crc32;
@@ -61,6 +66,7 @@ use function mkdir;
 use function Qubus\Security\Helpers\__observer;
 use function Qubus\Security\Helpers\esc_html;
 use function Qubus\Security\Helpers\esc_html__;
+use function Qubus\Security\Helpers\t__;
 use function Qubus\Security\Helpers\unslash;
 use function Qubus\Support\Helpers\is_false__;
 use function Qubus\Support\Helpers\is_null__;
@@ -72,9 +78,9 @@ use function strtotime;
 /**
  * Retrieves all sites.
  *
- * @file App/Shared/Helpers/site.php
+ * @file core/Shared/Helpers/site.php
  * @throws ReflectionException
- * @throws UnresolvableQueryHandlerException|TypeException
+ * @throws UnresolvableQueryHandlerException
  */
 function get_all_sites(): mixed
 {
@@ -84,7 +90,7 @@ function get_all_sites(): mixed
 /**
  * Retrieves site data given a site ID or site object.
  *
- * @file App/Shared/Helpers/site.php
+ * @file core/Shared/Helpers/site.php
  * @param string $field The field to retrieve the site with (id, key or slug).
  * @param string $value A value for $field.
  * @return object|bool
@@ -97,8 +103,9 @@ function get_all_sites(): mixed
 function get_site_by(string $field, string $value): false|object
 {
     /** @var Site $site */
-    $site = Devflow::$PHP->make(Site::class);
+    $site = Devflow::$PHP->make(name: Site::class);
     $sitedata = $site->findBy($field, $value);
+
     if (is_false__($sitedata)) {
         return false;
     }
@@ -109,12 +116,13 @@ function get_site_by(string $field, string $value): false|object
 /**
  * Checks whether the given site domain exists.
  *
- * @file App/Shared/Helpers/site.php
+ * @file core/Shared/Helpers/site.php
  * @param string $sitedomain Site domain to check against.
  * @return bool If site domain exists, return true otherwise return false.
+ * @throws ContainerExceptionInterface
  * @throws Exception
+ * @throws NotFoundExceptionInterface
  * @throws ReflectionException
- * @throws TypeException
  */
 function if_site_domain_exists(string $sitedomain): bool
 {
@@ -135,13 +143,14 @@ function if_site_domain_exists(string $sitedomain): bool
 /**
  * Checks whether the given site exists.
  *
- * @file App/Shared/Helpers/site.php
+ * @file core/Shared/Helpers/site.php
  * @param string $siteDomain Site domain to check against.
  * @param string $sitePath Site path to check against.
  * @return bool If site exists, return true otherwise return false.
+ * @throws ContainerExceptionInterface
  * @throws Exception
+ * @throws NotFoundExceptionInterface
  * @throws ReflectionException
- * @throws TypeException
  */
 function if_site_exists(string $siteDomain, string $sitePath): bool
 {
@@ -165,32 +174,30 @@ function if_site_exists(string $siteDomain, string $sitePath): bool
  *
  * @access private
  *
- * @file App/Shared/Helpers/site.php
- * @param string $siteKey Site key.
+ * @file core/Shared/Helpers/site.php
+ * @param string $siteId Site ID.
  * @param array $params Parameters to set (assign_id or role).
  * @return bool True if usermete and role is added.
- * @throws CommandPropertyNotFoundException
  * @throws ContainerExceptionInterface
  * @throws Exception
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  * @throws TypeException
- * @throws UnresolvableQueryHandlerException
  * @throws InvalidArgumentException
  */
-function add_site_usermeta(string $siteKey, array $params = []): bool
+function add_site_usermeta(string $siteId, array $params = []): bool
 {
     /** @var User $userdata */
     $userdata = get_userdata($params['assign_id']);
     $data = [
         'bio' => $userdata->bio,
         'status' => $userdata->status,
-        'admin_layout' => $userdata->admin_layout <= 0 ? (int) 0 : (int) $userdata->admin_layout,
-        'admin_sidebar' => $userdata->admin_sidebar <= 0 ? (int) 0 : (int) $userdata->admin_sidebar,
-        'admin_skin' => $userdata->admin_skin === null ? (string) 'skin-red' : (string) $userdata->admin_skin
+        'admin.layout' => $userdata->admin_layout <= 0 ? (int) 0 : (int) $userdata->admin_layout,
+        'admin.sidebar' => $userdata->admin_sidebar <= 0 ? (int) 0 : (int) $userdata->admin_sidebar,
+        'admin.skin' => $userdata->admin_skin === null ? (string) 'skin-red' : (string) $userdata->admin_skin
     ];
     foreach ($data as $metaKey => $metaValue) {
-        update_usermeta($params['assign_id'], $siteKey . $metaKey, $metaValue);
+        update_usermeta($params['assign_id'], $metaKey, $metaValue);
     }
 
     $user = new User(dfdb());
@@ -205,7 +212,7 @@ function add_site_usermeta(string $siteKey, array $params = []): bool
  *
  * @access private
  *
- * @file App/Shared/Helpers/site.php
+ * @file core/Shared/Helpers/site.php
  * @param string $siteId Site ID.
  * @param Site $site Site object.
  * @param bool $update Whether the site is being created or updated.
@@ -228,7 +235,7 @@ function create_site_directories(string $siteId, Site $site, bool $update = fals
         return false;
     }
 
-    $key = crc32(string: $site->key . config()->string(key: 'cms.app_salt'));
+    $key = site_directory_key($site->key);
 
     mkdir(
         directory: public_path(
@@ -255,7 +262,7 @@ function create_site_directories(string $siteId, Site $site, bool $update = fals
  *
  * @access private
  *
- * @file App/Shared/Helpers/site.php
+ * @file core/Shared/Helpers/site.php
  * @param string $siteId Site Id.
  * @param Site $oldSite Site object.
  * @return bool True on success or false on failure.
@@ -273,15 +280,9 @@ function delete_site_usermeta(string $siteId, Site $oldSite): bool
     }
 
     try {
-        $dfdb->qb()->transactional(function () use ($dfdb, $oldSite) {
-            $dfdb->qb()
-                ->table(tableName: $dfdb->basePrefix . 'usermeta')
-                ->whereLike(columnName: 'meta_key', value: "%$oldSite->key%")
-                ->delete();
-        });
         $users = get_users_by_site_key($oldSite->key);
         foreach ($users as $user) {
-            $_user = new User();
+            $_user = new User($dfdb);
             $_user->id = $user['user_id'];
             $_user->login = $user['user_login'];
             $_user->token = $user['user_token'];
@@ -303,11 +304,13 @@ function delete_site_usermeta(string $siteId, Site $oldSite): bool
  *
  * @access private
  *
- * @file App/Shared/Helpers/site.php
+ * @file core/Shared/Helpers/site.php
  * @param string $siteId Site ID.
  * @param Site $oldSite Site object.
  * @return bool True on success or false on failure.
+ * @throws ContainerExceptionInterface
  * @throws Exception
+ * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  * @throws \Exception
  */
@@ -339,7 +342,7 @@ function delete_site_tables(string $siteId, Site $oldSite): bool
     /**
      * Filters the tables to drop when the site is deleted.
      *
-     * @file App/Shared/Helpers/site.php
+     * @file core/Shared/Helpers/site.php
      * @param array  $tables  Name array of the site tables to be dropped.
      * @param string $siteKey The key of the site to drop tables for.
      */
@@ -378,7 +381,7 @@ function delete_site_tables(string $siteId, Site $oldSite): bool
  *
  * @access private
  *
- * @file App/Shared/Helpers/site.php
+ * @file core/Shared/Helpers/site.php
  * @param string $siteId Site ID.
  * @return bool True on success or false on failure.
  * @throws TypeException
@@ -389,7 +392,7 @@ function delete_site_directories(string $siteId, Site $oldSite): bool
         return false;
     }
 
-    $key = crc32(string: $oldSite->key . config()->string(key: 'cms.app_salt'));
+    $key = site_directory_key($oldSite->key);
 
     rmdir__(public_path(path: 'sites' . Devflow::$PHP::DS . $key));
 
@@ -397,9 +400,17 @@ function delete_site_directories(string $siteId, Site $oldSite): bool
 }
 
 /**
+ * @throws TypeException
+ */
+function site_directory_key(string $siteKey): int
+{
+    return crc32(string: $siteKey . config()->string(key: 'cms.app_salt'));
+}
+
+/**
  * Retrieve the current site key.
  *
- * @file App/Shared/Helpers/site.php
+ * @file core/Shared/Helpers/site.php
  * @return mixed Site key.
  * @throws ReflectionException
  * @throws ContainerExceptionInterface
@@ -411,9 +422,24 @@ function get_current_site_key(): mixed
 }
 
 /**
+ * @return string
+ * @throws ContainerExceptionInterface
+ * @throws Exception
+ * @throws InvalidArgumentException
+ * @throws NotFoundExceptionInterface
+ * @throws ReflectionException
+ */
+function get_current_site_id(): string
+{
+    $site = get_site_by(field: 'key', value: get_current_site_key());
+
+    return $site->id;
+}
+
+/**
  * Retrieve a list of users based on site.
  *
- * @file App/Shared/Helpers/site.php
+ * @file core/Shared/Helpers/site.php
  * @return array Users data.
  * @throws ReflectionException
  * @throws UnresolvableQueryHandlerException
@@ -426,19 +452,17 @@ function get_multisite_users(): array
 /**
  * Add user to a site.
  *
- * @file App/Shared/Helpers/site.php
+ * @file core/Shared/Helpers/site.php
  * @param string|User $user User to add to a site.
  * @param string|Site $site Site to add user to.
  * @param string $role Role to assign to user for this site.
  * @return false|string User id on success or false on failure.
- * @throws CommandPropertyNotFoundException
  * @throws ContainerExceptionInterface
  * @throws Exception
  * @throws InvalidArgumentException
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  * @throws TypeException
- * @throws UnresolvableQueryHandlerException
  */
 function add_user_to_site(User|string $user, Site|string $site, string $role): false|string
 {
@@ -463,44 +487,35 @@ function add_user_to_site(User|string $user, Site|string $site, string $role): f
     }
 
     // Store values to save in user meta.
-    $meta = [];
-
-    $meta['bio'] = null;
-
-    $meta['role'] = $role;
-
-    $meta['status'] = (string) 'A';
-
-    $meta['admin_layout'] = (int) 0;
-
-    $meta['admin_sidebar'] = (int) 0;
-
-    $meta['admin_skin'] = (string) 'skin-red';
+    $attributes = [];
+    $attributes['role'] = $role;
+    $attributes['status'] = 'A';
+    $attributes['admin.layout'] = 0;
+    $attributes['admin.sidebar'] = 0;
+    $attributes['admin.skin'] = 'skin-red';
 
     /**
-     * Filters a user's meta values and keys immediately after the user is added
-     * and before any user meta is inserted.
+     * Filters a user's attribute values and keys immediately after the user is added
+     * and before any user attribute is inserted.
      *
-     * @param array $meta {
-     *     Default meta values and keys for the user.
+     * @param array $attributes {
+     *     Default attribute values and keys for the user.
      *
-     *     @type string $bio            The user's bio.
      *     @type string $role           The user's role.
      *     @type string $status         The user's status.
-     *     @type int    $admin_layout   The user's layout option.
-     *     @type int    $admin_sidebar  The user's sidebar option.
-     *     @type int    $admin_skin     The user's skin option.
+     *     @type int    $admin.layout   The user's layout option.
+     *     @type int    $admin.sidebar  The user's sidebar option.
+     *     @type int    $admin.skin     The user's skin option.
      * }
-     * @param $userdata User object.
+     * @param Site $sitedata Site object.
+     * @param User $userdata User object.
      */
-    $meta = __observer()->filter->applyFilter('add.user.usermeta', $meta, $userdata);
+    $attribute = __observer()->filter->applyFilter('add.user.to.site', $attributes, $sitedata, $userdata);
 
-    // Make sure metadata doesn't already exist for this user.
-    $prefix = $sitedata->key;
-    if (empty(get_usermeta(userId: $userdata->id, key: $prefix . $meta['role'], single: true))) {
-        // Update user meta.
-        foreach ($meta as $key => $value) {
-            update_usermeta(userId: $userdata->id, metaKey: $prefix . $key, value: $value);
+    // Make sure user attribute doesn't already exist for this user.
+    if (null === get_user_attribute(userId: $userdata->id, key: 'role', siteId: $sitedata->id)) {
+        foreach ($attribute as $key => $value) {
+            update_user_attribute(userId: $userdata->id, key: $key, value: $value, siteId: $sitedata->id);
         }
     }
 
@@ -511,11 +526,11 @@ function add_user_to_site(User|string $user, Site|string $site, string $role): f
  * Insert a site into the database.
  *
  * Some of the `$sitedata` array fields have filters associated with the values. Exceptions are
- * 'site_owner', 'site_registered' and 'site_modified' The filters have the prefix 'pre_'
+ * 'site_owner', 'site_registered' and 'site_modified' The filters have the prefix 'pre.'
  * followed by the field name. An example using 'site_name' would have the filter called,
- * 'pre_site_name' that can be hooked into.
+ * 'pre.site.name' that can be hooked into.
  *
- * @file App/Shared/Helpers/site.php
+ * @file core/Shared/Helpers/site.php
  * @param array|Site|ServerRequestInterface $sitedata {
  *      An array or Site array of user data arguments.
  *
@@ -572,7 +587,7 @@ function cms_insert_site(array|ServerRequestInterface|Site $sitedata): Error|str
         /**
          * Fires immediately before a site is inserted into the site document.
          *
-         * @file App/Shared/Helpers/site.php
+         * @file core/Shared/Helpers/site.php
          * @param string $previousStatus Status of the site before it is created or updated.
          * @param string $siteId         The site's site_id.
          * @param bool   $update         Whether this is an existing site or a new site.
@@ -594,7 +609,7 @@ function cms_insert_site(array|ServerRequestInterface|Site $sitedata): Error|str
         /**
          * Fires immediately before a site is inserted into the site document.
          *
-         * @file App/Shared/Helpers/site.php
+         * @file core/Shared/Helpers/site.php
          * @param string $previousStatus Status of the site before it is created or updated.
          * @param string $siteId         The site's site_id.
          * @param bool   $update         Whether this is an existing site or a new site.
@@ -622,7 +637,7 @@ function cms_insert_site(array|ServerRequestInterface|Site $sitedata): Error|str
     /**
      * Filters a site's domain before the site is created or updated.
      *
-     * @file App/Shared/Helpers/site.php
+     * @file core/Shared/Helpers/site.php
      * @param string $sanitizedSiteDomain Site domain after it has been sanitized
      * @param string $preSiteDomain The site's domain.
      */
@@ -661,7 +676,7 @@ function cms_insert_site(array|ServerRequestInterface|Site $sitedata): Error|str
     /**
      * Filters a site's mapped domain before the site is created or updated.
      *
-     * @file App/Shared/Helpers/site.php
+     * @file core/Shared/Helpers/site.php
      * @param string $sanitizedSiteMapping Mapped domain after it has been sanitized
      * @param string $rawSiteMapping The site's mapping.
      */
@@ -677,7 +692,7 @@ function cms_insert_site(array|ServerRequestInterface|Site $sitedata): Error|str
     /**
      * Filters a site's name before the site is created or updated.
      *
-     * @file App/Shared/Helpers/site.php
+     * @file core/Shared/Helpers/site.php
      * @param string $sanitizedSiteName Site name after it has been sanitized
      * @param string $rawSiteName The site's name.
      */
@@ -708,7 +723,7 @@ function cms_insert_site(array|ServerRequestInterface|Site $sitedata): Error|str
     /**
      * Filters a site's slug before created/updated.
      *
-     * @file App/Shared/Helpers/site.php
+     * @file core/Shared/Helpers/site.php
      * @param string $sanitizedSiteSlug Site slug after it has been sanitized
      * @param string $rawSiteSlug The site's slug.
      */
@@ -724,7 +739,7 @@ function cms_insert_site(array|ServerRequestInterface|Site $sitedata): Error|str
     /**
      * Filters a site's path before the site is created or updated.
      *
-     * @file App/Shared/Helpers/site.php
+     * @file core/Shared/Helpers/site.php
      * @param string $sanitizedSitePath Site path after it has been sanitized
      * @param string $rawSitePath The site's path.
      */
@@ -764,7 +779,7 @@ function cms_insert_site(array|ServerRequestInterface|Site $sitedata): Error|str
     /**
      * Filters a site's status before the site is created or updated.
      *
-     * @file App/Shared/Helpers/site.php
+     * @file core/Shared/Helpers/site.php
      * @param string $sanitizedSiteStatus Site status after it has been sanitized
      * @param string $rawSiteStatus The site's status.
      */
@@ -798,7 +813,7 @@ function cms_insert_site(array|ServerRequestInterface|Site $sitedata): Error|str
     /**
      * Filters site data before the record is created or updated.
      *
-     * @file App/Shared/Helpers/site.php
+     * @file core/Shared/Helpers/site.php
      * @param array    $data {
      *     Values and keys for the site.
      *
@@ -827,19 +842,19 @@ function cms_insert_site(array|ServerRequestInterface|Site $sitedata): Error|str
 
         try {
             $command = new UpdateSiteCommand([
-                'siteId' => SiteId::fromString($site->id),
-                'siteName' => new StringLiteral($site->name),
-                'siteSlug' => new StringLiteral($site->slug),
-                'siteDomain' => new StringLiteral($site->domain),
-                'siteMapping' => new StringLiteral($site->mapping),
-                'sitePath' => new StringLiteral($site->path),
-                'siteOwner' => UserId::fromString($site->owner),
-                'siteStatus' => new StringLiteral($site->status),
-                'siteModified' => QubusDateTimeImmutable::createFromDate(
+                'id' => SiteId::fromString($site->id),
+                'name' => new StringLiteral($site->name),
+                'slug' => new StringLiteral($site->slug),
+                'domain' => new StringLiteral($site->domain),
+                'mapping' => new StringLiteral($site->mapping),
+                'path' => new StringLiteral($site->path),
+                'owner' => UserId::fromString($site->owner),
+                'status' => new StringLiteral($site->status),
+                'modified' => QubusDateTimeImmutable::createFromDate(
                     date('Y', strtotime($site->modified)),
                     date('m', strtotime($site->modified)),
                     date('d', strtotime($site->modified)),
-                    new QubusDateTimeZone(option()->read(optionKey: 'site_timezone'))
+                    new QubusDateTimeZone(get_option(key: 'site_timezone'))
                 ),
             ]);
 
@@ -862,20 +877,20 @@ function cms_insert_site(array|ServerRequestInterface|Site $sitedata): Error|str
 
         try {
             $command = new CreateSiteCommand([
-                'siteId' => SiteId::fromString($site->id),
-                'siteKey' => new StringLiteral($site->key),
-                'siteName' => new StringLiteral($site->name),
-                'siteSlug' => new StringLiteral($site->slug),
-                'siteDomain' => new StringLiteral($site->domain),
-                'siteMapping' => new StringLiteral($site->mapping),
-                'sitePath' => new StringLiteral($site->path),
-                'siteOwner' => UserId::fromString($site->owner),
-                'siteStatus' => new StringLiteral($site->status),
-                'siteRegistered' => QubusDateTimeImmutable::createFromDate(
+                'id' => SiteId::fromString($site->id),
+                'key' => new StringLiteral($site->key),
+                'name' => new StringLiteral($site->name),
+                'slug' => new StringLiteral($site->slug),
+                'domain' => new StringLiteral($site->domain),
+                'mapping' => new StringLiteral($site->mapping),
+                'path' => new StringLiteral($site->path),
+                'owner' => UserId::fromString($site->owner),
+                'status' => new StringLiteral($site->status),
+                'registered' => QubusDateTimeImmutable::createFromDate(
                     date('Y', strtotime($site->registered)),
                     date('m', strtotime($site->registered)),
                     date('d', strtotime($site->registered)),
-                    new QubusDateTimeZone(option()->read(optionKey: 'site_timezone'))
+                    new QubusDateTimeZone(get_option(key: 'site_timezone'))
                 ),
             ]);
 
@@ -907,7 +922,7 @@ function cms_insert_site(array|ServerRequestInterface|Site $sitedata): Error|str
         /**
          * Fires immediately after an existing site is updated.
          *
-         * @file App/Shared/Helpers/site.php
+         * @file core/Shared/Helpers/site.php
          * @param string $siteId   Site ID.
          * @param Site $site       Site data object.
          */
@@ -919,7 +934,7 @@ function cms_insert_site(array|ServerRequestInterface|Site $sitedata): Error|str
         /**
          * Action hook triggered after existing site has been updated.
          *
-         * @file App/Shared/Helpers/site.php
+         * @file core/Shared/Helpers/site.php
          * @param string $siteId    Site id.
          * @param Site $siteAfter   Site object following the update.
          * @param Site $siteBefore  Site object before the update.
@@ -930,7 +945,7 @@ function cms_insert_site(array|ServerRequestInterface|Site $sitedata): Error|str
     /**
      * Fires immediately after a new site is saved.
      *
-     * @file App/Shared/Helpers/site.php
+     * @file core/Shared/Helpers/site.php
      * @param string $siteId Site ID.
      * @param Site $site     Site object.
      * @param bool $update   Whether this is an existing site or a new site.
@@ -943,7 +958,7 @@ function cms_insert_site(array|ServerRequestInterface|Site $sitedata): Error|str
      * The dynamic portion of this hook, `$siteStatus`,
      * is the site's status.
      *
-     * @file App/Shared/Helpers/site.php
+     * @file core/Shared/Helpers/site.php
      * @param string $siteId    The site's id.
      * @param Site $site       Site object.
      * @param bool $update     Whether this is an existing site or a new site.
@@ -953,7 +968,7 @@ function cms_insert_site(array|ServerRequestInterface|Site $sitedata): Error|str
     /**
      * Action hook triggered after site has been saved.
      *
-     * @file App/Shared/Helpers/site.php
+     * @file core/Shared/Helpers/site.php
      * @param string $siteId   The site's id.
      * @param Site $site       Site object.
      * @param bool $update     Whether this is an existing site or a new site.
@@ -968,7 +983,7 @@ function cms_insert_site(array|ServerRequestInterface|Site $sitedata): Error|str
  *
  * See cms_insert_site() For what fields can be set in $sitedata.
  *
- * @file App/Shared/Helpers/site.php
+ * @file core/Shared/Helpers/site.php
  * @param array|ServerRequestInterface|Site $sitedata An array of site data or a site object.
  * @return Error|string The updated site's id or Error if update failed.
  * @throws CommandPropertyNotFoundException
@@ -980,7 +995,6 @@ function cms_insert_site(array|ServerRequestInterface|Site $sitedata): Error|str
  * @throws ReflectionException
  * @throws TypeException
  * @throws UnresolvableCommandHandlerException
- * @throws UnresolvableQueryHandlerException
  */
 function cms_update_site(array|ServerRequestInterface|Site $sitedata): Error|string
 {
@@ -989,6 +1003,7 @@ function cms_update_site(array|ServerRequestInterface|Site $sitedata): Error|str
     } elseif ($sitedata instanceof Site) {
         $sitedata = $sitedata->toArray();
     }
+
     $dfdb = dfdb();
 
     $details = $dfdb->getRow(
@@ -1002,7 +1017,6 @@ function cms_update_site(array|ServerRequestInterface|Site $sitedata): Error|str
     );
     if ($details['site_owner'] !== $sitedata['owner']) {
         $ownerChange = true;
-        $previousOwner = $details['site_owner'];
     } else {
         $ownerChange = false;
     }
@@ -1021,25 +1035,12 @@ function cms_update_site(array|ServerRequestInterface|Site $sitedata): Error|str
     $siteId = cms_insert_site($sitedata);
 
     /**
-     * If the site admin has changed, delete usermeta data of the old admin
-     * and add usermeta data for the new
+     * If the site admin has changed, delete the site user record of the old admin
+     * and add a site user record for the new admin.
      */
     if (!is_null__($siteId) && $ownerChange) {
-        $metaKey = $sitedata['key'];
-        $oldMeta = $dfdb->getResults(
-            $dfdb->prepare(
-                "SELECT meta_key, meta_value FROM {$dfdb->basePrefix}usermeta WHERE user_id = ? AND meta_key LIKE ?",
-                [
-                    $previousOwner,
-                    "%$metaKey%"
-                ]
-            ),
-            Database::ARRAY_A
-        );
-        foreach ($oldMeta as $meta) {
-            delete_usermeta($previousOwner, $meta['meta_key'], $meta['meta_value']);
-        }
-        add_user_to_site($sitedata['owner'], $sitedata['id'], 'admin');
+        delete_site_user_record($siteId, $details['site_owner']);
+        add_user_to_site(user: $sitedata['owner'], site: $sitedata['id'], role: 'admin');
     }
 
     SiteCachePsr16::clean($sitedata);
@@ -1050,7 +1051,7 @@ function cms_update_site(array|ServerRequestInterface|Site $sitedata): Error|str
 /**
  * Deletes a site.
  *
- * @file App/Shared/Helpers/site.php
+ * @file core/Shared/Helpers/site.php
  * @param string $siteId ID of site to delete.
  * @return string|Error Returns id of deleted site or Error.
  * @throws CommandPropertyNotFoundException
@@ -1080,18 +1081,18 @@ function cms_delete_site(string $siteId): Error|string
     /**
      * Action hook triggered before the site is deleted.
      *
-     * @file App/Shared/Helpers/site.php
+     * @file core/Shared/Helpers/site.php
      * @param string $id      Site ID.
      * @param Site   $oldSite Data object of site to be deleted.
      */
     __observer()->action->doAction('delete_site', $siteId, $oldSite);
 
     try {
-        $command = new DeleteSiteCommand([
-            'siteId' => SiteId::fromString($siteId)
-        ]);
-
-        command($command);
+        command(
+            new DeleteSiteCommand([
+                'id' => SiteId::fromString($siteId)
+            ])
+        );
     } catch (PDOException $e) {
         FileLoggerFactory::getLogger()->error(
             sprintf(
@@ -1108,7 +1109,7 @@ function cms_delete_site(string $siteId): Error|string
     /**
      * Action hook triggered after the site is deleted.
      *
-     * @file App/Shared/Helpers/site.php
+     * @file core/Shared/Helpers/site.php
      * @param string $id    Site ID.
      * @param Site $oldSite Site object that was deleted.
      */
@@ -1120,9 +1121,9 @@ function cms_delete_site(string $siteId): Error|string
 }
 
 /**
- * Delete site user.
+ * Deletes a user from the entire system.
  *
- * @file App/Shared/Helpers/site.php
+ * @file core/Shared/Helpers/site.php
  * @param string $userId The id of user to be deleted.
  * @param array $params User parameters (assign_id and role).
  * @return bool|Error Returns true if successful or returns error otherwise.
@@ -1147,7 +1148,6 @@ function cms_delete_site_user(string $userId, array $params = []): Error|bool
 
     /** @var User $user */
     $user = get_userdata($userId);
-
     if (is_false__($user)) {
         return false;
     }
@@ -1174,7 +1174,7 @@ function cms_delete_site_user(string $userId, array $params = []): Error|bool
         SimpleCacheObjectCacheFactory::make(namespace: 'users')->delete(key: md5($assignUser->id));
         /**
          * We need to reassign the site(s) to the selected user and create the
-         * needed usermeta for the site.
+         * needed site_user record.
          */
         if (!empty($sites)) {
             foreach ($sites as $site) {
@@ -1187,7 +1187,7 @@ function cms_delete_site_user(string $userId, array $params = []): Error|bool
                 /**
                  * Sites will be reassigned before the user is deleted.
                  *
-                 * @file App/Shared/Helpers/site.php
+                 * @file core/Shared/Helpers/site.php
                  * @param string $userId  ID of user to be deleted.
                  * @param array $params   User and site parameters (assign_id, role and site_id).
                  */
@@ -1205,12 +1205,12 @@ function cms_delete_site_user(string $userId, array $params = []): Error|bool
                         ->delete();
                 });
             } catch (PDOException $e) {
-                return new SiteError($e->getCode(), $e->getMessage());
+                return new SiteError($e->getCode(), t__(msgid: 'Site deletion exception occurred.', domain: 'devflow'));
             }
 
             foreach ($sites as $oldSite) {
                 /** @var Site $site */
-                $site = Devflow::$PHP->make(Site::class);
+                $site = Devflow::$PHP->make(name: Site::class);
                 $site->create((array) $oldSite);
                 SimpleCacheObjectCacheFactory::make(namespace: 'sites')->delete(key: md5($site->id));
                 /**
@@ -1225,42 +1225,37 @@ function cms_delete_site_user(string $userId, array $params = []): Error|bool
     }
 
     /**
-     * Action hook fires immediately before a user is deleted from the usermeta document.
+     * Action hook fires immediately before a user is deleted from the system.
      *
-     * @file App/Shared/Helpers/site.php
+     * @file core/Shared/Helpers/site.php
      * @param string $userId ID of the user to delete.
      * @param array $params  User parameters (assign_id and role).
      */
     __observer()->action->doAction('delete_site_user', $userId, $params);
 
     /**
-     * Finally delete the user and metadata.
+     * Finally delete the user from the system.
      */
     try {
         $dfdb->qb()->transactional(function () use ($dfdb, $userId) {
             $dfdb->qb()
-                ->table($dfdb->basePrefix . 'user')
+                ->table(tableName: $dfdb->basePrefix . 'user')
+                ->where(condition: 'user_id = ?', parameters: $userId)
+                ->delete();
+
+            $dfdb->qb()
+                ->table(tableName: $dfdb->basePrefix . 'site_user')
                 ->where(condition: 'user_id = ?', parameters: $userId)
                 ->delete();
         });
-
-        $meta = $dfdb->getResults(
-            $dfdb->prepare(
-                "SELECT meta_id FROM {$dfdb->basePrefix}usermeta WHERE user_id = ?",
-                [
-                    $userId
-                ]
-            ),
-            Database::ARRAY_A
-        );
-
-        if ($meta) {
-            foreach ($meta as $mid) {
-                delete_usermeta_by_mid($mid['meta_id']);
-            }
-        }
     } catch (PDOException $e) {
-        return new SiteError(sprintf('ERROR[%s]: %s', $e->getCode(), $e->getMessage()));
+        return new SiteError(
+            sprintf(
+                'ERROR[%s]: %s',
+                $e->getCode(),
+                t__(msgid: 'User delete exception occurred.', domain: 'devflow')
+            )
+        );
     }
 
     /**
@@ -1269,9 +1264,9 @@ function cms_delete_site_user(string $userId, array $params = []): Error|bool
     SimpleCacheObjectCacheFactory::make(namespace: 'users')->delete(key: md5($user->id));
 
     /**
-     * Action hook fires immediately after a user has been deleted from the usermeta document.
+     * Action hook fires immediately after a user has been deleted from the system.
      *
-     * @file App/Shared/Helpers/site.php
+     * @file core/Shared/Helpers/site.php
      * @param string $userId   ID of the user who was deleted.
      * @param array $params    User parameters (assign_id and role).
      */
@@ -1281,24 +1276,93 @@ function cms_delete_site_user(string $userId, array $params = []): Error|bool
 }
 
 /**
+ * @param string $userId
+ * @param array{site_id:string,assign_id:string,role:string} $params
+ * @return void
+ * @throws ContainerExceptionInterface
+ * @throws EntityNotFoundException
+ * @throws Exception
+ * @throws InvalidArgumentException
+ * @throws NotFoundExceptionInterface
+ * @throws ReflectionException
+ * @throws TypeException
+ * @throws \Exception
+ */
+function remove_user_from_site(string $userId, array $params = []): void
+{
+    /** @var Site $site */
+    $site = get_site_by(field: 'id', value: $params['site_id']);
+    if(is_false__($site)) {
+        throw new EntityNotFoundException(
+            esc_html__(
+                string: sprintf('The site with ID %s does not exist.', $params['site_id']),
+                domain: 'devflow'
+            )
+        );
+    }
+
+    /** @var User $oldUser */
+    $oldUser = get_userdata($userId);
+    if (is_false__($oldUser)) {
+        throw new EntityNotFoundException(
+            esc_html__(
+                string: sprintf('The user with ID %s does not exist.', $userId),
+                domain: 'devflow'
+            )
+        );
+    }
+
+    if ($oldUser->role === 'super') {
+        throw new \Exception(
+            esc_html__(
+                string: 'You are not allowed to remove super admins from this site.',
+                domain: 'devflow'
+            )
+        );
+    }
+
+    try {
+        command(
+            new RemoveSiteUserCommand([
+                'siteId' => $site->id,
+                'userId' => $oldUser->id,
+            ])
+        );
+
+        // If assign_id is set, then reassign content to this user.
+        if (isset($params['assign_id']) && !is_null__($params['assign_id']) && 'null' !== $params['assign_id']) {
+            add_user_to_site($params['assign_id'], $site->id, $params['role']);
+
+            command(
+                new AttributeSiteUserCommand([
+                    'siteId' => SiteId::fromNative($site->id),
+                    'authorId' => UserId::fromNative($oldUser->id),
+                    'assignId' => UserId::fromNative($params['assign_id']),
+                ])
+            );
+        }
+    } catch (CommandPropertyNotFoundException|UnresolvableCommandHandlerException|ReflectionException $e) {
+        logger(level: 'error', message: $e->getMessage());
+    }
+}
+
+/**
  * Creates new tables and user meta for site admin after new site
  * is created.
  *
  * @access private Used when the action hook `save_site` is called.
  *
- * @file App/Shared/Helpers/site.php
+ * @file core/Shared/Helpers/site.php
  * @param string $siteId Site id of the newly created site.
  * @param Site $site Site object of newly created site.
  * @param bool $update Whether the site is being created or updated.
  * @return string|bool Returns the site id if successful or false on failure.
- * @throws CommandPropertyNotFoundException
  * @throws ContainerExceptionInterface
  * @throws Exception
  * @throws InvalidArgumentException
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  * @throws TypeException
- * @throws UnresolvableQueryHandlerException
  * @throws \Exception
  */
 function new_site_schema(string $siteId, Site $site, bool $update): bool|string
@@ -1357,43 +1421,45 @@ function new_site_schema(string $siteId, Site $site, bool $update): bool|string
             ]
         );
     }
-    // Store values to save in user meta.
-    $meta = [];
-    $meta['bio'] = null;
-    $meta['role'] = 'admin';
-    $meta['status'] = (string) 'A';
-    $meta['admin_layout'] = (int) 0;
-    $meta['admin_sidebar'] = (int) 0;
-    $meta['admin_skin'] = (string) 'skin-red';
+
+    AttributesFactory::user()->createIfMissing($site->id, $userdata->id);
+
+    // Store values to save in user_attribute.
+    $attributes = [];
+    $attributes['role'] = 'admin';
+    $attributes['status'] = 'A';
+    $attributes['admin.layout'] = 0;
+    $attributes['admin.sidebar'] = 0;
+    $attributes['admin.skin'] = 'skin-red';
     /**
-     * Filters a user's meta values and keys immediately after the user is added
-     * and before any user meta is inserted.
+     * Filters a user's attribute values and keys immediately after a new
+     * site user record is added.
      *
-     * @file App/Shared/Helpers/site.php
-     * @param array $meta {
-     *     Default meta values and keys for the user.
+     * @file core/Shared/Helpers/site.php
+     * @param array $attributes {
+     *     Default attribute values and keys for the user.
      *
-     *     @type string $bio            The user's bio.
      *     @type string $role           The user's role.
      *     @type string $status         The user's status.
-     *     @type int    $admin_layout   The user's layout option.
-     *     @type int    $admin_sidebar  The user's sidebar option.
-     *     @type int    $admin_skin     The user's skin option.
+     *     @type int    $admin.layout   The user's layout option.
+     *     @type int    $admin.sidebar  The user's sidebar option.
+     *     @type int    $admin.skin     The user's skin option.
      * }
      * @param object $userdata   User object.
      */
-    $meta = __observer()->filter->applyFilter('new.site.usermeta', $meta, $userdata);
-    // Update user meta.
-    foreach ($meta as $key => $value) {
-        update_usermeta($userdata->id, $sitePrefix . $key, $value);
+    $attributes = __observer()->filter->applyFilter('new.site.user.attributes', $attributes, $userdata);
+    // Add user attributes.
+    foreach ($attributes as $key => $value) {
+        update_user_attribute(userId: $userdata->id, key: $key, value: $value, siteId: $site->id);
     }
+
     return $site->id;
 }
 
 /**
  * Adds status label for site's table.
  *
- * @file App/Shared/Helpers/site.php
+ * @file core/Shared/Helpers/site.php
  * @param string $status Status to check for.
  * @return string Site's status.
  * @throws Exception
@@ -1416,9 +1482,11 @@ function cms_site_status_label(string $status): string
  *
  * @access private
  *
- * @file App/Shared/Helpers/site.php
+ * @file core/Shared/Helpers/site.php
  * @return ResponseInterface
+ * @throws ContainerExceptionInterface
  * @throws Exception
+ * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  * @throws \Exception
  */
@@ -1457,7 +1525,7 @@ function does_site_exist(): \Psr\Http\Message\ResponseInterface
  * Purpose of this function is for the `site_name`
  * filter.
  *
- * @file App/Shared/Helpers/site.php
+ * @file core/Shared/Helpers/site.php
  * @param string $siteId
  * @return string Site's name on success or '' on failure.
  * @throws ContainerExceptionInterface
@@ -1480,7 +1548,7 @@ function get_site_name(string $siteId): string
     /**
      * Filters the site name.
      *
-     * @file App/Shared/Helpers/site.php
+     * @file core/Shared/Helpers/site.php
      * @param string    $name The site's name.
      * @param string    $siteId The site ID.
      */
@@ -1493,7 +1561,7 @@ function get_site_name(string $siteId): string
  * Purpose of this function is for the `site_domain`
  * filter.
  *
- * @file App/Shared/Helpers/site.php
+ * @file core/Shared/Helpers/site.php
  * @param string $siteId The unique id of a site.
  * @return string Site's domain on success or '' on failure.
  * @throws ContainerExceptionInterface
@@ -1516,7 +1584,7 @@ function get_site_domain(string $siteId): string
     /**
      * Filters the site domain.
      *
-     * @file App/Shared/Helpers/site.php
+     * @file core/Shared/Helpers/site.php
      * @param string    $domain The site's domain.
      * @param string    $siteId The site ID.
      */
@@ -1529,7 +1597,7 @@ function get_site_domain(string $siteId): string
  * Purpose of this function is for the `site_path`
  * filter.
  *
- * @file App/Shared/Helpers/site.php
+ * @file core/Shared/Helpers/site.php
  * @param string $siteId The unique id of a site.
  * @return string Site's path on success or false on failure.
  * @throws ContainerExceptionInterface
@@ -1552,7 +1620,7 @@ function get_site_path(string $siteId): string
     /**
      * Filters the site path.
      *
-     * @file App/Shared/Helpers/site.php
+     * @file core/Shared/Helpers/site.php
      * @param string    $path The site's path.
      * @param string    $siteId The site ID.
      */
@@ -1565,7 +1633,7 @@ function get_site_path(string $siteId): string
  * Purpose of this function is for the `site_owner`
  * filter.
  *
- * @file App/Shared/Helpers/site.php
+ * @file core/Shared/Helpers/site.php
  * @param string $siteId The unique id of a site.
  * @return string Site's owner on success or false on failure.
  * @throws ContainerExceptionInterface
@@ -1588,7 +1656,7 @@ function get_site_owner(string $siteId): string
     /**
      * Filters the site owner.
      *
-     * @file App/Shared/Helpers/site.php
+     * @file core/Shared/Helpers/site.php
      * @param string    $owner The site's owner.
      * @param string    $siteId The site ID.
      */
@@ -1601,7 +1669,7 @@ function get_site_owner(string $siteId): string
  * Purpose of this function is for the `site_status`
  * filter.
  *
- * @file App/Shared/Helpers/site.php
+ * @file core/Shared/Helpers/site.php
  * @param string $siteId The unique id of a site.
  * @return string Site's status on success or false on failure.
  * @throws ContainerExceptionInterface
@@ -1624,7 +1692,7 @@ function get_site_status(string $siteId): string
     /**
      * Filters the site status.
      *
-     * @file App/Shared/Helpers/site.php
+     * @file core/Shared/Helpers/site.php
      * @param string    $status The site's status.
      * @param string    $siteId The site ID.
      */
@@ -1634,12 +1702,14 @@ function get_site_status(string $siteId): string
 /**
  * Creates a unique site slug.
  *
- * @file App/Shared/Helpers/site.php
+ * @file core/Shared/Helpers/site.php
  * @param string $originalSlug Original slug of site.
  * @param string $originalTitle Original title of site.
  * @param string $siteId Unique site id.
  * @return string Unique site slug.
+ * @throws ContainerExceptionInterface
  * @throws Exception
+ * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  */
 function cms_unique_site_slug(string $originalSlug, string $originalTitle, string $siteId): string
@@ -1652,7 +1722,7 @@ function cms_unique_site_slug(string $originalSlug, string $originalTitle, strin
     /**
      * Filters the unique site slug before returned.
      *
-     * @file App/Shared/Helpers/site.php
+     * @file core/Shared/Helpers/site.php
      * @param string $siteSlug      Unique site slug.
      * @param string $originalSlug  The site's original slug.
      * @param string $originalTitle The site's original title before slugified.
@@ -1670,28 +1740,24 @@ function cms_unique_site_slug(string $originalSlug, string $originalTitle, strin
 /**
  * Retrieves raw info about current site.
  *
- * @file App/Shared/Helpers/site.php
+ * @file core/Shared/Helpers/site.php
  * @param string $show
  * @param string $filter
  * @return string
- * @throws ContainerExceptionInterface
  * @throws Exception
  * @throws InvalidArgumentException
- * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  */
 function get_siteinfo(string $show = '', string $filter = 'raw'): string
 {
-    $options = option();
-
     $dispatch = [
         'homeurl' => home_url(),
         'siteurl' => site_url(),
-        'description' => $options->read(optionKey: 'site_description'),
-        'sitename' => $options->read(optionKey: 'sitename'),
-        'timezone' => $options->read(optionKey: 'site_timezone'),
-        'admin_email' => $options->read(optionKey: 'admin_email'),
-        'locale' => $options->read(optionKey: 'site_locale'),
+        'description' => get_option(key: 'site_description'),
+        'sitename' => get_option(key: 'sitename'),
+        'timezone' => get_option(key: 'site_timezone'),
+        'admin_email' => get_option(key: 'admin_email'),
+        'locale' => get_option(key: 'site_locale'),
         'release' => Devflow::release(),
     ];
 
@@ -1710,7 +1776,7 @@ function get_siteinfo(string $show = '', string $filter = 'raw'): string
             /**
              * Filters the URL returned by get_siteinfo().
              *
-             * @file App/Shared/Helpers/site.php
+             * @file core/Shared/Helpers/site.php
              * @param mixed $output The URL returned by siteinfo().
              * @param mixed $show   Type of information requested.
              */
@@ -1719,7 +1785,7 @@ function get_siteinfo(string $show = '', string $filter = 'raw'): string
             /**
              * Filters the site information returned by get_siteinfo().
              *
-             * @file App/Shared/Helpers/site.php
+             * @file core/Shared/Helpers/site.php
              * @param mixed $output The requested non-URL site information.
              * @param mixed $show   Type of information requested.
              */
@@ -1733,13 +1799,11 @@ function get_siteinfo(string $show = '', string $filter = 'raw'): string
 /**
  * Retrieves filtered info about current site.
  *
- * @file App/Shared/Helpers/site.php
+ * @file core/Shared/Helpers/site.php
  * @param string $show
  * @return string
- * @throws ContainerExceptionInterface
  * @throws Exception
  * @throws InvalidArgumentException
- * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  */
 function siteinfo(string $show = ''): string

@@ -11,11 +11,11 @@ use DateTimeInterface;
 
 class UpdateContentAuthorCommand extends PropertyCommand
 {
-    public ?ContentId $contentId = null;
+    public ContentId $id;
 
-    public ?UserId $contentAuthor = null;
+    public UserId $author;
 
-    public ?DateTimeInterface $contentModified = null;
+    public DateTimeInterface $modified;
 
-    public ?DateTimeInterface $contentModifiedGmt = null;
+    public DateTimeInterface $modifiedGmt;
 }

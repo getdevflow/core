@@ -15,37 +15,37 @@ use Qubus\ValueObjects\StringLiteral\StringLiteral;
 
 class UpdateProductCommand extends PropertyCommand
 {
-    public ?ProductId $id = null;
+    public ProductId $id;
 
-    public ?StringLiteral $title = null;
+    public StringLiteral $title;
 
-    public ?StringLiteral $slug = null;
+    public StringLiteral $slug;
 
-    public ?StringLiteral $body = null;
+    public StringLiteral $body;
 
-    public ?UserId $author = null;
+    public UserId $author;
 
-    public ?StringLiteral $sku = null;
+    public StringLiteral $sku;
 
-    public ?Money $price = null;
+    public Money $price;
 
-    public ?StringLiteral $purchaseUrl = null;
+    public StringLiteral $purchaseUrl;
 
-    public ?IntegerNumber $showInMenu = null;
+    public IntegerNumber $showInMenu;
 
-    public ?IntegerNumber $showInSearch = null;
+    public IntegerNumber $showInSearch;
 
-    public ?StringLiteral $featuredImage = null;
+    public StringLiteral $featuredImage;
 
-    public ?StringLiteral $status = null;
+    public StringLiteral $status;
 
-    public ?ArrayLiteral $meta = null;
+    public ArrayLiteral $attribute;
 
-    public ?DateTimeInterface $published = null;
+    public DateTimeInterface $published;
 
-    public ?DateTimeInterface $publishedGmt = null;
+    public DateTimeInterface $publishedGmt;
 
-    public ?DateTimeInterface $modified = null;
+    public DateTimeInterface $modified;
 
-    public ?DateTimeInterface $modifiedGmt = null;
+    public DateTimeInterface $modifiedGmt;
 }

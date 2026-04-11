@@ -20,24 +20,26 @@ class CreateContentCommandHandler implements CommandHandler
      */
     public function handle(CreateContentCommand|Command $command): void
     {
+        /** @var CreateContentCommand $command */
+
         $content = Content::createContent(
-            contentId: $command->contentId,
-            contentTitle: $command->contentTitle,
-            contentSlug: $command->contentSlug,
-            contentBody: $command->contentBody,
-            contentAuthor: $command->contentAuthor,
-            contentTypeSlug: $command->contentTypeSlug,
-            contentSidebar: $command->contentSidebar,
-            contentShowInMenu: $command->contentShowInMenu,
-            contentShowInSearch: $command->contentShowInSearch,
-            contentFeaturedImage: $command->contentFeaturedImage,
-            contentStatus: $command->contentStatus,
-            contentCreated: $command->contentCreated,
-            contentCreatedGmt: $command->contentCreatedGmt,
-            contentPublished: $command->contentPublished,
-            contentPublishedGmt: $command->contentPublishedGmt,
-            meta: $command->meta,
-            contentParent: $command->contentParent,
+            id: $command->id,
+            title: $command->title,
+            slug: $command->slug,
+            body: $command->body,
+            author: $command->author,
+            typeSlug: $command->type,
+            sidebar: $command->sidebar,
+            showInMenu: $command->showInMenu,
+            showInSearch: $command->showInSearch,
+            featuredImage: $command->featuredImage,
+            status: $command->status,
+            created: $command->created,
+            createdGmt: $command->createdGmt,
+            published: $command->published,
+            publishedGmt: $command->publishedGmt,
+                attribute: $command->attribute,
+            parent: $command->parent,
         );
 
         $this->aggregateRepository->saveAggregateRoot($content);

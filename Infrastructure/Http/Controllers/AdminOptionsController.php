@@ -9,16 +9,10 @@ use App\Domain\Site\Command\UpdateSiteCommand;
 use App\Domain\Site\Model\Site;
 use App\Domain\Site\ValueObject\SiteId;
 use App\Domain\User\ValueObject\UserId;
-use App\Infrastructure\Persistence\Database;
 use App\Infrastructure\Services\Options;
-use App\Infrastructure\Services\UserAuth;
-use Codefy\CommandBus\Busses\SynchronousCommandBus;
-use Codefy\CommandBus\Containers\ContainerFactory;
 use Codefy\CommandBus\Exceptions\CommandCouldNotBeHandledException;
 use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
 use Codefy\CommandBus\Exceptions\UnresolvableCommandHandlerException;
-use Codefy\CommandBus\Odin;
-use Codefy\CommandBus\Resolvers\NativeCommandHandlerResolver;
 use Codefy\Framework\Factory\FileLoggerFactory;
 use Codefy\Framework\Http\BaseController;
 use Codefy\QueryBus\UnresolvableQueryHandlerException;
@@ -43,7 +37,8 @@ use function App\Shared\Helpers\current_user_can;
 use function App\Shared\Helpers\get_current_site_key;
 use function App\Shared\Helpers\get_site_by;
 use function App\Shared\Helpers\get_user_timezone;
-use function Codefy\Framework\Helpers\config;
+use function Codefy\Framework\Helpers\command;
+use function Codefy\Framework\Helpers\view;
 use function Qubus\Security\Helpers\esc_html__;
 use function Qubus\Security\Helpers\t__;
 use function Qubus\Support\Helpers\is_false__;
@@ -54,8 +49,6 @@ final class AdminOptionsController extends BaseController
     public function __construct(
         protected SessionService $sessionService,
         protected Router $router,
-        protected UserAuth $user,
-        protected Database $dfdb,
         protected Renderer $view,
         protected Options $option
     ) {
@@ -64,7 +57,7 @@ final class AdminOptionsController extends BaseController
 
     /**
      * @param ServerRequest $request
-     * @return ResponseInterface|null
+     * @return ResponseInterface
      * @throws CommandPropertyNotFoundException
      * @throws ContainerExceptionInterface
      * @throws Exception
@@ -75,9 +68,9 @@ final class AdminOptionsController extends BaseController
      * @throws TypeException
      * @throws UnresolvableQueryHandlerException
      */
-    public function options(ServerRequest $request): ?\Psr\Http\Message\ResponseInterface
+    public function options(ServerRequest $request): ResponseInterface
     {
-        if (!current_user_can('manage:options')) {
+        if (!current_user_can(perm: 'manage:options')) {
             Devflow::$PHP->flash->{'error'}(
                 message: t__(msgid: 'Access denied', domain: 'devflow'),
             );
@@ -119,7 +112,7 @@ final class AdminOptionsController extends BaseController
      */
     public function generalOptions(ServerRequest $request): string|ResponseInterface
     {
-        if (!current_user_can('manage:options')) {
+        if (!current_user_can(perm: 'manage:options')) {
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied', domain: 'devflow'),
             );
@@ -151,11 +144,6 @@ final class AdminOptionsController extends BaseController
                     $currentSite->id
                 );
 
-                $resolver = new NativeCommandHandlerResolver(
-                    container: ContainerFactory::make(config: config('commandbus.container'))
-                );
-                $odin = new Odin(bus: new SynchronousCommandBus($resolver));
-
                 $command = new UpdateSiteCommand([
                     'siteId' => SiteId::fromString($currentSite->id),
                     'siteName' => new StringLiteral($request->getParsedBody()['sitename']),
@@ -168,7 +156,7 @@ final class AdminOptionsController extends BaseController
                     'siteModified' => QubusDateTimeImmutable::now(get_user_timezone()),
                     ]);
 
-                $odin->execute($command);
+                command($command);
             }
 
             Devflow::$PHP->flash->success(
@@ -207,7 +195,7 @@ final class AdminOptionsController extends BaseController
     }
 
     /**
-     * @return ResponseInterface|null
+     * @return ResponseInterface
      * @throws CommandPropertyNotFoundException
      * @throws ContainerExceptionInterface
      * @throws Exception
@@ -217,17 +205,18 @@ final class AdminOptionsController extends BaseController
      * @throws SessionException
      * @throws TypeException
      * @throws UnresolvableQueryHandlerException
+     * @throws \Exception
      */
-    public function generalView(): string|ResponseInterface
+    public function generalView(): ResponseInterface
     {
-        if (!current_user_can('manage:options')) {
+        if (!current_user_can(perm: 'manage:options')) {
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied', domain: 'devflow'),
             );
             return $this->redirect(admin_url());
         }
 
-        return $this->view->render(
+        return view(
             template: 'framework::backend/general',
             data: ['title' => t__(msgid: 'General Options', domain: 'devflow')]
         );
@@ -248,7 +237,7 @@ final class AdminOptionsController extends BaseController
      */
     public function readingOptions(ServerRequest $request): string|ResponseInterface
     {
-        if (!current_user_can('manage:options')) {
+        if (!current_user_can(perm: 'manage:options')) {
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied', domain: 'devflow'),
             );
@@ -303,7 +292,7 @@ final class AdminOptionsController extends BaseController
     }
 
     /**
-     * @return string|ResponseInterface
+     * @return ResponseInterface
      * @throws CommandPropertyNotFoundException
      * @throws ContainerExceptionInterface
      * @throws Exception
@@ -313,17 +302,18 @@ final class AdminOptionsController extends BaseController
      * @throws SessionException
      * @throws TypeException
      * @throws UnresolvableQueryHandlerException
+     * @throws \Exception
      */
-    public function readingView(): string|ResponseInterface
+    public function readingView(): ResponseInterface
     {
-        if (!current_user_can('manage:options')) {
+        if (!current_user_can(perm: 'manage:options')) {
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied', domain: 'devflow'),
             );
             return $this->redirect(admin_url());
         }
 
-        return $this->view->render(
+        return view(
             template: 'framework::backend/reading',
             data: ['title' => t__(msgid: 'Reading Options', domain: 'devflow')]
         );

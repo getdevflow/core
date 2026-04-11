@@ -6,7 +6,7 @@ namespace App\Infrastructure\Persistence\Repository;
 
 use App\Domain\Product\Query\Trait\PopulateProductQueryAware;
 use App\Domain\Product\Repository\ProductQueryRepository;
-use App\Infrastructure\Persistence\Database;
+use Qubus\Expressive\Database;
 use App\Shared\Services\Sanitizer;
 use Codefy\Framework\Factory\FileLoggerFactory;
 use PDOException;
@@ -31,11 +31,11 @@ class QueryBusProductRepository implements ProductQueryRepository
      * @throws ReflectionException
      * @throws Exception
      */
-    public function findById(string $productId): array|object
+    public function findById(string $id): array|object
     {
         $sql = "SELECT * FROM {$this->dfdb->prefix}product WHERE product_id = ?";
 
-        $data = $this->dfdb->getRow($this->dfdb->prepare($sql, [$productId]), Database::ARRAY_A);
+        $data = $this->dfdb->getRow($this->dfdb->prepare($sql, [$id]), Database::ARRAY_A);
 
         if (is_null__($data)) {
             return [];
@@ -54,11 +54,11 @@ class QueryBusProductRepository implements ProductQueryRepository
      * @throws ReflectionException
      * @throws Exception
      */
-    public function findBySku(string $productSku): array|object
+    public function findBySku(string $sku): array|object
     {
         $sql = "SELECT * FROM {$this->dfdb->prefix}product WHERE product_sku = ?";
 
-        $data = $this->dfdb->getRow($this->dfdb->prepare($sql, [$productSku]), Database::ARRAY_A);
+        $data = $this->dfdb->getRow($this->dfdb->prepare($sql, [$sku]), Database::ARRAY_A);
 
         if (is_null__($data)) {
             return [];
@@ -77,11 +77,11 @@ class QueryBusProductRepository implements ProductQueryRepository
      * @throws ReflectionException
      * @throws Exception
      */
-    public function findBySlug(string $productSlug): array|object
+    public function findBySlug(string $slug): array|object
     {
         $sql = "SELECT * FROM {$this->dfdb->prefix}product WHERE product_slug = ?";
 
-        $data = $this->dfdb->getRow($this->dfdb->prepare($sql, [$productSlug]), Database::ARRAY_A);
+        $data = $this->dfdb->getRow($this->dfdb->prepare($sql, [$slug]), Database::ARRAY_A);
 
         if (is_null__($data)) {
             return [];
@@ -101,7 +101,7 @@ class QueryBusProductRepository implements ProductQueryRepository
      * @throws ReflectionException
      */
     public function findByFilters(
-        ?string $productSku = null,
+        ?string $sku = null,
         int $limit = 0,
         ?int $offset = null,
         string $status = 'all'
@@ -109,7 +109,7 @@ class QueryBusProductRepository implements ProductQueryRepository
         $products = [];
         $where = '';
 
-        $sanitizeProductSku = Sanitizer::item(item: $productSku);
+        $sanitizeProductSku = Sanitizer::item(item: $sku);
         $sanitizeLimit = Sanitizer::item(item: $limit, type: 'int', context: '');
         $sanitizeOffset = Sanitizer::item(item: $offset, type: 'int', context: '');
         $sanitizeStatus = Sanitizer::item(item: $status);
@@ -157,7 +157,7 @@ class QueryBusProductRepository implements ProductQueryRepository
                         $e->getMessage()
                     ),
                     [
-                        'Db Function' => 'get_all_products'
+                        'QueryBusProductRepository' => 'findByFilters'
                     ]
                 );
             }
@@ -200,7 +200,7 @@ class QueryBusProductRepository implements ProductQueryRepository
                         $e->getMessage()
                     ),
                     [
-                        'Query Bus' => 'QueryBusProductRepository',
+                        'QueryBusProductRepository' => 'findByFilters',
                     ]
                 );
             }

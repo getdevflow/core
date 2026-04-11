@@ -10,5 +10,5 @@ use Codefy\QueryBus\Query;
 
 final class FindUserByLoginQuery extends PropertyCommand implements Query
 {
-    public ?Username $userLogin = null;
+    public Username $login;
 }

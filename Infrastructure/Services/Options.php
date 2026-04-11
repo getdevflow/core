@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Services;
 
-use App\Infrastructure\Persistence\Database;
+use Qubus\Expressive\Database;
 use App\Shared\Services\SimpleCacheObjectCacheFactory;
 use Codefy\Framework\Factory\FileLoggerFactory;
 use PDOException;
@@ -140,9 +140,9 @@ final class Options
             return $pre;
         }
 
-        try {
-            $result = $this->cache->get(md5($optionKey));
+        $result = $this->cache->get(md5($optionKey));
 
+        try {
             if (is_null__($result)) {
                 $result = $this->dfdb->getVar(
                     $this->dfdb->prepare(
@@ -202,6 +202,7 @@ final class Options
      * @throws InvalidArgumentException
      * @throws ReflectionException
      * @throws TypeException
+     * @throws \Exception
      */
     public function update(string $optionKey, mixed $newvalue): bool
     {
@@ -226,7 +227,7 @@ final class Options
         $optionValue = $_newvalue;
 
         try {
-            $result = $this->dfdb
+            $this->dfdb
                 ->qb()
                 ->table($this->dfdb->prefix . 'option')
                 ->where('option_key = ?', $optionKey)

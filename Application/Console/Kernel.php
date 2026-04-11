@@ -11,7 +11,7 @@ use Qubus\Exception\Exception;
 use ReflectionException;
 use Symfony\Component\Console\Command\SignalableCommandInterface;
 
-class Kernel extends ConsoleKernel
+final class Kernel extends ConsoleKernel
 {
     /**
      * Add your custom console commands here.

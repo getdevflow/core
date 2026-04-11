@@ -4,18 +4,18 @@ declare(strict_types=1);
 
 namespace App\Domain\User\Command;
 
-use App\Domain\User\Repository\UserAggregateRepository;
-use App\Domain\User\User;
+use App\Application\Devflow;
+use App\Domain\User\Model\User;
+use App\Domain\User\Repository\UserCommandRepository;
 use Codefy\CommandBus\Command;
 use Codefy\CommandBus\CommandHandler;
 use Codefy\Domain\Aggregate\AggregateNotFoundException;
 use Codefy\Framework\Support\Password;
 use Exception;
-use Qubus\ValueObjects\StringLiteral\StringLiteral;
 
 final readonly class UpdateUserPasswordCommandHandler implements CommandHandler
 {
-    public function __construct(public UserAggregateRepository $aggregateRepository)
+    public function __construct(public UserCommandRepository $repository)
     {
     }
 
@@ -26,11 +26,13 @@ final readonly class UpdateUserPasswordCommandHandler implements CommandHandler
     public function handle(UpdateUserPasswordCommand|Command $command): void
     {
         /** @var User $user */
-        $user = $this->aggregateRepository->loadAggregateRoot(aggregateId: $command->id);
+        $user = Devflow::$PHP->make(name: User::class);
+        $user->create([
+            'user_id' => $command->id->toNative(),
+            'user_token' => $command->token->toNative(),
+            'user_pass' => Password::hash($command->pass->toNative())
+        ]);
 
-        $user->changeUserPassword(password: new StringLiteral(Password::hash($command->pass->toNative())));
-        $user->changeUserToken($command->token);
-
-        $this->aggregateRepository->saveAggregateRoot(aggregate: $user);
+        $this->repository->updatePassword(user: $user);
     }
 }

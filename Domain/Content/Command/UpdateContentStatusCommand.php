@@ -11,11 +11,11 @@ use Qubus\ValueObjects\StringLiteral\StringLiteral;
 
 class UpdateContentStatusCommand extends PropertyCommand
 {
-    public ?ContentId $contentId = null;
+    public ContentId $id;
 
-    public ?StringLiteral $contentStatus = null;
+    public StringLiteral $status;
 
-    public ?DateTimeInterface $contentModified = null;
+    public DateTimeInterface $modified;
 
-    public ?DateTimeInterface $contentModifiedGmt = null;
+    public DateTimeInterface $modifiedGmt;
 }

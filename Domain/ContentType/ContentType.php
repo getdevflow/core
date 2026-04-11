@@ -21,13 +21,13 @@ use function Qubus\Support\Helpers\is_null__;
 
 final class ContentType extends EventSourcedAggregate implements AggregateRoot
 {
-    private ?ContentTypeId $contentTypeId = null;
+    private ContentTypeId $contentTypeId;
 
-    private ?StringLiteral $contentTypeTitle = null;
+    private StringLiteral $contentTypeTitle;
 
-    private ?StringLiteral $contentTypeSlug = null;
+    private StringLiteral $contentTypeSlug;
 
-    private ?StringLiteral $contentTypeDescription = null;
+    private StringLiteral $contentTypeDescription;
 
     public static function createContentType(
         ContentTypeId $contentTypeId,
