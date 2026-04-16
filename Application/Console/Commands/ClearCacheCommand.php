@@ -32,26 +32,28 @@ class ClearCacheCommand extends ConsoleCommand
     public function handle(): int
     {
         $namespaces = [
-                $this->dfdb->prefix . 'content',
-                $this->dfdb->prefix . 'contentslug',
-                $this->dfdb->prefix . 'contenttype',
-                $this->dfdb->prefix . 'contentmeta',
-                $this->dfdb->prefix . 'products',
-                $this->dfdb->prefix . 'productslug',
-                $this->dfdb->prefix . 'productsku',
-                $this->dfdb->prefix . 'productmeta',
-                'useremail',
-                'userlogin',
-                'users',
-                'usertoken',
-                'sites',
-                'sitekey',
-                'siteslug',
-                $this->dfdb->prefix . 'options',
-                $this->dfdb->prefix . 'database'
+            $this->dfdb->prefix . 'content',
+            $this->dfdb->prefix . 'contentauthor',
+            $this->dfdb->prefix . 'contentslug',
+            $this->dfdb->prefix . 'contenttype',
+            $this->dfdb->prefix . 'content_attribute',
+            $this->dfdb->prefix . 'products',
+            $this->dfdb->prefix . 'productauthor',
+            $this->dfdb->prefix . 'productslug',
+            $this->dfdb->prefix . 'productsku',
+            $this->dfdb->prefix . 'product_attribute',
+            'auto_updater',
+            'useremail',
+            'userlogin',
+            'users',
+            'usertoken',
+            'sites',
+            'sitekey',
+            'siteslug',
+            $this->dfdb->prefix . 'options',
         ];
 
-        if (true === SimpleCacheObjectCacheFactory::make(namespace: $this->dfdb->prefix . 'usermeta')->clear()) {
+        if (true === SimpleCacheObjectCacheFactory::make(namespace: $this->dfdb->basePrefix . 'user_attribute')->clear()) {
             ItemPoolObjectCacheFactory::make()->clear();
 
             foreach ($namespaces as $namespace) {
