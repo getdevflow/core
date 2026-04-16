@@ -6,7 +6,6 @@ namespace App\Infrastructure\Http\Controllers;
 
 use App\Application\Devflow;
 use App\Domain\User\Model\User;
-use Qubus\Expressive\Database;
 use App\Infrastructure\Services\UserAuth;
 use Codefy\Framework\Http\BaseController;
 use Psr\Container\ContainerExceptionInterface;
@@ -46,7 +45,6 @@ final class AdminAuthController extends BaseController
         protected SessionService $sessionService,
         protected Router $router,
         protected UserAuth $user,
-        protected Database $dfdb,
         protected Renderer $view
     ) {
         parent::__construct($sessionService, $router, $view);
@@ -190,7 +188,7 @@ final class AdminAuthController extends BaseController
 
             if ('' !== $currentUser->id) {
                 $password = generate_random_password(config()->integer(key: 'cms.password_length'));
-                $newUser = new User($this->dfdb)->findBy(field: 'email', value: $currentUser->email);
+                $newUser = new User(Devflow::db())->findBy(field: 'email', value: $currentUser->email);
 
                 foreach ($currentUser->toArray() as $key => $value) {
                     unset($newUser->pass);

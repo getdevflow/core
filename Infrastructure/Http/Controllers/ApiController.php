@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Http\Controllers;
 
+use App\Application\Devflow;
 use Qubus\Expressive\Database;
 use Codefy\Framework\Http\BaseController;
 use Exception;
@@ -21,15 +22,6 @@ use function sprintf;
 
 final class ApiController extends BaseController
 {
-    public function __construct(
-        protected SessionService $sessionService,
-        protected Router $router,
-        protected Database $dfdb,
-        protected Renderer $view
-    ) {
-        parent::__construct($sessionService, $router, $view);
-    }
-
     /**
      * @param ServerRequest $request
      * @param string $table
@@ -39,17 +31,16 @@ final class ApiController extends BaseController
     public function all(ServerRequest $request, string $table): ResponseInterface
     {
         try {
-            $this->dfdb
-                    ->qb()
-                    ->getConnection()
-                    ->pdo
-                    ->exec(sprintf('SELECT * FROM %s', $this->dfdb->prefix . $table));
+            Devflow::db()
+                ->getConnection()
+                ->pdo
+                ->exec(sprintf('SELECT * FROM %s', Devflow::db()->prefix . $table));
         } catch (PDOException $e) {
             return JsonResponseFactory::create(t__(msgid: 'Database table does not exist.', domain: 'devflow'), 404);
         }
 
-        $query = $this->dfdb->qb()
-                ->table($this->dfdb->prefix . $table);
+        $query = Devflow::db()
+                ->table(Devflow::db()->prefix . $table);
 
         if (isset($request->getQueryParams()['by']) === true) {
             if (isset($request->getQueryParams()['order']) !== true) {
@@ -93,11 +84,10 @@ final class ApiController extends BaseController
     public function column(ServerRequest $request, string $table, string $field, mixed $value): ResponseInterface
     {
         try {
-            $this->dfdb
-                    ->qb()
-                    ->getConnection()
-                    ->pdo
-                    ->exec(sprintf('SELECT * FROM %s', $this->dfdb->prefix . $table));
+            Devflow::db()
+                ->getConnection()
+                ->pdo
+                ->exec(sprintf('SELECT * FROM %s', Devflow::db()->prefix . $table));
         } catch (PDOException $e) {
             return JsonResponseFactory::create(
                 t__(msgid: 'Database table does not exist.', domain: 'devflow'),
@@ -105,8 +95,8 @@ final class ApiController extends BaseController
             );
         }
 
-        $query = $this->dfdb->qb()
-                ->table($this->dfdb->prefix . $table)
+        $query = Devflow::db()
+                ->table(Devflow::db()->prefix . $table)
                 ->where($field, $value);
 
         if (isset($request->getQueryParams()['by']) === true) {

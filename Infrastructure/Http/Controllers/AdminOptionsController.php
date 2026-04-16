@@ -9,7 +9,6 @@ use App\Domain\Site\Command\UpdateSiteCommand;
 use App\Domain\Site\Model\Site;
 use App\Domain\Site\ValueObject\SiteId;
 use App\Domain\User\ValueObject\UserId;
-use App\Infrastructure\Services\Options;
 use Codefy\CommandBus\Exceptions\CommandCouldNotBeHandledException;
 use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
 use Codefy\CommandBus\Exceptions\UnresolvableCommandHandlerException;
@@ -24,11 +23,8 @@ use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
 use Qubus\Http\ServerRequest;
 use Qubus\Http\Session\SessionException;
-use Qubus\Http\Session\SessionService;
-use Qubus\Routing\Router;
 use Qubus\Support\DateTime\QubusDateTimeImmutable;
 use Qubus\ValueObjects\StringLiteral\StringLiteral;
-use Qubus\View\Renderer;
 use ReflectionException;
 
 use function App\Shared\Helpers\admin_url;
@@ -37,6 +33,7 @@ use function App\Shared\Helpers\current_user_can;
 use function App\Shared\Helpers\get_current_site_key;
 use function App\Shared\Helpers\get_site_by;
 use function App\Shared\Helpers\get_user_timezone;
+use function App\Shared\Helpers\update_option;
 use function Codefy\Framework\Helpers\command;
 use function Codefy\Framework\Helpers\view;
 use function Qubus\Security\Helpers\esc_html__;
@@ -46,15 +43,6 @@ use function sprintf;
 
 final class AdminOptionsController extends BaseController
 {
-    public function __construct(
-        protected SessionService $sessionService,
-        protected Router $router,
-        protected Renderer $view,
-        protected Options $option
-    ) {
-        parent::__construct($sessionService, $router, $view);
-    }
-
     /**
      * @param ServerRequest $request
      * @return ResponseInterface
@@ -87,7 +75,7 @@ final class AdminOptionsController extends BaseController
                     $value = trim($value);
                 }
 
-                $this->option->update($option, $value);
+                update_option($option, $value);
             }
 
             Devflow::$PHP->flash->success(
@@ -131,7 +119,7 @@ final class AdminOptionsController extends BaseController
                 }
 
                 $value = $request->getParsedBody()[$optionName];
-                $this->option->update($optionName, $value);
+                update_option($optionName, $value);
             }
 
             /** @var Site $currentSite */
@@ -255,7 +243,7 @@ final class AdminOptionsController extends BaseController
                 }
 
                 $value = $request->getParsedBody()[$optionName];
-                $this->option->update($optionName, $value);
+                update_option($optionName, $value);
             }
 
             Devflow::$PHP->flash->{'success'}(

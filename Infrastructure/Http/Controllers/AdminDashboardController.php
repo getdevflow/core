@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Infrastructure\Http\Controllers;
 
 use App\Application\Devflow;
-use Qubus\Expressive\Database;
 use App\Shared\Services\ItemPoolObjectCacheFactory;
 use App\Shared\Services\SimpleCacheObjectCacheFactory;
 use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
@@ -20,11 +19,8 @@ use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
 use Qubus\Http\ServerRequest;
 use Qubus\Http\Session\SessionException;
-use Qubus\Http\Session\SessionService;
 use Qubus\Routing\Exceptions\NamedRouteNotFoundException;
 use Qubus\Routing\Exceptions\RouteParamFailedConstraintException;
-use Qubus\Routing\Router;
-use Qubus\View\Renderer;
 use ReflectionException;
 
 use function App\Shared\Helpers\admin_url;
@@ -37,15 +33,6 @@ use function Qubus\Security\Helpers\t__;
 
 final class AdminDashboardController extends BaseController
 {
-    public function __construct(
-        protected SessionService $sessionService,
-        protected Router $router,
-        protected Database $dfdb,
-        protected Renderer $view
-    ) {
-        parent::__construct($sessionService, $router, $view);
-    }
-
     /**
      * @return ResponseInterface|string
      * @throws ContainerExceptionInterface
@@ -125,16 +112,16 @@ final class AdminDashboardController extends BaseController
         $globalNamespaces = ['auto_updater','useremail','userlogin','users','usertoken','sites','sitekey','siteslug'];
         $siteNamespaces = preg_filter(
             pattern: '/^/',
-            replacement: $this->dfdb->prefix,
+            replacement: Devflow::db()->prefix,
             subject: [
                 'content','contentauthor','contentslug','contenttype','content_attribute','products','productauthor',
-                'productslug','productsku','product_attribute','options','database'
+                'productslug','productsku','product_attribute','options'
             ]
         );
 
         $namespaces = [...$siteNamespaces, ...$globalNamespaces];
 
-        if (true === SimpleCacheObjectCacheFactory::make(namespace: $this->dfdb->prefix . 'user_attribute')->clear()) {
+        if (true === SimpleCacheObjectCacheFactory::make(namespace: Devflow::db()->basePrefix . 'user_attribute')->clear()) {
             ItemPoolObjectCacheFactory::make()->clear();
 
             foreach ($namespaces as $namespace) {

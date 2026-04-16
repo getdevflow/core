@@ -6,6 +6,7 @@ namespace App\Infrastructure\Http\Controllers;
 
 use App\Application\Devflow;
 use App\Domain\Site\Model\Site;
+use App\Domain\User\Query\FindMultisiteUniqueUsersQuery;
 use App\Domain\User\Query\FindUsersQuery;
 use Codefy\CommandBus\Exceptions\CommandCouldNotBeHandledException;
 use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
@@ -308,14 +309,14 @@ final class AdminSiteController extends BaseController
             return $this->redirect(admin_url());
         }
         
-        $results = ask(new FindUsersQuery());
+        $results = ask(new FindMultisiteUniqueUsersQuery());
 
         $users = sort_list($results, 'lname', 'ASC', true);
 
         return view(
             template: 'framework::backend/admin/site/users',
             data: [
-                'title' => t__(msgid: 'Manage Site Users', domain: 'devflow'),
+                'title' => t__(msgid: 'Manage System Users', domain: 'devflow'),
                 'users' => $users,
             ]
         );
@@ -354,17 +355,13 @@ final class AdminSiteController extends BaseController
         }
 
         try {
-            if (isset($request->getParsedBody()['assign_id']) && 'null' !== $request->getParsedBody()['assign_id']) {
-                $siteUser = cms_delete_site_user(
-                    $request->getParsedBody()['user_id'],
-                    [
-                        'assign_id' => $request->getParsedBody()['assign_id'],
-                        'role' => $request->getParsedBody()['role'],
-                    ]
-                );
-            } else {
-                $siteUser = cms_delete_site_user($request->getParsedBody()['user_id']);
-            }
+            $siteUser = cms_delete_site_user(
+                $request->getParsedBody()['user_id'],
+                [
+                    'assign_id' => $request->getParsedBody()['assign_id'],
+                    'role' => $request->getParsedBody()['role'],
+                ]
+            );
 
             if (is_error($siteUser)) {
                 Devflow::$PHP->flash->error(

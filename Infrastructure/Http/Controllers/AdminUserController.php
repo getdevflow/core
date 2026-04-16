@@ -33,6 +33,7 @@ use Qubus\Http\Session\SessionException;
 use ReflectionException;
 
 use function App\Shared\Helpers\admin_url;
+use function App\Shared\Helpers\cms_delete_site_user;
 use function App\Shared\Helpers\cms_insert_user;
 use function App\Shared\Helpers\cms_update_user;
 use function App\Shared\Helpers\current_user_can;
@@ -44,6 +45,7 @@ use function App\Shared\Helpers\get_option;
 use function App\Shared\Helpers\get_user_by;
 use function App\Shared\Helpers\get_user_value;
 use function App\Shared\Helpers\get_userdata;
+use function App\Shared\Helpers\is_multisite;
 use function App\Shared\Helpers\is_user_logged_in;
 use function App\Shared\Helpers\queue_new_user_email;
 use function App\Shared\Helpers\remove_user_from_site;
@@ -394,14 +396,24 @@ final class AdminUserController extends BaseController
             $oldUser = get_user_by(field: 'id', value: $request->getParsedBody()['user_id']);
             $assignId = (string) $request->getParsedBody()['assign_id'];
 
-            remove_user_from_site(
-                userId: $request->getParsedBody()['user_id'],
-                params: [
-                    'site_id' => get_current_site_id(),
-                    'assign_id' => $assignId,
-                    'role' => $oldUser->role
-                ]
-            );
+            if(is_multisite()) {
+                remove_user_from_site(
+                    userId: $request->getParsedBody()['user_id'],
+                    params: [
+                        'site_id' => get_current_site_id(),
+                        'assign_id' => $assignId,
+                        'role' => $oldUser->role
+                    ]
+                );
+            } else {
+                cms_delete_site_user(
+                    userId: $request->getParsedBody()['user_id'],
+                    params: [
+                        'assign_id' => $assignId,
+                        'role' => $oldUser->role
+                    ]
+                );
+            }
 
             Devflow::$PHP->flash->success(
                 message: Devflow::$PHP->flash->notice(num: 201),
@@ -711,7 +723,7 @@ final class AdminUserController extends BaseController
             $switchCookie = [
                 'key' => 'USERCOOKIEID',
                 'id' => $userId,
-                'token' => get_user_value($userId, 'token'),
+                'token' => get_user_value(id: $userId, field: 'token'),
                 'remember' => 'yes',
                 'exp' => (int) get_option('cookieexpire', 172800) + time()
             ];
@@ -736,7 +748,7 @@ final class AdminUserController extends BaseController
                 setCookieCollection: $cookieFactory->make(
                     name: config()->string(key: 'auth.cookie_name', default: 'USERSESSID'),
                     value: Crypto::encrypt(
-                        plaintext: get_user_value($userId, 'token'),
+                        plaintext: get_user_value(id: $userId, field: 'token'),
                         key: Key::loadFromAsciiSafeString(config()->string(key: 'app.crypto_key'))
                     ),
                     maxAge: (int) get_option(key: 'cookieexpire', default: 172800) + time()

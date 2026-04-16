@@ -15,14 +15,10 @@ use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\SimpleCache\InvalidArgumentException;
-use Qubus\Config\ConfigContainer;
 use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
 use Qubus\Http\Factories\JsonResponseFactory;
 use Qubus\Http\Session\SessionException;
-use Qubus\Http\Session\SessionService;
-use Qubus\Routing\Router;
-use Qubus\View\Renderer;
 use ReflectionException;
 
 use function App\Shared\Helpers\current_user_can;
@@ -37,15 +33,6 @@ use function Qubus\Security\Helpers\t__;
 
 final class AdminMediaController extends BaseController
 {
-    public function __construct(
-        protected SessionService $sessionService,
-        protected Router $router,
-        protected ConfigContainer $configContainer,
-        protected Renderer $view
-    ) {
-        parent::__construct($sessionService, $router, $view);
-    }
-
     /**
      * @return ResponseInterface
      * @throws ContainerExceptionInterface
@@ -66,13 +53,13 @@ final class AdminMediaController extends BaseController
             return JsonResponseFactory::create(data: 'invalid', status: 400);
         }
 
-        if ($this->configContainer->boolean(key: 'elfinder.options.debug') === true) {
+        if (Devflow::$PHP->configContainer->boolean(key: 'elfinder.options.debug') === true) {
             error_reporting(error_level: 0);
         }
 
-        $roots = $this->configContainer->array(key: 'elfinder.roots', default: []);
+        $roots = Devflow::$PHP->configContainer->array(key: 'elfinder.roots', default: []);
         if (empty($roots)) {
-            $dirs = $this->configContainer->array(key: 'elfinder.dir');
+            $dirs = Devflow::$PHP->configContainer->array(key: 'elfinder.dir');
             foreach ($dirs as $dir) {
                 $roots[] = [
                     'driver' => 'LocalFileSystem',
@@ -82,7 +69,7 @@ final class AdminMediaController extends BaseController
                         path: 'sites/' . Registry::getInstance()->get('siteKey') . "/$dir"
                     ),
                     'alias' => t__(msgid: 'Media Library', domain: 'devflow'),
-                    'accessControl' => $this->configContainer->getConfigKey(key: 'elfinder.access'),
+                    'accessControl' => Devflow::$PHP->configContainer->getConfigKey(key: 'elfinder.access'),
                     'tmbURL' => site_url('sites/' . Registry::getInstance()->get('siteKey') . "/{$dir}.tmb"),
                 ];
 
@@ -94,7 +81,7 @@ final class AdminMediaController extends BaseController
                 ];
             }
 
-            $disks = $this->configContainer->getConfigKey(key: 'elfinder.disks', default: []);
+            $disks = Devflow::$PHP->configContainer->getConfigKey(key: 'elfinder.disks', default: []);
             foreach ($disks as $key => $root) {
                 if (is_string($root)) {
                     $key = $root;
@@ -106,7 +93,7 @@ final class AdminMediaController extends BaseController
                         'driver' => 'Flysystem',
                         'filesystem' => $disk,
                         'alias' => $key,
-                        'accessControl' => $this->configContainer->getConfigKey(key: 'elfinder.access')
+                        'accessControl' => Devflow::$PHP->configContainer->getConfigKey(key: 'elfinder.access')
                     ];
                     $root = array_merge($defaults, $root);
                     $roots[] = $root;
@@ -114,12 +101,12 @@ final class AdminMediaController extends BaseController
             }
         }
 
-        $rootOptions = $this->configContainer->array(key: 'elfinder.root_options', default: []);
+        $rootOptions = Devflow::$PHP->configContainer->array(key: 'elfinder.root_options', default: []);
         foreach ($roots as $key => $root) {
             $roots[$key] = array_merge($rootOptions, $root);
         }
 
-        $opts = $this->configContainer->array(key: 'elfinder.options', default: []);
+        $opts = Devflow::$PHP->configContainer->array(key: 'elfinder.options', default: []);
         $opts = array_merge($opts, ['roots' => $roots]);
 
         // run elFinder
