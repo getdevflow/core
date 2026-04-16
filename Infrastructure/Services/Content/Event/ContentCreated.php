@@ -24,7 +24,6 @@ final readonly class ContentCreated
      *     'createdGmt': string,
      *     'published': string,
      *     'publishedGmt': string,
-     *     'meta': array<array-key, mixed>
      * } $content
      */
     public function __construct(

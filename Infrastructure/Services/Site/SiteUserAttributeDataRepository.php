@@ -29,8 +29,6 @@ final class SiteUserAttributeDataRepository implements SiteUserAttributeReposito
      * @param string $siteId
      * @param string $userId
      * @return SiteUserAttribute|null
-     * @throws Exception
-     * @throws \ReflectionException
      */
     public function find(string $siteId, string $userId): ?SiteUserAttribute
     {
@@ -56,8 +54,6 @@ final class SiteUserAttributeDataRepository implements SiteUserAttributeReposito
      * @param string $siteId
      * @param string $userId
      * @return SiteUserAttribute
-     * @throws Exception
-     * @throws \ReflectionException
      */
     public function get(string $siteId, string $userId): SiteUserAttribute
     {
@@ -76,8 +72,6 @@ final class SiteUserAttributeDataRepository implements SiteUserAttributeReposito
      * @param string $siteId
      * @param string $userId
      * @return bool
-     * @throws Exception
-     * @throws ReflectionException
      */
     public function exists(string $siteId, string $userId): bool
     {
@@ -97,8 +91,8 @@ final class SiteUserAttributeDataRepository implements SiteUserAttributeReposito
     public function create(SiteUserAttribute $attributes): void
     {
         try {
-            $this->dfdb->qb()->transactional(function () use ($attributes): void {
-                $this->dfdb->qb()
+            $this->dfdb->transactional(function () use ($attributes): void {
+                $this->dfdb
                     ->table($this->table)
                     ->insert($attributes->toArray());
             });
@@ -119,8 +113,8 @@ final class SiteUserAttributeDataRepository implements SiteUserAttributeReposito
     public function save(SiteUserAttribute $attributes): void
     {
         try {
-            $this->dfdb->qb()->transactional(function () use ($attributes): void {
-                $this->dfdb->qb()
+            $this->dfdb->transactional(function () use ($attributes): void {
+                $this->dfdb
                     ->table($this->table)
                     ->where('site_id = ?', $attributes->siteId)->and()
                     ->where('user_id = ?', $attributes->userId)
@@ -150,8 +144,8 @@ final class SiteUserAttributeDataRepository implements SiteUserAttributeReposito
     public function delete(string $siteId, string $userId): void
     {
         try {
-            $this->dfdb->qb()->transactional(function () use ($siteId, $userId): void {
-                $this->dfdb->qb()
+            $this->dfdb->transactional(function () use ($siteId, $userId): void {
+                $this->dfdb
                     ->table($this->table)
                     ->where('site_id = ?', $siteId)->and()
                     ->where('user_id = ?', $userId)

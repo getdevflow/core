@@ -26,7 +26,6 @@ final readonly class ProductCreated
      *     'createdGmt': string,
      *     'published': string,
      *     'publishedGmt': string,
-     *     'meta': array<array-key, mixed>
      * } $product
      */
     public function __construct(

@@ -39,7 +39,7 @@ final readonly class PdoAttributeDataRepository implements AttributeRepository
     public function getAttribute(string $type, string $id): AttributeBag
     {
         $table = $this->table($type);
-        $stmt = $this->dfdb->qb()->getConnection()->pdo->prepare(
+        $stmt = $this->dfdb->getConnection()->pdo->prepare(
                 "SELECT {$type}_attribute
              FROM {$table}
              WHERE {$type}_id = :id
@@ -67,7 +67,7 @@ final readonly class PdoAttributeDataRepository implements AttributeRepository
     public function saveAttribute(string $type, string $id, AttributeBag $attribute): void
     {
         $table = $this->table($type);
-        $stmt = $this->dfdb->qb()->getConnection()->pdo->prepare(
+        $stmt = $this->dfdb->getConnection()->pdo->prepare(
                 "UPDATE {$table}
              SET {$type}_attribute = :attribute
              WHERE {$type}_id = :id"
@@ -89,10 +89,10 @@ final readonly class PdoAttributeDataRepository implements AttributeRepository
     public function patchAttribute(string $type, string $id, callable $callback): AttributeBag
     {
         $table = $this->table($type);
-        $this->dfdb->qb()->getConnection()->pdo->beginTransaction();
+        $this->dfdb->getConnection()->pdo->beginTransaction();
 
         try {
-            $stmt = $this->dfdb->qb()->getConnection()->pdo->prepare(
+            $stmt = $this->dfdb->getConnection()->pdo->prepare(
                 "SELECT {$type}_attribute
                  FROM {$table}
                  WHERE {$type}_id = :id
@@ -115,7 +115,7 @@ final readonly class PdoAttributeDataRepository implements AttributeRepository
                 throw new \RuntimeException('Attribute patch callback must return an AttributeBag.');
             }
 
-            $update = $this->dfdb->qb()->getConnection()->pdo->prepare(
+            $update = $this->dfdb->getConnection()->pdo->prepare(
                 "UPDATE {$table}
                  SET {$type}_attribute = :attribute
                  WHERE {$type}_id = :id"
@@ -126,11 +126,11 @@ final readonly class PdoAttributeDataRepository implements AttributeRepository
                 'attribute' => $updated->toJson(),
             ]);
 
-            $this->dfdb->qb()->getConnection()->pdo->commit();
+            $this->dfdb->getConnection()->pdo->commit();
 
             return $updated;
         } catch (\Throwable $e) {
-            $this->dfdb->qb()->getConnection()->pdo->rollBack();
+            $this->dfdb->getConnection()->pdo->rollBack();
             throw $e;
         }
     }

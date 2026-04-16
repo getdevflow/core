@@ -79,9 +79,8 @@ final class Options
         $optionValue = $_value;
 
         try {
-            $this->dfdb->qb()->transactional(function () use ($name, $optionValue) {
+            $this->dfdb->transactional(function () use ($name, $optionValue) {
                 $this->dfdb
-                    ->qb()
                     ->table($this->dfdb->prefix . 'option')
                     ->insert([
                         'option_id' => Ulid::generateAsString(),
@@ -228,7 +227,6 @@ final class Options
 
         try {
             $this->dfdb
-                ->qb()
                 ->table($this->dfdb->prefix . 'option')
                 ->where('option_key = ?', $optionKey)
                 ->update([
@@ -278,9 +276,8 @@ final class Options
         Action::getInstance()->doAction('delete_option', $name);
 
         try {
-            $this->dfdb->qb()->transactional(function () use ($results) {
+            $this->dfdb->transactional(function () use ($results) {
                 $this->dfdb
-                    ->qb()
                     ->setStructure('option_id')
                     ->table($this->dfdb->prefix . 'option')
                     ->reset()
