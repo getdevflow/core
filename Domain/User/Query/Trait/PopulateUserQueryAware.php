@@ -22,10 +22,6 @@ trait PopulateUserQueryAware
      * @param array|null $data
      * @return array|null
      * @throws Exception
-     * @throws ContainerExceptionInterface
-     * @throws NotFoundExceptionInterface
-     * @throws InvalidArgumentException
-     * @throws ReflectionException
      */
     private function populate(?array $data = []): ?array
     {
@@ -39,7 +35,6 @@ trait PopulateUserQueryAware
             'email' => esc_html(string: $data['user_email']) ?? null,
             'pass' => esc_html(string: $data['user_pass']) ?? null,
             'url' => esc_html(string: $data['user_url']) ?? null,
-            'role' => get_user_option('role', $data['user_id']),
             'timezone' => esc_html(string: $data['user_timezone']) ?? null,
             'dateFormat' => esc_html(string: $data['user_date_format']) ?? null,
             'timeFormat' => esc_html(string: $data['user_time_format']) ?? null,

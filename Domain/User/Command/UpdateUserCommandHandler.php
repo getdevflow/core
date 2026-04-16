@@ -9,15 +9,6 @@ use App\Domain\User\Model\User;
 use App\Domain\User\Repository\UserCommandRepository;
 use Codefy\CommandBus\Command;
 use Codefy\CommandBus\CommandHandler;
-use Psr\Container\ContainerExceptionInterface;
-use Psr\Container\NotFoundExceptionInterface;
-use Psr\SimpleCache\InvalidArgumentException;
-use Qubus\Exception\Data\TypeException;
-use Qubus\Exception\Exception;
-use ReflectionException;
-
-use function App\Shared\Helpers\update_user_attribute;
-use function App\Shared\Helpers\update_usermeta;
 
 final readonly class UpdateUserCommandHandler implements CommandHandler
 {
@@ -27,7 +18,6 @@ final readonly class UpdateUserCommandHandler implements CommandHandler
 
     /**
      * @param UpdateUserCommand|Command $command
-     * @throws Exception
      */
     public function handle(UpdateUserCommand|Command $command): void
     {

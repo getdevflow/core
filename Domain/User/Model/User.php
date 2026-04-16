@@ -37,11 +37,6 @@ use function strtolower;
  * @property string $pass
  * @property string $url
  * @property string $bio
- * @property string $status
- * @property string $role
- * @property string $admin_layout
- * @property string admin_sidebar
- * @property string $admin_skin
  * @property string $timezone
  * @property string $dateFormat
  * @property string $timeFormat
@@ -104,12 +99,12 @@ final class User extends stdClass
             !$data = $this->dfdb->getRow(
                 $this->dfdb->prepare(
                     sprintf(
-                        "SELECT u.*, s.user_attribute
+                        "SELECT u.*, su.user_attribute
                             FROM {$this->dfdb->basePrefix}user u 
-                            JOIN {$this->dfdb->basePrefix}site_user s 
-                            ON u.user_id = s.user_id
+                            JOIN {$this->dfdb->basePrefix}site_user su 
+                            ON u.user_id = su.user_id
                             WHERE u.%s = ? 
-                            AND s.site_id = ?",
+                            AND su.site_id = ?",
                         $dbField
                     ),
                     [
@@ -202,7 +197,11 @@ final class User extends stdClass
      */
     public function __isset(string $key)
     {
-        return false === AttributesFactory::user()->exists(get_current_site_id(), $this->id, $key);
+        if (!isset($this->{$key})) {
+            return false;
+        }
+
+        return AttributesFactory::user()->exists(get_current_site_id(), $this->id, $key);
     }
 
     /**
@@ -220,16 +219,17 @@ final class User extends stdClass
         if (isset($this->{$key})) {
             $value = $this->{$key};
         } else {
-            $value = AttributesFactory::user()->get(get_current_site_id(), $this->id, $key);
+            $value = AttributesFactory::user()
+                ->get(siteId: get_current_site_id(), userId: $this->id, key: $key, default: '');
         }
 
-        return purify_html($value);
+        return isset($value) ? purify_html($value) : '';
     }
 
     /**
      * Magic method for setting custom user fields.
      *
-     * This method does not update custom fields in the user document. It only stores
+     * This method does not update custom fields in the database. It only stores
      * the value on the User instance.
      *
      * @param string $key   User attribute key.
@@ -258,7 +258,7 @@ final class User extends stdClass
     }
 
     /**
-     * Retrieve the value of a property or attribute key.
+     * Retrieve the value of a property or custom field key.
      *
      * Retrieves from the user and site_user table.
      *
@@ -275,11 +275,11 @@ final class User extends stdClass
     }
 
     /**
-     * Determine whether a property or attribute key is set
+     * Determine whether a property or custom field key is set.
      *
      * Consults the user and site_user tables.
      *
-     * @param string $key Property
+     * @param string $key Property.
      * @return bool
      * @throws ContainerExceptionInterface
      * @throws Exception

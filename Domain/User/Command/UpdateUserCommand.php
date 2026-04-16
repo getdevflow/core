@@ -7,7 +7,6 @@ namespace App\Domain\User\Command;
 use App\Domain\User\ValueObject\UserId;
 use App\Domain\User\ValueObject\Username;
 use App\Domain\User\ValueObject\UserToken;
-use App\Shared\ValueObject\ArrayLiteral;
 use Codefy\CommandBus\PropertyCommand;
 use DateTimeInterface;
 use Qubus\ValueObjects\StringLiteral\StringLiteral;
@@ -44,6 +43,4 @@ final class UpdateUserCommand extends PropertyCommand
     public DateTimeInterface $modified;
 
     public StringLiteral $activationKey;
-
-    public ArrayLiteral $attributes;
 }
