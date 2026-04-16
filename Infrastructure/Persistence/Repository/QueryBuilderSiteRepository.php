@@ -38,8 +38,8 @@ class QueryBuilderSiteRepository implements SiteCommandRepository
     public function save(Site $site): void
     {
         try {
-            $this->dfdb->qb()->transactional(callback: function () use ($site) {
-                $this->dfdb->qb()
+            $this->dfdb->transactional(callback: function () use ($site) {
+                $this->dfdb
                     ->table(tableName: $this->dfdb->basePrefix . 'site')
                         ->set([
                             'site_id' => $site->id,
@@ -68,8 +68,8 @@ class QueryBuilderSiteRepository implements SiteCommandRepository
     public function update(Site $site): void
     {
         try {
-            $this->dfdb->qb()->transactional(callback: function () use ($site) {
-                $this->dfdb->qb()
+            $this->dfdb->transactional(callback: function () use ($site) {
+                $this->dfdb
                     ->table(tableName: $this->dfdb->basePrefix . 'site')
                         ->set([
                             'site_name' => $site->name,
@@ -112,8 +112,8 @@ class QueryBuilderSiteRepository implements SiteCommandRepository
             $product = get_product_by(field: 'author', value: $authorId->toNative());
 
             if(!is_false__($content)) {
-                $this->dfdb->qb()->transactional(callback: function () use ($authorId, $assignId, $site) {
-                    $this->dfdb->qb()
+                $this->dfdb->transactional(callback: function () use ($authorId, $assignId, $site) {
+                    $this->dfdb
                         ->table(tableName: $site->key . 'content')
                         ->set(['content_author' => $assignId->toNative()])
                         ->where(condition: 'content_author = ?', parameters: $authorId->toNative())
@@ -122,8 +122,8 @@ class QueryBuilderSiteRepository implements SiteCommandRepository
             }
 
             if(!is_false__($product)) {
-                $this->dfdb->qb()->transactional(callback: function () use ($authorId, $assignId, $site) {
-                    $this->dfdb->qb()
+                $this->dfdb->transactional(callback: function () use ($authorId, $assignId, $site) {
+                    $this->dfdb
                         ->table(tableName: $site->key . 'product')
                         ->set(['product_author' => $assignId->toNative()])
                         ->where(condition: 'product_author = ?', parameters: $authorId->toNative())
@@ -144,8 +144,8 @@ class QueryBuilderSiteRepository implements SiteCommandRepository
     public function remove(SiteId $siteId, UserId $userId): void
     {
         try {
-            $this->dfdb->qb()->transactional(callback: function () use ($siteId, $userId) {
-                $this->dfdb->qb()
+            $this->dfdb->transactional(callback: function () use ($siteId, $userId) {
+                $this->dfdb
                     ->table(tableName: $this->dfdb->basePrefix . 'site_user')
                     ->where(condition: 'site_id = ?', parameters: $siteId->toNative())->and()
                     ->where(condition: 'user_id = ?', parameters: $userId->toNative())
@@ -164,8 +164,8 @@ class QueryBuilderSiteRepository implements SiteCommandRepository
     public function destroy(SiteId $id): void
     {
         try {
-            $this->dfdb->qb()->transactional(callback: function () use ($id) {
-                $this->dfdb->qb()
+            $this->dfdb->transactional(callback: function () use ($id) {
+                $this->dfdb
                     ->table(tableName: $this->dfdb->basePrefix . 'site')
                     ->where(condition: 'site_id = ?', parameters: $id->toNative())
                     ->delete();
@@ -183,8 +183,8 @@ class QueryBuilderSiteRepository implements SiteCommandRepository
     public function updateOwner(Site $site): void
     {
         try {
-            $this->dfdb->qb()->transactional(callback: function () use ($site) {
-                $this->dfdb->qb()
+            $this->dfdb->transactional(callback: function () use ($site) {
+                $this->dfdb
                     ->table(tableName: $this->dfdb->basePrefix . 'site')
                     ->set([
                         'site_owner' => $site->owner,

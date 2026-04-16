@@ -15,7 +15,6 @@ use Qubus\Exception\Exception;
 use Qubus\Expressive\Database;
 use Exception as NativeException;
 use Qubus\Expressive\QueryBuilderException;
-
 use ReflectionException;
 
 use function App\Shared\Helpers\get_current_site_id;

@@ -18,7 +18,6 @@ use Codefy\Domain\Metadata;
 use Exception as NativeException;
 use Qubus\Exception\Data\TypeException;
 use Qubus\Expressive\Database;
-use Qubus\Expressive\QueryBuilder;
 use Qubus\Expressive\QueryBuilderException;
 
 final class QueryBuilderTransactionalEventStore implements TransactionalEventStore
@@ -34,15 +33,14 @@ final class QueryBuilderTransactionalEventStore implements TransactionalEventSto
     public function append(DomainEvent $event, TransactionId $transactionId): void
     {
         try {
-            $this->dfdb->qb()->transactional(callback: function () use ($event, $transactionId) {
-                $this->dfdb->qb()
-                    ->table(tableName: $this->dfdb->basePrefix . 'event_store')
+            $this->dfdb->transactional(callback: function () use ($event, $transactionId) {
+                $this->dfdb
+                    ->table(tableName: $this->dfdb->prefix . 'event_store')
                     ->set([
                         'event_id' => $event->eventId()->__toString(),
                         'transaction_id' => $transactionId::fromString(transactionId: $transactionId->toNative()),
                         'event_type' => $event->eventType(),
                         'event_classname' => get_class($event),
-                        'site' => $this->dfdb->prefix,
                         'payload' => json_encode(value: $event->payload(), flags: JSON_PRETTY_PRINT),
                         'metadata' => json_encode(value: [
                             '__aggregate_type' => $event->metaParam(name: Metadata::AGGREGATE_TYPE),
@@ -100,7 +98,7 @@ final class QueryBuilderTransactionalEventStore implements TransactionalEventSto
      */
     public function getAggregateHistoryFor(AggregateId $aggregateId): EventStream
     {
-        $query = $this->dfdb->qb()->table(tableName: $this->dfdb->basePrefix . 'event_store')
+        $query = $this->dfdb->table(tableName: $this->dfdb->prefix . 'event_store')
         ->select(columns: '*')
         ->where(condition: 'aggregate_id', parameters: (string) $aggregateId);
 
@@ -114,7 +112,7 @@ final class QueryBuilderTransactionalEventStore implements TransactionalEventSto
      */
     public function loadFromPlayhead(AggregateId $aggregateId, int $playhead): EventStream
     {
-        $query = $this->dfdb->qb()->table(tableName: $this->dfdb->basePrefix . 'event_store')
+        $query = $this->dfdb->table(tableName: $this->dfdb->prefix . 'event_store')
             ->select(columns: '*')
             ->where(condition: 'aggregate_id', parameters: (string) $aggregateId)
             ->and()
@@ -124,13 +122,13 @@ final class QueryBuilderTransactionalEventStore implements TransactionalEventSto
     }
 
     /**
-     * @param QueryBuilder|null $query
+     * @param Database|null $query
      * @param AggregateId $aggregateId
      * @return EventStream
      * @throws TypeException
      * @throws CorruptEventStreamException
      */
-    private function eventStream(?QueryBuilder $query, AggregateId $aggregateId): EventStream
+    private function eventStream(?Database $query, AggregateId $aggregateId): EventStream
     {
         $stream = [];
 

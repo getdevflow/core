@@ -55,8 +55,8 @@ class DatabaseProductProjection extends BaseProjection implements ProductProject
     public function projectWhenProductWasCreated(ProductWasCreated $event): void
     {
         try {
-            $this->dfdb->qb()->transactional(callback: function () use ($event) {
-                $this->dfdb->qb()
+            $this->dfdb->transactional(callback: function () use ($event) {
+                $this->dfdb
                     ->table(tableName: $this->dfdb->prefix . 'product')
                     ->set([
                         'product_id' => $event->productId()->toNative(),
@@ -101,8 +101,8 @@ class DatabaseProductProjection extends BaseProjection implements ProductProject
     public function projectWhenProductTitleWasChanged(ProductTitleWasChanged $event): void
     {
         try {
-            $this->dfdb->qb()->transactional(callback: function () use ($event) {
-                $this->dfdb->qb()
+            $this->dfdb->transactional(callback: function () use ($event) {
+                $this->dfdb
                     ->table(tableName: $this->dfdb->prefix . 'product')
                     ->set([
                         'product_title' => $event->productTitle()->toNative(),
@@ -124,8 +124,8 @@ class DatabaseProductProjection extends BaseProjection implements ProductProject
     public function projectWhenProductSlugWasChanged(ProductSlugWasChanged $event): void
     {
         try {
-            $this->dfdb->qb()->transactional(callback: function () use ($event) {
-                $this->dfdb->qb()
+            $this->dfdb->transactional(callback: function () use ($event) {
+                $this->dfdb
                     ->table(tableName: $this->dfdb->prefix . 'product')
                     ->set([
                         'product_slug' => $event->productSlug()->toNative(),
@@ -147,8 +147,8 @@ class DatabaseProductProjection extends BaseProjection implements ProductProject
     public function projectWhenProductBodyWasChanged(ProductBodyWasChanged $event): void
     {
         try {
-            $this->dfdb->qb()->transactional(callback: function () use ($event) {
-                $this->dfdb->qb()
+            $this->dfdb->transactional(callback: function () use ($event) {
+                $this->dfdb
                     ->table(tableName: $this->dfdb->prefix . 'product')
                     ->set([
                         'product_body' => $event->productBody()->toNative(),
@@ -170,8 +170,8 @@ class DatabaseProductProjection extends BaseProjection implements ProductProject
     public function projectWhenProductAuthorWasChanged(ProductAuthorWasChanged $event): void
     {
         try {
-            $this->dfdb->qb()->transactional(callback: function () use ($event) {
-                $this->dfdb->qb()
+            $this->dfdb->transactional(callback: function () use ($event) {
+                $this->dfdb
                     ->table(tableName: $this->dfdb->prefix . 'product')
                     ->set([
                         'product_author' => $event->productAuthor()->toNative(),
@@ -193,8 +193,8 @@ class DatabaseProductProjection extends BaseProjection implements ProductProject
     public function projectWhenProductSkuWasChanged(ProductSkuWasChanged $event): void
     {
         try {
-            $this->dfdb->qb()->transactional(callback: function () use ($event) {
-                $this->dfdb->qb()
+            $this->dfdb->transactional(callback: function () use ($event) {
+                $this->dfdb
                     ->table(tableName: $this->dfdb->prefix . 'product')
                     ->set([
                         'product_sku' => $event->productSku()->toNative(),
@@ -216,8 +216,8 @@ class DatabaseProductProjection extends BaseProjection implements ProductProject
     public function projectWhenProductPriceWasChanged(ProductPriceWasChanged $event): void
     {
         try {
-            $this->dfdb->qb()->transactional(callback: function () use ($event) {
-                $this->dfdb->qb()
+            $this->dfdb->transactional(callback: function () use ($event) {
+                $this->dfdb
                     ->table(tableName: $this->dfdb->prefix . 'product')
                     ->set([
                         'product_price' => $event->productPrice()->getAmount()->toNative(),
@@ -240,8 +240,8 @@ class DatabaseProductProjection extends BaseProjection implements ProductProject
     public function projectWhenProductPurchaseUrlWaschanged(ProductPurchaseUrlWasChanged $event): void
     {
         try {
-            $this->dfdb->qb()->transactional(callback: function () use ($event) {
-                $this->dfdb->qb()
+            $this->dfdb->transactional(callback: function () use ($event) {
+                $this->dfdb
                     ->table(tableName: $this->dfdb->prefix . 'product')
                     ->set([
                         'product_purchase_url' => $event->productPurchaseUrl()->toNative(),
@@ -263,8 +263,8 @@ class DatabaseProductProjection extends BaseProjection implements ProductProject
     public function projectWhenProductShowInMenuWasChanged(ProductShowInMenuWasChanged $event): void
     {
         try {
-            $this->dfdb->qb()->transactional(callback: function () use ($event) {
-                $this->dfdb->qb()
+            $this->dfdb->transactional(callback: function () use ($event) {
+                $this->dfdb
                     ->table(tableName: $this->dfdb->prefix . 'product')
                     ->set([
                         'product_show_in_menu' => $event->productShowInMenu()->toNative(),
@@ -286,8 +286,8 @@ class DatabaseProductProjection extends BaseProjection implements ProductProject
     public function projectWhenProductShowInSearchWasChanged(ProductShowInSearchWasChanged $event): void
     {
         try {
-            $this->dfdb->qb()->transactional(callback: function () use ($event) {
-                $this->dfdb->qb()
+            $this->dfdb->transactional(callback: function () use ($event) {
+                $this->dfdb
                     ->table(tableName: $this->dfdb->prefix . 'product')
                     ->set([
                         'product_show_in_search' => $event->productShowInSearch()->toNative(),
@@ -309,8 +309,8 @@ class DatabaseProductProjection extends BaseProjection implements ProductProject
     public function projectWhenProductFeaturedImageWasChanged(ProductFeaturedImageWasChanged $event): void
     {
         try {
-            $this->dfdb->qb()->transactional(callback: function () use ($event) {
-                $this->dfdb->qb()
+            $this->dfdb->transactional(callback: function () use ($event) {
+                $this->dfdb
                     ->table(tableName: $this->dfdb->prefix . 'product')
                     ->set([
                         'product_featured_image' => $event->productFeaturedImage()->toNative(),
@@ -332,8 +332,8 @@ class DatabaseProductProjection extends BaseProjection implements ProductProject
     public function projectWhenProductStatusWasChanged(ProductStatusWasChanged $event): void
     {
         try {
-            $this->dfdb->qb()->transactional(callback: function () use ($event) {
-                $this->dfdb->qb()
+            $this->dfdb->transactional(callback: function () use ($event) {
+                $this->dfdb
                     ->table(tableName: $this->dfdb->prefix . 'product')
                     ->set([
                         'product_status' => $event->productStatus()->toNative(),
@@ -371,8 +371,8 @@ class DatabaseProductProjection extends BaseProjection implements ProductProject
     public function projectWhenProductPublishedWasChanged(ProductPublishedWasChanged $event): void
     {
         try {
-            $this->dfdb->qb()->transactional(callback: function () use ($event) {
-                $this->dfdb->qb()
+            $this->dfdb->transactional(callback: function () use ($event) {
+                $this->dfdb
                     ->table(tableName: $this->dfdb->prefix . 'product')
                     ->set([
                         'product_published' => $event->productPublished()->format('Y-m-d H:i:s'),
@@ -394,8 +394,8 @@ class DatabaseProductProjection extends BaseProjection implements ProductProject
     public function projectWhenProductPublishedGmtWasChanged(ProductPublishedGmtWasChanged $event): void
     {
         try {
-            $this->dfdb->qb()->transactional(callback: function () use ($event) {
-                $this->dfdb->qb()
+            $this->dfdb->transactional(callback: function () use ($event) {
+                $this->dfdb
                     ->table(tableName: $this->dfdb->prefix . 'product')
                     ->set([
                         'product_published_gmt' => $event->productPublishedGmt()->format('Y-m-d H:i:s'),
@@ -417,8 +417,8 @@ class DatabaseProductProjection extends BaseProjection implements ProductProject
     public function projectWhenProductModifiedWasChanged(ProductModifiedWasChanged $event): void
     {
         try {
-            $this->dfdb->qb()->transactional(callback: function () use ($event) {
-                $this->dfdb->qb()
+            $this->dfdb->transactional(callback: function () use ($event) {
+                $this->dfdb
                     ->table(tableName: $this->dfdb->prefix . 'product')
                     ->set([
                         'product_modified' => $event->productModified()->format('Y-m-d H:i:s'),
@@ -440,8 +440,8 @@ class DatabaseProductProjection extends BaseProjection implements ProductProject
     public function projectWhenProductModifiedGmtWasChanged(ProductModifiedGmtWasChanged $event): void
     {
         try {
-            $this->dfdb->qb()->transactional(callback: function () use ($event) {
-                $this->dfdb->qb()
+            $this->dfdb->transactional(callback: function () use ($event) {
+                $this->dfdb
                     ->table(tableName: $this->dfdb->prefix . 'product')
                     ->set([
                         'product_modified_gmt' => $event->productModifiedGmt()->format('Y-m-d H:i:s'),
@@ -464,8 +464,8 @@ class DatabaseProductProjection extends BaseProjection implements ProductProject
     public function projectWhenProductWasDeleted(ProductWasDeleted $event): void
     {
         try {
-            $this->dfdb->qb()->transactional(callback: function () use ($event) {
-                $this->dfdb->qb()
+            $this->dfdb->transactional(callback: function () use ($event) {
+                $this->dfdb
                     ->table(tableName: $this->dfdb->prefix . 'product')
                     ->where('product_id = ?', $event->productId()->toNative())
                     ->delete();

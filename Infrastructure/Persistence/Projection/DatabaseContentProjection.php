@@ -50,15 +50,13 @@ final class DatabaseContentProjection extends BaseProjection implements ContentP
      * @throws ContainerExceptionInterface
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
-     * @throws TypeException
-     * @throws Exception
      * @throws NativeException
      */
     public function projectWhenContentWasCreated(ContentWasCreated $event): void
     {
         try {
-            $this->dfdb->qb()->transactional(callback: function () use ($event) {
-                $this->dfdb->qb()
+            $this->dfdb->transactional(callback: function () use ($event) {
+                $this->dfdb
                     ->table(tableName: $this->dfdb->prefix . 'content')
                     ->set([
                         'content_id' => $event->contentId()->toNative(),
@@ -101,8 +99,8 @@ final class DatabaseContentProjection extends BaseProjection implements ContentP
     public function projectWhenContentTitleWasChanged(ContentTitleWasChanged $event): void
     {
         try {
-            $this->dfdb->qb()->transactional(callback: function () use ($event) {
-                $this->dfdb->qb()
+            $this->dfdb->transactional(callback: function () use ($event) {
+                $this->dfdb
                     ->table(tableName: $this->dfdb->prefix . 'content')
                     ->set([
                         'content_title' => $event->contentTitle()->toNative(),
@@ -124,8 +122,8 @@ final class DatabaseContentProjection extends BaseProjection implements ContentP
     public function projectWhenContentSlugWasChanged(ContentSlugWasChanged $event): void
     {
         try {
-            $this->dfdb->qb()->transactional(callback: function () use ($event) {
-                $this->dfdb->qb()
+            $this->dfdb->transactional(callback: function () use ($event) {
+                $this->dfdb
                     ->table(tableName: $this->dfdb->prefix . 'content')
                     ->set([
                         'content_slug' => $event->contentSlug()->toNative(),
@@ -147,8 +145,8 @@ final class DatabaseContentProjection extends BaseProjection implements ContentP
     public function projectWhenContentBodyWasChanged(ContentBodyWasChanged $event): void
     {
         try {
-            $this->dfdb->qb()->transactional(callback: function () use ($event) {
-                $this->dfdb->qb()
+            $this->dfdb->transactional(callback: function () use ($event) {
+                $this->dfdb
                     ->table(tableName: $this->dfdb->prefix . 'content')
                     ->set([
                         'content_body' => $event->contentBody() === null ? null : $event->contentBody()->toNative(),
@@ -170,8 +168,8 @@ final class DatabaseContentProjection extends BaseProjection implements ContentP
     public function projectWhenContentAuthorWasChanged(ContentAuthorWasChanged $event): void
     {
         try {
-            $this->dfdb->qb()->transactional(callback: function () use ($event) {
-                $this->dfdb->qb()
+            $this->dfdb->transactional(callback: function () use ($event) {
+                $this->dfdb
                     ->table(tableName: $this->dfdb->prefix . 'content')
                     ->set([
                         'content_author' => $event->contentAuthor()->toNative(),
@@ -193,8 +191,8 @@ final class DatabaseContentProjection extends BaseProjection implements ContentP
     public function projectWhenContentTypeWasChanged(ContentTypeWasChanged $event): void
     {
         try {
-            $this->dfdb->qb()->transactional(callback: function () use ($event) {
-                $this->dfdb->qb()
+            $this->dfdb->transactional(callback: function () use ($event) {
+                $this->dfdb
                     ->table(tableName: $this->dfdb->prefix . 'content')
                     ->set([
                         'content_type' => $event->contentTypeSlug()->toNative(),
@@ -216,8 +214,8 @@ final class DatabaseContentProjection extends BaseProjection implements ContentP
     public function projectWhenContentParentWasChanged(ContentParentWasChanged $event): void
     {
         try {
-            $this->dfdb->qb()->transactional(callback: function () use ($event) {
-                $this->dfdb->qb()
+            $this->dfdb->transactional(callback: function () use ($event) {
+                $this->dfdb
                     ->table(tableName: $this->dfdb->prefix . 'content')
                     ->set([
                         'content_parent' => $event->contentParent() === null ?
@@ -240,8 +238,8 @@ final class DatabaseContentProjection extends BaseProjection implements ContentP
     public function projectWhenContentParentWasRemoved(ContentParentWasRemoved $event): void
     {
         try {
-            $this->dfdb->qb()->transactional(callback: function () use ($event) {
-                $this->dfdb->qb()
+            $this->dfdb->transactional(callback: function () use ($event) {
+                $this->dfdb
                     ->table(tableName: $this->dfdb->prefix . 'content')
                     ->set([
                         'content_parent' => null,
@@ -263,8 +261,8 @@ final class DatabaseContentProjection extends BaseProjection implements ContentP
     public function projectWhenContentSidebarWasChanged(ContentSidebarWasChanged $event): void
     {
         try {
-            $this->dfdb->qb()->transactional(callback: function () use ($event) {
-                $this->dfdb->qb()
+            $this->dfdb->transactional(callback: function () use ($event) {
+                $this->dfdb
                     ->table(tableName: $this->dfdb->prefix . 'content')
                     ->set([
                         'content_sidebar' => $event->contentSidebar()->toNative(),
@@ -286,8 +284,8 @@ final class DatabaseContentProjection extends BaseProjection implements ContentP
     public function projectWhenContentShowInMenuWasChanged(ContentShowInMenuWasChanged $event): void
     {
         try {
-            $this->dfdb->qb()->transactional(callback: function () use ($event) {
-                $this->dfdb->qb()
+            $this->dfdb->transactional(callback: function () use ($event) {
+                $this->dfdb
                     ->table(tableName: $this->dfdb->prefix . 'content')
                     ->set([
                         'content_show_in_menu' => $event->contentShowInMenu()->toNative(),
@@ -309,8 +307,8 @@ final class DatabaseContentProjection extends BaseProjection implements ContentP
     public function projectWhenContentShowInSearchWasChanged(ContentShowInSearchWasChanged $event): void
     {
         try {
-            $this->dfdb->qb()->transactional(callback: function () use ($event) {
-                $this->dfdb->qb()
+            $this->dfdb->transactional(callback: function () use ($event) {
+                $this->dfdb
                     ->table(tableName: $this->dfdb->prefix . 'content')
                     ->set([
                         'content_show_in_search' => $event->contentShowInSearch()->toNative(),
@@ -332,8 +330,8 @@ final class DatabaseContentProjection extends BaseProjection implements ContentP
     public function projectWhenContentFeaturedImageWasChanged(ContentFeaturedImageWasChanged $event): void
     {
         try {
-            $this->dfdb->qb()->transactional(callback: function () use ($event) {
-                $this->dfdb->qb()
+            $this->dfdb->transactional(callback: function () use ($event) {
+                $this->dfdb
                     ->table(tableName: $this->dfdb->prefix . 'content')
                     ->set([
                         'content_featured_image' => $event->contentFeaturedImage()->toNative(),
@@ -355,8 +353,8 @@ final class DatabaseContentProjection extends BaseProjection implements ContentP
     public function projectWhenContentStatusWasChanged(ContentStatusWasChanged $event): void
     {
         try {
-            $this->dfdb->qb()->transactional(callback: function () use ($event) {
-                $this->dfdb->qb()
+            $this->dfdb->transactional(callback: function () use ($event) {
+                $this->dfdb
                     ->table(tableName: $this->dfdb->prefix . 'content')
                     ->set([
                         'content_status' => $event->contentStatus()->toNative(),
@@ -378,8 +376,8 @@ final class DatabaseContentProjection extends BaseProjection implements ContentP
     public function projectWhenContentPublishedWasChanged(ContentPublishedWasChanged $event): void
     {
         try {
-            $this->dfdb->qb()->transactional(callback: function () use ($event) {
-                $this->dfdb->qb()
+            $this->dfdb->transactional(callback: function () use ($event) {
+                $this->dfdb
                     ->table(tableName: $this->dfdb->prefix . 'content')
                     ->set([
                         'content_published' => $event->contentPublished()->format('Y-m-d H:i:s'),
@@ -401,8 +399,8 @@ final class DatabaseContentProjection extends BaseProjection implements ContentP
     public function projectWhenContentPublishedGmtWasChanged(ContentPublishedGmtWasChanged $event): void
     {
         try {
-            $this->dfdb->qb()->transactional(callback: function () use ($event) {
-                $this->dfdb->qb()
+            $this->dfdb->transactional(callback: function () use ($event) {
+                $this->dfdb
                     ->table(tableName: $this->dfdb->prefix . 'content')
                     ->set([
                         'content_published_gmt' => $event->contentPublishedGmt()->format('Y-m-d H:i:s'),
@@ -424,8 +422,8 @@ final class DatabaseContentProjection extends BaseProjection implements ContentP
     public function projectWhenContentModifiedWasChanged(ContentModifiedWasChanged $event): void
     {
         try {
-            $this->dfdb->qb()->transactional(callback: function () use ($event) {
-                $this->dfdb->qb()
+            $this->dfdb->transactional(callback: function () use ($event) {
+                $this->dfdb
                     ->table(tableName: $this->dfdb->prefix . 'content')
                     ->set([
                         'content_modified' => $event->contentModified()->format('Y-m-d H:i:s'),
@@ -447,8 +445,8 @@ final class DatabaseContentProjection extends BaseProjection implements ContentP
     public function projectWhenContentModifiedGmtWasChanged(ContentModifiedGmtWasChanged $event): void
     {
         try {
-            $this->dfdb->qb()->transactional(callback: function () use ($event) {
-                $this->dfdb->qb()
+            $this->dfdb->transactional(callback: function () use ($event) {
+                $this->dfdb
                 ->table(tableName: $this->dfdb->prefix . 'content')
                 ->set([
                     'content_modified_gmt' => $event->contentModifiedGmt()->format('Y-m-d H:i:s'),
@@ -485,9 +483,9 @@ final class DatabaseContentProjection extends BaseProjection implements ContentP
     public function projectWhenContentWasDeleted(ContentWasDeleted $event): void
     {
         try {
-            $this->dfdb->qb()->transactional(callback: function () use ($event) {
+            $this->dfdb->transactional(callback: function () use ($event) {
 
-                $this->dfdb->qb()
+                $this->dfdb
                     ->table(tableName: $this->dfdb->prefix . 'content')
                     ->where('content_id = ?', $event->contentId()->toNative())
                     ->delete();

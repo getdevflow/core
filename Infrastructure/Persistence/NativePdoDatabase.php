@@ -94,11 +94,6 @@ final class NativePdoDatabase extends QueryBuilder
         parent::__construct($this->connection);
     }
 
-    public function qb(): ?QueryBuilder
-    {
-        return $this;
-    }
-
     /**
      * Sets the table prefix for Devflow tables.
      *

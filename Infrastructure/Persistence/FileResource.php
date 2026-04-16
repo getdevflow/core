@@ -10,7 +10,6 @@ use Codefy\Framework\Auth\Rbac\Exception\SentinelException;
 use Codefy\Framework\Auth\Rbac\Resource\BaseStorageResource;
 use Codefy\Framework\Support\LocalStorage;
 use League\Flysystem\FilesystemException;
-
 use Qubus\Exception\Data\TypeException;
 
 use function json_decode;

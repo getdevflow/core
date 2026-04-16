@@ -31,8 +31,8 @@ final class DatabaseContentTypeProjection extends BaseProjection implements Cont
     public function projectWhenContentTypeWasCreated(ContentTypeWasCreated $event): void
     {
         try {
-            $this->dfdb->qb()->transactional(callback: function () use ($event) {
-                $this->dfdb->qb()
+            $this->dfdb->transactional(callback: function () use ($event) {
+                $this->dfdb
                     ->table(tableName: $this->dfdb->prefix . 'content_type')
                     ->set([
                         'content_type_id' => $event->contentTypeId()->toNative(),
@@ -56,8 +56,8 @@ final class DatabaseContentTypeProjection extends BaseProjection implements Cont
     public function projectWhenContentTypeTitleWasChanged(ContentTypeTitleWasChanged $event): void
     {
         try {
-            $this->dfdb->qb()->transactional(callback: function () use ($event) {
-                $this->dfdb->qb()
+            $this->dfdb->transactional(callback: function () use ($event) {
+                $this->dfdb
                     ->table(tableName: $this->dfdb->prefix . 'content_type')
                     ->set([
                         'content_type_title' => $event->contentTypeTitle()->toNative(),
@@ -79,8 +79,8 @@ final class DatabaseContentTypeProjection extends BaseProjection implements Cont
     public function projectWhenContentTypeSlugWasChanged(ContentTypeSlugWasChanged $event): void
     {
         try {
-            $this->dfdb->qb()->transactional(callback: function () use ($event) {
-                $this->dfdb->qb()
+            $this->dfdb->transactional(callback: function () use ($event) {
+                $this->dfdb
                     ->table(tableName: $this->dfdb->prefix . 'content_type')
                     ->set([
                         'content_type_slug' => $event->contentTypeSlug()->toNative(),
@@ -102,8 +102,8 @@ final class DatabaseContentTypeProjection extends BaseProjection implements Cont
     public function projectWhenContentTypeDescriptionWasChanged(ContentTypeDescriptionWasChanged $event): void
     {
         try {
-            $this->dfdb->qb()->transactional(callback: function () use ($event) {
-                $this->dfdb->qb()
+            $this->dfdb->transactional(callback: function () use ($event) {
+                $this->dfdb
                     ->table(tableName: $this->dfdb->prefix . 'content_type')
                     ->set([
                         'content_type_description' => $event->contentTypeDescription()->toNative(),
@@ -125,9 +125,9 @@ final class DatabaseContentTypeProjection extends BaseProjection implements Cont
     public function projectWhenContentTypeWasDeleted(ContentTypeWasDeleted $event): void
     {
         try {
-            $this->dfdb->qb()->transactional(callback: function () use ($event) {
+            $this->dfdb->transactional(callback: function () use ($event) {
 
-                $this->dfdb->qb()
+                $this->dfdb
                     ->table(tableName: $this->dfdb->prefix . 'content_type')
                     ->where('content_type_id = ?', $event->contentTypeId()->toNative())
                     ->delete();

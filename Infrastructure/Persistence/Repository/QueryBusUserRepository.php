@@ -30,18 +30,12 @@ class QueryBusUserRepository implements UserQueryRepository
     /**
      * @param string $id
      * @return array|object
-     * @throws ContainerExceptionInterface
      * @throws Exception
-     * @throws InvalidArgumentException
-     * @throws NotFoundExceptionInterface
-     * @throws ReflectionException
      */
     public function findById(string $id): array|object
     {
-        $sql = "SELECT u.*, m.meta_value AS role FROM {$this->dfdb->basePrefix}user u 
-                JOIN {$this->dfdb->prefix}usermeta m 
-                ON (m.user_id = u.user_id AND m.meta_key = 'role') 
-                WHERE u.user_id = ?";
+        $sql = "SELECT * FROM {$this->dfdb->basePrefix}user 
+                WHERE user_id = ?";
 
         $data = $this->dfdb->getRow(
             query: $this->dfdb->prepare(query: $sql, params: [$id]),
@@ -63,17 +57,11 @@ class QueryBusUserRepository implements UserQueryRepository
 
     /**
      * @return array|object|null
-     * @throws ContainerExceptionInterface
      * @throws Exception
-     * @throws InvalidArgumentException
-     * @throws NotFoundExceptionInterface
-     * @throws ReflectionException
      */
     public function findUnique(): array|null|object
     {
-        $sql = "SELECT DISTINCT u.* FROM {$this->dfdb->basePrefix}user u 
-        JOIN {$this->dfdb->prefix}usermeta m 
-        ON m.user_id = u.user_id";
+        $sql = "SELECT DISTINCT * FROM {$this->dfdb->basePrefix}user";
 
         $data = $this->dfdb->getResults(query: $sql, output: Database::ARRAY_A);
 
@@ -91,18 +79,12 @@ class QueryBusUserRepository implements UserQueryRepository
     /**
      * @param string $email
      * @return array|object|null
-     * @throws ContainerExceptionInterface
      * @throws Exception
-     * @throws InvalidArgumentException
-     * @throws NotFoundExceptionInterface
-     * @throws ReflectionException
      */
     public function findByEmail(string $email): array|null|object
     {
-        $sql = "SELECT u.*, m.meta_value AS role FROM {$this->dfdb->basePrefix}user u 
-                JOIN {$this->dfdb->prefix}usermeta m 
-                ON (m.user_id = u.user_id AND m.meta_key = 'role') 
-                WHERE u.user_email = ?";
+        $sql = "SELECT * FROM {$this->dfdb->basePrefix}user 
+                WHERE user_email = ?";
 
         $data = $this->dfdb->getRow(
             query: $this->dfdb->prepare(query: $sql, params: [$email]),
@@ -125,18 +107,12 @@ class QueryBusUserRepository implements UserQueryRepository
     /**
      * @param string $login
      * @return array|object|null
-     * @throws ContainerExceptionInterface
      * @throws Exception
-     * @throws InvalidArgumentException
-     * @throws NotFoundExceptionInterface
-     * @throws ReflectionException
      */
     public function findByLogin(string $login): array|null|object
     {
-        $sql = "SELECT u.*, m.meta_value AS role FROM {$this->dfdb->basePrefix}user u 
-                JOIN {$this->dfdb->prefix}usermeta m 
-                ON (m.user_id = u.user_id AND m.meta_key = 'role') 
-                WHERE u.user_login = ?";
+        $sql = "SELECT * FROM {$this->dfdb->basePrefix}user 
+                WHERE user_login = ?";
 
         $data = $this->dfdb->getRow(
             query: $this->dfdb->prepare(query: $sql, params: [$login]),
@@ -159,18 +135,12 @@ class QueryBusUserRepository implements UserQueryRepository
     /**
      * @param string $token
      * @return array|object|null
-     * @throws ContainerExceptionInterface
      * @throws Exception
-     * @throws InvalidArgumentException
-     * @throws NotFoundExceptionInterface
-     * @throws ReflectionException
      */
     public function findByToken(string $token): array|null|object
     {
-        $sql = "SELECT u.*, m.meta_value AS role FROM {$this->dfdb->basePrefix}user u 
-                JOIN {$this->dfdb->prefix}usermeta m 
-                ON (m.user_id = u.user_id AND m.meta_key = 'role') 
-                WHERE u.user_token = ?";
+        $sql = "SELECT * FROM {$this->dfdb->basePrefix}user 
+                WHERE user_token = ?";
 
         $data = $this->dfdb->getRow(
             query: $this->dfdb->prepare(query: $sql, params: [$token]),
@@ -202,7 +172,7 @@ class QueryBusUserRepository implements UserQueryRepository
     {
         $sql = "SELECT u.* FROM {$this->dfdb->basePrefix}user u 
                 JOIN {$this->dfdb->basePrefix}site_user su 
-                ON (u.user_id = su.user_id)
+                ON u.user_id = su.user_id 
                 WHERE su.site_id = ?";
 
         $data = $this->dfdb->getResults(query: $this->dfdb->prepare($sql, [get_current_site_id()]), output: Database::ARRAY_A);
