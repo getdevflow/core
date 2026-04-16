@@ -99,9 +99,6 @@ function plugin_dir_path(string $filename): string
  * Returns a list of all plugins that have been activated.
  *
  * @return array|false
- * @throws ReflectionException
- * @throws ContainerExceptionInterface
- * @throws NotFoundExceptionInterface
  */
 function active_plugins(): array|false
 {
@@ -119,8 +116,6 @@ function active_plugins(): array|false
  * Activates a specific plugin that is called by $_GET['id'] variable.
  *
  * @param string $plugin ID of the plugin to activate
- * @throws ContainerExceptionInterface
- * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  */
 function activate_plugin(string $plugin): void
@@ -128,10 +123,12 @@ function activate_plugin(string $plugin): void
     $dfdb = dfdb();
 
     try {
-        $dfdb->qb()->transactional(function () use ($dfdb, $plugin) {
-            $dfdb->qb()->table(tableName: "{$dfdb->prefix}plugin")->insert(
-                data: ['plugin_id' => Ulid::generateAsString(), 'plugin_classname' => $plugin]
-            );
+        $dfdb->transactional(function () use ($dfdb, $plugin) {
+            $dfdb
+                ->table(tableName: "{$dfdb->prefix}plugin")
+                ->insert(
+                    data: ['plugin_id' => Ulid::generateAsString(), 'plugin_classname' => $plugin]
+                );
         });
     } catch (PDOException | Exception $ex) {
         FileLoggerFactory::getLogger()->error(
@@ -151,8 +148,6 @@ function activate_plugin(string $plugin): void
  *
  * @param string $plugin
  * @return void
- * @throws ContainerExceptionInterface
- * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  */
 function deactivate_plugin(string $plugin): void
@@ -160,8 +155,8 @@ function deactivate_plugin(string $plugin): void
     $dfdb = dfdb();
 
     try {
-        $dfdb->qb()->transactional(function () use ($dfdb, $plugin) {
-            $dfdb->qb()
+        $dfdb->transactional(function () use ($dfdb, $plugin) {
+            $dfdb
                 ->table(tableName: "{$dfdb->prefix}plugin")
                 ->where(condition: 'plugin_classname = ?', parameters: $plugin)
                 ->delete();
@@ -184,10 +179,6 @@ function deactivate_plugin(string $plugin): void
  *
  * @param string $plugin
  * @return bool
- * @throws ContainerExceptionInterface
- * @throws NotFoundExceptionInterface
- * @throws ReflectionException
- * @throws \Qubus\Exception\Exception
  */
 function is_plugin_activated(string $plugin): bool
 {
@@ -315,7 +306,7 @@ function plugin_info(string $pluginsDir = ''): array
             $app->make(name: Database::class),
             $app->make(name: Renderer::class)
         );
-        $info[] =Devflow::$PHP->execute([$class, 'meta']);
+        $info[] = $app->execute([$class, 'meta']);
     }
 
     return $info;

@@ -793,7 +793,6 @@ function admin_head(): void
 /**
  * Fires the frontend cms_head action.
  *
- * @access private
  * @file core/Shared/Helpers/hook.php
  * @throws Exception
  */
@@ -819,7 +818,7 @@ function cms_head(): void
 function admin_footer(): void
 {
     /**
-     * Registers & enqueues javascript to be printed in backend footer section.
+     * Registers & enqueues JavaScript to be printed in backend footer section.
      */
     __observer()->action->doAction('enqueue_admin_js');
     /**
@@ -831,14 +830,13 @@ function admin_footer(): void
 /**
  * Fires the cms_footer action via the admin.
  *
- * @access private
  * @file core/Shared/Helpers/hook.php
  * @throws Exception
  */
 function cms_footer(): void
 {
     /**
-     * Registers & enqueues javascript to be printed in frontend footer section.
+     * Registers & enqueues JavaScript to be printed in frontend footer section.
      */
     __observer()->action->doAction('enqueue_js');
     /**

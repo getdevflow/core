@@ -115,7 +115,7 @@ function get_all_products_with_filters(
 function get_product_by(string $field, string $value): false|object
 {
     /** @var Product $product */
-    $product = Devflow::$PHP->make(Product::class);
+    $product = Devflow::$PHP->make(name: Product::class);
     $productdata = $product->findBy($field, $value);
 
     if (is_false__($productdata)) {
@@ -1315,9 +1315,7 @@ function get_product_show_in_search(string $productId): int
  * @param string $originalTitle Original title of product.
  * @param string|null $productId Unique product id or null.
  * @return string Unique product slug.
- * @throws ContainerExceptionInterface
  * @throws Exception
- * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  */
 function cms_unique_product_slug(
@@ -1437,7 +1435,7 @@ function cms_insert_product(array|ServerRequestInterface|Product $productdata): 
          *
          * @var Product $product
          */
-        $product = Devflow::$PHP->make(Product::class);
+        $product = Devflow::$PHP->make(name: Product::class);
         $product->id = $productId->toNative();
     } else {
         $update = false;
@@ -1457,7 +1455,7 @@ function cms_insert_product(array|ServerRequestInterface|Product $productdata): 
          *
          * @var Product $product
          */
-        $product = Devflow::$PHP->make(Product::class);
+        $product = Devflow::$PHP->make(name: Product::class);
         $product->id = $productId->toNative();
     }
 

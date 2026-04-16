@@ -192,12 +192,12 @@ function add_site_usermeta(string $siteId, array $params = []): bool
     $data = [
         'bio' => $userdata->bio,
         'status' => $userdata->status,
-        'admin.layout' => $userdata->admin_layout <= 0 ? (int) 0 : (int) $userdata->admin_layout,
-        'admin.sidebar' => $userdata->admin_sidebar <= 0 ? (int) 0 : (int) $userdata->admin_sidebar,
-        'admin.skin' => $userdata->admin_skin === null ? (string) 'skin-red' : (string) $userdata->admin_skin
+        'admin.layout' => $userdata->adminLayout <= 0 ? (int) 0 : (int) $userdata->adminLayout,
+        'admin.sidebar' => $userdata->adminSidebar <= 0 ? (int) 0 : (int) $userdata->adminSidebar,
+        'admin.skin' => $userdata->adminSkin === null ? (string) 'skin-red' : (string) $userdata->adminSkin
     ];
-    foreach ($data as $metaKey => $metaValue) {
-        update_usermeta($params['assign_id'], $metaKey, $metaValue);
+    foreach ($data as $key => $value) {
+        update_user_attribute($params['assign_id'], $key, $value);
     }
 
     $user = new User(dfdb());
@@ -308,11 +308,8 @@ function delete_site_usermeta(string $siteId, Site $oldSite): bool
  * @param string $siteId Site ID.
  * @param Site $oldSite Site object.
  * @return bool True on success or false on failure.
- * @throws ContainerExceptionInterface
  * @throws Exception
- * @throws NotFoundExceptionInterface
  * @throws ReflectionException
- * @throws \Exception
  */
 function delete_site_tables(string $siteId, Site $oldSite): bool
 {
@@ -349,18 +346,18 @@ function delete_site_tables(string $siteId, Site $oldSite): bool
     $dropTables = __observer()->filter->applyFilter('site.drop.tables', $tables, $oldSite->key);
 
     try {
-        $dfdb->qb()->transactional(function () use ($dfdb, $dropTables) {
-            $dfdb->qb()->getConnection()->pdo->exec(statement: "SET GLOBAL FOREIGN_KEY_CHECKS=0;");
+        $dfdb->transactional(function () use ($dfdb, $dropTables) {
+            $dfdb->getConnection()->pdo->exec(statement: "SET GLOBAL FOREIGN_KEY_CHECKS=0;");
 
             foreach ((array) $dropTables as $table) {
-                $dfdb->qb()->getConnection()->pdo->exec(statement: sprintf("DROP TABLE IF EXISTS %s", $table));
+                $dfdb->getConnection()->pdo->exec(statement: sprintf("DROP TABLE IF EXISTS %s", $table));
             }
 
-            $dfdb->qb()->getConnection()->pdo->exec(statement: "SET GLOBAL FOREIGN_KEY_CHECKS=1;");
+            $dfdb->getConnection()->pdo->exec(statement: "SET GLOBAL FOREIGN_KEY_CHECKS=1;");
         });
 
         return true;
-    } catch (PDOException $e) {
+    } catch (PDOException | \Exception $e) {
         FileLoggerFactory::getLogger()->error(
             sprintf(
                 'SQLSTATE[%s]: %s',
@@ -437,7 +434,7 @@ function get_current_site_id(): string
 }
 
 /**
- * Retrieve a list of users based on site.
+ * Retrieve a list of all users in the system.
  *
  * @file core/Shared/Helpers/site.php
  * @return array Users data.
@@ -621,13 +618,13 @@ function cms_insert_site(array|ServerRequestInterface|Site $sitedata): Error|str
          *
          * @var Site $site
          */
-        $site = Devflow::$PHP->make(Site::class);
+        $site = app(name: Site::class);
         $site->id = $siteId->toNative();
     }
     $site->key = $siteKey;
 
     /** @var RequestInterface $request */
-    $request = app(RequestInterface::class);
+    $request = app(name: RequestInterface::class);
     $host = $request->getUri()->getHost();
 
     $rawSiteDomain = isset($sitedata['subdomain']) ?
@@ -814,7 +811,7 @@ function cms_insert_site(array|ServerRequestInterface|Site $sitedata): Error|str
      * Filters site data before the record is created or updated.
      *
      * @file core/Shared/Helpers/site.php
-     * @param array    $data {
+     * @param array $data {
      *     Values and keys for the site.
      *
      *     @type object $siteId        The site's id
@@ -830,7 +827,7 @@ function cms_insert_site(array|ServerRequestInterface|Site $sitedata): Error|str
      * @param bool     $update      Whether the site is being updated rather than created.
      * @param string|null $siteId   ID of the site to be updated, or NULL if the site is being created.
      */
-    $data = __observer()->filter->applyFilter(
+    __observer()->filter->applyFilter(
         'cms.pre.insert.site.data',
         $data,
         $update,
@@ -1198,8 +1195,8 @@ function cms_delete_site_user(string $userId, array $params = []): Error|bool
         if (!empty($sites)) {
 
             try {
-                $dfdb->qb()->transactional(function () use ($dfdb, $userId) {
-                    $dfdb->qb()
+                $dfdb->transactional(function () use ($dfdb, $userId) {
+                    $dfdb
                         ->table(tableName: $dfdb->basePrefix . 'site')
                         ->where(condition: 'site_owner = ?', parameters: $userId)
                         ->delete();
@@ -1237,13 +1234,13 @@ function cms_delete_site_user(string $userId, array $params = []): Error|bool
      * Finally delete the user from the system.
      */
     try {
-        $dfdb->qb()->transactional(function () use ($dfdb, $userId) {
-            $dfdb->qb()
+        $dfdb->transactional(function () use ($dfdb, $userId) {
+            $dfdb
                 ->table(tableName: $dfdb->basePrefix . 'user')
                 ->where(condition: 'user_id = ?', parameters: $userId)
                 ->delete();
 
-            $dfdb->qb()
+            $dfdb
                 ->table(tableName: $dfdb->basePrefix . 'site_user')
                 ->where(condition: 'user_id = ?', parameters: $userId)
                 ->delete();
@@ -1401,7 +1398,7 @@ function new_site_schema(string $siteId, Site $site, bool $update): bool|string
     $insertData = str_replace('{ulid_11}', Ulid::generateAsString(), $insertData);
     $insertData = str_replace('{ulid_12}', Ulid::generateAsString(), $insertData);
     $insertData = str_replace('{ulid_13}', Ulid::generateAsString(), $insertData);
-    $insertData = str_replace('{timezone}', config(key: 'app.timezone'), $insertData);
+    $insertData = str_replace('{timezone}', config()->string(key: 'app.timezone'), $insertData);
     $insertData = str_replace('{site_prefix}', $sitePrefix, $insertData);
     $insertData = str_replace('{base_prefix}', $basePrefix, $insertData);
     $insertData = str_replace('{sitename}', $site->name, $insertData);
@@ -1409,7 +1406,7 @@ function new_site_schema(string $siteId, Site $site, bool $update): bool|string
     $insertData = str_replace('{api_key}', $apiKey, $insertData);
 
     try {
-        $dfdb->qb()->getConnection()->pdo->exec($insertData);
+        $dfdb->getConnection()->pdo->exec($insertData);
     } catch (PDOException $e) {
         FileLoggerFactory::getLogger()->error(
             sprintf(
@@ -1484,10 +1481,7 @@ function cms_site_status_label(string $status): string
  *
  * @file core/Shared/Helpers/site.php
  * @return ResponseInterface
- * @throws ContainerExceptionInterface
  * @throws Exception
- * @throws NotFoundExceptionInterface
- * @throws ReflectionException
  * @throws \Exception
  */
 function does_site_exist(): \Psr\Http\Message\ResponseInterface
@@ -1707,9 +1701,7 @@ function get_site_status(string $siteId): string
  * @param string $originalTitle Original title of site.
  * @param string $siteId Unique site id.
  * @return string Unique site slug.
- * @throws ContainerExceptionInterface
  * @throws Exception
- * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  */
 function cms_unique_site_slug(string $originalSlug, string $originalTitle, string $siteId): string

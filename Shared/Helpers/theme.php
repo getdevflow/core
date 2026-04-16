@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Shared\Helpers;
 
-use App\Application\Devflow;
 use Qubus\Expressive\Database;
 use App\Infrastructure\Services\Options;
 use App\Shared\Services\Items;
@@ -79,7 +78,7 @@ function theme_name(): mixed
         return '';
     }
 
-    $meta = Devflow::$PHP->execute([$activeTheme, 'meta']);
+    $meta = app()->execute([$activeTheme, 'meta']);
     return $meta['basename'];
 }
 
@@ -320,7 +319,7 @@ function theme_info(string $themesDir = ''): array
             $app->make(name: Database::class),
             $app->make(name: Renderer::class)
         );
-        $info[] = Devflow::$PHP->execute([$class, 'meta']);
+        $info[] = $app->execute([$class, 'meta']);
     }
 
     return $info;
@@ -409,7 +408,7 @@ function load_active_theme(): void
             deactivate_theme();
             return;
         }
-        Devflow::$PHP->execute([$activeTheme, 'handle']);
+        app()->execute([$activeTheme, 'handle']);
 
         /**
          * Fires once the activated theme has loaded.

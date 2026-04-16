@@ -1628,6 +1628,7 @@ function get_content_show_in_menu(string $contentId): int
  */
 function get_content_show_in_search(string $contentId): int
 {
+    /** @var Content $content */
     $content = get_content_by_id($contentId);
 
     if (is_false__($content)) {
@@ -1784,7 +1785,7 @@ function cms_insert_content(array|ServerRequestInterface|Content $contentdata): 
          * Create new content object.
          * @var Content $content
          */
-        $content = Devflow::$PHP->make(Content::class);
+        $content = Devflow::$PHP->make(name: Content::class);
         $content->id = $contentId->toNative();
     } else {
         $update = false;
@@ -1809,7 +1810,7 @@ function cms_insert_content(array|ServerRequestInterface|Content $contentdata): 
          *
          * @var Content $content
          */
-        $content = Devflow::$PHP->make(Content::class);
+        $content = Devflow::$PHP->make(name: Content::class);
         $content->id = $contentId->toNative();
     }
 
@@ -2086,7 +2087,7 @@ function cms_insert_content(array|ServerRequestInterface|Content $contentdata): 
      *
      * It only includes data in the content table, not any content attribute.
      *
-     * @param array    $contentData
+     * @param array $contentData
      *     Values and keys for the user.
      *
      *      @type string $contentTitle         The content's title.
@@ -2438,9 +2439,6 @@ function cms_delete_content(string $contentId): Content|bool
  * @file core/Shared/Helpers/content.php
  * @param string $slug Content type slug.
  * @return int Number of content rows based on content type.
- * @throws ContainerExceptionInterface
- * @throws Exception
- * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  */
 function number_content_by_type(string $slug): int

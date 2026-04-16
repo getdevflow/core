@@ -118,8 +118,8 @@ function make_clickable(string $value, array $protocols = ['http', 'mail'], arra
     // Build safe attribute string
     $attr = '';
     foreach ($attributes as $key => $val) {
-        $key = htmlspecialchars((string)$key, ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5, 'UTF-8');
-        $val = htmlspecialchars((string)$val, ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5, 'UTF-8');
+        $key = htmlspecialchars($key, ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5, 'UTF-8');
+        $val = htmlspecialchars($val, ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5, 'UTF-8');
         $attr .= " {$key}=\"{$val}\"";
     }
 
@@ -252,7 +252,7 @@ function get_file_size(string $file, int $digits = 2): bool|string
 }
 
 /**
- * Outputs the html checked attribute.
+ * Outputs the HTML checked attribute.
  *
  * Compares the first two arguments and if identical marks as checked.
  *
@@ -260,7 +260,7 @@ function get_file_size(string $file, int $digits = 2): bool|string
  * @param mixed $checked One of the values to compare
  * @param mixed $current (true) The other value to compare if not just true.
  * @param bool $echo Whether to echo or just return the string.
- * @return string html attribute or empty string
+ * @return string HTML attribute or empty string
  */
 function checked(mixed $checked, mixed $current = true, bool $echo = true): string
 {
@@ -268,7 +268,7 @@ function checked(mixed $checked, mixed $current = true, bool $echo = true): stri
 }
 
 /**
- * Outputs the html selected attribute.
+ * Outputs the HTML selected attribute.
  *
  * Compares the first two arguments and if identical marks as selected.
  *
@@ -276,7 +276,7 @@ function checked(mixed $checked, mixed $current = true, bool $echo = true): stri
  * @param mixed $selected One of the values to compare.
  * @param mixed $current (true) The other value to compare if not just true.
  * @param bool $echo Whether to echo or just return the string.
- * @return string html attribute or empty string
+ * @return string HTML attribute or empty string
  */
 function selected(mixed $selected, mixed $current = true, bool $echo = true): string
 {
@@ -292,7 +292,7 @@ function selected(mixed $selected, mixed $current = true, bool $echo = true): st
  * @param mixed $disabled One of the values to compare.
  * @param mixed $current (true) The other value to compare if not just true.
  * @param bool $echo Whether to echo or just return the string.
- * @return string html attribute or empty string
+ * @return string HTML attribute or empty string
  */
 function disabled(mixed $disabled, mixed $current = true, bool $echo = true): string
 {
@@ -311,7 +311,7 @@ function disabled(mixed $disabled, mixed $current = true, bool $echo = true): st
  * @param mixed $current (true) The other value to compare if not just true.
  * @param bool $echo Whether to echo or just return the string.
  * @param string $type The type of checked|selected|disabled we are doing.
- * @return string html attribute or empty string
+ * @return string HTML attribute or empty string
  */
 function checked_selected_helper(mixed $helper, mixed $current, bool $echo, string $type): string
 {
@@ -396,7 +396,7 @@ function normalize_path(string $path): array|string|null
 /**
  * Beautifies a filename for use.
  *
- * Uses `beautified_filename` filter hook.
+ * Uses `beautified.filename` filter hook.
  *
  * @file core/Shared/Helpers/core.php
  * @param string $filename Filename to beautify.
@@ -530,7 +530,10 @@ function get_functions(string $filename, bool $sort = false): array
 function is_duplicate_function(string $filename): Error|false
 {
     if (!file_exists($filename)) {
-        return new Error('duplicate_function_error', sprintf('Invalid file name: %s.', $filename));
+        return new Error(
+            message: sprintf('Invalid file name: %s.', $filename),
+            code: 'duplicate_function_error'
+        );
     }
 
     $plugin = get_functions($filename);
@@ -774,9 +777,6 @@ function generate_unique_key(int $length = 6): string
  * @access private
  * @param int $length
  * @return string
- * @throws ContainerExceptionInterface
- * @throws NotFoundExceptionInterface
- * @throws ReflectionException
  */
 function generate_site_key(int $length = 6): string
 {
@@ -948,7 +948,7 @@ function get_domain_name(): string
  * @file core/Shared/Helpers/core.php
  * @param string $config Set whether to use `default` config or `plugin` config.
  * @param string|array $asset Relative path or URL to stylesheet(s) to enqueue.
- * @param bool|string $minify Enable css assets pipeline (concatenation and minification).
+ * @param bool|string $minify Enable CSS assets pipeline (concatenation and minification).
  *                            Use a string that evaluates to `true` to provide the salt of the pipeline hash.
  *                            Use 'auto' to automatically calculate the salt from your assets last modification time.
  * @param string|null $slug   Slug to set asset location
@@ -1006,7 +1006,7 @@ function cms_enqueue_css(
  *
  * @file core/Shared/Helpers/core.php
  * @param string $config Set whether to use `default`, `plugin`  or `theme` config.
- * @param string|array $asset Relative path or URL to javascript(s) to enqueue.
+ * @param string|array $asset Relative path or URL to JavaScript(s) to enqueue.
  * @param bool|string $minify Enable js assets pipeline (concatenation and minification).
  *                            Use a string that evaluates to `true` to provide the salt of the pipeline hash.
  *                            Use 'auto' to automatically calculate the salt from your assets last modification time.

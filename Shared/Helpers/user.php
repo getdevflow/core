@@ -24,7 +24,6 @@ use App\Shared\Services\DateTime;
 use App\Shared\Services\MetaData;
 use App\Shared\Services\Sanitizer;
 use App\Shared\Services\Utils;
-use App\Shared\ValueObject\ArrayLiteral;
 use Codefy\CommandBus\Exceptions\CommandCouldNotBeHandledException;
 use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
 use Codefy\CommandBus\Exceptions\UnresolvableCommandHandlerException;
@@ -51,9 +50,11 @@ use Qubus\ValueObjects\Web\EmailAddress;
 use ReflectionException;
 
 use function array_map;
+use function Codefy\Framework\Helpers\app;
 use function Codefy\Framework\Helpers\ask;
 use function Codefy\Framework\Helpers\command;
 use function Codefy\Framework\Helpers\config;
+use function Codefy\Framework\Helpers\logger;
 use function Codefy\Framework\Helpers\mail;
 use function Codefy\Framework\Helpers\storage_path;
 use function in_array;
@@ -186,7 +187,7 @@ function cms_get_current_user(): false|User
 function get_user_by(string $field, mixed $value): User|false
 {
     /** @var User $user */
-    $user = Devflow::$PHP->make(User::class);
+    $user = app(name: User::class);
     $userdata = $user->findBy($field, $value);
 
     if (is_false__($userdata)) {
@@ -216,7 +217,7 @@ function get_userdata(string $userId): false|User
 /**
  * Returns the name of a particular user.
  *
- * Uses `get_name` filter.
+ * Uses `user.name` filter.
  *
  * @file core/Shared/Helpers/user.php
  * @param string $id User ID.
@@ -239,14 +240,14 @@ function get_name(string $id, bool $reverse = false): string
         $_name = $name->lname . ', ' . $name->fname;
     }
 
-    return __observer()->filter->applyFilter('get.name', $_name);
+    return __observer()->filter->applyFilter('user.name', $_name);
 }
 
 /**
  * Shows selected user's initials instead of
  * his/her full name.
  *
- * Uses `get_initials` filter.
+ * Uses `user.initials` filter.
  *
  * @file core/Shared/Helpers/user.php
  * @param string $id User ID
@@ -270,7 +271,7 @@ function get_initials(string $id, int $initials = 2): string
         $_initials = $name->lname . ', ' . mb_substr($name->fname, 0, 1, 'UTF-8') . '.';
     }
 
-    return __observer()->filter->applyFilter('get.initials', $_initials);
+    return __observer()->filter->applyFilter('user.initials', $_initials);
 }
 
 /**
@@ -295,7 +296,7 @@ function get_user_value(string $id, string $field): mixed
 /**
  * Checks whether the given username exists.
  *
- * Uses `username_exists` filter.
+ * Uses `username.exists` filter.
  *
  * @file core/Shared/Helpers/user.php
  * @param string $username Username to check.
@@ -329,15 +330,12 @@ function username_exists(string $username): false|string
 /**
  * Checks whether the given email exists.
  *
- * Uses `email_exists` filter.
+ * Uses `email.exists` filter.
  *
  * @file core/Shared/Helpers/user.php
  * @param string $email Email to check.
  * @return string|false The user's ID on success or false on failure.
- * @throws ContainerExceptionInterface
  * @throws Exception
- * @throws NotFoundExceptionInterface
- * @throws ReflectionException
  */
 function email_exists(string $email): false|string
 {
@@ -440,25 +438,6 @@ function get_users_dropdown_list(?string $active = null): void
 }
 
 /**
- * Retrieve user meta field for a user.
- *
- * @file core/Shared/Helpers/user.php
- * @param string $userId User ID.
- * @param string $key Optional. The meta key to retrieve. By default, returns data for all keys.
- * @param bool $single Whether to return a single value.
- * @return array|string Will be an array if $single is false. Will be value of meta_value field if $single is true.
- * @throws ContainerExceptionInterface
- * @throws Exception
- * @throws NotFoundExceptionInterface
- * @throws ReflectionException
- */
-function get_usermeta(string $userId, string $key = '', bool $single = false): array|string
-{
-    return MetaData::factory(dfdb()->prefix . 'usermeta')
-        ->read('user', $userId, $key, $single);
-}
-
-/**
  * Retrieve an attribute for specified user.
  *
  * @param string $userId
@@ -481,33 +460,6 @@ function get_user_attribute(string $userId, string $key, ?string $siteId = null,
 }
 
 /**
- * Update user meta based on user ID.
- *
- * Use the $prevValue parameter to differentiate between meta fields with the
- * same key and user ID.
- *
- * If the meta for the user does not exist, it will be added.
- *
- * @file core/Shared/Helpers/user.php
- * @param string $userId User ID.
- * @param string $metaKey Metadata key.
- * @param mixed $value Metadata value.
- * @param mixed $prevValue Optional. Previous value to check before removing.
- * @return bool|string Meta ID if the key didn't exist, true on successful update, false on failure.
- * @throws ContainerExceptionInterface
- * @throws Exception
- * @throws InvalidArgumentException
- * @throws NotFoundExceptionInterface
- * @throws ReflectionException
- * @throws TypeException
- */
-function update_usermeta(string $userId, string $metaKey, mixed $value, mixed $prevValue = ''): bool|string
-{
-    return MetaData::factory(dfdb()->prefix . 'usermeta')
-        ->update('user', $userId, $metaKey, $value, $prevValue);
-}
-
-/**
  * @param string $userId
  * @param string $key
  * @param mixed $value
@@ -526,56 +478,6 @@ function update_user_attribute(string $userId, string $key, mixed $value, ?strin
     }
 
     return AttributesFactory::user()->set($siteId, $userId, $key, $value);
-}
-
-/**
- * Adds meta data to a user.
- *
- * @file core/Shared/Helpers/user.php
- * @param string $userId User ID.
- * @param string $meta Metadata name.
- * @param mixed $value Metadata value.
- * @param bool $unique Optional. Whether the same key should not be added. Default false.
- * @return string|false Meta ID on success, false on failure.
- * @throws ContainerExceptionInterface
- * @throws Exception
- * @throws InvalidArgumentException
- * @throws NotFoundExceptionInterface
- * @throws ReflectionException
- * @throws TypeException
- */
-function add_usermeta(string $userId, string $meta, mixed $value, bool $unique = false): false|string
-{
-    return MetaData::factory(dfdb()->prefix . 'usermeta')
-        ->create('user', $userId, $meta, $value, $unique);
-}
-
-function add_user_attribute()
-{
-    return AttributesFactory::user()->set();
-}
-
-/**
- * Remove meta matching criteria from a user.
- *
- * You can match based on the key, or key and value. Removing based on key and
- * value, will keep from removing duplicate meta with the same key. It also
- * allows removing all meta matching key, if needed.
- *
- * @file core/Shared/Helpers/user.php
- * @param string $userId User ID
- * @param string $meta Metadata name.
- * @param mixed $value Optional. Metadata value.
- * @return bool True on success, false on failure.
- * @throws ContainerExceptionInterface
- * @throws Exception
- * @throws NotFoundExceptionInterface
- * @throws ReflectionException
- */
-function delete_usermeta(string $userId, string $meta, mixed $value = ''): bool
-{
-    return MetaData::factory(dfdb()->prefix . 'usermeta')
-        ->delete('user', $userId, $meta, $value);
 }
 
 /**
@@ -639,14 +541,14 @@ function delete_site_user_record(string $siteId, string $userId): void
  * @file core/Shared/Helpers/user.php
  * @param string $option User option name.
  * @param string $userId User ID.
- * @return string|false User option value on success or false on failure.
+ * @return bool|string|int|array|null User option value on success or null on failure.
  * @throws ContainerExceptionInterface
  * @throws Exception
  * @throws InvalidArgumentException
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  */
-function get_user_option(string $option, string $userId = ''): false|string
+function get_user_option(string $option, string $userId = ''): bool|string|int|array|null
 {
     if (empty($userId)) {
         $userId = get_current_user_id();
@@ -655,7 +557,7 @@ function get_user_option(string $option, string $userId = ''): false|string
     if (null !== get_user_attribute($userId, $option)) {
         $result = get_user_attribute($userId, $option);
     } else {
-        $result = false;
+        $result = null;
     }
 
     /**
@@ -664,31 +566,11 @@ function get_user_option(string $option, string $userId = ''): false|string
      * The dynamic portion of the hook name, `$option`, refers to the user option name.
      *
      * @file core/Shared/Helpers/user.php
-     * @param string|false  $result Value for the user's option.
+     * @param string|bool|int|array|null  $result Value for the user's option; if not exist, then null.
      * @param string $option Name of the option being retrieved.
      * @param string $userId ID of the user whose option is being retrieved.
      */
     return __observer()->filter->applyFilter("get.user.option_{$option}", $result, $option, $userId);
-}
-
-/**
- * @param string $option
- * @param string $userId
- * @param string|null $siteId
- * @return mixed
- * @throws ContainerExceptionInterface
- * @throws Exception
- * @throws InvalidArgumentException
- * @throws NotFoundExceptionInterface
- * @throws ReflectionException
- */
-function get_user_site_option(string $option, string $userId, ?string $siteId = null): mixed
-{
-    if(is_null__($siteId)) {
-        $siteId = get_current_site_id();
-    }
-
-    return AttributesFactory::user()->get($siteId, $userId)->{$option};
 }
 
 /**
@@ -708,9 +590,9 @@ function get_user_site_option(string $option, string $userId, ?string $siteId = 
  *      @type string $email The user's email address.
  *      @type string $url The user's url.
  *      @type string $status The user's status.
- *      @type int $admin_layout The user's admin layout option.
- *      @type int $admin_sidebar The user's admin sidebar option
- *      @type string $admin_skin The user's admin skin option.
+ *      @type int $adminLayout The user's admin layout option.
+ *      @type int $adminSidebar The user's admin sidebar option
+ *      @type string $adminSkin The user's admin skin option.
  *      @type string $registered Date the user registered. Format is 'Y-m-d H:i:s'.
  *      @type string $modified Date the user's account was updated. Format is 'Y-m-d H:i:s'.
  *  }
@@ -756,7 +638,7 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
         }
 
         // hashed in cms_update_user(), plaintext if called directly
-        $userPass = !empty($userdata['pass']) ? $userdata['pass'] : $oldUserData['pass'];
+        $userPass = $userdata['pass'] ?? $oldUserData['pass'];
 
         /**
          * Create a new user object.
@@ -1042,15 +924,15 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
 
     $userAdminLayout = '0';
 
-    $attribute['admin.layout'] = isset($userdata['admin_layout']) ? (int) $userdata['admin_layout'] : $userAdminLayout;
+    $attribute['admin.layout'] = isset($userdata['adminLayout']) ? (int) $userdata['adminLayout'] : $userAdminLayout;
 
     $userAdminSidebar = '0';
 
-    $attribute['admin.sidebar'] = isset($userdata['admin_sidebar']) ? (int) $userdata['admin_sidebar'] : $userAdminSidebar;
+    $attribute['admin.sidebar'] = isset($userdata['adminSidebar']) ? (int) $userdata['adminSidebar'] : $userAdminSidebar;
 
     $userAdminSkin = 'skin-red';
 
-    $attribute['admin.skin'] = $userdata['admin_skin'] ?? $userAdminSkin;
+    $attribute['admin.skin'] = $userdata['adminSkin'] ?? $userAdminSkin;
 
     $userRegistered = QubusDateTimeImmutable::now();
 
@@ -1082,7 +964,7 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
      * It only includes data in the user's table, not any user metadata.
      *
      * @file core/Shared/Helpers/user.php
-     * @param array    $userdata {
+     * @param array $userdata {
      *     Values and keys for the user.
      *
      *      @type string $login        The user's login.
@@ -1104,7 +986,7 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
      * @param bool     $update Whether the user is being updated rather than created.
      * @param string|null $userID ID of the user to be updated, or NULL if the user is being created.
      */
-    $userdata = __observer()->filter->applyFilter(
+    __observer()->filter->applyFilter(
         'pre.cms.insert.user.data',
         $userdata,
         $update,
@@ -1154,7 +1036,7 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
 
             command($command);
         } catch (CommandCouldNotBeHandledException | UnresolvableCommandHandlerException | ReflectionException $e) {
-            FileLoggerFactory::getLogger()->error($e->getMessage());
+            logger(level: 'error', message: $e->getMessage());
         }
     } else {
         /**
@@ -1173,9 +1055,8 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
                 'email' => new EmailAddress($user->email),
                 'login' => new Username($user->login),
                 'token' => UserToken::fromString($user->token),
-                'pass' => new StringLiteral($user->pass),
                 'url' => new StringLiteral($userUrl ?? ''),
-                'bio' => new StringLiteral($user->bio),
+                'bio' => new StringLiteral($userBio),
                 'timezone' => new StringLiteral($user->timezone),
                 'dateFormat' => new StringLiteral($user->dateFormat ?? 'd F Y'),
                 'timeFormat' => new StringLiteral($user->timeFormat ?? 'h:i A'),
@@ -1186,7 +1067,7 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
 
             command($command);
         } catch (CommandCouldNotBeHandledException | UnresolvableCommandHandlerException | ReflectionException $e) {
-            FileLoggerFactory::getLogger()->error($e->getMessage());
+            logger(level: 'error', message: $e->getMessage());
         }
     }
 
@@ -1198,7 +1079,7 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
 
     /** Set the user's role */
     $user->setRole($user->role);
-
+    /** Flush the cache. */
     UserCachePsr16::clean($user);
 
     if ($update) {
@@ -1378,7 +1259,7 @@ function cms_update_user(array|ServerRequestInterface|User $userdata): string|Us
 
 /**
  * Deletes a user from the user meta table. To delete user entirely from the system,
- * see `delete_site_user`.
+ * see `cms_delete_site_user`.
  *
  * @file core/Shared/Helpers/user.php
  * @param string $userId ID of user being deleted.
@@ -1435,7 +1316,7 @@ function cms_delete_user(string $userId, ?string $assignId = null): bool
 
         command($command);
     } catch (CommandCouldNotBeHandledException | UnresolvableCommandHandlerException | ReflectionException $e) {
-        FileLoggerFactory::getLogger()->error($e->getMessage());
+        logger(level: 'error', message: $e->getMessage());
         return false;
     }
 
@@ -1908,7 +1789,7 @@ function reset_password(string $userId): bool|string
         );
         return $id;
     } catch (SessionException | CommandPropertyNotFoundException $e) {
-        FileLoggerFactory::getLogger()->error($e->getMessage());
+        logger(level: 'error', message: $e->getMessage());
         Devflow::$PHP->flash->error($e->getMessage());
     }
 
@@ -1932,8 +1813,8 @@ function get_users_reassign(string $userId = ''): void
     $dfdb = dfdb();
 
     $sql = "SELECT u.user_id FROM {$dfdb->basePrefix}user u " .
-            "JOIN {$dfdb->basePrefix}site_user s " .
-            "ON u.user_id = s.user_id " .
+            "JOIN {$dfdb->basePrefix}site_user su " .
+            "ON u.user_id = su.user_id " .
             "WHERE u.user_id NOT IN (?)";
 
     $listUsers = $dfdb->getResults($dfdb->prepare($sql, [$userId]), Database::ARRAY_A);
@@ -1949,10 +1830,6 @@ function get_users_reassign(string $userId = ''): void
  * @file core/Shared/Helpers/user.php
  * @param string $siteKey Site key.
  * @return array|false|string User array on success.
- * @throws ContainerExceptionInterface
- * @throws NotFoundExceptionInterface
- * @throws ReflectionException
- * @throws Exception
  */
 function get_users_by_site_key(string $siteKey = ''): array|string|bool
 {

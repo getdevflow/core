@@ -195,9 +195,7 @@ function get_object_subtype(string $type, string $id): string
  * @param string $title Text to be slugified.
  * @param string $table Table the text is saved to (i.e. content, contenttype, site, product)
  * @return string Slug.
- * @throws ContainerExceptionInterface
  * @throws Exception
- * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  */
 function cms_slugify(string $title, string $table): string
@@ -321,9 +319,6 @@ function tinymce_link_list(): array
  * @param string $contentTypeId Content Type id to check against.
  * @param string $slug Slug to search for.
  * @return bool Returns true if content type slug exists or false otherwise.
- * @throws ContainerExceptionInterface
- * @throws Exception
- * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  */
 function if_content_type_slug_exists(string $contentTypeId, string $slug): bool
@@ -366,9 +361,6 @@ function if_content_type_slug_exists(string $contentTypeId, string $slug): bool
  * @param string $slug Slug to search for.
  * @param string $contentType The content type to filter.
  * @return bool Returns true if content slug exists or false otherwise.
- * @throws ContainerExceptionInterface
- * @throws Exception
- * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  */
 function if_content_slug_exists(string $contentId, string $slug, string $contentType): bool
@@ -412,9 +404,6 @@ function if_content_slug_exists(string $contentId, string $slug, string $content
  * @param string $siteId Site id to check against.
  * @param string $slug Slug to search for.
  * @return bool Returns true if site slug exists or false otherwise.
- * @throws ContainerExceptionInterface
- * @throws Exception
- * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  */
 function if_site_slug_exists(string $siteId, string $slug): bool
@@ -456,9 +445,6 @@ function if_site_slug_exists(string $siteId, string $slug): bool
  * @param string $productId Product id to check against.
  * @param string $slug Slug to search for.
  * @return bool Returns true if site slug exists or false otherwise.
- * @throws ContainerExceptionInterface
- * @throws Exception
- * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  */
 function if_product_slug_exists(string $productId, string $slug): bool
@@ -499,9 +485,6 @@ function if_product_slug_exists(string $productId, string $slug): bool
  * @file core/Shared/Helpers/db.php
  * @param string $contentId Content id to check.
  * @return bool|array| False if content has no children or array of children if true.
- * @throws ContainerExceptionInterface
- * @throws Exception
- * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  */
 function is_content_parent(string $contentId): bool|array
@@ -546,9 +529,6 @@ function is_content_parent(string $contentId): bool|array
  * @file core/Shared/Helpers/db.php
  * @param string $contentType Content Type slug to check for.
  * @return bool Returns true if content type exists or false otherwise.
- * @throws ContainerExceptionInterface
- * @throws Exception
- * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  */
 function if_content_type_exists(string $contentType): bool
@@ -589,9 +569,7 @@ function if_content_type_exists(string $contentType): bool
  * @param string $userId ID of user being removed.
  * @param string $assignId ID of user to whom content will be assigned.
  * @return bool
- * @throws ContainerExceptionInterface
  * @throws Exception
- * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  */
 function reassign_content(string $userId, string $assignId): bool
@@ -623,8 +601,8 @@ function reassign_content(string $userId, string $assignId): bool
     if ($count > 0) {
         try {
 
-            $dfdb->qb()->transactional(function () use ($dfdb, $userId, $assignId) {
-                $dfdb->qb()->table(tableName: $dfdb->prefix . 'content')
+            $dfdb->transactional(function () use ($dfdb, $userId, $assignId) {
+                $dfdb->table(tableName: $dfdb->prefix . 'content')
                     ->where(condition: 'content_author', parameters: $userId)
                     ->update(data: ['content_author' => $assignId]);
             });
@@ -654,9 +632,7 @@ function reassign_content(string $userId, string $assignId): bool
  * @param array $params User parameters (assign_id and role).
  * @return bool
  * @throws CommandPropertyNotFoundException
- * @throws ContainerExceptionInterface
  * @throws Exception
- * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  * @throws SessionException
  * @throws TypeException

@@ -78,7 +78,7 @@ function set_url_scheme(string $url, ?string $scheme = null): string
 /**
  * Retrieves a modified URL query string.
  *
- * Uses `query_arg_port` filter hook.
+ * Uses `query.arg.port` filter hook.
  *
  * @file core/Shared/Helpers/url.php
  * @param string $key A query variable key.
