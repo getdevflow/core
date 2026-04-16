@@ -5,9 +5,8 @@ declare(strict_types=1);
 namespace App\Domain\Product\Model;
 
 use App\Infrastructure\Persistence\Cache\ProductCachePsr16;
+use App\Infrastructure\Services\AttributesFactory;
 use Qubus\Expressive\Database;
-use App\Shared\Services\MetaData;
-use App\Shared\Services\Registry;
 use App\Shared\Services\SimpleCacheObjectCacheFactory;
 use App\Shared\Services\Trait\HydratorAware;
 use Psr\Container\ContainerExceptionInterface;
@@ -194,7 +193,6 @@ final class Product extends stdClass
      * @param string $key Content meta key to check if set.
      * @return bool Whether the given product meta key is set.
      * @throws ContainerExceptionInterface
-     * @throws Exception
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
      */
@@ -204,17 +202,15 @@ final class Product extends stdClass
             return true;
         }
 
-        return MetaData::factory('productmeta')
-            ->exists('product', $this->id, Registry::getInstance()->get('tblPrefix') . $key);
+        return AttributesFactory::product()->exists($this->id, $key);
     }
 
     /**
      * Magic method for accessing custom fields.
      *
-     * @param string $key Content meta key to retrieve.
-     * @return string Value of the given product meta key (if set). If `$key` is 'id', the product ID.
+     * @param string $key Content attribute key to retrieve.
+     * @return string Value of the given product attribute key (if set). If `$key` is 'id', the product ID.
      * @throws ContainerExceptionInterface
-     * @throws Exception
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
      */
@@ -223,11 +219,10 @@ final class Product extends stdClass
         if (isset($this->{$key})) {
             $value = $this->{$key};
         } else {
-            $value = MetaData::factory('productmeta')
-                ->read('product', $this->id, Registry::getInstance()->get('tblPrefix') . $key, true);
+            $value = AttributesFactory::product()->get($this->id, $key, default: '');
         }
 
-        return esc_html($value);
+        return isset($value) ? purify_html($value) : '';
     }
 
     /**
@@ -264,7 +259,6 @@ final class Product extends stdClass
      * @param string $key Property
      * @return string
      * @throws ContainerExceptionInterface
-     * @throws Exception
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
      */
@@ -275,8 +269,6 @@ final class Product extends stdClass
 
     /**
      * Determine whether a property or meta key is set
-     *
-     * Consults the product and productmeta tables.
      *
      * @param string $key Property
      * @return bool

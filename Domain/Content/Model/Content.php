@@ -239,10 +239,10 @@ final class Content extends stdClass
         if (isset($this->{$key})) {
             $value = $this->{$key};
         } else {
-            $value = AttributesFactory::content()->get($this->id, $key);
+            $value = AttributesFactory::content()->get(id: $this->id, key: $key, default: '');
         }
 
-        return purify_html($value);
+        return isset($value) ? purify_html($value) : '';
     }
 
     /**

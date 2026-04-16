@@ -28,7 +28,7 @@ class CreateContentCommandHandler implements CommandHandler
             slug: $command->slug,
             body: $command->body,
             author: $command->author,
-            typeSlug: $command->type,
+            type: $command->type,
             sidebar: $command->sidebar,
             showInMenu: $command->showInMenu,
             showInSearch: $command->showInSearch,
@@ -38,7 +38,7 @@ class CreateContentCommandHandler implements CommandHandler
             createdGmt: $command->createdGmt,
             published: $command->published,
             publishedGmt: $command->publishedGmt,
-                attribute: $command->attribute,
+            attribute: $command->attribute,
             parent: $command->parent,
         );
 
