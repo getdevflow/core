@@ -17,6 +17,7 @@
     "composer/semver": "^3.4",
     "erusev/parsedown": "^1.7",
     "forxer/gravatar": "^5.0",
+    "nomadicjosh/vihzhuo": "^1",
     "qubus/form": "^2",
     "qubus/nosql": "^4",
     "spatie/image": "^3.7",
