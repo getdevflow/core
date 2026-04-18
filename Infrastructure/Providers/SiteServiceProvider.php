@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace App\Infrastructure\Providers;
 
 use App\Shared\Services\Registry;
-use Codefy\Framework\Factory\FileLoggerFactory;
 use Codefy\Framework\Support\CodefyServiceProvider;
 use PDOException;
 use Psr\Http\Message\RequestInterface;
 use Qubus\Exception\Exception;
 use ReflectionException;
 
+use function Codefy\Framework\Helpers\logger;
 use function Qubus\Security\Helpers\esc_html;
 use function sprintf;
 
@@ -57,8 +57,9 @@ final class SiteServiceProvider extends CodefyServiceProvider
              */
             Registry::getInstance()->set('siteKey', $siteKey);
         } catch (PDOException $ex) {
-            FileLoggerFactory::getLogger()->error(
-                sprintf('CURRENT_SITEKEY[%s]: %s', $ex->getCode(), $ex->getMessage())
+           logger(
+                level: 'error',
+                message: sprintf('CURRENT_SITEKEY[%s]: %s', $ex->getCode(), $ex->getMessage())
             );
         }
     }
