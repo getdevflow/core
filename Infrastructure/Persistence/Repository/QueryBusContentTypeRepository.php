@@ -48,10 +48,6 @@ class QueryBusContentTypeRepository implements ContentTypeQueryRepository
         return $content;
     }
 
-    /**
-     * @throws ReflectionException
-     * @throws Exception
-     */
     public function findBySlug(string $contentTypeSlug): array|null|object
     {
         $sql = "SELECT * FROM {$this->dfdb->prefix}content_type WHERE content_type_slug = ?";

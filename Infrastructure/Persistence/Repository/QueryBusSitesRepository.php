@@ -22,7 +22,6 @@ class QueryBusSitesRepository implements SitesQueryRepository
     }
 
     /**
-     * @throws ReflectionException
      * @throws Exception
      */
     public function findById(string $id): array|object
@@ -43,7 +42,6 @@ class QueryBusSitesRepository implements SitesQueryRepository
     }
 
     /**
-     * @throws ReflectionException
      * @throws Exception
      */
     public function findByKey(string $key): array|object
@@ -65,7 +63,6 @@ class QueryBusSitesRepository implements SitesQueryRepository
 
     /**
      * @throws Exception
-     * @throws ReflectionException
      */
     public function findBySlug(string $slug): array|object
     {

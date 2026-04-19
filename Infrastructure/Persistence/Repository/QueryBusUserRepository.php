@@ -38,7 +38,7 @@ class QueryBusUserRepository implements UserQueryRepository
                 WHERE user_id = ?";
 
         $data = $this->dfdb->getRow(
-            query: $this->dfdb->prepare(query: $sql, params: [$id]),
+            query: $this->dfdb->prepare($sql, [$id]),
             output: Database::ARRAY_A
         );
 
@@ -87,7 +87,7 @@ class QueryBusUserRepository implements UserQueryRepository
                 WHERE user_email = ?";
 
         $data = $this->dfdb->getRow(
-            query: $this->dfdb->prepare(query: $sql, params: [$email]),
+            query: $this->dfdb->prepare($sql, [$email]),
             output: Database::ARRAY_A
         );
 
@@ -115,7 +115,7 @@ class QueryBusUserRepository implements UserQueryRepository
                 WHERE user_login = ?";
 
         $data = $this->dfdb->getRow(
-            query: $this->dfdb->prepare(query: $sql, params: [$login]),
+            query: $this->dfdb->prepare($sql, [$login]),
             output: Database::ARRAY_A
         );
 
@@ -143,7 +143,7 @@ class QueryBusUserRepository implements UserQueryRepository
                 WHERE user_token = ?";
 
         $data = $this->dfdb->getRow(
-            query: $this->dfdb->prepare(query: $sql, params: [$token]),
+            query: $this->dfdb->prepare($sql, [$token]),
             output: Database::ARRAY_A
         );
 

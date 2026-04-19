@@ -82,7 +82,7 @@ class QueryBusContentRepository implements ContentQueryRepository
         $sql = "SELECT * FROM {$this->dfdb->prefix}content WHERE content_status = ?";
 
         $data = $this->dfdb->getResults(
-            query: $this->dfdb->prepare(query: $sql, params: [$status]),
+            query: $this->dfdb->prepare($sql, [$status]),
             output: Database::ARRAY_A
         );
 
