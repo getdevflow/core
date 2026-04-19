@@ -19,6 +19,7 @@ use App\Domain\User\Query\FindMultisiteUniqueUsersQuery;
 use App\Domain\User\ValueObject\UserId;
 use App\Infrastructure\Persistence\Cache\SiteCachePsr16;
 use App\Infrastructure\Persistence\Cache\UserCachePsr16;
+use App\Infrastructure\Services\Site\SiteSchema;
 use Qubus\Expressive\Database;
 use App\Infrastructure\Services\AttributesFactory;
 use App\Shared\Services\DateTime;
@@ -119,10 +120,6 @@ function get_site_by(string $field, string $value): false|object
  * @file core/Shared/Helpers/site.php
  * @param string $sitedomain Site domain to check against.
  * @return bool If site domain exists, return true otherwise return false.
- * @throws ContainerExceptionInterface
- * @throws Exception
- * @throws NotFoundExceptionInterface
- * @throws ReflectionException
  */
 function if_site_domain_exists(string $sitedomain): bool
 {
@@ -1381,10 +1378,22 @@ function new_site_schema(string $siteId, Site $site, bool $update): bool|string
     $userdata = get_userdata($site->owner);
 
     $apiKey = generate_unique_key(length: 20);
-    $basePrefix = $dfdb->basePrefix;
     $sitePrefix = $site->key;
 
-    $insertData = file_get_contents(resource_path(path: 'tpl/new_site_db_insert.tpl'));
+    $schema = new SiteSchema($dfdb, $sitePrefix);
+    $schema->eventStore();
+    $schema->content();
+    $schema->option();
+    $schema->plugin();
+    $schema->product();
+    $schema->elfinderFile();
+    $schema->elfinderTrash();
+    $schema->pages();
+    $schema->uploads();
+    $schema->pageTranslations();
+    $schema->settings();
+
+    $insertData = file_get_contents(resource_path(path: 'tpl/option_table_insert.tpl'));
     $insertData = str_replace('{ulid_1}', Ulid::generateAsString(), $insertData);
     $insertData = str_replace('{ulid_2}', Ulid::generateAsString(), $insertData);
     $insertData = str_replace('{ulid_3}', Ulid::generateAsString(), $insertData);
@@ -1397,10 +1406,7 @@ function new_site_schema(string $siteId, Site $site, bool $update): bool|string
     $insertData = str_replace('{ulid_10}', Ulid::generateAsString(), $insertData);
     $insertData = str_replace('{ulid_11}', Ulid::generateAsString(), $insertData);
     $insertData = str_replace('{ulid_12}', Ulid::generateAsString(), $insertData);
-    $insertData = str_replace('{ulid_13}', Ulid::generateAsString(), $insertData);
     $insertData = str_replace('{timezone}', config()->string(key: 'app.timezone'), $insertData);
-    $insertData = str_replace('{site_prefix}', $sitePrefix, $insertData);
-    $insertData = str_replace('{base_prefix}', $basePrefix, $insertData);
     $insertData = str_replace('{sitename}', $site->name, $insertData);
     $insertData = str_replace('{admin_email}', $userdata->email, $insertData);
     $insertData = str_replace('{api_key}', $apiKey, $insertData);
@@ -1408,7 +1414,8 @@ function new_site_schema(string $siteId, Site $site, bool $update): bool|string
     try {
         $dfdb->getConnection()->pdo->exec($insertData);
     } catch (PDOException $e) {
-        FileLoggerFactory::getLogger()->error(
+        logger(
+            'error',
             sprintf(
                 'SQLSTATE[new_site]: %s',
                 $e->getMessage()
