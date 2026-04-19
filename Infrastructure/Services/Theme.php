@@ -16,6 +16,14 @@ abstract class Theme implements Extension
     }
 
     /**
+     * Theme's slug.
+     */
+    protected function slug(): string
+    {
+        return $this->meta()['slug'];
+    }
+
+    /**
      * Theme's id.
      */
     protected function id(): string
