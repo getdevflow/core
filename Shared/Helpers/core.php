@@ -982,7 +982,7 @@ function cms_enqueue_css(
     } elseif ($config === 'theme') {
         $options = [
             'public_dir' => remove_trailing_slash(public_path()),
-            'css_dir' => 'themes' . Devflow::$PHP::DS  . $slug . Devflow::$PHP::DS  . 'assets' . Devflow::$PHP::DS  . 'css',
+            'css_dir' => 'themes' . Devflow::$PHP::DS  . $slug . Devflow::$PHP::DS  . 'css',
             'pipeline' => __observer()->filter->applyFilter('theme.css.pipeline', $minify),
             'pipeline_dir' => 'minify'
         ];
