@@ -11,7 +11,6 @@ use App\Shared\Services\PhpFileParser;
 use App\Shared\Services\TemplateRegistry;
 use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
 use Codefy\Framework\Application;
-use Codefy\Framework\Factory\FileLoggerFactory;
 use Codefy\QueryBus\UnresolvableQueryHandlerException;
 use PDOException;
 use Psr\Container\ContainerExceptionInterface;
@@ -25,17 +24,22 @@ use ReflectionException;
 use function basename;
 use function class_exists;
 use function Codefy\Framework\Helpers\app;
+use function Codefy\Framework\Helpers\logger;
 use function Codefy\Framework\Helpers\public_path;
 use function count;
 use function dirname;
 use function glob;
 use function is_string;
 use function ltrim;
+use function phpb_pages;
 use function Qubus\Security\Helpers\__observer;
 use function Qubus\Support\Helpers\add_trailing_slash;
+use function Qubus\Support\Helpers\collect;
 use function Qubus\Support\Helpers\is_false__;
 use function Qubus\Support\Helpers\is_null__;
+use function rawurlencode;
 use function sprintf;
+use function str_replace;
 
 /**
  * Retrieve name of the current theme.
@@ -127,10 +131,32 @@ function theme_url(string $path = '', string $theme = ''): string
 }
 
 /**
+ * @param string|null $type Returns links by specified type
+ *                          or all if type is not specified.
+ * @throws TypeException
+ * @return array<mixed>
+ */
+function nav_links(?string $type = null): array
+{
+    $navLinks = collect(phpb_pages())
+        ->where(key: 'show_in_nav', operator: '=', value: 'yes')
+        ->sort(function ($item1, $item2) {
+            //@phpstan-ignore offsetAccess.nonOffsetAccessible
+            return $item1['nav_position'] <=> $item2['nav_position']; //@phpstan-ignore offsetAccess.nonOffsetAccessible
+        });
+
+    if (!is_null__($type)) {
+        $navLinks = $navLinks->where(key: 'nav_type', operator: '=', value: $type);
+    }
+
+    return $navLinks->all();
+}
+
+/**
  * Returns theme directory URI.
  *
  * @file core/Shared/Helpers/theme.php
- * @uses \Qubus\EventDispatcher\ActionFilter\Filter::applyFilter() Calls 'theme_directory_uri' filter.
+ * @uses \Qubus\EventDispatcher\ActionFilter\Filter::applyFilter() Calls 'theme.directory.uri' filter.
  * @return string Devflow theme directory uri.
  * @throws Exception
  * @throws InvalidArgumentException
@@ -152,7 +178,7 @@ function theme_directory_uri(): string
  * Returns javascript directory uri.
  *
  * @file core/Shared/Helpers/theme.php
- * @uses \Qubus\EventDispatcher\ActionFilter\Filter::applyFilter() Calls 'javascript_directory_uri' filter.
+ * @uses \Qubus\EventDispatcher\ActionFilter\Filter::applyFilter() Calls 'javascript.directory.uri' filter.
  * @return string Devflow javascript url.
  * @throws Exception
  * @throws InvalidArgumentException
@@ -165,7 +191,7 @@ function javascript_directory_uri(): string
     }
     $theme = str_replace('%2F', '/', rawurlencode(theme_name()));
     $javascriptRootUri = theme_url();
-    $javascriptDirUri = $javascriptRootUri . $theme . '/assets/js/';
+    $javascriptDirUri = $javascriptRootUri . $theme . '/js/';
     return __observer()->filter->applyFilter(
         'javascript.directory.uri',
         $javascriptDirUri,
@@ -213,7 +239,7 @@ function theme_root(?string $filename = ''): string
  * Retrieve less directory uri.
  *
  * @file core/Shared/Helpers/theme.php
- * @uses \Qubus\EventDispatcher\ActionFilter\Filter::applyFilter() Calls 'less_directory_uri' filter.
+ * @uses \Qubus\EventDispatcher\ActionFilter\Filter::applyFilter() Calls 'less.directory.uri' filter.
  * @return string Devflow less url.
  * @throws Exception
  * @throws InvalidArgumentException
@@ -226,7 +252,7 @@ function less_directory_uri(): string
     }
     $theme = str_replace('%2F', '/', rawurlencode(theme_name()));
     $lessRootUri = theme_url();
-    $lessDirUri = $lessRootUri . $theme . '/assets/less/';
+    $lessDirUri = $lessRootUri . $theme . '/less/';
     return __observer()->filter->applyFilter('less.directory.uri', $lessDirUri, $theme, $lessRootUri);
 }
 
@@ -258,7 +284,7 @@ function css_directory(): string
  * Return css directory uri.
  *
  * @file core/Shared/Helpers/theme.php
- * @uses \Qubus\EventDispatcher\ActionFilter\Filter::applyFilter() Calls 'css_directory_uri' filter.
+ * @uses \Qubus\EventDispatcher\ActionFilter\Filter::applyFilter() Calls 'css.directory.uri' filter.
  * @return string Devflow css url.
  * @throws Exception
  * @throws InvalidArgumentException
@@ -271,7 +297,7 @@ function css_directory_uri(): string
     }
     $theme = str_replace('%2F', '/', rawurlencode(theme_name()));
     $cssRootUri = theme_url();
-    $cssDirUri = $cssRootUri . $theme . '/assets/css/';
+    $cssDirUri = $cssRootUri . $theme . '/css/';
     return __observer()->filter->applyFilter('css.directory.uri', $cssDirUri, $theme, $cssRootUri);
 }
 
@@ -279,7 +305,7 @@ function css_directory_uri(): string
  * Retrieve image directory uri.
  *
  * @file core/Shared/Helpers/theme.php
- * @uses \Qubus\EventDispatcher\ActionFilter\Filter::applyFilter() Calls 'image_directory_uri' filter.
+ * @uses \Qubus\EventDispatcher\ActionFilter\Filter::applyFilter() Calls 'image.directory.uri' filter.
  * @return string Devflow image url.
  * @throws Exception
  * @throws InvalidArgumentException
@@ -292,8 +318,29 @@ function image_directory_uri(): string
     }
     $theme = str_replace('%2F', '/', rawurlencode(theme_name()));
     $imageRootUri = theme_url();
-    $imageDirUri = $imageRootUri . $theme . '/assets/images/';
+    $imageDirUri = $imageRootUri . $theme . '/images/';
     return __observer()->filter->applyFilter('image.directory.uri', $imageDirUri, $theme, $imageRootUri);
+}
+
+/**
+ * Retrieve fonts directory uri.
+ *
+ * @file core/Shared/Helpers/theme.php
+ * @uses \Qubus\EventDispatcher\ActionFilter\Filter::applyFilter() Calls 'fonts.directory.uri' filter.
+ * @return string Devflow fonts url.
+ * @throws Exception
+ * @throws InvalidArgumentException
+ * @throws ReflectionException
+ */
+function fonts_directory_uri(): string
+{
+    if (!get_theme()) {
+        return '';
+    }
+    $theme = str_replace('%2F', '/', rawurlencode(theme_name()));
+    $fontsRootUri = theme_url();
+    $fontsDirUri = $fontsRootUri . $theme . '/fonts/';
+    return __observer()->filter->applyFilter('fonts.directory.uri', $fontsDirUri, $theme, $fontsRootUri);
 }
 
 /**
@@ -331,19 +378,19 @@ function theme_info(string $themesDir = ''): array
  * @file core/Shared/Helpers/theme.php
  * @param string $theme ID of the theme to activate
  * @throws InvalidArgumentException
- * @throws ReflectionException
  */
 function activate_theme(string $theme): void
 {
     try {
         update_option(key: 'site_theme', value: $theme);
     } catch (PDOException | \Exception $ex) {
-        FileLoggerFactory::getLogger()->error(
-            sprintf(
+        logger(
+            level: 'error',
+            message: sprintf(
                 'THEMEACTIVATE[insert]: %s',
                 $ex->getMessage()
             ),
-            [
+            context: [
                 'theme' => 'activate'
             ]
         );
@@ -355,19 +402,19 @@ function activate_theme(string $theme): void
  *
  * @file core/Shared/Helpers/theme.php
  * @return void
- * @throws ReflectionException
  */
 function deactivate_theme(): void
 {
     try {
         delete_option(key: 'site_theme');
     } catch (PDOException | \Exception $ex) {
-        FileLoggerFactory::getLogger()->error(
-            sprintf(
+        logger(
+            level: 'error',
+            message: sprintf(
                 'THEMEDEACTIVATE[delete]: %s',
                 $ex->getMessage()
             ),
-            [
+            context: [
                 'theme' => 'deactivate'
             ]
         );
