@@ -332,8 +332,6 @@ final class Options
      *
      * @param string $optionKey Key to check against.
      * @return bool
-     * @throws Exception
-     * @throws ReflectionException
      */
     public function exists(string $optionKey): bool
     {
