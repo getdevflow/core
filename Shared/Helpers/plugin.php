@@ -9,7 +9,6 @@ use Qubus\Expressive\Database;
 use App\Infrastructure\Services\Options;
 use App\Shared\Services\PhpFileParser;
 use Codefy\Framework\Application;
-use Codefy\Framework\Factory\FileLoggerFactory;
 use Exception;
 use PDOException;
 use Psr\Container\ContainerExceptionInterface;
@@ -21,6 +20,7 @@ use ReflectionException;
 
 use function class_exists;
 use function Codefy\Framework\Helpers\app;
+use function Codefy\Framework\Helpers\logger;
 use function Codefy\Framework\Helpers\public_path;
 use function dirname;
 use function glob;
@@ -116,7 +116,6 @@ function active_plugins(): array|false
  * Activates a specific plugin that is called by $_GET['id'] variable.
  *
  * @param string $plugin ID of the plugin to activate
- * @throws ReflectionException
  */
 function activate_plugin(string $plugin): void
 {
@@ -131,12 +130,13 @@ function activate_plugin(string $plugin): void
                 );
         });
     } catch (PDOException | Exception $ex) {
-        FileLoggerFactory::getLogger()->error(
-            sprintf(
+        logger(
+            level: 'error',
+            message: sprintf(
                 'PLUGINACTIVATE[insert]: %s',
                 $ex->getMessage()
             ),
-            [
+            context: [
                 'plugin' => 'activate'
             ]
         );
@@ -148,7 +148,6 @@ function activate_plugin(string $plugin): void
  *
  * @param string $plugin
  * @return void
- * @throws ReflectionException
  */
 function deactivate_plugin(string $plugin): void
 {
@@ -162,12 +161,13 @@ function deactivate_plugin(string $plugin): void
                 ->delete();
         });
     } catch (PDOException | Exception $ex) {
-        FileLoggerFactory::getLogger()->error(
-            sprintf(
+        logger(
+            level: 'error',
+            message: sprintf(
                 'PLUGINDEACTIVATE[delete]: %s',
                 $ex->getMessage()
             ),
-            [
+            context: [
                 'plugin' => 'deactivate'
             ]
         );
@@ -185,8 +185,8 @@ function is_plugin_activated(string $plugin): bool
     $dfdb = dfdb();
 
     $prepare = $dfdb->prepare(
-        query: "SELECT COUNT(*) FROM {$dfdb->prefix}plugin WHERE plugin_classname = ?",
-        params: [
+        "SELECT COUNT(*) FROM {$dfdb->prefix}plugin WHERE plugin_classname = ?",
+        [
             $plugin
         ]
     );
