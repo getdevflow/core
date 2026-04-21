@@ -143,14 +143,12 @@ final class AdminDashboardController extends BaseController
 
     /**
      * @return ResponseInterface|string
-     * @throws CommandPropertyNotFoundException
      * @throws ContainerExceptionInterface
      * @throws Exception
      * @throws InvalidArgumentException
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
      * @throws TypeException
-     * @throws UnresolvableQueryHandlerException
      * @throws \Exception
      */
     public function media(): ResponseInterface|string
