@@ -48,7 +48,6 @@ final class AdminProductController extends BaseController
     /**
      * @param ProductService $service
      * @return ResponseInterface
-     * @throws CommandPropertyNotFoundException
      * @throws ContainerExceptionInterface
      * @throws Exception
      * @throws InvalidArgumentException
@@ -111,7 +110,6 @@ final class AdminProductController extends BaseController
     /**
      * @param ServerRequest $request
      * @return ResponseInterface
-     * @throws CommandPropertyNotFoundException
      * @throws ContainerExceptionInterface
      * @throws Exception
      * @throws InvalidArgumentException
@@ -119,7 +117,6 @@ final class AdminProductController extends BaseController
      * @throws ReflectionException
      * @throws SessionException
      * @throws TypeException
-     * @throws UnresolvableQueryHandlerException
      * @throws \Exception
      */
     public function productCreateView(ServerRequest $request): ResponseInterface
@@ -217,9 +214,7 @@ final class AdminProductController extends BaseController
             );
         } catch (
             ContainerExceptionInterface |
-            CommandPropertyNotFoundException |
             InvalidArgumentException |
-            UnresolvableQueryHandlerException |
             ReflectionException |
             Exception $e
         ) {

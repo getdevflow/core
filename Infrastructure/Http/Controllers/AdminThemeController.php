@@ -31,18 +31,16 @@ use function Qubus\Security\Helpers\t__;
 final class AdminThemeController extends BaseController
 {
     /**
-     * @param ServerRequest $request
      * @return ResponseInterface|string
      * @throws ContainerExceptionInterface
      * @throws Exception
      * @throws InvalidArgumentException
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
-     * @throws SessionException
      * @throws TypeException
      * @throws \Exception
      */
-    public function themes(ServerRequest $request): ResponseInterface|string
+    public function themes(): ResponseInterface|string
     {
         if (false === current_user_can(perm: 'manage:themes')) {
             Devflow::$PHP->flash->error(
@@ -103,7 +101,7 @@ final class AdminThemeController extends BaseController
             activate_theme($request->getQueryParams()['id']);
 
             Devflow::$PHP->flash->success(t__(msgid: 'Theme activated.', domain: 'devflow'));
-        } catch (NotFoundExceptionInterface | ContainerExceptionInterface | ReflectionException $e) {
+        } catch (\Exception $e) {
             logger(level: 'error', message: $e->getMessage());
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Theme activation exception occurred and was logged.', domain: 'devflow')
@@ -137,7 +135,7 @@ final class AdminThemeController extends BaseController
             deactivate_theme();
 
             Devflow::$PHP->flash->success(t__(msgid: 'Theme deactivated.', domain: 'devflow'));
-        } catch (NotFoundExceptionInterface | ContainerExceptionInterface | ReflectionException $e) {
+        } catch (\Exception $e) {
             logger(level: 'error', message: $e->getMessage());
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Theme deactivation exception occurred and was logged.', domain: 'devflow')

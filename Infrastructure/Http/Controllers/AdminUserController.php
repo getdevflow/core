@@ -9,7 +9,6 @@ use App\Domain\User\Model\User;
 use App\Domain\User\Query\FindUserByIdQuery;
 use App\Domain\User\ValueObject\UserId;
 use App\Infrastructure\Services\NativePhpCookies;
-use Codefy\CommandBus\Exceptions\CommandCouldNotBeHandledException;
 use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
 use Codefy\CommandBus\Exceptions\UnresolvableCommandHandlerException;
 use Codefy\Framework\Http\BaseController;
@@ -57,7 +56,6 @@ use function Codefy\Framework\Helpers\config;
 use function Codefy\Framework\Helpers\logger;
 use function Codefy\Framework\Helpers\storage_path;
 use function Codefy\Framework\Helpers\view;
-use function dd;
 use function file_exists;
 use function get_class;
 use function is_string;
@@ -171,7 +169,6 @@ final class AdminUserController extends BaseController
         } catch (
             CommandPropertyNotFoundException |
             ContainerExceptionInterface |
-            UnresolvableQueryHandlerException |
             TypeException |
             Exception $e
         ) {
@@ -306,7 +303,6 @@ final class AdminUserController extends BaseController
         } catch (
             CommandPropertyNotFoundException |
             ContainerExceptionInterface |
-            UnresolvableQueryHandlerException |
             TypeException |
             Exception $e
         ) {
@@ -351,10 +347,8 @@ final class AdminUserController extends BaseController
                 ]
             );
         } catch (
-            CommandPropertyNotFoundException |
             ContainerExceptionInterface |
             InvalidArgumentException |
-            UnresolvableQueryHandlerException |
             TypeException |
             ReflectionException $e
         ) {
@@ -416,8 +410,8 @@ final class AdminUserController extends BaseController
             CommandPropertyNotFoundException |
             ContainerExceptionInterface |
             TypeException |
-            Exception |
-            ReflectionException $e
+            ReflectionException |
+            Exception $e
         ) {
             logger('error', $e->getMessage());
             Devflow::$PHP->flash->error(
@@ -497,7 +491,6 @@ final class AdminUserController extends BaseController
             InvalidArgumentException |
             \Qubus\Exception\Exception |
             ReflectionException |
-            CommandCouldNotBeHandledException |
             UnresolvableCommandHandlerException |
             EnvironmentIsBrokenException $e
         ) {
@@ -547,7 +540,6 @@ final class AdminUserController extends BaseController
                 Devflow::$PHP->flash->success(message: Devflow::$PHP->flash->notice(num: 200));
             } catch (
                 CommandPropertyNotFoundException |
-                UnresolvableQueryHandlerException |
                 NotFoundExceptionInterface |
                 ContainerExceptionInterface |
                 TypeException |

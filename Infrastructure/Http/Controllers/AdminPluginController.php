@@ -5,9 +5,7 @@ declare(strict_types=1);
 namespace App\Infrastructure\Http\Controllers;
 
 use App\Application\Devflow;
-use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
 use Codefy\Framework\Http\BaseController;
-use Codefy\QueryBus\UnresolvableQueryHandlerException;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -64,8 +62,6 @@ final class AdminPluginController extends BaseController
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
      * @throws TypeException
-     * @throws CommandPropertyNotFoundException
-     * @throws UnresolvableQueryHandlerException
      */
     public function activate(ServerRequest $request): ResponseInterface
     {
@@ -80,27 +76,25 @@ final class AdminPluginController extends BaseController
             activate_plugin($request->getQueryParams()['id']);
 
             Devflow::$PHP->flash->success(t__(msgid: 'Plugin activated.', domain: 'devflow'));
-        } catch (NotFoundExceptionInterface | ContainerExceptionInterface | ReflectionException $e) {
+        } catch (\Exception $e) {
             logger('error', $e->getMessage());
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Plugin activation exception occurred and was logged.', domain: 'devflow')
             );
         }
 
-        return $this->redirect($request->getServerParams()['HTTP_REFERER']);
+        return $this->redirect($request->getHeaderLine('Referer'));
     }
 
     /**
      * @param ServerRequest $request
      * @return ResponseInterface
-     * @throws CommandPropertyNotFoundException
      * @throws ContainerExceptionInterface
      * @throws Exception
      * @throws InvalidArgumentException
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
      * @throws TypeException
-     * @throws UnresolvableQueryHandlerException
      */
     public function deactivate(ServerRequest $request): ResponseInterface
     {
@@ -114,7 +108,7 @@ final class AdminPluginController extends BaseController
             deactivate_plugin($request->getQueryParams()['id']);
 
             Devflow::$PHP->flash->success(t__(msgid: 'Plugin deactivated.', domain: 'devflow'));
-        } catch (NotFoundExceptionInterface | ContainerExceptionInterface | ReflectionException $e) {
+        } catch (\Exception $e) {
             logger('error', $e->getMessage());
 
             Devflow::$PHP->flash->error(
@@ -122,6 +116,6 @@ final class AdminPluginController extends BaseController
             );
         }
 
-        return $this->redirect($request->getServerParams()['HTTP_REFERER']);
+        return $this->redirect($request->getHeaderLine('Referer'));
     }
 }

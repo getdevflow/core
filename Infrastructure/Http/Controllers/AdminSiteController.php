@@ -7,8 +7,6 @@ namespace App\Infrastructure\Http\Controllers;
 use App\Application\Devflow;
 use App\Domain\Site\Model\Site;
 use App\Domain\User\Query\FindMultisiteUniqueUsersQuery;
-use App\Domain\User\Query\FindUsersQuery;
-use Codefy\CommandBus\Exceptions\CommandCouldNotBeHandledException;
 use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
 use Codefy\CommandBus\Exceptions\UnresolvableCommandHandlerException;
 use Codefy\Framework\Http\BaseController;
@@ -22,7 +20,6 @@ use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
 use Qubus\Http\Factories\JsonResponseFactory;
 use Qubus\Http\ServerRequest;
-use Qubus\Http\Session\SessionException;
 use ReflectionException;
 
 use function App\Shared\Helpers\admin_url;
@@ -49,7 +46,6 @@ final class AdminSiteController extends BaseController
     /**
      * @param ServerRequest $request
      * @return ResponseInterface
-     * @throws CommandPropertyNotFoundException
      * @throws ContainerExceptionInterface
      * @throws DateInvalidTimeZoneException
      * @throws Exception
@@ -57,7 +53,6 @@ final class AdminSiteController extends BaseController
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
      * @throws TypeException
-     * @throws UnresolvableQueryHandlerException
      */
     public function siteCreate(ServerRequest $request): ResponseInterface
     {
@@ -85,12 +80,10 @@ final class AdminSiteController extends BaseController
 
             Devflow::$PHP->flash->success(Devflow::$PHP->flash->notice(num: 201));
         } catch (
-            CommandCouldNotBeHandledException |
             CommandPropertyNotFoundException |
             ContainerExceptionInterface |
             InvalidArgumentException |
             UnresolvableCommandHandlerException |
-            UnresolvableQueryHandlerException |
             TypeException |
             Exception |
             ReflectionException $e
@@ -107,14 +100,12 @@ final class AdminSiteController extends BaseController
     /**
      * @param ServerRequest $request
      * @return ResponseInterface
-     * @throws CommandPropertyNotFoundException
      * @throws ContainerExceptionInterface
      * @throws Exception
      * @throws InvalidArgumentException
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
      * @throws TypeException
-     * @throws UnresolvableQueryHandlerException
      * @throws \Exception
      */
     public function sites(ServerRequest $request): ResponseInterface
@@ -161,14 +152,12 @@ final class AdminSiteController extends BaseController
      * @param ServerRequest $request
      * @param string $siteId
      * @return ResponseInterface
-     * @throws CommandPropertyNotFoundException
      * @throws ContainerExceptionInterface
      * @throws Exception
      * @throws InvalidArgumentException
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
      * @throws TypeException
-     * @throws UnresolvableQueryHandlerException
      */
     public function siteChange(ServerRequest $request, string $siteId): ResponseInterface
     {
@@ -198,13 +187,11 @@ final class AdminSiteController extends BaseController
 
             Devflow::$PHP->flash->success(Devflow::$PHP->flash->notice(num: 200));
         } catch (
-            CommandCouldNotBeHandledException |
             CommandPropertyNotFoundException |
             ContainerExceptionInterface |
             DateInvalidTimeZoneException |
             InvalidArgumentException |
             UnresolvableCommandHandlerException |
-            UnresolvableQueryHandlerException |
             TypeException |
             Exception |
             ReflectionException $e
@@ -219,7 +206,6 @@ final class AdminSiteController extends BaseController
     }
 
     /**
-     * @param ServerRequest $request
      * @param string $siteId
      * @return ResponseInterface
      * @throws ContainerExceptionInterface
@@ -227,11 +213,10 @@ final class AdminSiteController extends BaseController
      * @throws InvalidArgumentException
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
-     * @throws SessionException
      * @throws TypeException
      * @throws \Exception
      */
-    public function siteView(ServerRequest $request, string $siteId): ResponseInterface
+    public function siteView(string $siteId): ResponseInterface
     {
         if (false === current_user_can(perm: 'manage:sites')) {
             Devflow::$PHP->flash->error(
@@ -266,8 +251,6 @@ final class AdminSiteController extends BaseController
                 ]
             );
         } catch (
-            CommandPropertyNotFoundException |
-            UnresolvableQueryHandlerException |
             TypeException |
             ReflectionException $e
         ) {
@@ -281,9 +264,7 @@ final class AdminSiteController extends BaseController
     }
 
     /**
-     * @param ServerRequest $request
      * @return ResponseInterface
-     * @throws CommandPropertyNotFoundException
      * @throws ContainerExceptionInterface
      * @throws Exception
      * @throws InvalidArgumentException
@@ -293,7 +274,7 @@ final class AdminSiteController extends BaseController
      * @throws UnresolvableQueryHandlerException
      * @throws \Exception
      */
-    public function siteUsers(ServerRequest $request): ResponseInterface
+    public function siteUsers(): ResponseInterface
     {
         if (false === current_user_can(perm: 'manage:sites')) {
             Devflow::$PHP->flash->error(
@@ -326,14 +307,12 @@ final class AdminSiteController extends BaseController
      * @param ServerRequest $request
      * @param string $userId
      * @return ResponseInterface
-     * @throws CommandPropertyNotFoundException
      * @throws ContainerExceptionInterface
      * @throws Exception
      * @throws InvalidArgumentException
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
      * @throws TypeException
-     * @throws UnresolvableQueryHandlerException
      */
     public function siteUsersDelete(ServerRequest $request, string $userId): ResponseInterface
     {
@@ -395,16 +374,14 @@ final class AdminSiteController extends BaseController
      * @param ServerRequest $request
      * @param string $siteId
      * @return ResponseInterface
-     * @throws CommandPropertyNotFoundException
      * @throws ContainerExceptionInterface
      * @throws Exception
      * @throws InvalidArgumentException
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
      * @throws TypeException
-     * @throws UnresolvableQueryHandlerException
      */
-    public function siteDelete(ServerRequest $request, string $siteId): ResponseInterface
+    public function siteDelete(string $siteId): ResponseInterface
     {
         if (false === current_user_can(perm: 'delete:sites')) {
             Devflow::$PHP->flash->error(
@@ -436,8 +413,6 @@ final class AdminSiteController extends BaseController
                 return $this->redirect(admin_url('site/'));
             }
         } catch (
-            CommandPropertyNotFoundException |
-            UnresolvableQueryHandlerException |
             TypeException |
             ReflectionException |
             Exception $e
@@ -457,10 +432,8 @@ final class AdminSiteController extends BaseController
                 );
             }
         } catch (
-            CommandCouldNotBeHandledException |
             CommandPropertyNotFoundException |
             UnresolvableCommandHandlerException |
-            UnresolvableQueryHandlerException |
             TypeException |
             Exception |
             ReflectionException $e

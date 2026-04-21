@@ -6,7 +6,6 @@ namespace App\Infrastructure\Http\Controllers;
 
 use App\Application\Devflow;
 use App\Domain\User\Model\User;
-use App\Infrastructure\Services\UserAuth;
 use Codefy\Framework\Http\BaseController;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
@@ -16,17 +15,15 @@ use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
 use Qubus\Http\ServerRequest;
 use Qubus\Http\Session\SessionException;
-use Qubus\Http\Session\SessionService;
 use Qubus\Routing\Exceptions\NamedRouteNotFoundException;
 use Qubus\Routing\Exceptions\RouteParamFailedConstraintException;
-use Qubus\Routing\Router;
-use Qubus\View\Renderer;
 use ReflectionException;
 
 use function App\Shared\Helpers\admin_url;
 use function App\Shared\Helpers\cms_authenticate_user;
 use function App\Shared\Helpers\cms_clear_auth_cookie;
 use function App\Shared\Helpers\cms_update_user;
+use function App\Shared\Helpers\current_user_can;
 use function App\Shared\Helpers\generate_random_password;
 use function App\Shared\Helpers\get_user_by;
 use function App\Shared\Helpers\login_url;
@@ -41,15 +38,6 @@ use function Qubus\Support\Helpers\is_false__;
 
 final class AdminAuthController extends BaseController
 {
-    public function __construct(
-        protected SessionService $sessionService,
-        protected Router $router,
-        protected UserAuth $user,
-        protected Renderer $view
-    ) {
-        parent::__construct($sessionService, $router, $view);
-    }
-
     /**
      * @param ServerRequest $request
      * @return ResponseInterface
@@ -94,18 +82,20 @@ final class AdminAuthController extends BaseController
     }
 
     /**
-     * @param ServerRequest $request
      * @return ResponseInterface
+     * @throws ContainerExceptionInterface
      * @throws Exception
+     * @throws InvalidArgumentException
      * @throws NamedRouteNotFoundException
+     * @throws NotFoundExceptionInterface
      * @throws ReflectionException
      * @throws RouteParamFailedConstraintException
      * @throws TypeException
      * @throws \Exception
      */
-    public function login(ServerRequest $request): ResponseInterface
+    public function login(): ResponseInterface
     {
-        if (true === $this->user->can(permissionName: 'access:admin')) {
+        if (true === current_user_can(perm: 'access:admin')) {
             return $this->redirect(admin_url());
         }
 
@@ -121,18 +111,19 @@ final class AdminAuthController extends BaseController
     /**
      * @param ServerRequest $request
      * @return ResponseInterface
+     * @throws ContainerExceptionInterface
      * @throws Exception
      * @throws InvalidArgumentException
      * @throws NamedRouteNotFoundException
+     * @throws NotFoundExceptionInterface
      * @throws ReflectionException
      * @throws RouteParamFailedConstraintException
-     * @throws SessionException
      * @throws TypeException
      */
     public function logout(ServerRequest $request): ResponseInterface
     {
         if (
-            $request->getHeaderLine(name: 'Referer')!==null &&
+            $request->getHeaderLine(name: 'Referer') !== null &&
                 !str_contains($request->getHeaderLine(name: 'Referer'), 'admin')
         ) {
             $redirectLink = __observer()->filter->applyFilter(
@@ -146,7 +137,7 @@ final class AdminAuthController extends BaseController
             );
         }
 
-        if (false === $this->user->can(permissionName: 'access:admin')) {
+        if (false === current_user_can(perm: 'access:admin')) {
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'You are already logged out.', domain: 'devflow')
             );

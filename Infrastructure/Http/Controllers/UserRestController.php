@@ -32,7 +32,7 @@ final class UserRestController extends BaseController
      * @uses \App\Shared\Helpers\get_all_users()
      * @throws Exception
      */
-    public function index(Request $request): ResponseInterface
+    public function index(): ResponseInterface
     {
         try {
             $users = get_all_users();

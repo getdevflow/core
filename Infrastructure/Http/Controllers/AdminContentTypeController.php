@@ -52,14 +52,12 @@ final class AdminContentTypeController extends BaseController
      * @param ServerRequest $request
      * @param ContentTypeService $service
      * @return ResponseInterface
-     * @throws CommandPropertyNotFoundException
      * @throws ContainerExceptionInterface
      * @throws Exception
      * @throws InvalidArgumentException
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
      * @throws TypeException
-     * @throws UnresolvableQueryHandlerException
      * @throws \Exception
      */
     public function contentTypes(ServerRequest $request, ContentTypeService $service): ResponseInterface

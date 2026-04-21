@@ -9,7 +9,6 @@ use App\Domain\Site\Command\UpdateSiteCommand;
 use App\Domain\Site\Model\Site;
 use App\Domain\Site\ValueObject\SiteId;
 use App\Domain\User\ValueObject\UserId;
-use Codefy\CommandBus\Exceptions\CommandCouldNotBeHandledException;
 use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
 use Codefy\CommandBus\Exceptions\UnresolvableCommandHandlerException;
 use Codefy\Framework\Factory\FileLoggerFactory;
@@ -88,7 +87,6 @@ final class AdminOptionsController extends BaseController
     /**
      * @param ServerRequest $request
      * @return string|ResponseInterface
-     * @throws CommandPropertyNotFoundException
      * @throws ContainerExceptionInterface
      * @throws Exception
      * @throws InvalidArgumentException
@@ -96,7 +94,6 @@ final class AdminOptionsController extends BaseController
      * @throws ReflectionException
      * @throws SessionException
      * @throws TypeException
-     * @throws UnresolvableQueryHandlerException
      */
     public function generalOptions(ServerRequest $request): string|ResponseInterface
     {
@@ -133,15 +130,15 @@ final class AdminOptionsController extends BaseController
                 );
 
                 $command = new UpdateSiteCommand([
-                    'siteId' => SiteId::fromString($currentSite->id),
-                    'siteName' => new StringLiteral($request->getParsedBody()['sitename']),
-                    'siteSlug' => new StringLiteral($siteSlug),
-                    'siteDomain' => new StringLiteral($currentSite->domain),
-                    'siteMapping' => new StringLiteral($currentSite->mapping ?? ''),
-                    'sitePath' => new StringLiteral($currentSite->path),
-                    'siteOwner' => UserId::fromString($currentSite->owner),
-                    'siteStatus' => new StringLiteral($currentSite->status),
-                    'siteModified' => QubusDateTimeImmutable::now(get_user_timezone()),
+                    'id' => SiteId::fromString($currentSite->id),
+                    'name' => new StringLiteral($request->getParsedBody()['sitename']),
+                    'slug' => new StringLiteral($siteSlug),
+                    'domain' => new StringLiteral($currentSite->domain),
+                    'mapping' => new StringLiteral($currentSite->mapping ?? ''),
+                    'path' => new StringLiteral($currentSite->path),
+                    'owner' => UserId::fromString($currentSite->owner),
+                    'status' => new StringLiteral($currentSite->status),
+                    'modified' => QubusDateTimeImmutable::now(get_user_timezone()),
                     ]);
 
                 command($command);
@@ -151,12 +148,10 @@ final class AdminOptionsController extends BaseController
                 Devflow::$PHP->flash->notice(200),
             );
         } catch (
-            CommandCouldNotBeHandledException |
             CommandPropertyNotFoundException |
             ContainerExceptionInterface |
             InvalidArgumentException |
             UnresolvableCommandHandlerException |
-            UnresolvableQueryHandlerException |
             ReflectionException |
             TypeException $e
         ) {
@@ -184,7 +179,6 @@ final class AdminOptionsController extends BaseController
 
     /**
      * @return ResponseInterface
-     * @throws CommandPropertyNotFoundException
      * @throws ContainerExceptionInterface
      * @throws Exception
      * @throws InvalidArgumentException
@@ -192,7 +186,6 @@ final class AdminOptionsController extends BaseController
      * @throws ReflectionException
      * @throws SessionException
      * @throws TypeException
-     * @throws UnresolvableQueryHandlerException
      * @throws \Exception
      */
     public function generalView(): ResponseInterface
@@ -281,7 +274,6 @@ final class AdminOptionsController extends BaseController
 
     /**
      * @return ResponseInterface
-     * @throws CommandPropertyNotFoundException
      * @throws ContainerExceptionInterface
      * @throws Exception
      * @throws InvalidArgumentException
@@ -289,7 +281,6 @@ final class AdminOptionsController extends BaseController
      * @throws ReflectionException
      * @throws SessionException
      * @throws TypeException
-     * @throws UnresolvableQueryHandlerException
      * @throws \Exception
      */
     public function readingView(): ResponseInterface
