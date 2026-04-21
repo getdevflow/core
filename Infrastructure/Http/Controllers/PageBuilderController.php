@@ -16,7 +16,6 @@ use Qubus\Exception\Exception;
 use Qubus\Http\Factories\EmptyResponseFactory;
 use Qubus\Http\Factories\HtmlResponseFactory;
 use Qubus\Http\ServerRequest;
-
 use ReflectionException;
 
 use function App\Shared\Helpers\admin_url;
@@ -94,7 +93,7 @@ final class PageBuilderController extends BaseController
     /**
      * @throws TypeException
      */
-    protected function builder(): DevflowPageBuilder
+    private function builder(): DevflowPageBuilder
     {
         return new DevflowPageBuilder(config()->array('vihzhuo'));
     }
