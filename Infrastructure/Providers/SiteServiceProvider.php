@@ -12,6 +12,8 @@ use Qubus\Exception\Exception;
 use ReflectionException;
 
 use function Codefy\Framework\Helpers\logger;
+use function date_default_timezone_set;
+use function file_exists;
 use function Qubus\Security\Helpers\esc_html;
 use function sprintf;
 
@@ -23,6 +25,11 @@ final class SiteServiceProvider extends CodefyServiceProvider
      */
     public function register(): void
     {
+        /**
+         * Set the timezone for the application.
+         */
+        date_default_timezone_set($this->codefy->configContainer->string(key: 'app.timezone', default: 'UTC'));
+
         $this->registerSiteKey();
     }
 
@@ -32,6 +39,10 @@ final class SiteServiceProvider extends CodefyServiceProvider
      */
     private function registerSiteKey(): void
     {
+        if(!file_exists($this->codefy->storagePath() . '/install.lock')) {
+            return;
+        }
+
         /** @var RequestInterface $request */
         $request = $this->codefy->make(name: RequestInterface::class);
 

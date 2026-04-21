@@ -52,7 +52,7 @@ final class CmsHelperServiceProvider extends CodefyServiceProvider
      */
     private function registerHooksFiltersAndHelpers(): void
     {
-        //if (!$this->codefy->isRunningInConsole()) {
+        if (!$this->codefy->isRunningInConsole()) {
             /**
              * Fires before the site's theme is loaded.
              */
@@ -60,11 +60,7 @@ final class CmsHelperServiceProvider extends CodefyServiceProvider
 
             load_active_plugins();
             load_active_theme();
-            /**
-             * Set the timezone for the application.
-             */
-            date_default_timezone_set(get_user_timezone());
-        //}
+        }
         /**
          * An action called to add the plugin's link
          * to the menu structure.
