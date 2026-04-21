@@ -4,16 +4,26 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Http\Controllers;
 
+use App\Application\Devflow;
 use App\Infrastructure\Services\Vihzhuo\DevflowPageBuilder;
 use Codefy\Framework\Http\BaseController;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
 use Psr\Http\Message\ResponseInterface;
+use Psr\SimpleCache\InvalidArgumentException;
 use Qubus\Exception\Data\TypeException;
+use Qubus\Exception\Exception;
 use Qubus\Http\Factories\EmptyResponseFactory;
 use Qubus\Http\Factories\HtmlResponseFactory;
 use Qubus\Http\ServerRequest;
 
+use ReflectionException;
+
+use function App\Shared\Helpers\admin_url;
+use function App\Shared\Helpers\current_user_can;
 use function Codefy\Framework\Helpers\config;
 use function Codefy\Framework\Helpers\view;
+use function Qubus\Security\Helpers\t__;
 use function Qubus\Support\Helpers\is_null__;
 
 final class PageBuilderController extends BaseController
@@ -37,10 +47,24 @@ final class PageBuilderController extends BaseController
     }
 
     /**
+     * @return ResponseInterface
      * @throws TypeException
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
+     * @throws InvalidArgumentException
+     * @throws Exception
+     * @throws ReflectionException
      */
     public function websiteManager(): ResponseInterface
     {
+        if (false === current_user_can(perm: 'vihzhuo:manage')) {
+            Devflow::$PHP->flash->error(
+                message: t__(msgid: 'Access denied.', domain: 'devflow')
+            );
+
+            return $this->redirect(admin_url());
+        }
+
         $builder = $this->builder();
         $builder->handleRequest();
 
