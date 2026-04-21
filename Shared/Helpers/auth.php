@@ -8,11 +8,9 @@ use App\Application\Devflow;
 use App\Domain\User\Model\User;
 use Qubus\Expressive\Database;
 use App\Infrastructure\Services\NativePhpCookies;
-use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
 use Codefy\Framework\Auth\Rbac\Rbac;
 use Codefy\Framework\Factory\FileLoggerFactory;
 use Codefy\Framework\Support\Password;
-use Codefy\QueryBus\UnresolvableQueryHandlerException as UnresolvableQueryHandlerExceptionAlias;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -26,6 +24,7 @@ use ReflectionException;
 
 use function Codefy\Framework\Helpers\app;
 use function Codefy\Framework\Helpers\config;
+use function Codefy\Framework\Helpers\gate;
 use function Codefy\Framework\Helpers\storage_path;
 use function file_exists;
 use function filter_var;
@@ -73,24 +72,21 @@ function get_roles(): array
  * @param array $ruleParams (Optional) Other parameters to use for checking
  *                          based on a rule.
  * @return bool Return true if permission matches or false otherwise.
- * @throws CommandPropertyNotFoundException
  * @throws ContainerExceptionInterface
  * @throws Exception
  * @throws InvalidArgumentException
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  * @throws TypeException
- * @throws UnresolvableQueryHandlerExceptionAlias
  */
 function current_user_can(string $perm, array $ruleParams = []): bool
 {
     $currentUser = cms_get_current_user();
-    if (empty($currentUser)) {
+    if (empty($currentUser) || is_false__($currentUser)) {
         return false;
     }
 
-    $roles = get_roles();
-    return array_any($roles, fn($role) => $role->checkAccess($perm, $ruleParams));
+    return gate(permission: $perm, ruleParams: $ruleParams);
 }
 
 /**
@@ -112,8 +108,12 @@ function is_user_logged_in(): bool
 
     $cookies = NativePhpCookies::factory();
 
-    $user = get_user_by(field: 'token', value: cms_get_current_user()->token);
-    return false !== $user && $cookies->verifySecureCookie(key: 'USERCOOKIEID');
+    if(false === $currentUser = cms_get_current_user()) {
+        return false;
+    }
+
+    $user = get_user_by(field: 'token', value: $currentUser->token);
+    return false !== $user && $cookies->verifySecureCookie(key: 'USERCOOKIEID') && gate()->isLoggedIn();
 }
 
 /**
@@ -122,14 +122,12 @@ function is_user_logged_in(): bool
  * @file core/Shared/Helpers/auth.php
  * @param string $perm Permission to check for.
  * @return string HTML style.
- * @throws CommandPropertyNotFoundException
  * @throws ContainerExceptionInterface
  * @throws Exception
  * @throws InvalidArgumentException
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  * @throws TypeException
- * @throws UnresolvableQueryHandlerExceptionAlias
  */
 function ae(string $perm): string
 {

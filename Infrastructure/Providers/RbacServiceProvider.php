@@ -7,7 +7,9 @@ namespace App\Infrastructure\Providers;
 use App\Infrastructure\Persistence\FileResource;
 use App\Infrastructure\Persistence\Repository\AuthenticationRepository;
 use App\Infrastructure\Services\RbacLoader;
+use App\Infrastructure\Services\UserAuth;
 use Codefy\Framework\Auth\Auth;
+use Codefy\Framework\Auth\Gate;
 use Codefy\Framework\Auth\Rbac\Rbac;
 use Codefy\Framework\Auth\Rbac\Resource\StorageResource;
 use Codefy\Framework\Auth\Repository\AuthUserRepository;
@@ -39,5 +41,7 @@ final class RbacServiceProvider extends CodefyServiceProvider
         $this->codefy->share(nameOrInstance: Sentinel::class);
         $this->codefy->alias(original: AuthUserRepository::class, alias: AuthenticationRepository::class);
         $this->codefy->share(nameOrInstance: AuthUserRepository::class);
+        $this->codefy->alias(original: Gate::class, alias: UserAuth::class);
+        $this->codefy->share(nameOrInstance: Gate::class);
     }
 }

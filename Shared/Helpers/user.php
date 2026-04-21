@@ -138,6 +138,7 @@ function user_lookup(?string $active = null): void
  *
  * @file core/Shared/Helpers/user.php
  * @return string The current user's ID, or '' if no user is logged in.
+ * @throws ReflectionException
  */
 function get_current_user_id(): string
 {
@@ -145,8 +146,17 @@ function get_current_user_id(): string
     if (is_false__($verify)) {
         return '';
     }
+
     $cookie = get_secure_cookie_data(key: 'USERCOOKIEID');
     if (is_false__($cookie)) {
+        return '';
+    }
+
+    if(null === $user = \Codefy\Framework\Helpers\user()) {
+        return '';
+    }
+
+    if($cookie->id !== $user->id) {
         return '';
     }
 
@@ -166,6 +176,9 @@ function get_current_user_id(): string
  */
 function cms_get_current_user(): false|User
 {
+    if(empty(get_current_user_id())) {
+        return false;
+    }
     return get_userdata(get_current_user_id());
 }
 

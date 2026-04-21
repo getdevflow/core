@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Infrastructure\Services;
 
 use App\Domain\User\Model\User;
+use Codefy\Framework\Auth\Gate;
 use Codefy\Framework\Auth\Rbac\Entity\Role;
 use Codefy\Framework\Auth\Rbac\Rbac;
 use Codefy\Framework\Auth\Repository\AuthUserRepository;
@@ -13,25 +14,18 @@ use Codefy\Framework\Http\Middleware\Auth\UserAuthorizationMiddleware;
 use Codefy\Framework\Http\Middleware\Auth\UserCookieDecryptMiddleware;
 use Codefy\Framework\Http\RequestContext;
 use Psr\Http\Message\ServerRequestInterface;
-use Qubus\Exception\Data\TypeException;
 
 use function App\Shared\Helpers\get_user_by;
 use function Qubus\Support\Helpers\is_false__;
 
-final class UserAuth
+final class UserAuth implements Gate
 {
     public function __construct(protected Rbac $rbac, protected AuthUserRepository $user)
     {
     }
 
     /**
-     * Authorization check.
-     *
-     * @param string $permissionName
-     * @param array<array-key, mixed> $ruleParams
-     * @return bool
-     * @throws \ReflectionException
-     * @throws TypeException
+     * @inheritDoc
      */
     public function can(string $permissionName, array $ruleParams = []): bool
     {
@@ -53,12 +47,9 @@ final class UserAuth
     }
 
     /**
-     * Get the current authenticated user model.
-     *
-     * @return User|null
-     * @throws \ReflectionException
+     * @inheritDoc
      */
-    public function current(): ?User
+    public function current(): bool|null|object
     {
         $token = $this->getToken();
 
@@ -82,7 +73,7 @@ final class UserAuth
     /**
      * @throws \ReflectionException
      */
-    private function resolveUserByToken(string $token): ?User
+    private function resolveUserByToken(string $token): object|bool|null
     {
         try {
             /** @var User $user */
@@ -122,7 +113,7 @@ final class UserAuth
     }
 
     /**
-     * A guest is any user without an authenticated token.
+     * @inheritDoc
      */
     public function guest(): bool
     {
@@ -130,9 +121,7 @@ final class UserAuth
     }
 
     /**
-     * Whether user is logged in.
-     *
-     * @return bool
+     * @inheritDoc
      */
     public function isLoggedIn(): bool
     {
