@@ -7,34 +7,38 @@ namespace App\Application\Console\Commands;
 use App\Domain\Site\Command\CreateSiteCommand;
 use App\Domain\Site\Model\Site;
 use App\Domain\Site\ValueObject\SiteId;
+use App\Domain\User\Command\CreateUserCommand;
 use App\Domain\User\Model\User;
+use App\Domain\User\UserError;
 use App\Domain\User\ValueObject\UserId;
+use App\Domain\User\ValueObject\Username;
 use App\Domain\User\ValueObject\UserToken;
+use App\Infrastructure\Services\AttributesFactory;
+use Codefy\Framework\Support\Password;
+use Psr\SimpleCache\InvalidArgumentException;
 use Qubus\Expressive\Database;
-use Codefy\CommandBus\Exceptions\CommandCouldNotBeHandledException;
 use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
 use Codefy\CommandBus\Exceptions\UnresolvableCommandHandlerException;
 use Codefy\Framework\Application;
 use Codefy\Framework\Console\ConsoleCommand;
-use Codefy\Framework\Factory\FileLoggerFactory;
-use Codefy\QueryBus\UnresolvableQueryHandlerException;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Qubus\Error\Error;
-use Qubus\EventDispatcher\ActionFilter\Action;
 use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
 use Qubus\Support\DateTime\QubusDateTimeImmutable;
 use Qubus\Support\Inflector;
 use Qubus\ValueObjects\Identity\Ulid;
 use Qubus\ValueObjects\StringLiteral\StringLiteral;
+use Qubus\ValueObjects\Web\EmailAddress;
 use ReflectionException;
 
-use function App\Shared\Helpers\cms_insert_user;
+use function App\Shared\Helpers\add_user_to_site;
 use function App\Shared\Helpers\generate_random_password;
 use function App\Shared\Helpers\generate_random_username;
 use function App\Shared\Helpers\generate_unique_key;
 use function Codefy\Framework\Helpers\command;
+use function Codefy\Framework\Helpers\logger;
 use function Codefy\Framework\Helpers\storage_path;
 use function file_put_contents;
 use function Qubus\Error\Helpers\is_error;
@@ -55,8 +59,12 @@ class InstallCmsCommand extends ConsoleCommand
 
     /**
      * @return int
-     * @throws ReflectionException
+     * @throws ContainerExceptionInterface
      * @throws Exception
+     * @throws InvalidArgumentException
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
+     * @throws TypeException
      */
     public function handle(): int
     {
@@ -115,17 +123,16 @@ class InstallCmsCommand extends ConsoleCommand
         $password = generate_random_password(26);
 
         $user = new User($this->dfdb);
+        $user->id = UserId::generateAsString();
         $user->fname = 'Super';
         $user->mname = '';
         $user->lname = 'Admin';
         $user->email = 'admin@devflow.com';
         $user->login = $login;
         $user->token = UserToken::generateAsString();
-        $user->role = 'super';
         $user->pass = $password;
         $user->url = '';
         $user->bio = '';
-        $user->status = 'A';
         $user->timezone = $this->codefy->configContainer->string(key: 'app.timezone');
         $user->dateFormat = 'd F Y';
         $user->timeFormat = 'h:i A';
@@ -135,26 +142,42 @@ class InstallCmsCommand extends ConsoleCommand
         )->format('Y-m-d H:i:s');
 
         try {
-            $userId = cms_insert_user($user);
+            $command = new CreateUserCommand([
+                'id' => UserId::fromString($user->id),
+                'login'   => new Username($user->login),
+                'fname' => new StringLiteral($user->fname),
+                'mname' => new StringLiteral(''),
+                'lname'  => new StringLiteral($user->lname),
+                'email'  => new EmailAddress($user->email),
+                'pass'   => new StringLiteral(Password::hash(password: $user->pass)),
+                'token' => UserToken::fromString($user->token),
+                'url' => new StringLiteral($user->url),
+                'bio' => new StringLiteral($user->bio),
+                'timezone' => new StringLiteral($user->timezone),
+                'dateFormat' => new StringLiteral($user->dateFormat),
+                'timeFormat' => new StringLiteral($user->timeFormat),
+                'locale' => new StringLiteral($user->locale),
+                'activationKey' => new StringLiteral(''),
+                'registered' => $user->registered
+            ]);
+            command($command);
 
             return [
-                'id' => $userId,
-                'login' => $login,
-                'pass' => $password,
+                'id' => $user->id,
+                'login' => $user->login,
+                'pass' => $user->pass,
             ];
         } catch (
+            UnresolvableCommandHandlerException |
             CommandPropertyNotFoundException |
             ReflectionException |
-            UnresolvableQueryHandlerException |
-            NotFoundExceptionInterface |
-            ContainerExceptionInterface |
             TypeException |
             Exception $e
         ) {
-            FileLoggerFactory::getLogger()->error($e->getMessage());
-        }
+            logger(level: 'error', message: $e->getMessage());
 
-        return [];
+            return new UserError(message: 'Super admin user could not be created.');
+        }
     }
 
     /**
@@ -181,7 +204,7 @@ class InstallCmsCommand extends ConsoleCommand
 
         $this->dfdb->transactional(function () use ($options) {
             foreach ($options as $optionName => $optionValue) {
-                $this->dfdb->table($this->dfdb->basePrefix . 'option')
+                $this->dfdb->table(tableName: $this->dfdb->basePrefix . 'option')
                     ->set([
                         'option_id' => Ulid::generateAsString(),
                         'option_key' => $optionName,
@@ -193,12 +216,19 @@ class InstallCmsCommand extends ConsoleCommand
     }
 
     /**
-     * @throws ReflectionException
+     * @param string $ownerId
+     * @throws ContainerExceptionInterface
      * @throws Exception
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
+     * @throws TypeException
+     * @throws InvalidArgumentException
      */
     protected function createMainSite(string $ownerId): void
     {
         $dbConnection = $this->codefy->configContainer->string(key: 'database.default');
+
+        $siteId = new SiteId();
 
         try {
             $site = new Site($this->dfdb);
@@ -213,43 +243,33 @@ class InstallCmsCommand extends ConsoleCommand
             $site->owner = $ownerId;
             $site->status = 'public';
 
-            $siteId = new SiteId();
-
             $command = new CreateSiteCommand([
-                'siteId' => $siteId,
-                'siteKey' => new StringLiteral($site->key),
-                'siteName' => new StringLiteral($site->name),
-                'siteSlug' => new StringLiteral($site->slug),
-                'siteDomain' => new StringLiteral($site->domain),
-                'siteMapping' => new StringLiteral($site->mapping),
-                'sitePath' => new StringLiteral($site->path),
-                'siteOwner' => UserId::fromString($site->owner),
-                'siteStatus' => new StringLiteral($site->status),
-                'siteRegistered' => QubusDateTimeImmutable::now(
+                'id' => $siteId,
+                'key' => new StringLiteral($site->key),
+                'name' => new StringLiteral($site->name),
+                'slug' => new StringLiteral($site->slug),
+                'domain' => new StringLiteral($site->domain),
+                'mapping' => new StringLiteral($site->mapping),
+                'path' => new StringLiteral($site->path),
+                'owner' => UserId::fromString($site->owner),
+                'status' => new StringLiteral($site->status),
+                'registered' => QubusDateTimeImmutable::now(
                     $this->codefy->configContainer->string(key: 'app.timezone')
                 ),
             ]);
 
             command($command);
-
-            /**
-             * Fires immediately after a new site is saved.
-             *
-             * @file App/Shared/Helpers/site.php
-             * @param string $siteId Site ID.
-             * @param Site $site     Site object.
-             * @param bool $update   Whether this is an existing site or a new site.
-             */
-            Action::getInstance()->doAction('save_new_site', $siteId->toNative(), $site, false);
         } catch (
-            CommandCouldNotBeHandledException |
             UnresolvableCommandHandlerException |
             ReflectionException |
             CommandPropertyNotFoundException |
             TypeException $e
         ) {
-            FileLoggerFactory::getLogger()->error(message: $e->getMessage());
+            logger(level: 'error', message: $e->getMessage());
         }
+
+        AttributesFactory::user()->createIfMissing($siteId->toNative(), $ownerId);
+        add_user_to_site(user: $ownerId, site: $siteId->toNative(), role: 'super');
     }
 
     protected function usersExist(): bool

@@ -61,8 +61,6 @@ class QueryBuilderUserRepository implements UserCommandRepository
                     ])
                     ->save();
             });
-
-            AttributesFactory::user()->createIfMissing(get_current_site_id(), $user->id);
         } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());
         }

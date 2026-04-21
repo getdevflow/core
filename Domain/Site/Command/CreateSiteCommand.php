@@ -31,6 +31,4 @@ final class CreateSiteCommand extends PropertyCommand
     public StringLiteral $status;
 
     public DateTimeInterface $registered;
-
-    public DateTimeInterface $modified;
 }

@@ -1038,6 +1038,9 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
         } catch (CommandCouldNotBeHandledException | UnresolvableCommandHandlerException | ReflectionException $e) {
             logger(level: 'error', message: $e->getMessage());
         }
+
+        AttributesFactory::user()->createIfMissing(get_current_site_id(), $user->id);
+
     } else {
         /**
          * User object.
@@ -1857,9 +1860,9 @@ function get_users_by_site_key(string $siteKey = ''): array|string|bool
  */
 function get_user_timezone(): mixed
 {
-    $userTimezone = get_user_by('id', get_current_user_id());
-    if (is_user_logged_in() && $userTimezone !== false) {
-        return $userTimezone->timezone;
+    $user = get_user_by('id', get_current_user_id());
+    if (is_user_logged_in() && $user !== false) {
+        return $user->timezone;
     }
     return get_option(key: 'site_timezone') ?: config()->string(key: 'app.timezone');
 }
