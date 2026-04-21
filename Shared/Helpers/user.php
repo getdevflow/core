@@ -7,7 +7,6 @@ namespace App\Shared\Helpers;
 use App\Application\Devflow;
 use App\Domain\User\Command\UpdateUserPasswordCommand;
 use App\Domain\User\Command\CreateUserCommand;
-use App\Domain\User\Command\DeleteUserCommand;
 use App\Domain\User\Command\UpdateUserCommand;
 use App\Domain\User\Model\User;
 use App\Domain\User\Query\FindUsersQuery;
@@ -21,7 +20,6 @@ use App\Infrastructure\Services\AttributesFactory;
 use App\Infrastructure\Services\NativePhpCookies;
 use App\Infrastructure\Services\User\UserAttributeBag;
 use App\Shared\Services\DateTime;
-use App\Shared\Services\MetaData;
 use App\Shared\Services\Sanitizer;
 use App\Shared\Services\Utils;
 use Codefy\CommandBus\Exceptions\CommandCouldNotBeHandledException;
@@ -494,23 +492,6 @@ function update_user_attribute(string $userId, string $key, mixed $value, ?strin
 function delete_user_attribute(string $siteId, string $userId, string $key): UserAttributeBag
 {
     return AttributesFactory::user()->remove($siteId, $userId, $key);
-}
-
-/**
- * Delete user meta data by entity ID.
- *
- * @file core/Shared/Helpers/user.php
- * @param string $mid
- * @return bool
- * @throws ContainerExceptionInterface
- * @throws Exception
- * @throws NotFoundExceptionInterface
- * @throws ReflectionException
- */
-function delete_usermeta_by_mid(string $mid): bool
-{
-    return MetaData::factory(dfdb()->prefix . 'usermeta')
-        ->deleteByMid('user', $mid);
 }
 
 /**
@@ -1258,100 +1239,6 @@ function cms_update_user(array|ServerRequestInterface|User $userdata): string|Us
     }
 
     return $userId;
-}
-
-/**
- * Deletes a user from the user meta table. To delete user entirely from the system,
- * see `cms_delete_site_user`.
- *
- * @file core/Shared/Helpers/user.php
- * @param string $userId ID of user being deleted.
- * @param string|null $assignId ID of user to whom posts will be assigned.
- *                              Default: NULL.
- * @return bool True on success or false on failure.
- * @throws CommandPropertyNotFoundException
- * @throws ContainerExceptionInterface
- * @throws Exception
- * @throws InvalidArgumentException
- * @throws NotFoundExceptionInterface
- * @throws ReflectionException
- * @throws TypeException
- */
-function cms_delete_user(string $userId, ?string $assignId = null): bool
-{
-    /** @var User $user */
-    $user = get_userdata($userId);
-
-    if (!$user) {
-        return false;
-    }
-
-    $cleanAssignId = trim__($assignId);
-
-    if (!is_null__($cleanAssignId) && 'null' !== $cleanAssignId) {
-        /**
-         * Action hook is triggered when assign_id is present and not null.
-         *
-         * Content will be reassigned before the user is deleted.
-         *
-         * @file core/Shared/Helpers/user.php
-         * @param string $userId   ID of user to be deleted.
-         * @param string $assignId ID of user to reassign content to.
-         *                         Default: NULL.
-         */
-        __observer()->action->doAction('reassign_content', $userId, $assignId);
-    }
-
-    /**
-     * Action hook fires immediately before a user is deleted from the user meta table.
-     *
-     * @file core/Shared/Helpers/user.php
-     * @param string      $userId   ID of the user to delete.
-     * @param string|null $reassign ID of the user to reassign posts to.
-     *                              Default: NULL.
-     */
-    __observer()->action->doAction('cms_delete_user', $userId, $assignId);
-
-    try {
-        $command = new DeleteUserCommand([
-            'id' => UserId::fromString($userId),
-        ]);
-
-        command($command);
-    } catch (CommandCouldNotBeHandledException | UnresolvableCommandHandlerException | ReflectionException $e) {
-        logger(level: 'error', message: $e->getMessage());
-        return false;
-    }
-
-    $dfdb = dfdb();
-    $meta = $dfdb->getResults(
-        $dfdb->prepare(
-            "SELECT meta_id FROM {$dfdb->basePrefix}usermeta WHERE user_id = ?",
-            [
-                $userId
-            ]
-        ),
-        Database::ARRAY_A
-    );
-
-    if ($meta) {
-        foreach ($meta as $mid) {
-            delete_usermeta_by_mid($mid['meta_id']);
-        }
-    }
-
-    UserCachePsr16::clean($user);
-
-    /**
-     * Action hook fires immediately after a user has been deleted from the user meta table.
-     *
-     * @file core/Shared/Helpers/user.php
-     * @param string $userId   ID of the user who was deleted.
-     * @param string $assignId ID of the user to whom posts were assigned. Default: null.
-     */
-    __observer()->action->doAction('deleted_user', $userId, $assignId);
-
-    return true;
 }
 
 /**

@@ -14,17 +14,17 @@ use Qubus\Http\Factories\JsonResponseFactory;
 use Qubus\Http\Request;
 use ReflectionException;
 
-use function App\Shared\Helpers\cms_delete_user;
 use function App\Shared\Helpers\cms_insert_user;
 use function App\Shared\Helpers\cms_update_user;
 use function App\Shared\Helpers\get_all_users;
+use function App\Shared\Helpers\get_current_site_id;
 use function App\Shared\Helpers\get_user_by;
+use function App\Shared\Helpers\remove_user_from_site;
 use function array_merge;
 use function Qubus\Error\Helpers\is_error;
 use function Qubus\Security\Helpers\t__;
 use function Qubus\Support\Helpers\is_false__;
 use function Qubus\Support\Helpers\is_null__;
-use function Qubus\Support\Helpers\is_true__;
 
 final class UserRestController extends BaseController
 {
@@ -120,28 +120,28 @@ final class UserRestController extends BaseController
     }
 
     /**
-     * @uses \App\Shared\Helpers\cms_delete_user()
+     * @uses \App\Shared\Helpers\remove_user_from_site()
      * @throws NotFoundExceptionInterface
      * @throws ContainerExceptionInterface
      * @throws InvalidArgumentException
      * @throws \Qubus\Exception\Exception
      * @throws Exception
      */
-    public function destroy(string $id): ResponseInterface
+    public function remove(string $id): ResponseInterface
     {
         try {
-            $delete = cms_delete_user($id);
-            if (is_false__($delete)) {
-                return JsonResponseFactory::create(t__(msgid: 'No data.', domain: 'devflow'));
-            }
-
-            if (is_true__($delete)) {
-                return JsonResponseFactory::create(t__(msgid: 'Resource deleted.', domain: 'devflow'));
-            }
+            remove_user_from_site(
+                userId: $id,
+                params: [
+                    'site_id' => get_current_site_id(),
+                    'assign_id' => null,
+                    'role' => null,
+                ]
+            );
         } catch (Exception $e) {
-            return JsonResponseFactory::create($e->getMessage(), 400);
+            return JsonResponseFactory::create(t__(msgid: 'Bad request.', domain: 'devflow'));
         }
 
-        return JsonResponseFactory::create(t__(msgid: 'Bad request.', domain: 'devflow'));
+        return JsonResponseFactory::create(t__(msgid: 'User removed from site.', domain: 'devflow'));
     }
 }

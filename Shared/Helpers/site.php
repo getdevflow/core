@@ -1271,7 +1271,7 @@ function cms_delete_site_user(string $userId, array $params = []): Error|bool
 
 /**
  * @param string $userId
- * @param array{site_id:string,assign_id:string,role:string} $params
+ * @param array{site_id:string, assign_id:string|null, role:string|null} $params
  * @return void
  * @throws ContainerExceptionInterface
  * @throws EntityNotFoundException
