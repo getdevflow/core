@@ -973,7 +973,7 @@ function cms_enqueue_css(
     } elseif ($config === 'plugin') {
         $options = [
             'public_dir' => remove_trailing_slash(public_path()),
-            'css_dir' => 'plugins' . Devflow::$PHP::DS  . $slug . Devflow::$PHP::DS  . 'assets' . Devflow::$PHP::DS  . 'css',
+            'css_dir' => 'plugins' . Devflow::$PHP::DS  . $slug . Devflow::$PHP::DS  . 'css',
             'pipeline' => __observer()->filter->applyFilter('plugin.css.pipeline', $minify),
             'pipeline_dir' => 'minify'
         ];
@@ -1032,7 +1032,7 @@ function cms_enqueue_js(
     } elseif ($config === 'plugin') {
         $options = [
             'public_dir' => remove_trailing_slash(public_path()),
-            'js_dir' => 'plugins' . Devflow::$PHP::DS  . $slug . Devflow::$PHP::DS  . 'assets' . Devflow::$PHP::DS  . 'js',
+            'js_dir' => 'plugins' . Devflow::$PHP::DS  . $slug . Devflow::$PHP::DS  . 'js',
             'pipeline' => __observer()->filter->applyFilter('plugin.js.pipeline', $minify),
             'pipeline_dir' => 'minify'
         ];
@@ -1041,7 +1041,7 @@ function cms_enqueue_js(
     } elseif ($config === 'theme') {
         $options = [
             'public_dir' => remove_trailing_slash(public_path()),
-            'js_dir' => 'themes' . Devflow::$PHP::DS  . $slug . Devflow::$PHP::DS  . 'assets' . Devflow::$PHP::DS  . 'js',
+            'js_dir' => 'themes' . Devflow::$PHP::DS  . $slug . Devflow::$PHP::DS  . 'js',
             'pipeline' => __observer()->filter->applyFilter('theme.js.pipeline', $minify),
             'pipeline_dir' => 'minify'
         ];
