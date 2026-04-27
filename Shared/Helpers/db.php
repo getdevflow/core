@@ -21,7 +21,6 @@ use App\Shared\Services\Sanitizer;
 use App\Shared\Services\SimpleCacheObjectCacheFactory;
 use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
 use Codefy\CommandBus\Exceptions\UnresolvableCommandHandlerException;
-use Codefy\Framework\Factory\FileLoggerFactory;
 use Codefy\QueryBus\UnresolvableQueryHandlerException;
 use Defuse\Crypto\Crypto;
 use Defuse\Crypto\Exception\BadFormatException;
@@ -321,7 +320,6 @@ function tinymce_link_list(): array
  * @param string $contentTypeId Content Type id to check against.
  * @param string $slug Slug to search for.
  * @return bool Returns true if content type slug exists or false otherwise.
- * @throws ReflectionException
  */
 function if_content_type_slug_exists(string $contentTypeId, string $slug): bool
 {
@@ -340,7 +338,8 @@ function if_content_type_slug_exists(string $contentTypeId, string $slug): bool
 
         return $exist > 0;
     } catch (PDOException $e) {
-        FileLoggerFactory::getLogger()->error(
+        logger(
+            'error',
             sprintf(
                 'SQLSTATE[%s]: %s',
                 $e->getCode(),
@@ -363,7 +362,6 @@ function if_content_type_slug_exists(string $contentTypeId, string $slug): bool
  * @param string $slug Slug to search for.
  * @param string $contentType The content type to filter.
  * @return bool Returns true if content slug exists or false otherwise.
- * @throws ReflectionException
  */
 function if_content_slug_exists(string $contentId, string $slug, string $contentType): bool
 {
@@ -384,7 +382,8 @@ function if_content_slug_exists(string $contentId, string $slug, string $content
 
         return $exist > 0;
     } catch (PDOException $e) {
-        FileLoggerFactory::getLogger()->error(
+        logger(
+            'error',
             sprintf(
                 'SQLSTATE[%s]: %s',
                 $e->getCode(),
@@ -406,7 +405,6 @@ function if_content_slug_exists(string $contentId, string $slug, string $content
  * @param string $siteId Site id to check against.
  * @param string $slug Slug to search for.
  * @return bool Returns true if site slug exists or false otherwise.
- * @throws ReflectionException
  */
 function if_site_slug_exists(string $siteId, string $slug): bool
 {
@@ -425,7 +423,8 @@ function if_site_slug_exists(string $siteId, string $slug): bool
 
         return $exist > 0;
     } catch (PDOException $e) {
-        FileLoggerFactory::getLogger()->error(
+        logger(
+            'error',
             sprintf(
                 'SQLSTATE[%s]: %s',
                 $e->getCode(),
@@ -447,7 +446,6 @@ function if_site_slug_exists(string $siteId, string $slug): bool
  * @param string $productId Product id to check against.
  * @param string $slug Slug to search for.
  * @return bool Returns true if site slug exists or false otherwise.
- * @throws ReflectionException
  */
 function if_product_slug_exists(string $productId, string $slug): bool
 {
@@ -466,7 +464,8 @@ function if_product_slug_exists(string $productId, string $slug): bool
 
         return $exist > 0;
     } catch (PDOException $e) {
-        FileLoggerFactory::getLogger()->error(
+        logger(
+            'error',
             sprintf(
                 'SQLSTATE[%s]: %s',
                 $e->getCode(),
@@ -487,7 +486,6 @@ function if_product_slug_exists(string $productId, string $slug): bool
  * @file core/Shared/Helpers/db.php
  * @param string $contentId Content id to check.
  * @return bool|array| False if content has no children or array of children if true.
- * @throws ReflectionException
  */
 function is_content_parent(string $contentId): bool|array
 {
@@ -510,7 +508,8 @@ function is_content_parent(string $contentId): bool|array
 
         return $children;
     } catch (PDOException $e) {
-        FileLoggerFactory::getLogger()->error(
+        logger(
+            'error',
             sprintf(
                 'SQLSTATE[%s]: %s',
                 $e->getCode(),
@@ -531,7 +530,6 @@ function is_content_parent(string $contentId): bool|array
  * @file core/Shared/Helpers/db.php
  * @param string $contentType Content Type slug to check for.
  * @return bool Returns true if content type exists or false otherwise.
- * @throws ReflectionException
  */
 function if_content_type_exists(string $contentType): bool
 {
@@ -549,7 +547,8 @@ function if_content_type_exists(string $contentType): bool
 
         return $exist > 0;
     } catch (PDOException $e) {
-        FileLoggerFactory::getLogger()->error(
+        logger(
+            'error',
             sprintf(
                 'SQLSTATE[%s]: %s',
                 $e->getCode(),
@@ -572,7 +571,6 @@ function if_content_type_exists(string $contentType): bool
  * @param string $assignId ID of user to whom content will be assigned.
  * @return bool
  * @throws Exception
- * @throws ReflectionException
  */
 function reassign_content(string $userId, string $assignId): bool
 {
@@ -588,7 +586,8 @@ function reassign_content(string $userId, string $assignId): bool
             )
         );
     } catch (PDOException $e) {
-        FileLoggerFactory::getLogger()->error(
+        logger(
+            'error',
             sprintf(
                 'SQLSTATE[%s]: %s',
                 $e->getCode(),
@@ -670,7 +669,8 @@ function reassign_sites(string $userId, array $params = []): bool
 
         return true;
     } catch (PDOException $e) {
-        FileLoggerFactory::getLogger()->error(
+        logger(
+            'error',
             sprintf(
                 'SQLSTATE[%s]: %s',
                 $e->getCode(),
@@ -771,7 +771,8 @@ function populate_options_cache(): bool
         }
         return true;
     } catch (PDOException $e) {
-        FileLoggerFactory::getLogger()->error(
+        logger(
+            'error',
             sprintf(
                 'SQLSTATE[%s]: %s',
                 $e->getCode(),
@@ -868,7 +869,8 @@ function cms_nodeq_login_details(): void
                     'sent' => 1
                 ]);
             } catch (BadFormatException $e) {
-                FileLoggerFactory::getLogger()->error(
+                logger(
+                    'error',
                     sprintf(
                         'CRYPTOFORMAT[%s]: %s',
                         $e->getCode(),
@@ -876,7 +878,8 @@ function cms_nodeq_login_details(): void
                     )
                 );
             } catch (WrongKeyOrModifiedCiphertextException $e) {
-                FileLoggerFactory::getLogger()->error(
+                logger(
+                    'error',
                     sprintf(
                         'CRYPTOKEY[%s]: %s',
                         $e->getCode(),
@@ -972,7 +975,8 @@ function cms_nodeq_reset_password(): void
                     'sent' => 1
                 ]);
             } catch (BadFormatException $e) {
-                FileLoggerFactory::getLogger()->error(
+                logger(
+                    'error',
                     sprintf(
                         'CRYPTOFORMAT[%s]: %s',
                         $e->getCode(),
@@ -980,7 +984,8 @@ function cms_nodeq_reset_password(): void
                     )
                 );
             } catch (WrongKeyOrModifiedCiphertextException $e) {
-                FileLoggerFactory::getLogger()->error(
+                logger(
+                    'error',
                     sprintf(
                         'CRYPTOKEY[%s]: %s',
                         $e->getCode(),
@@ -988,7 +993,8 @@ function cms_nodeq_reset_password(): void
                     )
                 );
             } catch (Exception $e) {
-                FileLoggerFactory::getLogger()->error(
+                logger(
+                    'error',
                     sprintf(
                         'CRYPTO[%s]: %s',
                         $e->getCode(),

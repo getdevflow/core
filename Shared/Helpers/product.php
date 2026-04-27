@@ -24,7 +24,6 @@ use App\Shared\ValueObject\ArrayLiteral;
 use Codefy\CommandBus\Exceptions\CommandCouldNotBeHandledException;
 use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
 use Codefy\CommandBus\Exceptions\UnresolvableCommandHandlerException;
-use Codefy\Framework\Factory\FileLoggerFactory;
 use Codefy\QueryBus\UnresolvableQueryHandlerException;
 use PDOException;
 use Psr\Container\ContainerExceptionInterface;
@@ -46,6 +45,7 @@ use function array_map;
 use function Codefy\Framework\Helpers\ask;
 use function Codefy\Framework\Helpers\command;
 use function Codefy\Framework\Helpers\config;
+use function Codefy\Framework\Helpers\logger;
 use function is_array;
 use function preg_split;
 use function Qubus\Security\Helpers\__observer;
@@ -1833,7 +1833,8 @@ function cms_insert_product(array|ServerRequestInterface|Product $productdata): 
 
             command($command);
         } catch (PDOException $ex) {
-            FileLoggerFactory::getLogger()->error(
+            logger(
+                'error',
                 sprintf(
                     'SQLSTATE[%s]: %s',
                     $ex->getCode(),
@@ -1882,7 +1883,8 @@ function cms_insert_product(array|ServerRequestInterface|Product $productdata): 
 
             command($command);
         } catch (PDOException $ex) {
-            FileLoggerFactory::getLogger()->error(
+            logger(
+                'error',
                 sprintf(
                     'SQLSTATE[%s]: %s',
                     $ex->getCode(),
@@ -2060,7 +2062,8 @@ function cms_delete_product(string $productId): Product|bool
             ])
         );
     } catch (PDOException $ex) {
-        FileLoggerFactory::getLogger()->error(
+        logger(
+            'error',
             sprintf(
                 'SQLSTATE[%s]: %s',
                 $ex->getCode(),
@@ -2212,7 +2215,8 @@ function publish_scheduled_product(): void
             }
         }
     } catch (PDOException $ex) {
-        FileLoggerFactory::getLogger()->error(
+        logger(
+            'error',
             sprintf(
                 'SQLSTATE[%s]: %s',
                 $ex->getCode(),

@@ -9,7 +9,6 @@ use App\Domain\User\Model\User;
 use Qubus\Expressive\Database;
 use App\Infrastructure\Services\NativePhpCookies;
 use Codefy\Framework\Auth\Rbac\Rbac;
-use Codefy\Framework\Factory\FileLoggerFactory;
 use Codefy\Framework\Support\Password;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
@@ -25,6 +24,7 @@ use ReflectionException;
 use function Codefy\Framework\Helpers\app;
 use function Codefy\Framework\Helpers\config;
 use function Codefy\Framework\Helpers\gate;
+use function Codefy\Framework\Helpers\logger;
 use function Codefy\Framework\Helpers\storage_path;
 use function file_exists;
 use function filter_var;
@@ -381,7 +381,8 @@ function cms_clear_auth_cookie(): void
             unlink($file1);
         }
     } catch (NotFoundException $e) {
-        FileLoggerFactory::getLogger()->error(
+        logger(
+            'error',
             sprintf(
                 'FILESTATE[%s]: File not found: %s',
                 $e->getCode(),

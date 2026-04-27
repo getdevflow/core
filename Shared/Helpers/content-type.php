@@ -16,7 +16,6 @@ use App\Domain\ContentType\ValueObject\ContentTypeId;
 use App\Shared\Services\Sanitizer;
 use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
 use Codefy\CommandBus\Exceptions\UnresolvableCommandHandlerException;
-use Codefy\Framework\Factory\FileLoggerFactory;
 use Codefy\QueryBus\UnresolvableQueryHandlerException;
 use PDOException;
 use Psr\Container\ContainerExceptionInterface;
@@ -30,6 +29,7 @@ use ReflectionException;
 
 use function Codefy\Framework\Helpers\ask;
 use function Codefy\Framework\Helpers\command;
+use function Codefy\Framework\Helpers\logger;
 use function Qubus\Security\Helpers\__observer;
 use function Qubus\Security\Helpers\esc_html__;
 use function Qubus\Security\Helpers\esc_url;
@@ -497,7 +497,8 @@ function cms_delete_content_type(string $contentTypeId): false|string|Error
 
         command($command);
     } catch (PDOException $e) {
-        FileLoggerFactory::getLogger()->error(
+        logger(
+            'error',
             sprintf(
                 'SQLSTATE[%s]: %s',
                 $e->getCode(),

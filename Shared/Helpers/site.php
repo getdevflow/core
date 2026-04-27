@@ -29,7 +29,6 @@ use App\Shared\Services\SimpleCacheObjectCacheFactory;
 use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
 use Codefy\CommandBus\Exceptions\UnresolvableCommandHandlerException;
 use Codefy\Domain\Model\EntityNotFoundException;
-use Codefy\Framework\Factory\FileLoggerFactory;
 use Codefy\QueryBus\UnresolvableQueryHandlerException;
 use DateInvalidTimeZoneException;
 use PDOException;
@@ -247,7 +246,7 @@ function delete_site_usermeta(string $siteId, Site $oldSite): bool
 
         return true;
     } catch (PDOException | Exception $e) {
-        FileLoggerFactory::getLogger()->error(sprintf('ERROR[%s]: %s', $e->getCode(), $e->getMessage()));
+        logger('error', sprintf('ERROR[%s]: %s', $e->getCode(), $e->getMessage()));
     }
 
     return false;
@@ -263,7 +262,6 @@ function delete_site_usermeta(string $siteId, Site $oldSite): bool
  * @param Site $oldSite Site object.
  * @return bool True on success or false on failure.
  * @throws Exception
- * @throws ReflectionException
  */
 function delete_site_tables(string $siteId, Site $oldSite): bool
 {
@@ -308,7 +306,8 @@ function delete_site_tables(string $siteId, Site $oldSite): bool
 
         return true;
     } catch (PDOException | \Exception $e) {
-        FileLoggerFactory::getLogger()->error(
+        logger(
+            'error',
             sprintf(
                 'SQLSTATE[%s]: %s',
                 $e->getCode(),
@@ -416,13 +415,13 @@ function site_user_lookup(?string $active = null): void
     AND u.user_id <> s.site_owner";
 
     $users = $dfdb->getResults(
-            query: $dfdb->prepare(
-                    $sql,
-                    [
-                            get_current_site_id(),
-                    ]
-            ),
-            output: Database::ARRAY_A
+        query: $dfdb->prepare(
+            $sql,
+            [
+                get_current_site_id(),
+            ]
+        ),
+        output: Database::ARRAY_A
     );
 
     foreach ($users as $user) {
@@ -844,7 +843,8 @@ function cms_insert_site(array|ServerRequestInterface|Site $sitedata): Error|str
             command($command);
 
         } catch (PDOException $e) {
-            FileLoggerFactory::getLogger()->error(
+            logger(
+                'error',
                 sprintf(
                     'SQLSTATE[%s]: %s',
                     $e->getCode(),
@@ -884,7 +884,8 @@ function cms_insert_site(array|ServerRequestInterface|Site $sitedata): Error|str
             UnresolvableCommandHandlerException |
             ReflectionException $e
         ) {
-            FileLoggerFactory::getLogger()->error(
+            logger(
+                'error',
                 sprintf(
                     'SQLSTATE[%s]: %s',
                     $e->getCode(),
@@ -1078,7 +1079,8 @@ function cms_delete_site(string $siteId): Error|string
             ])
         );
     } catch (PDOException $e) {
-        FileLoggerFactory::getLogger()->error(
+        logger(
+            'error',
             sprintf(
                 'SQLSTATE[%s]: %s',
                 $e->getCode(),

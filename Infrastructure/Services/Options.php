@@ -6,7 +6,6 @@ namespace App\Infrastructure\Services;
 
 use Qubus\Expressive\Database;
 use App\Shared\Services\SimpleCacheObjectCacheFactory;
-use Codefy\Framework\Factory\FileLoggerFactory;
 use PDOException;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
@@ -22,7 +21,6 @@ use ReflectionException;
 use function App\Shared\Helpers\dfdb;
 use function App\Shared\Helpers\maybe_serialize;
 use function App\Shared\Helpers\maybe_unserialize;
-use function Codefy\Framework\Helpers\app;
 use function Codefy\Framework\Helpers\logger;
 use function md5;
 use function Qubus\Security\Helpers\purify_html;
@@ -92,7 +90,8 @@ final class Options
 
             return true;
         } catch (PDOException $ex) {
-            FileLoggerFactory::getLogger()->error(
+            logger(
+                'error',
                 sprintf(
                     'OPTIONS[%s]: Error: %s',
                     $ex->getCode(),
@@ -155,7 +154,8 @@ final class Options
                 $this->cache->set(md5($optionKey), $result);
             }
         } catch (PDOException | Exception $e) {
-            FileLoggerFactory::getLogger()->error(
+            logger(
+                'error',
                 sprintf(
                     'OPTIONS[%s]: Error: %s',
                     $e->getCode(),
@@ -236,7 +236,8 @@ final class Options
 
             return true;
         } catch (PDOException $ex) {
-            FileLoggerFactory::getLogger()->error(
+            logger(
+                'error',
                 sprintf(
                     'OPTIONS[%s]: Error: %s',
                     $ex->getCode(),
@@ -288,7 +289,8 @@ final class Options
 
             return true;
         } catch (PDOException $ex) {
-            FileLoggerFactory::getLogger()->error(
+            logger(
+                'error',
                 sprintf(
                     'OPTIONS[%s]: Error: %s',
                     $ex->getCode(),
@@ -323,7 +325,7 @@ final class Options
 
             return true;
         } catch (PDOException | ReflectionException $e) {
-            FileLoggerFactory::getLogger()->error($e->getMessage());
+            logger('error', $e->getMessage());
             return false;
         }
     }

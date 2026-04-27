@@ -16,6 +16,7 @@ use Codefy\Framework\Http\RequestContext;
 use Psr\Http\Message\ServerRequestInterface;
 
 use function App\Shared\Helpers\get_user_by;
+use function Codefy\Framework\Helpers\logger;
 use function Qubus\Support\Helpers\is_false__;
 
 final class UserAuth implements Gate
@@ -84,7 +85,7 @@ final class UserAuth implements Gate
 
             return $user;
         } catch (\Throwable $e) {
-            FileLoggerFactory::getLogger()->error($e->getMessage());
+            logger('error', $e->getMessage());
             return null;
         }
     }

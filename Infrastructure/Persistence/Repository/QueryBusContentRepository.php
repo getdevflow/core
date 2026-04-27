@@ -8,11 +8,11 @@ use App\Domain\Content\Query\Trait\PopulateContentQueryAware;
 use App\Domain\Content\Repository\ContentQueryRepository;
 use Qubus\Expressive\Database;
 use App\Shared\Services\Sanitizer;
-use Codefy\Framework\Factory\FileLoggerFactory;
 use PDOException;
 use Qubus\Exception\Exception;
 use ReflectionException;
 
+use function Codefy\Framework\Helpers\logger;
 use function is_array;
 use function Qubus\Support\Helpers\convert_array_to_object;
 use function Qubus\Support\Helpers\is_false__;
@@ -203,7 +203,8 @@ class QueryBusContentRepository implements ContentQueryRepository
 
                 return $contents;
             } catch (PDOException $e) {
-                FileLoggerFactory::getLogger()->error(
+                logger(
+                    'error',
                     sprintf(
                         'SQLSTATE[%s]: %s',
                         $e->getCode(),
@@ -248,7 +249,8 @@ class QueryBusContentRepository implements ContentQueryRepository
 
                 return $contents;
             } catch (PDOException $e) {
-                FileLoggerFactory::getLogger()->error(
+                logger(
+                    'error',
                     sprintf(
                         'SQLSTATE[%s]: %s',
                         $e->getCode(),

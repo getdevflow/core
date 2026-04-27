@@ -11,7 +11,6 @@ use App\Domain\Site\ValueObject\SiteId;
 use App\Domain\User\ValueObject\UserId;
 use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
 use Codefy\CommandBus\Exceptions\UnresolvableCommandHandlerException;
-use Codefy\Framework\Factory\FileLoggerFactory;
 use Codefy\Framework\Http\BaseController;
 use Codefy\QueryBus\UnresolvableQueryHandlerException;
 use Psr\Container\ContainerExceptionInterface;
@@ -34,6 +33,7 @@ use function App\Shared\Helpers\get_site_by;
 use function App\Shared\Helpers\get_user_timezone;
 use function App\Shared\Helpers\update_option;
 use function Codefy\Framework\Helpers\command;
+use function Codefy\Framework\Helpers\logger;
 use function Codefy\Framework\Helpers\view;
 use function Qubus\Security\Helpers\esc_html__;
 use function Qubus\Security\Helpers\t__;
@@ -155,7 +155,8 @@ final class AdminOptionsController extends BaseController
             ReflectionException |
             TypeException $e
         ) {
-            FileLoggerFactory::getLogger()->error(
+            logger(
+                'error',
                 sprintf(
                     'SQLSTATE[%s]: %s',
                     $e->getCode(),
@@ -250,7 +251,8 @@ final class AdminOptionsController extends BaseController
             NotFoundExceptionInterface |
             ContainerExceptionInterface $e
         ) {
-            FileLoggerFactory::getLogger()->error(
+            logger(
+                'error',
                 sprintf(
                     'SQLSTATE[%s]: %s',
                     $e->getCode(),

@@ -26,7 +26,6 @@ use App\Shared\Services\Utils;
 use Codefy\CommandBus\Exceptions\CommandCouldNotBeHandledException;
 use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
 use Codefy\CommandBus\Exceptions\UnresolvableCommandHandlerException;
-use Codefy\Framework\Factory\FileLoggerFactory;
 use Codefy\Framework\Support\Password;
 use Codefy\QueryBus\UnresolvableQueryHandlerException;
 use Defuse\Crypto\Crypto;
@@ -1229,7 +1228,6 @@ function cms_update_user(array|ServerRequestInterface|User $userdata): string|Us
  * @return bool True on success, false on failure or Exception.
  * @throws EnvironmentIsBrokenException
  * @throws Exception
- * @throws ReflectionException
  */
 function queue_new_user_email(string $userId, string $pass): bool
 {
@@ -1252,7 +1250,8 @@ function queue_new_user_email(string $userId, string $pass): bool
         return true;
     } catch (BadFormatException $e) {
         $collection->rollback();
-        FileLoggerFactory::getLogger()->error(
+        logger(
+            'error',
             sprintf(
                 'CRYPTOFORMAT[%s]: %s',
                 $e->getCode(),
@@ -1261,7 +1260,8 @@ function queue_new_user_email(string $userId, string $pass): bool
         );
         return false;
     } catch (TypeException | InvalidJsonException $e) {
-        FileLoggerFactory::getLogger()->error(
+        logger(
+            'error',
             sprintf(
                 'NODEQSTATE[%s]: %s',
                 $e->getCode(),
@@ -1282,7 +1282,6 @@ function queue_new_user_email(string $userId, string $pass): bool
  * @param User $user User object.
  * @return string|bool User id on success, false on failure.
  * @throws EnvironmentIsBrokenException
- * @throws ReflectionException
  */
 function queue_reset_user_password(User $user): bool|string
 {
@@ -1305,7 +1304,8 @@ function queue_reset_user_password(User $user): bool|string
         return (string) $user->id;
     } catch (BadFormatException $e) {
         $collection->rollback();
-        FileLoggerFactory::getLogger()->error(
+        logger(
+            'error',
             sprintf(
                 'CRYPTOFORMAT[%s]: %s',
                 $e->getCode(),
@@ -1315,7 +1315,8 @@ function queue_reset_user_password(User $user): bool|string
         return false;
     } catch (Exception $e) {
         $collection->rollback();
-        FileLoggerFactory::getLogger()->error(
+        logger(
+            'error',
             sprintf(
                 'NODEQSTATE[%s]: %s',
                 $e->getCode(),
