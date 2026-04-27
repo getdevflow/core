@@ -5,12 +5,10 @@ declare(strict_types=1);
 namespace App\Domain\ContentType\Validator;
 
 use App\Domain\ContentType\Dto\UpdateContentTypeData;
-use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
 use Codefy\Framework\Dto\Attribute\UseDto;
 use Codefy\Framework\Dto\HasDto;
 use Codefy\Framework\Dto\Trait\DtoAware;
 use Codefy\Framework\Validation\HttpInputValidator;
-use Codefy\QueryBus\UnresolvableQueryHandlerException;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Psr\SimpleCache\InvalidArgumentException;

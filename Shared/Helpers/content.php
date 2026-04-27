@@ -536,6 +536,7 @@ function content_status_label(string $status): string
  * @throws ContainerExceptionInterface
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
+ * @throws TypeException
  */
 function get_content_attribute(string $contentId, string $key, mixed $default = null): mixed
 {
@@ -555,6 +556,7 @@ function get_content_attribute(string $contentId, string $key, mixed $default = 
  * @throws ContainerExceptionInterface
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
+ * @throws TypeException
  */
 function update_content_attribute(
     string $contentId,
@@ -575,6 +577,7 @@ function update_content_attribute(
  * @throws ContainerExceptionInterface
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
+ * @throws TypeException
  */
 function add_content_attribute(string $contentId, string $key, mixed $value): AttributeBag
 {
@@ -591,6 +594,7 @@ function add_content_attribute(string $contentId, string $key, mixed $value): At
  * @throws ContainerExceptionInterface
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
+ * @throws TypeException
  */
 function delete_content_attribute(string $contentId, string $key): AttributeBag
 {
@@ -1655,9 +1659,7 @@ function get_content_show_in_search(string $contentId): int
  * @param string|null $contentId Unique content id or null.
  * @param string|null $contentType Content type of content.
  * @return string Unique content slug.
- * @throws ContainerExceptionInterface
  * @throws Exception
- * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  * @throws TypeException
  */
@@ -2443,7 +2445,6 @@ function cms_delete_content(string $contentId): Content|bool
  * @file core/Shared/Helpers/content.php
  * @param string $slug Content type slug.
  * @return int Number of content rows based on content type.
- * @throws ReflectionException
  */
 function number_content_by_type(string $slug): int
 {

@@ -380,6 +380,7 @@ function product_status_label(string $status): string
  * @throws ContainerExceptionInterface
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
+ * @throws TypeException
  */
 function get_product_attribute(string $productId, string $key, mixed $default = null): mixed
 {
@@ -399,6 +400,7 @@ function get_product_attribute(string $productId, string $key, mixed $default = 
  * @throws ContainerExceptionInterface
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
+ * @throws TypeException
  */
 function update_product_attribute(
     string $productId,
@@ -419,6 +421,7 @@ function update_product_attribute(
  * @throws ContainerExceptionInterface
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
+ * @throws TypeException
  */
 function add_product_attribute(string $productId, string $key, mixed $value): AttributeBag
 {
@@ -435,6 +438,7 @@ function add_product_attribute(string $productId, string $key, mixed $value): At
  * @throws ContainerExceptionInterface
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
+ * @throws TypeException
  */
 function delete_product_attribute(string $productId, string $key): AttributeBag
 {

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\Console\Commands;
 
+use Qubus\Exception\Data\TypeException;
 use Qubus\Expressive\Database;
 use App\Shared\Services\ItemPoolObjectCacheFactory;
 use App\Shared\Services\SimpleCacheObjectCacheFactory;
@@ -25,9 +26,11 @@ class ClearCacheCommand extends ConsoleCommand
     }
 
     /**
-     * @throws NotFoundExceptionInterface
+     * @return int
      * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
      * @throws ReflectionException
+     * @throws TypeException
      */
     public function handle(): int
     {

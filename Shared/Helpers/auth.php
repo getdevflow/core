@@ -356,7 +356,6 @@ function cms_set_auth_cookie(array $user, string $rememberme = ''): void
  * Removes all cookies associated with authentication.
  *
  * @file core/Shared/Helpers/auth.php
- * @throws ReflectionException
  * @throws Exception
  */
 function cms_clear_auth_cookie(): void
@@ -418,6 +417,7 @@ function cms_clear_auth_cookie(): void
  * Shows error messages on login form.
  *
  * @file core/Shared/Helpers/auth.php
+ * @throws Exception
  */
 function login_form_show_message(): void
 {

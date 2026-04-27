@@ -465,6 +465,7 @@ final class DatabaseContentProjection extends BaseProjection implements ContentP
      * @throws ContainerExceptionInterface
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
+     * @throws TypeException
      */
     public function projectWhenContentAttributeWasChanged(ContentAttributeWasChanged $event): void
     {

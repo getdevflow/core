@@ -352,6 +352,7 @@ class DatabaseProductProjection extends BaseProjection implements ProductProject
      * @throws ContainerExceptionInterface
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
+     * @throws TypeException
      */
     public function projectWhenProductAttributeWasChanged(ProductAttributeWasChanged $event): void
     {

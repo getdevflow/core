@@ -18,8 +18,6 @@ use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
 use Codefy\CommandBus\Exceptions\UnresolvableCommandHandlerException;
 use Codefy\QueryBus\UnresolvableQueryHandlerException;
 use PDOException;
-use Psr\Container\ContainerExceptionInterface;
-use Psr\Container\NotFoundExceptionInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Qubus\Error\Error;
 use Qubus\Exception\Data\TypeException;
@@ -421,9 +419,7 @@ function cms_insert_content_type(array|ServerRequestInterface|ContentType $conte
  * @return string|null|Error The updated content_type's id, Exception or return null if
  *                           content_type could not be updated.
  * @throws CommandPropertyNotFoundException
- * @throws ContainerExceptionInterface
  * @throws Exception
- * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  * @throws TypeException
  * @throws UnresolvableCommandHandlerException

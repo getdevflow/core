@@ -18,7 +18,6 @@ use App\Domain\User\Model\User;
 use App\Domain\User\Query\FindMultisiteUniqueUsersQuery;
 use App\Domain\User\ValueObject\UserId;
 use App\Infrastructure\Persistence\Cache\SiteCachePsr16;
-use App\Infrastructure\Persistence\Cache\UserCachePsr16;
 use App\Infrastructure\Services\Site\SiteSchema;
 use Qubus\Expressive\Database;
 use App\Infrastructure\Services\AttributesFactory;
@@ -208,48 +207,6 @@ function create_site_directories(string $siteId, Site $site, bool $update = fals
     );
 
     return true;
-}
-
-/**
- * Deletes user meta data when site/user is deleted.
- *
- * @access private
- *
- * @file core/Shared/Helpers/site.php
- * @param string $siteId Site Id.
- * @param Site $oldSite Site object.
- * @return bool True on success or false on failure.
- * @throws ContainerExceptionInterface
- * @throws NotFoundExceptionInterface
- * @throws ReflectionException
- * @throws \Exception
- */
-function delete_site_usermeta(string $siteId, Site $oldSite): bool
-{
-    $dfdb = dfdb();
-
-    if ($siteId !== $oldSite->id) {
-        return false;
-    }
-
-    try {
-        $users = get_users_by_site_key($oldSite->key);
-        foreach ($users as $user) {
-            $_user = new User($dfdb);
-            $_user->id = $user['user_id'];
-            $_user->login = $user['user_login'];
-            $_user->token = $user['user_token'];
-            $_user->email = $user['user_email'];
-
-            UserCachePsr16::clean($_user);
-        }
-
-        return true;
-    } catch (PDOException | Exception $e) {
-        logger('error', sprintf('ERROR[%s]: %s', $e->getCode(), $e->getMessage()));
-    }
-
-    return false;
 }
 
 /**

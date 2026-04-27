@@ -6,12 +6,10 @@ namespace App\Domain\Product\Validator;
 
 use App\Domain\Product\Dto\UpdateProductData;
 use App\Domain\Product\Enum\ProductStatus;
-use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
 use Codefy\Framework\Dto\Attribute\UseDto;
 use Codefy\Framework\Dto\HasDto;
 use Codefy\Framework\Dto\Trait\DtoAware;
 use Codefy\Framework\Validation\HttpInputValidator;
-use Codefy\QueryBus\UnresolvableQueryHandlerException;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Psr\SimpleCache\InvalidArgumentException;
@@ -28,9 +26,7 @@ class UpdateProductValidator extends HttpInputValidator implements HasDto
 
     /**
      * @throws NotFoundExceptionInterface
-     * @throws UnresolvableQueryHandlerException
      * @throws ContainerExceptionInterface
-     * @throws CommandPropertyNotFoundException
      * @throws InvalidArgumentException
      * @throws Exception
      * @throws ReflectionException
