@@ -4,32 +4,38 @@ declare(strict_types=1);
 
 namespace App\Shared\Services;
 
+use Qubus\Exception\Data\TypeException;
+use Stringable;
+
 use function array_key_exists;
 use function count;
 use function in_array;
 use function is_numeric;
 use function is_object;
-use function strcmp;
 use function strtoupper;
 use function uasort;
 use function usort;
 
 final class ListUtil
 {
+    /**
+     * @var array<array-key, array<string|int, mixed>|object>
+     */
     private array $input = [] {
         &get => $this->input;
     }
 
+    /**
+     * @var array<array-key, mixed>
+     */
     private array $output = [] {
         &get => $this->output;
     }
 
     /**
-     * Temporary arguments for sorting.
+     * @param array<array-key, array<string|int, mixed>|object> $input
      */
-    private array $orderby = [];
-
-    public function __construct($input)
+    public function __construct(array $input)
     {
         $this->output = $this->input = $input;
     }
@@ -37,51 +43,55 @@ final class ListUtil
     /**
      * Filters the list, based on a set of key => value arguments.
      *
-     * @param array  $args     Optional. An array of key => value arguments to match
+     * @param array $args Optional. An array of key => value arguments to match
      *                         against each object. Default empty array.
      * @param string $operator Optional. The logical operation to perform. 'AND' means
      *                         all elements from the array must match. 'OR' means only
      *                         one element needs to match. 'NOT' means no elements may
      *                         match. Default 'AND'.
      * @return array Array of found values.
+     * @throws TypeException
      */
     public function filter(array $args = [], string $operator = 'AND'): array
     {
-        if (empty($args)) {
+        if ($args === []) {
             return $this->output;
         }
 
         $operator = strtoupper($operator);
 
         if (!in_array($operator, ['AND', 'OR', 'NOT'], true)) {
-            return [];
+            throw new TypeException(
+                'Filter operator must be one of: AND, OR, NOT.'
+            );
         }
 
-        $count = count($args);
+        $requiredMatches = count($args);
         $filtered = [];
 
-        foreach ($this->output as $key => $obj) {
-            $toMatch = (array) $obj;
-
+        foreach ($this->output as $key => $item) {
             $matched = 0;
-            foreach ($args as $mKey => $mValue) {
-                if (array_key_exists($mKey, $toMatch) && $mValue == $toMatch[$mKey]) {
+
+            foreach ($args as $field => $expectedValue) {
+                $actualValue = $this->value($item, $field);
+
+                if ($actualValue->exists && $actualValue->value === $expectedValue) {
                     $matched++;
                 }
             }
 
-            if (
-                ('AND' == $operator && $matched == $count) ||
-                    ('OR' == $operator && $matched > 0) ||
-                    ('NOT' == $operator && 0 == $matched)
-            ) {
-                $filtered[$key] = $obj;
+            $keep = match ($operator) {
+                'AND' => $matched === $requiredMatches,
+                'OR' => $matched > 0,
+                'NOT' => $matched === 0,
+            };
+
+            if ($keep) {
+                $filtered[$key] = $item;
             }
         }
 
-        $this->output = $filtered;
-
-        return $this->output;
+        return $this->output = $filtered;
     }
 
     /**
@@ -99,49 +109,31 @@ final class ListUtil
      */
     public function pluck(int|string $field, int|string|null $indexKey = null): array
     {
-        $newlist = [];
+        $newList = [];
 
-        if (!$indexKey) {
-            /*
-             * This is simple. Could at some point wrap array_column()
-             * if we knew we had an array of arrays.
-             */
-            foreach ($this->output as $key => $value) {
-                if (is_object($value)) {
-                    $newlist[$key] = $value->{$field};
-                } else {
-                    $newlist[$key] = $value[$field];
-                }
+        foreach ($this->output as $originalKey => $item) {
+            $fieldValue = $this->value($item, $field);
+
+            if (!$fieldValue->exists) {
+                continue;
             }
 
-            $this->output = $newlist;
-
-            return $this->output;
-        }
-
-        /*
-         * When index_key is not set for a particular item, push the value
-         * to the end of the stack. This is how array_column() behaves.
-         */
-        foreach ($this->output as $value) {
-            if (is_object($value)) {
-                if (isset($value->{$indexKey})) {
-                    $newlist[$value->{$indexKey}] = $value->{$field};
-                } else {
-                    $newlist[] = $value->{$field};
-                }
-            } else {
-                if (isset($value[$indexKey])) {
-                    $newlist[$value[$indexKey]] = $value[$field];
-                } else {
-                    $newlist[] = $value[$field];
-                }
+            if ($indexKey === null) {
+                $newList[$originalKey] = $fieldValue->value;
+                continue;
             }
+
+            $indexValue = $this->value($item, $indexKey);
+
+            if ($indexValue->exists && $this->isValidArrayKey($indexValue->value)) {
+                $newList[$indexValue->value] = $fieldValue->value;
+                continue;
+            }
+
+            $newList[] = $fieldValue->value;
         }
 
-        $this->output = $newlist;
-
-        return $this->output;
+        return $this->output = $newList;
     }
 
     /**
@@ -151,71 +143,125 @@ final class ListUtil
      *                              of multiple orderby fields as $orderby => $order.
      * @param string $order         Optional. Either 'ASC' or 'DESC'. Only used if $orderby
      *                              is a string.
-     * @param bool $preserverKeys   Optional. Whether to preserve keys. Default false.
+     * @param bool $preserveKeys    Optional. Whether to preserve keys. Default false.
      * @return array The sorted array.
      */
-    public function sort(array|string $orderby = [], string $order = 'ASC', bool $preserverKeys = false): array
+    public function sort(array|string $orderby = [], string $order = 'ASC', bool $preserveKeys = false): array
     {
-        if (empty($orderby)) {
+        if ($orderby === [] || $orderby === '') {
             return $this->output;
         }
 
-        if (is_string($orderby)) {
-            $orderby = [$orderby => $order];
+        $orderBy = is_string($orderby)
+            ? [$orderby => $order]
+            : $orderby;
+
+        foreach ($orderBy as $field => $direction) {
+            $orderBy[$field] = strtoupper($direction) === 'DESC' ? 'DESC' : 'ASC';
         }
 
-        foreach ($orderby as $field => $direction) {
-            $orderby[$field] = 'DESC' === strtoupper($direction) ? 'DESC' : 'ASC';
-        }
+        $callback = function (mixed $a, mixed $b) use ($orderBy): int {
+            return $this->compareItems($a, $b, $orderBy);
+        };
 
-        $this->orderby = $orderby;
-
-        if ($preserverKeys) {
-            uasort($this->output, [$this, 'sortCallback']);
+        if ($preserveKeys) {
+            uasort($this->output, $callback);
         } else {
-            usort($this->output, [$this, 'sortCallback']);
+            usort($this->output, $callback);
         }
-
-        $this->orderby = [];
 
         return $this->output;
     }
 
     /**
-     * Callback to sort the list by specific fields.
+     * Reset output back to original input.
      *
-     * @param object|array $a One object to compare.
-     * @param object|array $b The other object to compare.
-     * @return int 0 if both objects equal. -1 if second object should come first, 1 otherwise.
-     * @see ListUtil::sort()
+     * @return array<array-key, array<string|int, mixed>|object>
      */
-    private function sortCallback(object|array $a, object|array $b): int
+    public function reset(): array
     {
-        if (empty($this->orderby)) {
-            return 0;
-        }
+        return $this->output = $this->input;
+    }
 
-        $a = (array) $a;
-        $b = (array) $b;
+    /**
+     * Return the current working list.
+     *
+     * @return array<array-key, mixed>
+     */
+    public function all(): array
+    {
+        return $this->output;
+    }
 
-        foreach ($this->orderby as $field => $direction) {
-            if (!isset($a[$field]) || !isset($b[$field])) {
+    /**
+     * @param array<string, string> $orderBy
+     */
+    private function compareItems(mixed $a, mixed $b, array $orderBy): int
+    {
+        foreach ($orderBy as $field => $direction) {
+            $aValue = $this->value($a, $field);
+            $bValue = $this->value($b, $field);
+
+            if (!$aValue->exists || !$bValue->exists) {
                 continue;
             }
 
-            if ($a[$field] == $b[$field]) {
+            $comparison = $this->compareValues($aValue->value, $bValue->value);
+
+            if ($comparison === 0) {
                 continue;
             }
 
-            $results = 'DESC' === $direction ? [1, -1] : [-1, 1];
-
-            if (is_numeric($a[$field]) && is_numeric($b[$field])) {
-                return ($a[$field] < $b[$field]) ? $results[0] : $results[1];
-            }
-
-            return 0 > strcmp($a[$field], $b[$field]) ? $results[0] : $results[1];
+            return $direction === 'DESC' ? -$comparison : $comparison;
         }
 
         return 0;
+    }
+
+    private function compareValues(mixed $a, mixed $b): int
+    {
+        if ($a === $b) {
+            return 0;
+        }
+
+        if ((is_int($a) || is_float($a)) && (is_int($b) || is_float($b))) {
+            return $a <=> $b;
+        }
+
+        if (is_numeric($a) && is_numeric($b)) {
+            return (float) $a <=> (float) $b;
+        }
+
+        if ($a instanceof Stringable) {
+            $a = (string) $a;
+        }
+
+        if ($b instanceof Stringable) {
+            $b = (string) $b;
+        }
+
+        if (is_scalar($a) && is_scalar($b)) {
+            return strcasecmp((string) $a, (string) $b);
+        }
+
+        return 0;
+    }
+
+    private function value(mixed $item, int|string $field): FieldValue
+    {
+        if (is_array($item) && array_key_exists($field, $item)) {
+            return new FieldValue(true, $item[$field]);
+        }
+
+        if (is_object($item) && isset($item->{$field})) {
+            return new FieldValue(true, $item->{$field});
+        }
+
+        return new FieldValue(false, null);
+    }
+
+    private function isValidArrayKey(mixed $value): bool
+    {
+        return is_int($value) || is_string($value);
     }
 }
