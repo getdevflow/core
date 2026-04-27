@@ -85,7 +85,6 @@ final class CmsHelperServiceProvider extends CodefyServiceProvider
         __observer()->action->addAction('admin_notices', 'App\Shared\Helpers\show_update_message', 5);
         __observer()->action->addAction('save_site', 'App\Shared\Helpers\new_site_schema', 5, 3);
         __observer()->action->addAction('save_site', 'App\Shared\Helpers\create_site_directories', 5, 3);
-        __observer()->action->addAction('deleted_site', 'App\Shared\Helpers\delete_site_usermeta', 5, 2);
         __observer()->action->addAction('deleted_site', 'App\Shared\Helpers\delete_site_tables', 5, 2);
         __observer()->action->addAction('deleted_site', 'App\Shared\Helpers\delete_site_directories', 5, 2);
         __observer()->action->addAction(
