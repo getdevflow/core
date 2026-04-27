@@ -29,6 +29,7 @@ use function ltrim;
 use function preg_quote;
 use function preg_replace;
 use function Qubus\Security\Helpers\__observer;
+use function Qubus\Security\Helpers\esc_html;
 use function Qubus\Support\Helpers\add_trailing_slash;
 use function sprintf;
 use function trim;
@@ -208,20 +209,21 @@ function load_active_plugins(): void
 
     if (!empty($activePlugins)) {
         foreach ($activePlugins as $plugin) {
+            $class = esc_html($plugin->plugin_classname);
             // if the class does not exist,
             // deactivate it and move on
-            if (!class_exists($plugin->plugin_classname)) {
-                deactivate_plugin($plugin->plugin_classname);
+            if (!class_exists($class)) {
+                deactivate_plugin($class);
                 continue;
             }
-            Devflow::$PHP->execute([$plugin->plugin_classname, 'handle']);
+            Devflow::$PHP->execute([$class, 'handle']);
 
             /**
              * Fires once a single activated plugin has loaded.
              *
-             * @param $string $plugin Class name of the plugin that was loaded.
+             * @param $string $class Class name of the plugin that was loaded.
              */
-            __observer()->action->doAction('plugin_loaded', $plugin->plugin_classname);
+            __observer()->action->doAction('plugin_loaded', $class);
         }
     }
 }
