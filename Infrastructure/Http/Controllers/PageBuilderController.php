@@ -20,6 +20,7 @@ use ReflectionException;
 
 use function App\Shared\Helpers\admin_url;
 use function App\Shared\Helpers\current_user_can;
+use function App\Shared\Helpers\get_theme;
 use function Codefy\Framework\Helpers\config;
 use function Codefy\Framework\Helpers\view;
 use function Qubus\Security\Helpers\t__;
@@ -77,6 +78,10 @@ final class PageBuilderController extends BaseController
     {
         $builder = $this->builder();
         $hasPageReturned = $builder->handlePublicRequest();
+
+        if(empty(get_theme()) || Devflow::$PHP->configContainer->boolean(key: 'vihzhuo.enable') === false) {
+            return $this->redirect(admin_url());
+        }
 
         if ($request->getUri()->getPath() === '/' && ! $hasPageReturned) {
             return view(template: 'framework::welcome');
