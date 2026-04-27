@@ -18,14 +18,15 @@ use Qubus\EventDispatcher\ActionFilter\Action;
 use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
 use Qubus\Http\ServerRequest;
-use Qubus\Http\Session\SessionException;
 use Qubus\Routing\Exceptions\NamedRouteNotFoundException;
 use Qubus\Routing\Exceptions\RouteParamFailedConstraintException;
 use ReflectionException;
 
 use function App\Shared\Helpers\admin_url;
 use function App\Shared\Helpers\current_user_can;
-use function App\Shared\Helpers\get_all_users;
+use function App\Shared\Helpers\get_current_site_key;
+use function App\Shared\Helpers\get_users_by_site_key;
+use function App\Shared\Helpers\is_user_logged_in;
 use function Codefy\Framework\Helpers\view;
 use function preg_filter;
 use function Qubus\Security\Helpers\esc_html__;
@@ -34,25 +35,22 @@ use function Qubus\Security\Helpers\t__;
 final class AdminDashboardController extends BaseController
 {
     /**
-     * @return ResponseInterface|string
+     * @return ResponseInterface
      * @throws ContainerExceptionInterface
      * @throws Exception
      * @throws InvalidArgumentException
-     * @throws NamedRouteNotFoundException
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
-     * @throws RouteParamFailedConstraintException
-     * @throws SessionException
      * @throws TypeException
      * @throws \Exception
      */
-    public function index(): ResponseInterface|string
+    public function index(): ResponseInterface
     {
-        if (false === current_user_can(perm: 'access:admin')) {
+        if (!is_user_logged_in()) {
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
-            return $this->redirect($this->router->url(name: 'admin.login'));
+            return $this->redirect(Devflow::$PHP->configContainer->string(key: 'auth.redirect_guests_to'));
         }
 
         return view(template: 'framework::backend/index', data: ['title' => 'Admin Dashboard']);
@@ -81,7 +79,7 @@ final class AdminDashboardController extends BaseController
             return $this->redirect($this->router->url(name: 'admin.login'));
         }
 
-        $users = get_all_users();
+        $users = get_users_by_site_key(get_current_site_key());
 
         return view(
             template: 'framework::backend/snapshot',
@@ -121,7 +119,7 @@ final class AdminDashboardController extends BaseController
 
         $namespaces = [...$siteNamespaces, ...$globalNamespaces];
 
-        if (true === SimpleCacheObjectCacheFactory::make(namespace: Devflow::db()->basePrefix . 'user_attribute')->clear()) {
+        if (true === SimpleCacheObjectCacheFactory::make(namespace: Devflow::db()->prefix . 'user_attribute')->clear()) {
             ItemPoolObjectCacheFactory::make()->clear();
 
             foreach ($namespaces as $namespace) {
