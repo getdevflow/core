@@ -46,9 +46,11 @@ use function Codefy\Framework\Helpers\app;
 use function Codefy\Framework\Helpers\ask;
 use function Codefy\Framework\Helpers\command;
 use function Codefy\Framework\Helpers\config;
+use function Codefy\Framework\Helpers\logger;
 use function Codefy\Framework\Helpers\mail;
 use function Codefy\Framework\Helpers\storage_path;
 use function count;
+use function in_array;
 use function md5;
 use function Qubus\Security\Helpers\__observer;
 use function Qubus\Security\Helpers\esc_html;
@@ -189,7 +191,7 @@ function get_object_subtype(string $type, string $id): string
 }
 
 /**
- * Creates unique slug based on string
+ * Creates unique slug based on string.
  *
  * @file core/Shared/Helpers/db.php
  * @param string $title Text to be slugified.
@@ -233,7 +235,7 @@ function cms_slugify(string $title, string $table): string
     );
     if (count($results) > 0) {
         foreach ($results as $item) {
-            $titles[] = $item["$field"];
+            $titles[] = esc_html($item["$field"]);
         }
     }
     $total = count($titles);
@@ -655,6 +657,18 @@ function reassign_sites(string $userId, array $params = []): bool
                 ]
             )
         );
+
+        if ($count > 0) {
+            $command = new UpdateSiteOwnerCommand([
+                'id' => SiteId::fromString($params['site_id']),
+                'owner' => UserId::fromString($params['assign_id']),
+                'modified' => QubusDateTimeImmutable::now(get_option(key: 'site_timezone')),
+            ]);
+
+            command($command);
+        }
+
+        return true;
     } catch (PDOException $e) {
         FileLoggerFactory::getLogger()->error(
             sprintf(
@@ -666,30 +680,6 @@ function reassign_sites(string $userId, array $params = []): bool
                 'Db Function' => 'reassign_sites'
             ]
         );
-    }
-
-    if ($count > 0) {
-        try {
-            $command = new UpdateSiteOwnerCommand([
-                'id' => SiteId::fromString($params['site_id']),
-                'owner' => UserId::fromString($params['assign_id']),
-                'modified' => QubusDateTimeImmutable::now(get_option(key: 'site_timezone')),
-            ]);
-
-            command($command);
-
-            return true;
-        } catch (PDOException $e) {
-            Devflow::$PHP->flash->error(
-                sprintf(
-                    esc_html__(
-                        string: 'Reassign site error: %s',
-                        domain: 'devflow'
-                    ),
-                    $e->getMessage()
-                )
-            );
-        }
     }
 
     return false;
@@ -766,6 +756,7 @@ function get_owner_sites(string $userId): array|object
  * @throws InvalidArgumentException
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
+ * @throws TypeException
  */
 function populate_options_cache(): bool
 {
@@ -1031,4 +1022,107 @@ function collection(?string $value = null): Collection
     };
 
     return new ArrayCollection($array);
+}
+
+/**
+ * @file core/Shared/Helpers/db.php
+ * @param string $siteId
+ * @param string $userId
+ * @return bool
+ */
+function has_site_user_record(string $siteId, string $userId): bool
+{
+    $dfdb = dfdb();
+
+    try {
+        $exist = $dfdb->getVar(
+            $dfdb->prepare(
+                "SELECT COUNT(*) FROM {$dfdb->basePrefix}site_user WHERE site_id = ? AND user_id = ?",
+                [
+                    $siteId,
+                    $userId
+                ]
+            )
+        );
+
+        return $exist > 0;
+    } catch (PDOException $e) {
+        logger(
+            level: 'error',
+            message: sprintf(
+                'SQLSTATE[%s]: %s',
+                $e->getCode(),
+                $e->getMessage()
+            ),
+            context: [
+                'Db Function' => 'has_site_user_record'
+            ]
+        );
+    }
+
+    return false;
+}
+
+/**
+ * @file core/Shared/Helpers/db.php
+ * @throws ReflectionException
+ * @throws UnresolvableQueryHandlerException
+ */
+function unassigned_sites(string $userId): void
+{
+    foreach(get_all_sites() as $site) {
+        if(!has_site_user_record($site['id'], $userId)) {
+            echo '<option value="'.$site['id'].'">'.$site['name'].'</option>' . "\n";
+        }
+    }
+}
+
+/**
+ * Retrieve a list of super admins from site_user.
+ *
+ * @return array
+ */
+function get_super_admins(): array
+{
+    $dfdb = dfdb();
+    $results = $dfdb->getResults(
+        query: "SELECT user_id, user_attribute"
+        . " FROM {$dfdb->basePrefix}site_user",
+        output: Database::ARRAY_A
+    );
+
+    if(is_false__($results)) {
+        return [];
+    }
+
+    $supers = [];
+    foreach($results as $row) {
+        $json = json_decode($row['user_attribute'], true);
+        if($json['role'] === 'super') {
+            $supers[] = $row['user_id'];
+        }
+    }
+
+    return $supers;
+}
+
+/**
+ * Checks whether a user is a super admin.
+ *
+ * @param string|null $userId
+ * @return bool
+ * @throws ReflectionException
+ */
+function is_super_admin(?string $userId = null): bool
+{
+
+    if(is_null($userId)) {
+        $userId = get_current_user_id();
+    }
+
+    if(in_array($userId, get_super_admins())) {
+        return true;
+    }
+
+    return false;
 }
