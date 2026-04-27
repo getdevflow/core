@@ -26,33 +26,38 @@ trait PopulateProductQueryAware
     {
         $relativeUrl = Filter::getInstance()->applyFilter(
             'product.relative.url',
-            sprintf('product/%s/', $data['product_slug'])
+            sprintf('product/%s/', esc_html($data['product_slug']))
         );
 
         return [
-            'id' => esc_html(string: $data['product_id']) ?? null,
-            'slug' => esc_html(string: $data['product_slug']) ?? null,
-            'title' => esc_html(string: $data['product_title']) ?? null,
-            'body' => purify_html($data['product_body']) ?? null,
+            'id' => isset($data['product_id']) ? esc_html(string: $data['product_id']) : null,
+            'slug' => isset($data['product_slug']) ? esc_html(string: $data['product_slug']) : null,
+            'title' => isset($data['product_title']) ? esc_html(string: $data['product_title']) : null,
+            'body' => isset($data['product_body']) ? purify_html($data['product_body']) : null,
             'author' => isset($data['product_author']) ? esc_html(string: $data['product_author']) : null,
             'sku' => isset($data['product_sku']) ? esc_html(string: (string) $data['product_sku']) : null,
-            'price' => esc_html(string: (string) $data['product_price']) ?? null,
-            'currency' => esc_html(string: (string) $data['product_currency']) ?? null,
+            'price' => isset($data['product_price']) ? esc_html(string: (string) $data['product_price']) : null,
+            'currency' => isset($data['product_currency']) ? esc_html(string: (string) $data['product_currency']) : null,
+            
             'purchaseUrl' => isset($data['product_purchase_url']) ?
                     esc_html(string: (string) $data['product_purchase_url']) :
                     null,
-            'relativeUrl' => esc_html(string: $relativeUrl),
-            'showInMenu' => esc_html(string: (string) $data['product_show_in_menu']) ?? null,
-            'showInSearch' => esc_html(string: (string) $data['product_show_in_search']) ?? null,
+            
+            'relativeUrl' => $relativeUrl,
+            'showInMenu' => isset($data['product_show_in_menu']) ? esc_html(string: (string) $data['product_show_in_menu']) : null,
+            'showInSearch' => isset($data['product_show_in_search']) ? esc_html(string: (string) $data['product_show_in_search']) : null,
+            
             'featuredImage' => isset($data['product_featured_image']) ?
                     esc_html(string: $data['product_featured_image']) :
                     null,
-            'status' => esc_html(string: $data['product_status']) ?? null,
-            'created' => esc_html(string: $data['product_created']) ?? null,
-            'createdGmt' => esc_html(string: $data['product_created_gmt']) ?? null,
-            'published' => esc_html(string: $data['product_published']) ?? null,
-            'publishedGmt' => esc_html(string: $data['product_published_gmt']) ?? null,
+            
+            'status' => isset($data['product_status']) ? esc_html(string: $data['product_status']) : null,
+            'created' => isset($data['product_created']) ? esc_html(string: $data['product_created']) : null,
+            'createdGmt' => isset($data['product_created_gmt']) ? esc_html(string: $data['product_created_gmt']) : null,
+            'published' => isset($data['product_published']) ? esc_html(string: $data['product_published']) : null,
+            'publishedGmt' => isset($data['product_published_gmt']) ? esc_html(string: $data['product_published_gmt']) : null,
             'modified' => isset($data['product_modified']) ? esc_html(string: $data['product_modified']) : null,
+            
             'modifiedGmt' => isset($data['product_modified_gmt']) ?
                     esc_html(string: $data['product_modified_gmt']) : null,
         ];

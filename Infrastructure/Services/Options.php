@@ -174,7 +174,7 @@ final class Options
         if (!empty($result)) {
             $value = purify_html($result);
         } else {
-            $value = $default;
+            $value = purify_html($default);
         }
         /**
          * Filter the value of an existing option.

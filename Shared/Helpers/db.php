@@ -57,6 +57,7 @@ use function Qubus\Security\Helpers\esc_html__;
 use function Qubus\Support\Helpers\is_false__;
 use function Qubus\Support\Helpers\is_null__;
 use function sprintf;
+use function strtolower;
 
 /**
  * Global database function.
@@ -1031,6 +1032,19 @@ function collection(?string $value = null): Collection
 }
 
 /**
+ * A private function for generating unique site key.
+ *
+ * @access private
+ * @param int $length
+ * @return string
+ */
+function generate_site_key(int $length = 6): string
+{
+    $key = strtolower(generate_unique_key($length));
+    return dfdb()->basePrefix . "{$key}_";
+}
+
+/**
  * @file core/Shared/Helpers/db.php
  * @param string $siteId
  * @param string $userId
@@ -1087,6 +1101,7 @@ function unassigned_sites(string $userId): void
  * Retrieve a list of super admins from site_user.
  *
  * @return array
+ * @throws Exception
  */
 function get_super_admins(): array
 {
@@ -1105,7 +1120,7 @@ function get_super_admins(): array
     foreach($results as $row) {
         $json = json_decode($row['user_attribute'], true);
         if($json['role'] === 'super') {
-            $supers[] = $row['user_id'];
+            $supers[] = esc_html($row['user_id']);
         }
     }
 
@@ -1118,6 +1133,7 @@ function get_super_admins(): array
  * @param string|null $userId
  * @return bool
  * @throws ReflectionException
+ * @throws Exception
  */
 function is_super_admin(?string $userId = null): bool
 {

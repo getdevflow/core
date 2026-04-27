@@ -139,6 +139,7 @@ function user_lookup(?string $active = null): void
  * @file core/Shared/Helpers/user.php
  * @return string The current user's ID, or '' if no user is logged in.
  * @throws ReflectionException
+ * @throws Exception
  */
 function get_current_user_id(): string
 {
@@ -160,7 +161,7 @@ function get_current_user_id(): string
         return '';
     }
 
-    return $cookie->id;
+    return esc_html($cookie->id);
 }
 
 /**
@@ -354,7 +355,7 @@ function email_exists(string $email): false|string
     $prepare = "SELECT * FROM {$dfdb->basePrefix}user WHERE user_email = ?";
 
     if ($user = $dfdb->getRow($dfdb->prepare($prepare, [$email]))) {
-        $userId = $user->user_id;
+        $userId = esc_html($user->user_id);
     } else {
         $userId = false;
     }

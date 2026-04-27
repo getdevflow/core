@@ -167,7 +167,7 @@ final class User extends stdClass
         $user->email = isset($data['user_email']) ? esc_html(string: $data['user_email']) : null;
         $user->pass = isset($data['user_pass']) ? esc_html(string: $data['user_pass']): null;
         $user->url = isset($data['user_url']) ? esc_html(string: $data['user_url']) : null;
-        $user->bio = isset($data['user_bio']) ? esc_html(string: $data['user_bio']) : null;
+        $user->bio = isset($data['user_bio']) ? purify_html(string: $data['user_bio']) : null;
         $user->timezone = isset($data['user_timezone']) ? esc_html(string: $data['user_timezone']) : null;
         $user->dateFormat = isset($data['user_date_format']) ? esc_html(string: $data['user_date_format']) : null;
         $user->timeFormat = isset($data['user_time_format']) ? esc_html(string: $data['user_time_format']) : null;

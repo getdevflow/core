@@ -6,6 +6,7 @@ namespace App\Domain\Product\Model;
 
 use App\Infrastructure\Persistence\Cache\ProductCachePsr16;
 use App\Infrastructure\Services\AttributesFactory;
+use Qubus\Exception\Data\TypeException;
 use Qubus\Expressive\Database;
 use App\Shared\Services\SimpleCacheObjectCacheFactory;
 use App\Shared\Services\Trait\HydratorAware;
@@ -159,28 +160,33 @@ final class Product extends stdClass
      */
     public function populate(Product $product, array $data = []): self
     {
-        $product->id = esc_html(string: $data['product_id']) ?? null;
-        $product->title = esc_html(string: $data['product_title']) ?? null;
-        $product->slug = esc_html(string: $data['product_slug']) ?? null;
-        $product->body = purify_html(string: $data['product_body']) ?? null;
+        $product->id = isset($data['product_id']) ? esc_html(string: $data['product_id']) : null;
+        $product->title = isset($data['product_title']) ? esc_html(string: $data['product_title']) : null;
+        $product->slug = isset($data['product_slug']) ? esc_html(string: $data['product_slug']) : null;
+        $product->body = isset($data['product_body']) ? purify_html(string: $data['product_body']) : null;
         $product->author = isset($data['product_author']) ? esc_html(string: $data['product_author']) : null;
-        $product->sku = esc_html((string) $data['product_sku']) ?? null;
-        $product->price = esc_html(string: (string) $data['product_price']) ?? null;
-        $product->currency = esc_html(string: (string) $data['product_currency']) ?? null;
+        $product->sku = isset($data['product_sku']) ? esc_html((string) $data['product_sku']) : null;
+        $product->price = isset($data['product_price']) ? esc_html(string: (string) $data['product_price']) : null;
+        $product->currency = isset($data['product_currency']) ? esc_html(string: (string) $data['product_currency']) : null;
+
         $product->purchaseUrl = isset($data['product_purchase_url']) ?
         esc_html(string: (string) $data['product_purchase_url']) :
         null;
-        $product->showInMenu = esc_html(string: (string) $data['product_show_in_menu']) ?? null;
-        $product->showInSearch = esc_html(string: (string) $data['product_show_in_search']) ?? null;
+
+        $product->showInMenu = isset($data['product_show_in_menu']) ? esc_html(string: (string) $data['product_show_in_menu']) : null;
+        $product->showInSearch = isset($data['product_show_in_search']) ? esc_html(string: (string) $data['product_show_in_search']) : null;
+
         $product->featuredImage = isset($data['product_featured_image']) ?
         esc_html(string: $data['product_featured_image']) :
         null;
-        $product->status = esc_html(string: $data['product_status']) ?? null;
-        $product->created = esc_html(string: $data['product_created']) ?? null;
-        $product->createdGmt = esc_html(string: $data['product_created_gmt']) ?? null;
-        $product->published = esc_html(string: $data['product_published']) ?? null;
-        $product->publishedGmt = esc_html(string: $data['product_published_gmt']) ?? null;
+
+        $product->status = isset($data['product_status']) ? esc_html(string: $data['product_status']) : null;
+        $product->created = isset($data['product_created']) ? esc_html(string: $data['product_created']) : null;
+        $product->createdGmt = isset($data['product_created_gmt']) ? esc_html(string: $data['product_created_gmt']) : null;
+        $product->published = isset($data['product_published']) ? esc_html(string: $data['product_published']) : null;
+        $product->publishedGmt = isset($data['product_published_gmt']) ? esc_html(string: $data['product_published_gmt']) : null;
         $product->modified = isset($data['product_modified']) ? esc_html(string: $data['product_modified']) : null;
+
         $product->modifiedGmt = isset($data['product_modified_gmt']) ?
         esc_html(string: $data['product_modified_gmt']) : null;
 
@@ -190,11 +196,12 @@ final class Product extends stdClass
     /**
      * Magic method for checking the existence of a certain custom field.
      *
-     * @param string $key Content meta key to check if set.
-     * @return bool Whether the given product meta key is set.
+     * @param string $key Content attribute key to check if set.
+     * @return bool Whether the given product attribute key is set.
      * @throws ContainerExceptionInterface
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
+     * @throws TypeException
      */
     public function __isset(string $key)
     {
@@ -213,6 +220,7 @@ final class Product extends stdClass
      * @throws ContainerExceptionInterface
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
+     * @throws TypeException
      */
     public function __get(string $key): string
     {
@@ -228,11 +236,11 @@ final class Product extends stdClass
     /**
      * Magic method for setting custom product fields.
      *
-     * This method does not update custom fields in the product document. It only stores
+     * This method does not update custom fields in the product table. It only stores
      * the value on the Content instance.
      *
-     * @param string $key   Content meta key.
-     * @param mixed  $value Content meta value.
+     * @param string $key   Content attribute key.
+     * @param mixed  $value Content attribute value.
      */
     public function __set(string $key, mixed $value): void
     {
@@ -242,7 +250,7 @@ final class Product extends stdClass
     /**
      * Magic method for unsetting a certain custom field.
      *
-     * @param string $key Content meta key to unset.
+     * @param string $key Content attribute key to unset.
      */
     public function __unset(string $key)
     {
@@ -252,15 +260,16 @@ final class Product extends stdClass
     }
 
     /**
-     * Retrieve the value of a property or meta key.
+     * Retrieve the value of a property or attribute key.
      *
-     * Retrieves from the product and productmeta table.
+     * Retrieves from the product table.
      *
      * @param string $key Property
      * @return string
      * @throws ContainerExceptionInterface
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
+     * @throws TypeException
      */
     public function get(string $key): string
     {
@@ -268,7 +277,7 @@ final class Product extends stdClass
     }
 
     /**
-     * Determine whether a property or meta key is set
+     * Determine whether a property or attribute key is set.
      *
      * @param string $key Property
      * @return bool

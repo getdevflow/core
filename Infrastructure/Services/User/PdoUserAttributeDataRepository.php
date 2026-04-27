@@ -8,6 +8,7 @@ use Qubus\Expressive\Database;
 use RuntimeException;
 
 use function is_string;
+use function Qubus\Security\Helpers\purify_html;
 use function Qubus\Security\Helpers\t__;
 use function sprintf;
 
@@ -41,7 +42,7 @@ final readonly class PdoUserAttributeDataRepository implements UserAttributeRepo
             return null;
         }
 
-        return UserAttributeBag::fromJson($siteId, $userId, is_string($json) ? $json : null);
+        return UserAttributeBag::fromJson($siteId, $userId, is_string($json) ? purify_html($json) : null);
     }
 
     /**

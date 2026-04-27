@@ -772,19 +772,6 @@ function generate_unique_key(int $length = 6): string
 }
 
 /**
- * A private function for generating unique site key.
- *
- * @access private
- * @param int $length
- * @return string
- */
-function generate_site_key(int $length = 6): string
-{
-    $key = strtolower(generate_unique_key($length));
-    return dfdb()->basePrefix . "{$key}_";
-}
-
-/**
  * Converts date to GMT format.
  *
  * @file core/Shared/Helpers/core.php

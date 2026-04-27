@@ -6,6 +6,7 @@ namespace App\Infrastructure\Services\Attribute;
 
 use Qubus\Expressive\Database;
 
+use function Qubus\Security\Helpers\purify_html;
 use function sprintf;
 
 final readonly class PdoAttributeDataRepository implements AttributeRepository
@@ -54,7 +55,7 @@ final readonly class PdoAttributeDataRepository implements AttributeRepository
             throw new \RuntimeException(sprintf("%s %s not found.", $type, $id));
         }
 
-        return AttributeBag::fromJson(is_string($json) ? $json : null);
+        return AttributeBag::fromJson(is_string($json) ? purify_html($json) : null);
     }
 
     /**

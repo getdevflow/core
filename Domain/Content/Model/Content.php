@@ -164,28 +164,28 @@ final class Content extends stdClass
     public function populate(Content $content, array $data = []): self
     {
         if (config()->string(key: 'cms.relative_url') === 'contenttype') {
-            $relativeUrl = $data['content_type'] . '/' . $data['content_slug'] . '/';
+            $relativeUrl = esc_html(string: $data['content_type'] . '/' . $data['content_slug'] . '/');
         } else {
-            $relativeUrl = $data['content_slug'] . '/';
+            $relativeUrl = esc_html(string: $data['content_slug'] . '/');
         }
 
-        $content->id = esc_html(string: $data['content_id']) ?? null;
-        $content->title = esc_html(string: $data['content_title']) ?? null;
-        $content->slug = esc_html(string: $data['content_slug']) ?? null;
-        $content->body = purify_html(string: $data['content_body']) ?? null;
+        $content->id = isset($data['content_id']) ? esc_html(string: $data['content_id']) : null;
+        $content->title = isset($data['content_title']) ? esc_html(string: $data['content_title']) : null;
+        $content->slug = isset($data['content_slug']) ? esc_html(string: $data['content_slug']) : null;
+        $content->body = isset($data['content_body']) ? purify_html(string: $data['content_body']) : null;
         $content->author = isset($data['content_author']) ? esc_html(string: $data['content_author']) : null;
-        $content->type = esc_html($data['content_type']) ?? null;
+        $content->type = isset($data['content_type']) ? esc_html($data['content_type']) : null;
         $content->parent = isset($data['content_parent']) ? esc_html(string: $data['content_parent']) : null;
-        $content->sidebar = esc_html(string: (string) $data['content_sidebar']) ?? null;
-        $content->showInMenu = esc_html(string: (string) $data['content_show_in_menu']) ?? null;
-        $content->showInSearch = esc_html(string: (string) $data['content_show_in_search']) ?? null;
-        $content->relativeUrl = esc_html(string: $relativeUrl) ?? null;
+        $content->sidebar = isset($data['content_sidebar']) ? esc_html(string: (string) $data['content_sidebar']) : null;
+        $content->showInMenu = isset($data['content_show_in_menu']) ? esc_html(string: (string) $data['content_show_in_menu']) : null;
+        $content->showInSearch = isset($data['content_show_in_search']) ? esc_html(string: (string) $data['content_show_in_search']) : null;
+        $content->relativeUrl = esc_html(string: $relativeUrl);
 
         $content->featuredImage = isset($data['content_featured_image']) ?
         esc_html(string: $data['content_featured_image']) :
         null;
 
-        $content->status = esc_html(string: $data['content_status']) ?? null;
+        $content->status = isset($data['content_status']) ? esc_html(string: $data['content_status']) : null;
         $content->created = isset($data['content_created']) ? esc_html(string: $data['content_created']) : null;
 
         $content->createdGmt = isset($data['content_created_gmt']) ?
@@ -215,6 +215,7 @@ final class Content extends stdClass
      * @throws ContainerExceptionInterface
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
+     * @throws TypeException
      */
     public function __isset(string $key)
     {
@@ -233,6 +234,7 @@ final class Content extends stdClass
      * @throws ContainerExceptionInterface
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
+     * @throws TypeException
      */
     public function __get(string $key): string
     {
@@ -281,6 +283,7 @@ final class Content extends stdClass
      * @throws ContainerExceptionInterface
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
+     * @throws TypeException
      */
     public function get(string $key): string
     {
@@ -297,6 +300,7 @@ final class Content extends stdClass
      * @throws ContainerExceptionInterface
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
+     * @throws TypeException
      */
     public function hasProp(string $key): bool
     {

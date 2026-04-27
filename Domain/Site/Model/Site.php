@@ -140,16 +140,16 @@ final class Site extends stdClass
      */
     public function populate(Site $site, array $data = []): self
     {
-        $site->id = esc_html(string: $data['site_id']) ?? null;
-        $site->key = esc_html(string: $data['site_key']) ?? null;
-        $site->name = esc_html(string: $data['site_name']) ?? null;
-        $site->slug = esc_html(string: $data['site_slug']) ?? null;
-        $site->domain = esc_html(string: $data['site_domain']) ?? null;
+        $site->id = isset($data['site_id']) ? esc_html(string: $data['site_id']) : null;
+        $site->key = isset($data['site_key']) ? esc_html(string: $data['site_key']) : null;
+        $site->name = isset($data['site_name']) ? esc_html(string: $data['site_name']) : null;
+        $site->slug = isset($data['site_slug']) ? esc_html(string: $data['site_slug']) : null;
+        $site->domain = isset($data['site_domain']) ? esc_html(string: $data['site_domain']) : null;
         $site->mapping = isset($data['site_mapping']) ? esc_html(string: $data['site_mapping']) : null;
-        $site->path = esc_html(string: $data['site_path']) ?? null;
-        $site->owner = esc_html(string: $data['site_owner']) ?? null;
-        $site->status = esc_html(string: $data['site_status']) ?? null;
-        $site->registered = esc_html(string: $data['site_registered']) ?? null;
+        $site->path = isset($data['site_path']) ? esc_html(string: $data['site_path']) : null;
+        $site->owner = isset($data['site_owner']) ? esc_html(string: $data['site_owner']) : null;
+        $site->status = isset($data['site_status']) ? esc_html(string: $data['site_status']) : null;
+        $site->registered = isset($data['site_registered']) ? esc_html(string: $data['site_registered']) : null;
         $site->modified = isset($data['site_modified']) ? esc_html(string: $data['site_modified']) : null;
 
         return $site;

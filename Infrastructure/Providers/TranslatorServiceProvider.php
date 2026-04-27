@@ -17,6 +17,7 @@ use Qubus\Exception\Exception;
 use ReflectionException;
 
 use function App\Shared\Helpers\load_devflow_textdomain;
+use function Qubus\Security\Helpers\esc_html;
 
 class TranslatorServiceProvider extends CodefyServiceProvider
 {
@@ -44,7 +45,7 @@ class TranslatorServiceProvider extends CodefyServiceProvider
             Filter::getInstance()->addFilter(hook: 'core_locale', callback: function ($locale) use ($database) {
                 $sql = "SELECT option_value FROM {$database->prefix}option WHERE option_key = 'site_locale' LIMIT 1";
                 $locale = $database->getVar($sql);
-                return $locale;
+                return esc_html($locale);
             });
         }
 

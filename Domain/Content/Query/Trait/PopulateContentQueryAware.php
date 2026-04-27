@@ -24,29 +24,29 @@ trait PopulateContentQueryAware
     private function populate(?array $data = []): ?array
     {
         if (config(key: 'cms.relative_url') === 'contenttype') {
-            $relativeUrl = $data['content_type'] . '/' . $data['content_slug'] . '/';
+            $relativeUrl = esc_html(string: $data['content_type'] . '/' . $data['content_slug'] . '/');
         } else {
-            $relativeUrl = $data['content_slug'] . '/';
+            $relativeUrl = esc_html(string: $data['content_slug'] . '/');
         }
 
         return [
-            'id' => esc_html(string: $data['content_id']) ?? null,
-            'slug' => esc_html(string: $data['content_slug']) ?? null,
-            'title' => esc_html(string: $data['content_title']) ?? null,
-            'body' => purify_html($data['content_body']) ?? null,
+            'id' => isset($data['content_id']) ? esc_html(string: $data['content_id']) : null,
+            'slug' => isset($data['content_slug']) ? esc_html(string: $data['content_slug']) : null,
+            'title' => isset($data['content_title']) ? esc_html(string: $data['content_title']) : null,
+            'body' => isset($data['content_body']) ? purify_html($data['content_body']) : null,
             'author' => isset($data['content_author']) ? esc_html(string: $data['content_author']) : null,
-            'type' => esc_html(string: $data['content_type']) ?? null,
+            'type' => isset($data['content_type']) ? esc_html(string: $data['content_type']) : null,
             'parent' => isset($data['content_parent']) ? esc_html(string: $data['content_parent']) : null,
-            'sidebar' => esc_html(string: (string) $data['content_sidebar']) ?? null,
-            'showInMenu' => esc_html(string: (string) $data['content_show_in_menu']) ?? null,
-            'showInSearch' => esc_html(string: (string) $data['content_show_in_search']) ?? null,
-            'relativeUrl' => esc_html(string: $relativeUrl) ?? null,
+            'sidebar' => isset($data['content_sidebar']) ? esc_html(string: (string) $data['content_sidebar']) : null,
+            'showInMenu' => isset($data['content_show_in_menu']) ? esc_html(string: (string) $data['content_show_in_menu']) : null,
+            'showInSearch' => isset($data['content_show_in_search']) ? esc_html(string: (string) $data['content_show_in_search']) : null,
+            'relativeUrl' => esc_html(string: $relativeUrl),
 
             'featuredImage' => isset($data['content_featured_image']) ?
                     esc_html(string: $data['content_featured_image']) :
                     null,
 
-            'status' => esc_html(string: $data['content_status']) ?? null,
+            'status' => isset($data['content_status']) ? esc_html(string: $data['content_status']) : null,
 
             'created' => isset($data['content_created']) ? esc_html(string: $data['content_created']) : null,
 

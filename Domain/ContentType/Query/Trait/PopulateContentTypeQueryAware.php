@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Domain\ContentType\Query\Trait;
 
+use Qubus\Exception\Exception;
+
 use function Qubus\Security\Helpers\esc_html;
 
 trait PopulateContentTypeQueryAware
@@ -13,14 +15,15 @@ trait PopulateContentTypeQueryAware
      *
      * @param array|null $data
      * @return array|null
+     * @throws Exception
      */
     private function populate(?array $data = []): ?array
     {
         return [
-            'id' => esc_html(string: $data['content_type_id']) ?? null,
-            'title' => esc_html(string: $data['content_type_title']) ?? null,
-            'slug' => esc_html(string: $data['content_type_slug']) ?? null,
-            'description' => esc_html(string: $data['content_type_description']) ?? null,
+            'id' => isset($data['content_type_id']) ? esc_html(string: $data['content_type_id']) : null,
+            'title' => isset($data['content_type_title']) ? esc_html(string: $data['content_type_title']) : null,
+            'slug' => isset($data['content_type_slug']) ? esc_html(string: $data['content_type_slug']) : null,
+            'description' => isset($data['content_type_description']) ? esc_html(string: $data['content_type_description']) : null,
         ];
     }
 }

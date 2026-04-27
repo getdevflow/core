@@ -1000,7 +1000,7 @@ function cms_update_site(array|ServerRequestInterface|Site $sitedata): Error|str
         ),
         Database::ARRAY_A
     );
-    if ($details['site_owner'] !== $sitedata['owner']) {
+    if (esc_html($details['site_owner']) !== $sitedata['owner']) {
         $ownerChange = true;
     } else {
         $ownerChange = false;
