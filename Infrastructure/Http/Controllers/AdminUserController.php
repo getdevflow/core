@@ -63,7 +63,6 @@ use function get_class;
 use function is_string;
 use function parse_str;
 use function Qubus\Error\Helpers\is_error;
-use function Qubus\Security\Helpers\esc_html;
 use function Qubus\Security\Helpers\esc_html__;
 use function Qubus\Security\Helpers\t__;
 use function Qubus\Support\Helpers\is_false__;

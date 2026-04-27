@@ -9,7 +9,6 @@ use Codefy\Framework\Auth\Gate;
 use Codefy\Framework\Auth\Rbac\Entity\Role;
 use Codefy\Framework\Auth\Rbac\Rbac;
 use Codefy\Framework\Auth\Repository\AuthUserRepository;
-use Codefy\Framework\Factory\FileLoggerFactory;
 use Codefy\Framework\Http\Middleware\Auth\UserAuthorizationMiddleware;
 use Codefy\Framework\Http\Middleware\Auth\UserCookieDecryptMiddleware;
 use Codefy\Framework\Http\RequestContext;
