@@ -27,9 +27,7 @@ class UpdateContentTypeValidator extends HttpInputValidator implements HasDto
 
     /**
      * @throws NotFoundExceptionInterface
-     * @throws UnresolvableQueryHandlerException
      * @throws ContainerExceptionInterface
-     * @throws CommandPropertyNotFoundException
      * @throws InvalidArgumentException
      * @throws Exception
      * @throws ReflectionException

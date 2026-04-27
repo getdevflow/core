@@ -12,6 +12,7 @@ use App\Infrastructure\Services\User\UserAttributeManager;
 use App\Shared\Services\SimpleCacheObjectCacheFactory;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
+use Qubus\Exception\Data\TypeException;
 use ReflectionException;
 
 use function App\Shared\Helpers\dfdb;
@@ -22,6 +23,7 @@ final class AttributesFactory
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
      * @throws ContainerExceptionInterface
+     * @throws TypeException
      */
     public static function product(): AttributeManager
     {
@@ -38,6 +40,7 @@ final class AttributesFactory
      * @throws NotFoundExceptionInterface
      * @throws ContainerExceptionInterface
      * @throws ReflectionException
+     * @throws TypeException
      */
     public static function content(): AttributeManager
     {
@@ -55,6 +58,7 @@ final class AttributesFactory
      * @throws ContainerExceptionInterface
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
+     * @throws TypeException
      */
     public static function user(): UserAttributeManager
     {

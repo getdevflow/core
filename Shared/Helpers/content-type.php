@@ -207,8 +207,6 @@ function get_content_type_permalink(string $contentTypeId): string
  * @return string Unique content_type slug.
  * @throws Exception
  * @throws ReflectionException
- * @throws ContainerExceptionInterface
- * @throws NotFoundExceptionInterface
  */
 function cms_unique_content_type_slug(
     string $originalSlug,
@@ -248,9 +246,7 @@ function cms_unique_content_type_slug(
  * @return string|null|Error The newly created content_type's content_type_id, null or Error if the content_type could
  *                           not be created or updated.
  * @throws CommandPropertyNotFoundException
- * @throws ContainerExceptionInterface
  * @throws Exception
- * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  * @throws TypeException
  * @throws UnresolvableCommandHandlerException

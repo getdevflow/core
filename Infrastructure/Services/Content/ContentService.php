@@ -126,7 +126,6 @@ final readonly class ContentService
         } catch (
             ContainerExceptionInterface |
             InvalidArgumentException |
-            NotFoundExceptionInterface |
             \Qubus\Exception\Exception |
             CommandPropertyNotFoundException |
             \ReflectionException |

@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Shared\Helpers;
 
-use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
-use Codefy\QueryBus\UnresolvableQueryHandlerException;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Psr\SimpleCache\InvalidArgumentException;
@@ -28,13 +26,11 @@ use function Qubus\Support\Helpers\add_trailing_slash;
  * @param string $screen Unique name of menu's screen.
  * @param string|null $permission The permission required for this menu to be displayed to the user.
  * @return mixed
- * @throws CommandPropertyNotFoundException
  * @throws ContainerExceptionInterface
  * @throws Exception
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  * @throws TypeException
- * @throws UnresolvableQueryHandlerException
  * @throws InvalidArgumentException
  */
 function add_admin_submenu(
@@ -81,13 +77,11 @@ function add_admin_submenu(
  * @param string $screen Unique name of menu's screen.
  * @param string|null $permission The permission required for this menu to be displayed to the user.
  * @return false|string         Return the new menu or false if permission is not met.
- * @throws CommandPropertyNotFoundException
  * @throws ContainerExceptionInterface
  * @throws Exception
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  * @throws TypeException
- * @throws UnresolvableQueryHandlerException
  * @throws InvalidArgumentException
  */
 function add_dashboard_submenu(
@@ -108,13 +102,11 @@ function add_dashboard_submenu(
  * @param string $screen Unique name of menu's screen.
  * @param string|null $permission The permission required for this menu to be displayed to the user.
  * @return false|string         Return the new menu or false if permission is not met.
- * @throws CommandPropertyNotFoundException
  * @throws ContainerExceptionInterface
  * @throws Exception
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  * @throws TypeException
- * @throws UnresolvableQueryHandlerException
  * @throws InvalidArgumentException
  */
 function add_sites_submenu(
@@ -135,13 +127,11 @@ function add_sites_submenu(
  * @param string $screen Unique name of menu's screen.
  * @param string|null $permission The permission required for this menu to be displayed to the user.
  * @return false|string         Return the new menu or false if permission is not met.
- * @throws CommandPropertyNotFoundException
  * @throws ContainerExceptionInterface
  * @throws Exception
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  * @throws TypeException
- * @throws UnresolvableQueryHandlerException
  * @throws InvalidArgumentException
  */
 function add_plugins_submenu(
@@ -162,13 +152,11 @@ function add_plugins_submenu(
  * @param string $screen Unique name of menu's screen.
  * @param string|null $permission The permission required for this menu to be displayed to the user.
  * @return false|string         Return the new menu or false if permission is not met.
- * @throws CommandPropertyNotFoundException
  * @throws ContainerExceptionInterface
  * @throws Exception
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  * @throws TypeException
- * @throws UnresolvableQueryHandlerException
  * @throws InvalidArgumentException
  */
 function add_themes_submenu(
@@ -189,13 +177,11 @@ function add_themes_submenu(
  * @param string $screen Unique name of menu's screen.
  * @param string|null $permission The permission required for this menu to be displayed to the user.
  * @return false|string         Return the new menu or false if permission is not met.
- * @throws CommandPropertyNotFoundException
  * @throws ContainerExceptionInterface
  * @throws Exception
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  * @throws TypeException
- * @throws UnresolvableQueryHandlerException
  * @throws InvalidArgumentException
  */
 function add_users_submenu(
@@ -216,13 +202,11 @@ function add_users_submenu(
  * @param string $screen Unique name of menu's screen.
  * @param string|null $permission The permission required for this menu to be displayed to the user.
  * @return false|string         Return the new menu or false if permission is not met.
- * @throws CommandPropertyNotFoundException
  * @throws ContainerExceptionInterface
  * @throws Exception
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  * @throws TypeException
- * @throws UnresolvableQueryHandlerException
  * @throws InvalidArgumentException
  */
 function add_options_submenu(

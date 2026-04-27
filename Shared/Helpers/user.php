@@ -9,6 +9,7 @@ use App\Domain\User\Command\UpdateUserPasswordCommand;
 use App\Domain\User\Command\CreateUserCommand;
 use App\Domain\User\Command\UpdateUserCommand;
 use App\Domain\User\Model\User;
+use App\Domain\User\Query\FindMultisiteUniqueUsersQuery;
 use App\Domain\User\Query\FindUsersQuery;
 use App\Domain\User\UserError;
 use App\Domain\User\ValueObject\UserId;
@@ -79,7 +80,7 @@ use function strtolower;
  */
 function get_all_users(): mixed
 {
-    return ask(new FindUsersQuery());
+    return ask(new FindMultisiteUniqueUsersQuery());
 }
 
 /**
@@ -370,43 +371,6 @@ function email_exists(string $email): false|string
 }
 
 /**
- * Adds label to user's status.
- *
- * @file core/Shared/Helpers/user.php
- * @param string $status
- * @return array User's status
- * @throws Exception
- */
-function user_status_label(string $status): array
-{
-    $label = [
-        'A' => [
-            esc_html__(string: 'Active', domain: 'devflow'),
-            'label-success'
-        ],
-        'I' => [
-            esc_html__(string: 'Inactive', domain: 'devflow'),
-            'label-warning'
-        ],
-        'B' => [
-            esc_html__(string: 'Blocked', domain: 'devflow'),
-            'label-default'
-        ],
-        'S' => [
-            esc_html__(string: 'Spammer', domain: 'devflow'),
-            'label-danger'
-        ]
-    ];
-
-    /**
-     * Filters the label result.
-     *
-     * @param array $label User's label.
-     */
-    return __observer()->filter->applyFilter('user.status.label', $label[$status], $status);
-}
-
-/**
  * Retrieve a list of system defined user roles.
  *
  * @file core/Shared/Helpers/user.php
@@ -501,6 +465,7 @@ function update_user_attribute(string $userId, string $key, mixed $value, ?strin
  * @throws ContainerExceptionInterface
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
+ * @throws TypeException
  */
 function delete_user_attribute(string $siteId, string $userId, string $key): UserAttributeBag
 {
@@ -514,6 +479,7 @@ function delete_user_attribute(string $siteId, string $userId, string $key): Use
  * @throws ContainerExceptionInterface
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
+ * @throws TypeException
  */
 function delete_site_user_record(string $siteId, string $userId): void
 {
@@ -530,7 +496,7 @@ function delete_site_user_record(string $siteId, string $userId): void
  *
  * The option will first check for the per site name and then the global name.
  *
- * Uses `get_user_site_option_$option` filter.
+ * Uses `get.user.option.$option` filter.
  *
  * @file core/Shared/Helpers/user.php
  * @param string $option User option name.
@@ -564,7 +530,7 @@ function get_user_option(string $option, string $userId = ''): bool|string|int|a
      * @param string $option Name of the option being retrieved.
      * @param string $userId ID of the user whose option is being retrieved.
      */
-    return __observer()->filter->applyFilter("get.user.option_{$option}", $result, $option, $userId);
+    return __observer()->filter->applyFilter("get.user.option.{$option}", $result, $option, $userId);
 }
 
 /**
@@ -1068,14 +1034,14 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
         }
     }
 
-    if (!empty($attributes)) {
+    if (!empty($attributes['role']) && !empty($attributes['status'])) {
         foreach ($attributes as $key => $value) {
             update_user_attribute($user->id, $key, $value);
         }
+        /** Set the user's role */
+        $user->setRole($user->role);
     }
 
-    /** Set the user's role */
-    $user->setRole($user->role);
     /** Flush the cache. */
     UserCachePsr16::clean($user);
 
@@ -1718,9 +1684,10 @@ function get_users_reassign(string $userId = ''): void
     $sql = "SELECT u.user_id FROM {$dfdb->basePrefix}user u " .
             "JOIN {$dfdb->basePrefix}site_user su " .
             "ON u.user_id = su.user_id " .
-            "WHERE u.user_id NOT IN (?)";
+            "WHERE u.user_id NOT IN (?) 
+            AND su.site_id = ?";
 
-    $listUsers = $dfdb->getResults($dfdb->prepare($sql, [$userId]), Database::ARRAY_A);
+    $listUsers = $dfdb->getResults($dfdb->prepare($sql, [$userId, get_current_site_id()]), Database::ARRAY_A);
 
     foreach ($listUsers as $user) {
         echo '<option value="' . esc_html($user['user_id']) . '">' . get_name(esc_html($user['user_id'])) . '</option>';
@@ -1738,7 +1705,7 @@ function get_users_by_site_key(string $siteKey = ''): array|string|bool
 {
     $dfdb = dfdb();
 
-    $sql = "SELECT u.user_id, u.user_login, u.user_token, u.user_email " .
+    $sql = "SELECT u.* " .
             "FROM {$dfdb->basePrefix}user u " .
             "JOIN {$dfdb->basePrefix}site_user su ON u.user_id = su.user_id " .
             "JOIN {$dfdb->basePrefix}site s ON su.site_id = s.site_id " .

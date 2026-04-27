@@ -40,6 +40,7 @@ final class Options
      * @throws ContainerExceptionInterface
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
+     * @throws TypeException
      */
     public static function factory(): Options
     {
@@ -153,7 +154,7 @@ final class Options
                 );
                 $this->cache->set(md5($optionKey), $result);
             }
-        } catch (PDOException | Exception | ReflectionException $e) {
+        } catch (PDOException | Exception $e) {
             FileLoggerFactory::getLogger()->error(
                 sprintf(
                     'OPTIONS[%s]: Error: %s',

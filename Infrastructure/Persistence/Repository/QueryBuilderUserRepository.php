@@ -7,17 +7,12 @@ namespace App\Infrastructure\Persistence\Repository;
 use App\Domain\User\Model\User;
 use App\Domain\User\Repository\UserCommandRepository;
 use App\Domain\User\ValueObject\UserId;
-use App\Infrastructure\Services\AttributesFactory;
-use Psr\Container\ContainerExceptionInterface;
-use Psr\Container\NotFoundExceptionInterface;
 use Psr\SimpleCache\InvalidArgumentException;
 use Qubus\Exception\Exception;
 use Qubus\Expressive\Database;
 use Exception as NativeException;
 use Qubus\Expressive\QueryBuilderException;
 use ReflectionException;
-
-use function App\Shared\Helpers\get_current_site_id;
 
 class QueryBuilderUserRepository implements UserCommandRepository
 {
@@ -28,8 +23,6 @@ class QueryBuilderUserRepository implements UserCommandRepository
     /**
      * @param User $user
      * @return void
-     * @throws ContainerExceptionInterface
-     * @throws NotFoundExceptionInterface
      * @throws InvalidArgumentException
      * @throws Exception
      * @throws ReflectionException
