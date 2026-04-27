@@ -335,23 +335,23 @@ function checked_selected_helper(mixed $helper, mixed $current, bool $echo, stri
  */
 function seconds_to_minutes(float|int $seconds): string
 {
-    /// get minutes
+    // get minutes
     $minResult = floor(num: $seconds / 60);
 
-    /// if minutes is between 0-9, add a "0" --> 00-09
+    // if minutes is between 0-9, add a "0" --> 00-09
     if ($minResult < 10) {
         $minResult = 0 . $minResult;
     }
 
-    /// get sec
+    // get sec
     $secResult = ($seconds / 60 - $minResult) * 60;
 
-    /// if seconds is between 0-9, add a "0" --> 00-09
+    // if seconds is between 0-9, add a "0" --> 00-09
     if ($secResult < 10) {
         $secResult = 0 . $secResult;
     }
 
-    /// return result
+    // return result
     return $minResult . ":" . $secResult;
 }
 
@@ -482,7 +482,7 @@ function sanitize_filename(string $filename, bool $beautify = true): string
      */
     $filename = __observer()->filter->applyFilter('sanitized.filename', $filename, $filenameRaw);
 
-    // maximise filename length to 255 bytes http://serverfault.com/a/9548/44086
+    // maximize filename length to 255 bytes http://serverfault.com/a/9548/44086
     $ext = pathinfo($filename, PATHINFO_EXTENSION);
     $filename = mb_strcut(
         pathinfo(
@@ -973,7 +973,7 @@ function cms_enqueue_css(
     } elseif ($config === 'plugin') {
         $options = [
             'public_dir' => remove_trailing_slash(public_path()),
-            'css_dir' => 'plugins' . Devflow::$PHP::DS  . $slug . Devflow::$PHP::DS  . 'css',
+            'css_dir' => sprintf('static/tmp/plugin/%s/css', $slug),
             'pipeline' => __observer()->filter->applyFilter('plugin.css.pipeline', $minify),
             'pipeline_dir' => 'minify'
         ];
@@ -982,7 +982,7 @@ function cms_enqueue_css(
     } elseif ($config === 'theme') {
         $options = [
             'public_dir' => remove_trailing_slash(public_path()),
-            'css_dir' => 'themes' . Devflow::$PHP::DS  . $slug . Devflow::$PHP::DS  . 'css',
+            'css_dir' => sprintf('static/tmp/theme/%s/css', $slug),
             'pipeline' => __observer()->filter->applyFilter('theme.css.pipeline', $minify),
             'pipeline_dir' => 'minify'
         ];
@@ -1032,7 +1032,7 @@ function cms_enqueue_js(
     } elseif ($config === 'plugin') {
         $options = [
             'public_dir' => remove_trailing_slash(public_path()),
-            'js_dir' => 'plugins' . Devflow::$PHP::DS  . $slug . Devflow::$PHP::DS  . 'js',
+            'js_dir' => sprintf('static/tmp/plugin/%s/js', $slug),
             'pipeline' => __observer()->filter->applyFilter('plugin.js.pipeline', $minify),
             'pipeline_dir' => 'minify'
         ];
@@ -1041,7 +1041,7 @@ function cms_enqueue_js(
     } elseif ($config === 'theme') {
         $options = [
             'public_dir' => remove_trailing_slash(public_path()),
-            'js_dir' => 'themes' . Devflow::$PHP::DS  . $slug . Devflow::$PHP::DS  . 'js',
+            'js_dir' => sprintf('static/tmp/theme/%s/js', $slug),
             'pipeline' => __observer()->filter->applyFilter('theme.js.pipeline', $minify),
             'pipeline_dir' => 'minify'
         ];
@@ -1076,7 +1076,7 @@ function generate_random_username(int $length = 6): string
  * @file core/Shared/Helpers/core.php
  * @param int $length Optional. The length of password to generate. Default 12.
  * @param bool $specialChars Optional. Whether to include standard special characters.
- *                                Default true.
+ *                           Default true.
  * @param bool $extraSpecialChars Optional. Whether to include other special characters.
  *                                Default false.
  * @return string The system generated password.
@@ -1194,11 +1194,14 @@ function sort_list(
  * @throws ContainerExceptionInterface
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
+ * @throws TypeException
  */
 function site_path(?string $path = null): string
 {
+    $siteDirectoryKey = site_directory_key(Registry::getInstance()->get('siteKey'));
+
     return public_path(
-        'sites' . Devflow::$PHP::DS . Registry::getInstance()->get('siteKey') . Devflow::$PHP::DS . $path
+        'site' . Devflow::$PHP::DS . $siteDirectoryKey . Devflow::$PHP::DS . $path
     );
 }
 

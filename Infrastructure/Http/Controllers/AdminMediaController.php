@@ -24,12 +24,14 @@ use ReflectionException;
 use function App\Shared\Helpers\current_user_can;
 use function App\Shared\Helpers\is_user_logged_in;
 use function App\Shared\Helpers\login_url;
+use function App\Shared\Helpers\site_directory_key;
 use function App\Shared\Helpers\site_path;
 use function App\Shared\Helpers\site_url;
 use function array_merge;
 use function Codefy\Framework\Helpers\view;
 use function error_reporting;
 use function Qubus\Security\Helpers\t__;
+use function sprintf;
 
 final class AdminMediaController extends BaseController
 {
@@ -61,27 +63,28 @@ final class AdminMediaController extends BaseController
         if (empty($roots)) {
             $dirs = Devflow::$PHP->configContainer->array(key: 'elfinder.dir');
             foreach ($dirs as $dir) {
+                $siteDirectoryKey = site_directory_key(Registry::getInstance()->get('siteKey'));
                 $roots[] = [
                     'driver' => 'LocalFileSystem',
                     'trashHash' => 't1_Lw',
                     'path' => site_path($dir),
                     'URL' => site_url(
-                        path: 'sites/' . Registry::getInstance()->get('siteKey') . "/$dir"
+                        path: sprintf('site/%s/%s', $siteDirectoryKey, $dir)
                     ),
                     'alias' => t__(msgid: 'Media Library', domain: 'devflow'),
-                    'accessControl' => Devflow::$PHP->configContainer->getConfigKey(key: 'elfinder.access'),
-                    'tmbURL' => site_url('sites/' . Registry::getInstance()->get('siteKey') . "/{$dir}.tmb"),
+                    'accessControl' => Devflow::$PHP->configContainer->string(key: 'elfinder.access'),
+                    'tmbURL' => site_url(sprintf('site/%s/%s.tmb', $siteDirectoryKey, $dir)),
                 ];
 
                 $roots[] = [
                     'id' => 1,
                     'driver' => 'Trash',
                     'path' => site_path('.trash'),
-                    'tmbURL' => site_url('sites/' . Registry::getInstance()->get('siteKey') . '/.trash/.tmb/'),
+                    'tmbURL' => site_url(sprintf('site/%s/.trash/.tmb/', $siteDirectoryKey)),
                 ];
             }
 
-            $disks = Devflow::$PHP->configContainer->getConfigKey(key: 'elfinder.disks', default: []);
+            $disks = Devflow::$PHP->configContainer->array(key: 'elfinder.disks', default: []);
             foreach ($disks as $key => $root) {
                 if (is_string($root)) {
                     $key = $root;
@@ -93,7 +96,7 @@ final class AdminMediaController extends BaseController
                         'driver' => 'Flysystem',
                         'filesystem' => $disk,
                         'alias' => $key,
-                        'accessControl' => Devflow::$PHP->configContainer->getConfigKey(key: 'elfinder.access')
+                        'accessControl' => Devflow::$PHP->configContainer->string(key: 'elfinder.access')
                     ];
                     $root = array_merge($defaults, $root);
                     $roots[] = $root;

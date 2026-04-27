@@ -26,7 +26,6 @@ use App\Shared\Services\DateTime;
 use App\Shared\Services\Registry;
 use App\Shared\Services\Sanitizer;
 use App\Shared\Services\SimpleCacheObjectCacheFactory;
-use Codefy\CommandBus\Exceptions\CommandCouldNotBeHandledException;
 use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
 use Codefy\CommandBus\Exceptions\UnresolvableCommandHandlerException;
 use Codefy\Domain\Model\EntityNotFoundException;
@@ -144,10 +143,6 @@ function if_site_domain_exists(string $sitedomain): bool
  * @param string $siteDomain Site domain to check against.
  * @param string $sitePath Site path to check against.
  * @return bool If site exists, return true otherwise return false.
- * @throws ContainerExceptionInterface
- * @throws Exception
- * @throws NotFoundExceptionInterface
- * @throws ReflectionException
  */
 function if_site_exists(string $siteDomain, string $sitePath): bool
 {
@@ -164,44 +159,6 @@ function if_site_exists(string $siteDomain, string $sitePath): bool
     );
 
     return $site > 0;
-}
-
-/**
- * Adds user meta data for specified site.
- *
- * @access private
- *
- * @file core/Shared/Helpers/site.php
- * @param string $siteId Site ID.
- * @param array $params Parameters to set (assign_id or role).
- * @return bool True if usermete and role is added.
- * @throws ContainerExceptionInterface
- * @throws Exception
- * @throws NotFoundExceptionInterface
- * @throws ReflectionException
- * @throws TypeException
- * @throws InvalidArgumentException
- */
-function add_site_usermeta(string $siteId, array $params = []): bool
-{
-    /** @var User $userdata */
-    $userdata = get_userdata($params['assign_id']);
-    $data = [
-        'bio' => $userdata->bio,
-        'status' => $userdata->status,
-        'admin.layout' => $userdata->adminLayout <= 0 ? (int) 0 : (int) $userdata->adminLayout,
-        'admin.sidebar' => $userdata->adminSidebar <= 0 ? (int) 0 : (int) $userdata->adminSidebar,
-        'admin.skin' => $userdata->adminSkin === null ? (string) 'skin-red' : (string) $userdata->adminSkin
-    ];
-    foreach ($data as $key => $value) {
-        update_user_attribute($params['assign_id'], $key, $value);
-    }
-
-    $user = new User(dfdb());
-    $user->id = $params['assign_id'];
-    $user->setRole((string) $params['role']);
-
-    return true;
 }
 
 /**
@@ -236,7 +193,7 @@ function create_site_directories(string $siteId, Site $site, bool $update = fals
 
     mkdir(
         directory: public_path(
-            path: 'sites' . Devflow::$PHP::DS . $key .
+            path: 'site' . Devflow::$PHP::DS . $key .
             Devflow::$PHP::DS . 'uploads' . Devflow::$PHP::DS  . '__optimized__'
         ),
         permissions: 0755,
@@ -245,7 +202,7 @@ function create_site_directories(string $siteId, Site $site, bool $update = fals
 
     mkdir(
         directory: public_path(
-            path: 'sites' . Devflow::$PHP::DS . $key . Devflow::$PHP::DS . '.trash'
+            path: 'site' . Devflow::$PHP::DS . $key . Devflow::$PHP::DS . '.trash'
         ),
         permissions: 0755,
         recursive: true
@@ -343,15 +300,11 @@ function delete_site_tables(string $siteId, Site $oldSite): bool
     $dropTables = __observer()->filter->applyFilter('site.drop.tables', $tables, $oldSite->key);
 
     try {
-        $dfdb->transactional(function () use ($dfdb, $dropTables) {
-            $dfdb->getConnection()->pdo->exec(statement: "SET GLOBAL FOREIGN_KEY_CHECKS=0;");
-
-            foreach ((array) $dropTables as $table) {
-                $dfdb->getConnection()->pdo->exec(statement: sprintf("DROP TABLE IF EXISTS %s", $table));
-            }
-
-            $dfdb->getConnection()->pdo->exec(statement: "SET GLOBAL FOREIGN_KEY_CHECKS=1;");
-        });
+        $dfdb->getConnection()->pdo->exec(statement: "SET GLOBAL FOREIGN_KEY_CHECKS=0;");
+        foreach ((array) $dropTables as $table) {
+            $dfdb->getConnection()->pdo->exec(statement: sprintf("DROP TABLE IF EXISTS %s", $table));
+        }
+        $dfdb->getConnection()->pdo->exec(statement: "SET GLOBAL FOREIGN_KEY_CHECKS=1;");
 
         return true;
     } catch (PDOException | \Exception $e) {
@@ -388,7 +341,7 @@ function delete_site_directories(string $siteId, Site $oldSite): bool
 
     $key = site_directory_key($oldSite->key);
 
-    rmdir__(public_path(path: 'sites' . Devflow::$PHP::DS . $key));
+    rmdir__(public_path(path: 'site' . Devflow::$PHP::DS . $key));
 
     return true;
 }
@@ -441,6 +394,42 @@ function get_current_site_id(): string
 function get_multisite_users(): array
 {
     return ask(new FindMultisiteUniqueUsersQuery());
+}
+
+/**
+ * @throws ContainerExceptionInterface
+ * @throws ReflectionException
+ * @throws NotFoundExceptionInterface
+ * @throws Exception
+ */
+function site_user_lookup(?string $active = null): void
+{
+    $dfdb = dfdb();
+
+    $sql = "SELECT DISTINCT u.user_id 
+    FROM {$dfdb->basePrefix}user u 
+    JOIN {$dfdb->basePrefix}site_user su
+        ON u.user_id = su.user_id
+    JOIN {$dfdb->basePrefix}site s
+        ON su.site_id = s.site_id
+    WHERE s.site_id <> ? 
+    AND u.user_id <> s.site_owner";
+
+    $users = $dfdb->getResults(
+            query: $dfdb->prepare(
+                    $sql,
+                    [
+                            get_current_site_id(),
+                    ]
+            ),
+            output: Database::ARRAY_A
+    );
+
+    foreach ($users as $user) {
+        echo '<option value="' . esc_html($user['user_id'])
+                . '"' . selected(esc_html($user['user_id']), $active, false) . '>'
+                . get_name(esc_html($user['user_id'])) . '</option>';
+    }
 }
 
 /**
@@ -622,7 +611,7 @@ function cms_insert_site(array|ServerRequestInterface|Site $sitedata): Error|str
 
     /** @var RequestInterface $request */
     $request = app(name: RequestInterface::class);
-    $host = $request->getUri()->getHost();
+    $host = $request->getHost();
 
     $rawSiteDomain = isset($sitedata['subdomain']) ?
     trim(strtolower($sitedata['subdomain'])) . '.' . $host :
@@ -892,7 +881,6 @@ function cms_insert_site(array|ServerRequestInterface|Site $sitedata): Error|str
 
         } catch (
             PDOException |
-            CommandCouldNotBeHandledException |
             UnresolvableCommandHandlerException |
             ReflectionException $e
         ) {
@@ -911,6 +899,8 @@ function cms_insert_site(array|ServerRequestInterface|Site $sitedata): Error|str
 
     /** @var Site $site */
     $site = get_site_by('id', $siteId->toNative());
+    /** Create user attribute if missing. */
+    AttributesFactory::user()->createIfMissing($site->id, $site->owner);
 
     if ($update) {
         /**
@@ -1407,6 +1397,7 @@ function new_site_schema(string $siteId, Site $site, bool $update): bool|string
     $insertData = str_replace('{ulid_11}', Ulid::generateAsString(), $insertData);
     $insertData = str_replace('{ulid_12}', Ulid::generateAsString(), $insertData);
     $insertData = str_replace('{timezone}', config()->string(key: 'app.timezone'), $insertData);
+    $insertData = str_replace('{site_prefix}', $sitePrefix, $insertData);
     $insertData = str_replace('{sitename}', $site->name, $insertData);
     $insertData = str_replace('{admin_email}', $userdata->email, $insertData);
     $insertData = str_replace('{api_key}', $apiKey, $insertData);

@@ -12,7 +12,9 @@ use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
+use Random\RandomException;
 use ReflectionException;
+use RuntimeException;
 
 use function abs;
 use function Codefy\Framework\Helpers\config;
@@ -24,7 +26,6 @@ use function file_exists;
 use function get_headers;
 use function implode;
 use function in_array;
-use function mt_rand;
 use function ord;
 use function preg_replace_callback;
 use function Qubus\Security\Helpers\__observer;
@@ -159,8 +160,8 @@ function get_logo_mini(): string
  */
 function public_site_url(string $path = ''): string
 {
-    $siteKey = Registry::getInstance()->get('siteKey');
-    $url = site_url('sites/' . $siteKey . '/' . $path);
+    $siteKey = site_directory_key(Registry::getInstance()->get('siteKey'));
+    $url = site_url('site/' . $siteKey . '/' . $path);
     return __observer()->filter->applyFilter("public.site.url.{$siteKey}", $url);
 }
 
@@ -177,7 +178,7 @@ function public_site_url(string $path = ''): string
  */
 function public_site_upload_url(string $path = ''): string
 {
-    $siteKey = Registry::getInstance()->get('siteKey');
+    $siteKey = site_directory_key(Registry::getInstance()->get('siteKey'));
     $url = public_site_url('uploads/' . $path);
     return __observer()->filter->applyFilter("public.site.upload.url.{$siteKey}", $url);
 }
@@ -207,32 +208,49 @@ function cms_encode_email(string $string): string
     // override encoding function with the 'encode_email_method' filter
     $method = __observer()->filter->applyFilter(
         'encode.email.method',
-        '\App\Shared\Helpers\cms_encode_email_str'
+            __NAMESPACE__ . '\\cms_encode_email_str'
     );
+
+    if (!is_callable($method)) {
+        throw new TypeException(
+            'The encode.email.method filter must return a valid callable.'
+        );
+    }
 
     // override regex pattern with the 'encode_email_regexp' filter
-    $regexp = __observer()->filter->applyFilter('encode.email.regexp', '{
-			(?:mailto:)?
-			(?:
-				[-!#$%&*+/=?^_`.{|}~\w\x80-\xFF]+
-			|
-				".*?"
-			)
-			\@
-			(?:
-				[-a-z0-9\x80-\xFF]+(\.[-a-z0-9\x80-\xFF]+)*\.[a-z]+
-			|
-				\[[\d.a-fA-F:]+\]
-			)
-		}xi');
+    $regexp = __observer()->filter->applyFilter(
+            'encode.email.regexp',
+            <<<'REGEX'
+{
+    (?:mailto:)?
+    (?:
+        [-!#$%&*+/=?^_`.{|}~\w\x80-\xFF]+
+        |
+        ".*?"
+    )
+    \@
+    (?:
+        [-a-z0-9\x80-\xFF]+(?:\.[-a-z0-9\x80-\xFF]+)*\.[a-z]+
+        |
+        \[[\d.a-fA-F:]+\]
+    )
+}xi
+REGEX
+    );
 
-    return preg_replace_callback(
+    $encoded = preg_replace_callback(
         $regexp,
-        function ($matches) use ($method) {
-            return $method($matches[0]);
-        },
+        static fn(array $matches): string => (string) $method($matches[0]),
         $string
     );
+
+    if ($encoded === null) {
+        throw new RuntimeException(
+            'Email encoding failed: ' . preg_last_error_msg()
+        );
+    }
+
+    return $encoded;
 }
 
 /**
@@ -240,36 +258,38 @@ function cms_encode_email(string $string): string
  * or hexadecimal entity, in the hopes of foiling most email address
  * harvesting bots.
  *
- * Based on Michel Fortin's PHP Markdown:
- * http://michelf.com/projects/php-markdown/
- * Which is based on John Gruber's original Markdown:
- * http://daringfireball.net/projects/markdown/
- * Whose code is based on a filter by Matthew Wickline, posted to
- * the BBEdit-Talk with some optimizations by Milian Wolff.
- *
  * @file core/Shared/Helpers/hook.php
  * @param string $string Text with email addresses to encode
  * @return string $string Given text with encoded email addresses
+ * @throws RandomException
  */
 function cms_encode_email_str(string $string): string
 {
+    if ($string === '') {
+        return '';
+    }
+
     $chars = str_split($string);
-    $seed = mt_rand(0, (int) abs(crc32($string) / strlen($string)));
+    $seedMax = max(1, (int) abs(crc32($string) / max(1, strlen($string))));
+    $seed = random_int(0, $seedMax);
 
     foreach ($chars as $key => $char) {
         $ord = ord($char);
 
-        if ($ord < 128) { // ignore non-ascii chars
-            $r = ($seed * (1 + $key)) % 100; // pseudo "random function"
-
-            if ($r > 60 && $char != '@') {
-                ; // plain character (not encoded), if not @-sign
-            } elseif ($r < 45) {
-                $chars[$key] = '&#x' . dechex($ord) . ';'; // hexadecimal
-            } else {
-                $chars[$key] = '&#' . $ord . ';'; // decimal (ascii)
-            }
+        // Ignore non-ASCII bytes.
+        if ($ord >= 128) {
+            continue;
         }
+
+        $r = ($seed * ($key + 1)) % 100;
+
+        if ($r > 60 && $char !== '@') {
+            continue;
+        }
+
+        $chars[$key] = $r < 45
+            ? '&#x' . dechex($ord) . ';'
+            : '&#' . $ord . ';';
     }
 
     return implode('', $chars);
@@ -402,7 +422,7 @@ function cms_editor(?string $selector = null): void
         function elFinderBrowser(callback, value, meta) {
             tinymce.activeEditor.windowManager.open({
                 file: "<?= admin_url(path: 'elfinder/'); ?>",
-                title: "elFinder 2.1.65",
+                title: "elFinder 2.1.67",
                 width: 900,
                 height: 425,
                 resizable: "yes"
@@ -455,11 +475,11 @@ function cms_optimized_image_upload(string $image): ?string
     if ($image === '') {
         return null;
     }
-    $siteKey = Registry::getInstance()->get('siteKey');
+    $siteKey = site_directory_key(Registry::getInstance()->get('siteKey'));
     $rawFilename = str_replace(site_url(), '', $image);
     $newFilename = str_replace(
         public_site_upload_url(),
-        'sites/' . $siteKey . '/uploads/__optimized__/',
+        'site/' . $siteKey . '/uploads/__optimized__/',
         $image
     );
     if (!file_exists($newFilename)) {
@@ -546,14 +566,14 @@ function cms_charset(?string $charset = null): mixed
 function get_auth_screen_logo(): string
 {
     $locations = [];
-    $siteKey = Registry::getInstance()->has('siteKey') ? Registry::getInstance()->get('siteKey') : '';
+    $siteKey = Registry::getInstance()->has('siteKey') ? site_directory_key(Registry::getInstance()->get('siteKey')) : '';
     /**
      * First, check to see if a custom logo exists for a specific site.
      * @var string $locations['site'] Custom logo for a specific site.
      */
     $locations['site'] = [
-        'path' => public_path('sites/' . $siteKey . '/uploads/auth-logo.png'),
-        'relative' => site_url('sites/' . $siteKey . '/uploads/auth-logo.png'),
+        'path' => public_path('site/' . $siteKey . '/uploads/auth-logo.png'),
+        'relative' => site_url('site/' . $siteKey . '/uploads/auth-logo.png'),
     ];
     /**
      * Second, check to see if a custom global logo exists for the system.
@@ -624,6 +644,7 @@ function get_user_avatar_url(string $email): string
  * Upload image button.
  *
  * @file core/Shared/Helpers/hook.php
+ * @throws Exception
  */
 function cms_upload_image()
 {
