@@ -7,7 +7,6 @@ namespace App\Infrastructure\Http\Controllers;
 use App\Application\Devflow;
 use App\Infrastructure\Services\Vihzhuo\DevflowPageBuilder;
 use Codefy\Framework\Http\BaseController;
-use Codefy\Framework\Proxy\Codefy;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -129,7 +128,7 @@ final class WebsiteManagerController extends BaseController
             if ($page) {
                 /** @var string $message */
                 $message = phpb_trans(key: 'website-manager.page-created');
-                Codefy::$PHP->flash->success($message);
+                Devflow::$PHP->flash->success($message);
 
                 return $this->redirect(phpb_url('website_manager'));
             }
@@ -149,7 +148,7 @@ final class WebsiteManagerController extends BaseController
             if ($success) {
                 /** @var string $message */
                 $message = phpb_trans(key: 'website-manager.page-updated');
-                Codefy::$PHP->flash->success($message);
+                Devflow::$PHP->flash->success($message);
 
                 return $this->redirect(phpb_url(module: 'website_manager'));
             }
@@ -164,7 +163,7 @@ final class WebsiteManagerController extends BaseController
         $pageRepository->destroy($page->getId());
         /** @var string $message */
         $message = phpb_trans(key: 'website-manager.page-deleted');
-        Codefy::$PHP->flash->success($message);
+        Devflow::$PHP->flash->success($message);
 
         return $this->redirect(phpb_url('website_manager'));
     }
