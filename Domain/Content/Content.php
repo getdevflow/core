@@ -665,7 +665,7 @@ final class Content extends EventSourcedAggregate implements AggregateRoot
     /**
      * @throws TypeException
      */
-    public function whenContentMetaWasChanged(ContentAttributeWasChanged $event): void
+    public function whenContentAttributeWasChanged(ContentAttributeWasChanged $event): void
     {
         $this->id = $event->contentId();
         $this->attribute = $event->contentAttribute();
