@@ -19,10 +19,8 @@ use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
 use ReflectionException;
 
-use function App\Shared\Helpers\get_user_timezone;
 use function App\Shared\Helpers\load_active_plugins;
 use function App\Shared\Helpers\load_active_theme;
-use function date_default_timezone_set;
 use function Qubus\Security\Helpers\__observer;
 use function Qubus\Security\Helpers\esc_html__;
 use function sprintf;

@@ -8,7 +8,6 @@ use JsonException;
 
 use function array_key_exists;
 use function is_array;
-
 use function Qubus\Security\Helpers\purify_html;
 
 use const JSON_PRETTY_PRINT;
