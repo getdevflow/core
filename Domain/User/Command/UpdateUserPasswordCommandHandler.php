@@ -27,11 +27,9 @@ final readonly class UpdateUserPasswordCommandHandler implements CommandHandler
     {
         /** @var User $user */
         $user = Devflow::$PHP->make(name: User::class);
-        $user->create([
-            'user_id' => $command->id->toNative(),
-            'user_token' => $command->token->toNative(),
-            'user_pass' => Password::hash($command->pass->toNative())
-        ]);
+        $user->id = $command->id->toNative();
+        $user->token = $command->token->toNative();
+        $user->pass = Password::hash($command->pass->toNative());
 
         $this->repository->updatePassword(user: $user);
     }

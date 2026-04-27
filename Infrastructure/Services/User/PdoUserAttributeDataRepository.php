@@ -38,9 +38,7 @@ final readonly class PdoUserAttributeDataRepository implements UserAttributeRepo
         $json = $stmt->fetchColumn();
 
         if ($json === false) {
-            throw new \RuntimeException(
-                t__(msgid: 'User attribute not found', domain: 'devflow')
-            );
+            return null;
         }
 
         return UserAttributeBag::fromJson($siteId, $userId, is_string($json) ? $json : null);

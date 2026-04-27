@@ -27,11 +27,9 @@ final class UpdateSiteOwnerCommandHandler implements CommandHandler
     {
         /** @var Site $site */
         $site = Devflow::$PHP->make(name: Site::class);
-        $site->create([
-            'site_id' => $command->id->toNative(),
-            'site_owner' => $command->owner->toNative(),
-            'site_modified' => $command->modified->format('Y-m-d H:i:s'),
-        ]);
+        $site->id = $command->id->toNative();
+        $site->owner = $command->owner->toNative();
+        $site->modified = $command->modified->format('Y-m-d H:i:s');
 
         $this->repository->updateOwner($site);
     }

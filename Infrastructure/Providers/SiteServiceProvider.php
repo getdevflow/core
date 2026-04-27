@@ -54,7 +54,7 @@ final class SiteServiceProvider extends CodefyServiceProvider
         try {
             $sql = "SELECT site_key FROM {$prefix}site WHERE site_domain = :domain OR site_mapping = :mapping LIMIT 1";
             $sth = $pdo->prepare($sql);
-            $sth->execute(['domain' => $request->getHeaderLine('Host'), 'mapping' => $request->getHeaderLine('Host')]);
+            $sth->execute(['domain' => $request->getHost(), 'mapping' => $request->getHost()]);
 
             $currentSiteKey = $sth->fetchColumn();
 

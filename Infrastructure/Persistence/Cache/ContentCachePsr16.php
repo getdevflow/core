@@ -11,6 +11,7 @@ use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Psr\SimpleCache\InvalidArgumentException;
 use Qubus\EventDispatcher\ActionFilter\Action;
+use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
 use ReflectionException;
 
@@ -26,6 +27,7 @@ class ContentCachePsr16 implements ContentCache
      * @throws InvalidArgumentException
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
+     * @throws TypeException
      */
     public static function update(Content|array $content): void
     {
@@ -75,7 +77,7 @@ class ContentCachePsr16 implements ContentCache
         SimpleCacheObjectCacheFactory::make(namespace: dfdb()->prefix . 'contenttype')
             ->delete(md5($content['type']));
 
-        SimpleCacheObjectCacheFactory::make(namespace: dfdb()->prefix . 'contentmeta')
+        SimpleCacheObjectCacheFactory::make(namespace: dfdb()->prefix . 'content_attribute')
             ->delete(md5($content['id']));
 
         /**

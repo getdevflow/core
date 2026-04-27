@@ -56,13 +56,13 @@ final readonly class ContentTypeService
     {
         try {
             command(
-                command: new UpdateContentTypeCommand(
+                command: new CreateContentTypeCommand(
                     data: $data->toDtoArray()
                 )
             );
 
             /** @var ContentType $contentType */
-            $contentType = get_content_type_by('id', $data->toDtoArray()['contentTypeId']->toNative());
+            $contentType = get_content_type_by('id', $data->toDtoArray()['id']->toNative());
 
             $this->event->dispatch(new ContentTypeCreated($contentType->toArray()));
 
@@ -89,7 +89,7 @@ final readonly class ContentTypeService
     {
         try {
             command(
-                command: new CreateContentTypeCommand(
+                command: new UpdateContentTypeCommand(
                     data: $data->toDtoArray()
                 )
             );

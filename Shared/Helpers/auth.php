@@ -86,6 +86,10 @@ function current_user_can(string $perm, array $ruleParams = []): bool
         return false;
     }
 
+    if(is_super_admin($currentUser->id)) {
+        return true;
+    }
+
     return gate(permission: $perm, ruleParams: $ruleParams);
 }
 
@@ -159,24 +163,22 @@ function cms_authenticate(string $login, string $password, string $rememberme): 
 
     $request = new ServerRequest();
 
-    $sql = "SELECT *"
-    . " FROM {$dfdb->basePrefix}user"
-    . " WHERE user_login = ?"
-    . " OR user_email = ?";
+    $sql = "SELECT u.*"
+    . " FROM {$dfdb->basePrefix}user u"
+    . " WHERE u.user_login = ?"
+    . " OR u.user_email = ?";
 
     $user = $dfdb->getRow($dfdb->prepare($sql, [$login, $login]), Database::ARRAY_A);
 
     if (is_null__($user)) {
         Devflow::$PHP->flash->error(
-            sprintf(
-                t__(
-                    msgid: 'Sorry, there was an error.',
-                    domain: 'devflow'
-                ),
-                $login
+            t__(
+                msgid: 'Sorry, there was an error.',
+                domain: 'devflow'
             ),
         );
-        return redirect($request->getHeaderLine(name: 'Referer'));
+
+        return redirect($request->getHeaderLine('Referer'));
     }
 
     /**

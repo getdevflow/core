@@ -99,17 +99,13 @@ final class User extends stdClass
             !$data = $this->dfdb->getRow(
                 $this->dfdb->prepare(
                     sprintf(
-                        "SELECT u.*, su.user_attribute
+                        "SELECT u.* 
                             FROM {$this->dfdb->basePrefix}user u 
-                            JOIN {$this->dfdb->basePrefix}site_user su 
-                            ON u.user_id = su.user_id
-                            WHERE u.%s = ? 
-                            AND su.site_id = ?",
+                            WHERE u.%s = ?",
                         $dbField
                     ),
                     [
                         $value,
-                        get_current_site_id(),
                     ]
                 ),
                 Database::ARRAY_A
@@ -162,25 +158,25 @@ final class User extends stdClass
      */
     public function populate(User $user, array $data = []): self
     {
-        $user->id = esc_html(string: $data['user_id']) ?? null;
-        $user->login = esc_html(string: $data['user_login']) ?? null;
-        $user->token = esc_html(string: $data['user_token']) ?? null;
-        $user->fname = esc_html(string: $data['user_fname']) ?? null;
-        $user->mname = esc_html(string: $data['user_mname']) ?? null;
-        $user->lname = esc_html($data['user_lname']) ?? null;
-        $user->email = esc_html(string: $data['user_email']) ?? null;
-        $user->pass = esc_html(string: $data['user_pass']) ?? null;
-        $user->url = esc_html(string: $data['user_url']) ?? null;
+        $user->id = isset($data['user_id']) ? esc_html(string: $data['user_id']) : null;
+        $user->login = isset($data['user_login']) ? esc_html(string: $data['user_login']) : null;
+        $user->token = isset($data['user_token']) ? esc_html(string: $data['user_token']) : null;
+        $user->fname = isset($data['user_fname']) ?  esc_html(string: $data['user_fname']) : null;
+        $user->mname = isset($data['user_mname']) ? esc_html(string: $data['user_mname']) : null;
+        $user->lname = isset($data['user_lname']) ? esc_html($data['user_lname']) : null;
+        $user->email = isset($data['user_email']) ? esc_html(string: $data['user_email']) : null;
+        $user->pass = isset($data['user_pass']) ? esc_html(string: $data['user_pass']): null;
+        $user->url = isset($data['user_url']) ? esc_html(string: $data['user_url']) : null;
         $user->bio = isset($data['user_bio']) ? esc_html(string: $data['user_bio']) : null;
-        $user->timezone = esc_html(string: $data['user_timezone']) ?? null;
-        $user->dateFormat = esc_html(string: $data['user_date_format']) ?? null;
-        $user->timeFormat = esc_html(string: $data['user_time_format']) ?? null;
-        $user->locale = esc_html(string: $data['user_locale']) ?? null;
+        $user->timezone = isset($data['user_timezone']) ? esc_html(string: $data['user_timezone']) : null;
+        $user->dateFormat = isset($data['user_date_format']) ? esc_html(string: $data['user_date_format']) : null;
+        $user->timeFormat = isset($data['user_time_format']) ? esc_html(string: $data['user_time_format']) : null;
+        $user->locale = isset($data['user_locale']) ? esc_html(string: $data['user_locale']) : null;
         $user->registered = isset($data['user_registered']) ? esc_html(string: $data['user_registered']) : null;
         $user->modified = isset($data['user_modified']) ? esc_html(string: $data['user_modified']) : null;
-        $user->activationKey = is_null__($data['user_activation_key']) ?
-        '' :
-        esc_html(string: $data['user_activation_key']);
+        $user->activationKey = isset($data['user_activation_key']) ?
+            esc_html(string: $data['user_activation_key']) :
+            null;
 
         return $user;
     }

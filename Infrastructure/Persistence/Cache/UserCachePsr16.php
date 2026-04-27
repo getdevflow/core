@@ -66,7 +66,7 @@ class UserCachePsr16 implements UserCache
         SimpleCacheObjectCacheFactory::make(namespace: 'userlogin')->delete(md5($user['login']));
         SimpleCacheObjectCacheFactory::make(namespace: 'useremail')->delete(md5($user['email']));
         SimpleCacheObjectCacheFactory::make(namespace: 'usertoken')->delete(md5($user['token']));
-        SimpleCacheObjectCacheFactory::make(namespace: dfdb()->prefix . 'usermeta')->delete(md5($user['id']));
+        SimpleCacheObjectCacheFactory::make(namespace: dfdb()->prefix . 'user_attribute')->delete(md5($user['id']));
 
         /**
          * Fires immediately after the given user's cache is cleaned.

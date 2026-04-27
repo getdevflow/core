@@ -36,20 +36,22 @@ use function App\Shared\Helpers\cms_delete_site_user;
 use function App\Shared\Helpers\cms_insert_user;
 use function App\Shared\Helpers\cms_update_user;
 use function App\Shared\Helpers\current_user_can;
-use function App\Shared\Helpers\get_all_users;
 use function App\Shared\Helpers\get_current_site_id;
+use function App\Shared\Helpers\get_current_site_key;
 use function App\Shared\Helpers\get_current_user_id;
 use function App\Shared\Helpers\get_name;
 use function App\Shared\Helpers\get_option;
 use function App\Shared\Helpers\get_user_by;
 use function App\Shared\Helpers\get_user_value;
 use function App\Shared\Helpers\get_userdata;
+use function App\Shared\Helpers\get_users_by_site_key;
 use function App\Shared\Helpers\is_multisite;
 use function App\Shared\Helpers\is_user_logged_in;
 use function App\Shared\Helpers\login_url;
 use function App\Shared\Helpers\queue_new_user_email;
 use function App\Shared\Helpers\remove_user_from_site;
 use function App\Shared\Helpers\reset_password;
+use function App\Shared\Helpers\sort_list;
 use function array_merge;
 use function Codefy\Framework\Helpers\ask;
 use function Codefy\Framework\Helpers\config;
@@ -75,13 +77,11 @@ final class AdminUserController extends BaseController
     /**
      * @param ServerRequest $request
      * @return ResponseInterface
-     * @throws CommandPropertyNotFoundException
      * @throws ContainerExceptionInterface
      * @throws InvalidArgumentException
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
      * @throws TypeException
-     * @throws UnresolvableQueryHandlerException
      * @throws \Qubus\Exception\Exception
      */
     public function userCreate(ServerRequest $request): ResponseInterface
@@ -149,11 +149,6 @@ final class AdminUserController extends BaseController
                 );
                 return $this->redirect($request->getHeaderLine(name: 'Referer'));
             }
-
-            /** @var User $newUser */
-            $newUser = Devflow::$PHP->make(name: User::class);
-            $newUser->id = $userId;
-            $newUser->setRole($request->get('role'));
 
             if ($request->get('sendemail') === 1) {
                 queue_new_user_email($userId, $request->get('pass'));
@@ -234,7 +229,8 @@ final class AdminUserController extends BaseController
         }
 
         try {
-            $users = get_all_users();
+            $results = get_users_by_site_key(get_current_site_key());
+            $users = sort_list($results, 'user_registered', 'DESC', true);
 
             return view(
                 template: 'framework::backend/admin/user/index',
@@ -257,13 +253,11 @@ final class AdminUserController extends BaseController
      * @param ServerRequest $request
      * @param string $userId
      * @return ResponseInterface
-     * @throws CommandPropertyNotFoundException
      * @throws ContainerExceptionInterface
      * @throws InvalidArgumentException
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
      * @throws TypeException
-     * @throws UnresolvableQueryHandlerException
      * @throws \Qubus\Exception\Exception
      */
     public function userChange(ServerRequest $request, string $userId): ResponseInterface
@@ -291,11 +285,6 @@ final class AdminUserController extends BaseController
                 );
                 return $this->redirect($request->getHeaderLine(name: 'Referer'));
             }
-
-            /** @var User $newUser */
-            $newUser = Devflow::$PHP->make(name: User::class);
-            $newUser->id = $userId;
-            $newUser->setRole($request->get('role'));
 
             Devflow::$PHP->flash->success(
                 message: Devflow::$PHP->flash->notice(num: 200),
@@ -333,6 +322,10 @@ final class AdminUserController extends BaseController
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
             return $this->redirect(admin_url());
+        }
+
+        if($userId === get_current_user_id()){
+            return $this->redirect(admin_url('user/profile'));
         }
 
         try {
@@ -445,8 +438,8 @@ final class AdminUserController extends BaseController
         $user = ask(new FindUserByIdQuery(['id' => UserId::fromNative($request->getParsedBody()['id'])]));
 
         $json = [
-            'input#fname' => esc_html($user->fname), 'input#lname' => esc_html($user->lname),
-            'input#email' => esc_html($user->email)
+            'input#fname' => $user->fname, 'input#lname' => $user->lname,
+            'input#email' => $user->email
         ];
         return json_encode($json);
     }
@@ -514,7 +507,7 @@ final class AdminUserController extends BaseController
      */
     public function userProfile(ServerRequest $request): ResponseInterface
     {
-        if (!is_user_logged_in()) {
+        if (!current_user_can(perm: 'manage:profile')) {
             Devflow::$PHP->flash->error(
                 message: t__(msgid: 'Access denied.', domain: 'devflow')
             );
@@ -531,11 +524,6 @@ final class AdminUserController extends BaseController
 
                     return $this->redirect(admin_url('user/profile/'));
                 }
-
-                /** @var User $user */
-                $user = Devflow::$PHP->make(name: User::class);
-                $user->id = $userId;
-                $user->setRole($request->get('role'));
 
                 Devflow::$PHP->flash->success(message: Devflow::$PHP->flash->notice(num: 200));
             } catch (

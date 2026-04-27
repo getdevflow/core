@@ -19,10 +19,10 @@ use function App\Shared\Helpers\cms_unique_content_type_slug;
 final readonly class StoreContentTypeData implements DataTransformer
 {
     private function __construct(
-        public ContentTypeId $contentTypeId,
-        public StringLiteral $contentTypeTitle,
-        public StringLiteral $contentTypeSlug,
-        public StringLiteral $contentTypeDescription,
+        public ContentTypeId $id,
+        public StringLiteral $title,
+        public StringLiteral $slug,
+        public StringLiteral $description,
     ) {
     }
 
@@ -30,8 +30,6 @@ final readonly class StoreContentTypeData implements DataTransformer
      * @param DataValidator $data
      * @return DataTransformer
      * @throws TypeException
-     * @throws ContainerExceptionInterface
-     * @throws NotFoundExceptionInterface
      * @throws Exception
      * @throws ReflectionException
      */
@@ -44,10 +42,10 @@ final readonly class StoreContentTypeData implements DataTransformer
         );
 
         return new self(
-            contentTypeId: ContentTypeId::fromString($data->string(key: 'id')),
-            contentTypeTitle: new StringLiteral(value: $data->string(key: 'title')),
-            contentTypeSlug: new StringLiteral(value: $contentTypeSlug),
-            contentTypeDescription: new StringLiteral(value: $data->string(key: 'description', default: '')),
+            id: ContentTypeId::fromString($data->string(key: 'id')),
+            title: new StringLiteral(value: $data->string(key: 'title')),
+            slug: new StringLiteral(value: $contentTypeSlug),
+            description: new StringLiteral(value: $data->string(key: 'description', default: '')),
         );
     }
 }

@@ -22,7 +22,7 @@ final readonly class UserAttributeManager
 
     public function get(string $siteId, string $userId, string $key, mixed $default = null): mixed
     {
-        return $this->load($siteId, $userId)->getPath($key, $default);
+        return $this->load($siteId, $userId)?->getPath($key, $default);
     }
 
     public function all(string $siteId, string $userId): string
@@ -180,7 +180,7 @@ final readonly class UserAttributeManager
         }
     }
 
-    private function load(string $siteId, string $userId): UserAttributeBag
+    private function load(string $siteId, string $userId): ?UserAttributeBag
     {
         try {
             $cached = $this->cache->get(md5($siteId.$userId));
@@ -192,7 +192,7 @@ final readonly class UserAttributeManager
         }
 
         $attributes = $this->repository->find($siteId, $userId);
-        $this->warmWith($attributes);
+        $this->warmWith($attributes ?? new UserAttributeBag($siteId, $userId));
 
         return $attributes;
     }

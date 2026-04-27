@@ -6,7 +6,7 @@ namespace App\Infrastructure\Http\Controllers;
 
 use App\Application\Devflow;
 use App\Domain\Site\Model\Site;
-use App\Domain\User\Query\FindMultisiteUniqueUsersQuery;
+use App\Infrastructure\Services\AttributesFactory;
 use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
 use Codefy\CommandBus\Exceptions\UnresolvableCommandHandlerException;
 use Codefy\Framework\Http\BaseController;
@@ -22,6 +22,7 @@ use Qubus\Http\Factories\JsonResponseFactory;
 use Qubus\Http\ServerRequest;
 use ReflectionException;
 
+use function App\Shared\Helpers\add_user_to_site;
 use function App\Shared\Helpers\admin_url;
 use function App\Shared\Helpers\cms_delete_site;
 use function App\Shared\Helpers\cms_delete_site_user;
@@ -29,14 +30,15 @@ use function App\Shared\Helpers\cms_insert_site;
 use function App\Shared\Helpers\cms_update_site;
 use function App\Shared\Helpers\current_user_can;
 use function App\Shared\Helpers\get_all_sites;
+use function App\Shared\Helpers\get_all_users;
 use function App\Shared\Helpers\get_site_by;
 use function App\Shared\Helpers\is_multisite;
 use function App\Shared\Helpers\sort_list;
-use function Codefy\Framework\Helpers\ask;
 use function Codefy\Framework\Helpers\config;
 use function Codefy\Framework\Helpers\logger;
 use function Codefy\Framework\Helpers\view;
 use function Qubus\Error\Helpers\is_error;
+use function Qubus\Routing\Helpers\request;
 use function Qubus\Security\Helpers\t__;
 use function Qubus\Support\Helpers\is_false__;
 use function sprintf;
@@ -289,9 +291,15 @@ final class AdminSiteController extends BaseController
             );
             return $this->redirect(admin_url());
         }
-        
-        $results = ask(new FindMultisiteUniqueUsersQuery());
 
+        if(config()->string(key: 'cms.main_site_url') !== request()->getHost()) {
+            Devflow::$PHP->flash->error(
+                message: t__(msgid: 'The action is not allowed.', domain: 'devflow')
+            );
+            return $this->redirect(admin_url());
+        }
+        
+        $results = get_all_users();
         $users = sort_list($results, 'lname', 'ASC', true);
 
         return view(
@@ -301,6 +309,58 @@ final class AdminSiteController extends BaseController
                 'users' => $users,
             ]
         );
+    }
+
+    /**
+     * @param ServerRequest $request
+     * @return ResponseInterface
+     * @throws ContainerExceptionInterface
+     * @throws Exception
+     * @throws InvalidArgumentException
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
+     * @throws TypeException
+     */
+    public function siteUserAssign(ServerRequest $request): ResponseInterface
+    {
+        if (false === current_user_can(perm: 'manage:sites')) {
+            Devflow::$PHP->flash->error(
+                message: t__(msgid: 'Access denied.', domain: 'devflow')
+            );
+            return $this->redirect(admin_url());
+        }
+        if (!is_multisite()) {
+            Devflow::$PHP->flash->error(
+                message: t__(msgid: 'Multisite is not enabled.', domain: 'devflow')
+            );
+            return $this->redirect(admin_url());
+        }
+        if('null' === $request->get('site_id')) {
+            Devflow::$PHP->flash->error(
+                message: t__(msgid: 'You cannot submit an empty site id.', domain: 'devflow')
+            );
+            return $this->redirect($request->getHeaderLine('Referer'));
+        }
+        if('null' === $request->get('user_role')) {
+            Devflow::$PHP->flash->error(
+                message: t__(msgid: 'You cannot submit an empty user role.', domain: 'devflow')
+            );
+            return $this->redirect($request->getHeaderLine('Referer'));
+        }
+
+        AttributesFactory::user()->createIfMissing($request->get('site_id'), $request->get('user_id'));
+
+        $addUserToSite = add_user_to_site($request->get('user_id'), $request->get('site_id'), $request->get('user_role'));
+        if(is_false__($addUserToSite)) {
+            Devflow::$PHP->flash->error(
+                message: t__(msgid: 'An error occurred.', domain: 'devflow')
+            );
+        } else {
+            Devflow::$PHP->flash->success(Devflow::$PHP->flash->notice(num: 200));
+        }
+
+        return $this->redirect($request->getHeaderLine('Referer'));
+
     }
 
     /**
@@ -371,7 +431,6 @@ final class AdminSiteController extends BaseController
     }
 
     /**
-     * @param ServerRequest $request
      * @param string $siteId
      * @return ResponseInterface
      * @throws ContainerExceptionInterface
@@ -430,6 +489,8 @@ final class AdminSiteController extends BaseController
                 Devflow::$PHP->flash->error(
                     message: Devflow::$PHP->flash->notice(num: 201)
                 );
+            } else {
+                Devflow::$PHP->flash->success(Devflow::$PHP->flash->notice(num: 200));
             }
         } catch (
             CommandPropertyNotFoundException |

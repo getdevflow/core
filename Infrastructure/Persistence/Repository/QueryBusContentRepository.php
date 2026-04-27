@@ -28,12 +28,11 @@ class QueryBusContentRepository implements ContentQueryRepository
     }
 
     /**
-     * @throws ReflectionException
      * @throws Exception
      */
     public function findById(string $id): array|object
     {
-        $sql = "SELECT * FROM {$this->dfdb->prefix}content WHERE content_id = ?";
+        $sql = "SELECT * FROM {$this->dfdb->prefix}content WHERE content_id = ? ORDER BY content_published DESC";
 
         $data = $this->dfdb->getRow($this->dfdb->prepare($sql, [$id]), Database::ARRAY_A);
 
@@ -51,12 +50,11 @@ class QueryBusContentRepository implements ContentQueryRepository
     }
 
     /**
-     * @throws ReflectionException
      * @throws Exception
      */
     public function findBySlug(string $slug): array|object
     {
-        $sql = "SELECT * FROM {$this->dfdb->prefix}content WHERE content_slug = ?";
+        $sql = "SELECT * FROM {$this->dfdb->prefix}content WHERE content_slug = ? ORDER BY content_published DESC";
 
         $data = $this->dfdb->getRow($this->dfdb->prepare($sql, [$slug]), Database::ARRAY_A);
 
@@ -74,12 +72,11 @@ class QueryBusContentRepository implements ContentQueryRepository
     }
 
     /**
-     * @throws ReflectionException
      * @throws Exception
      */
     public function findByStatus(string $status): array
     {
-        $sql = "SELECT * FROM {$this->dfdb->prefix}content WHERE content_status = ?";
+        $sql = "SELECT * FROM {$this->dfdb->prefix}content WHERE content_status = ? ORDER BY content_published DESC";
 
         $data = $this->dfdb->getResults(
             query: $this->dfdb->prepare($sql, [$status]),
@@ -98,12 +95,11 @@ class QueryBusContentRepository implements ContentQueryRepository
     }
 
     /**
-     * @throws ReflectionException
      * @throws Exception
      */
     public function findByTypeAndId(string $type, string $id): array|object
     {
-        $sql = "SELECT * FROM {$this->dfdb->prefix}content WHERE content_type = ? AND content_id = ?";
+        $sql = "SELECT * FROM {$this->dfdb->prefix}content WHERE content_type = ? AND content_id = ? ORDER BY content_published DESC";
 
         $data = $this->dfdb->getRow(
             $this->dfdb->prepare(
@@ -130,12 +126,11 @@ class QueryBusContentRepository implements ContentQueryRepository
     }
 
     /**
-     * @throws ReflectionException
      * @throws Exception
      */
     public function findByType(string $type): array|object
     {
-        $sql = "SELECT * FROM {$this->dfdb->prefix}content WHERE content_type = ?";
+        $sql = "SELECT * FROM {$this->dfdb->prefix}content WHERE content_type = ? ORDER BY content_published DESC";
 
         $data = $this->dfdb->getRow($this->dfdb->prepare($sql, [$type]), Database::ARRAY_A);
 
@@ -187,6 +182,8 @@ class QueryBusContentRepository implements ContentQueryRepository
                 );
             }
 
+            $where .= ' ORDER BY content_published DESC';
+
             if ($sanitizeLimit > 0 && !is_null__($sanitizeOffset)) {
                 $where .= sprintf(" LIMIT %d OFFSET %d", $sanitizeLimit, $sanitizeOffset);
             } elseif ($sanitizeLimit > 0 && is_null__($sanitizeOffset)) {
@@ -226,6 +223,8 @@ class QueryBusContentRepository implements ContentQueryRepository
                     ]
                 );
             }
+
+            $where .= ' ORDER BY content_published DESC';
 
             if ($sanitizeLimit > 0 && !is_null__($sanitizeOffset)) {
                 $where .= sprintf(" LIMIT %d OFFSET %d", $sanitizeLimit, $sanitizeOffset);
