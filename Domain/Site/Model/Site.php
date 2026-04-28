@@ -13,11 +13,10 @@ use Psr\Container\NotFoundExceptionInterface;
 use Psr\SimpleCache\InvalidArgumentException;
 use Qubus\Exception\Exception;
 use ReflectionException;
-use stdClass;
 
 use function Qubus\Security\Helpers\esc_html;
 
-final class Site extends stdClass
+final class Site
 {
     public ?string $id = null;
     public ?string $key = null;
