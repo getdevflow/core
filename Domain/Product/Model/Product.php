@@ -9,7 +9,6 @@ use App\Infrastructure\Services\AttributesFactory;
 use Qubus\Exception\Data\TypeException;
 use Qubus\Expressive\Database;
 use App\Shared\Services\SimpleCacheObjectCacheFactory;
-use App\Shared\Services\Trait\HydratorAware;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Psr\SimpleCache\InvalidArgumentException;
@@ -23,30 +22,34 @@ use function Qubus\Security\Helpers\purify_html;
 use function Qubus\Support\Helpers\convert_array_to_object;
 use function Qubus\Support\Helpers\is_null__;
 
-/**
- * @property string $id
- * @property string $title
- * @property string $slug
- * @property string $body
- * @property string $author
- * @property string $sku
- * @property string $price
- * @property string $currency
- * @property string $purchaseUrl
- * @property string $showInMenu
- * @property string $showInSearch
- * @property string $featuredImage
- * @property string $status
- * @property string $created
- * @property string $createdGmt
- * @property string $published
- * @property string $publishedGmt
- * @property string $modified
- * @property string $modifiedGmt
- */
 final class Product extends stdClass
 {
-    use HydratorAware;
+    public ?string $id = null;
+    public ?string $title = null;
+    public ?string $slug = null;
+    public ?string $body = null;
+    public ?string $author = null;
+    public ?string $sku = null;
+    public ?string $price = null;
+    public ?string $currency = null;
+    public ?string $purchaseUrl = null;
+    public ?string $showInMenu = null;
+    public ?string $showInSearch = null;
+    public ?string $featuredImage = null;
+    public ?string $status = null;
+    public ?string $created = null;
+    public ?string $createdGmt = null;
+    public ?string $published = null;
+    public ?string $publishedGmt = null;
+    public ?string $modified = null;
+    public ?string $modifiedGmt = null;
+
+    /**
+     * Runtime-only custom values.
+     *
+     * @var array<string, mixed>
+     */
+    private array $attributes = [];
 
     public function __construct(protected Database $dfdb)
     {
@@ -55,7 +58,7 @@ final class Product extends stdClass
     /**
      * Return only the main product fields.
      *
-     * @param string $field The field to query against: 'id', 'ID', 'slug' or 'sku'.
+     * @param string $field The field to query against: 'id', 'owner|author', 'slug' or 'sku'.
      * @param string $value The field value
      * @return Product|false Raw product object
      * @throws Exception
@@ -66,82 +69,114 @@ final class Product extends stdClass
      */
     public function findBy(string $field, string $value): Product|false
     {
-        if ('' === $value) {
+        if ($value === '') {
             return false;
         }
 
-        $productId = match ($field) {
-            'id', 'ID' => $value,
-            'owner', 'author', => SimpleCacheObjectCacheFactory::make(namespace: $this->dfdb->prefix . 'productauthor')
-                    ->get(md5($value), ''),
-            'slug' => SimpleCacheObjectCacheFactory::make(namespace: $this->dfdb->prefix . 'productslug')
-                    ->get(md5($value), ''),
-            'sku' => SimpleCacheObjectCacheFactory::make(namespace: $this->dfdb->prefix . 'productsku')
-                    ->get(md5($value), ''),
-            default => false,
-        };
+        $field = strtolower($field);
 
         $dbField = match ($field) {
-            'id', 'ID' => 'product_id',
-            'owner', 'author', => 'product_author',
+            'id' => 'product_id',
+            'owner', 'author' => 'product_author',
             'slug' => 'product_slug',
             'sku' => 'product_sku',
-            default => false,
+            default => null,
         };
 
-        $product = null;
-
-        if ('' !== $productId) {
-            if (
-                $data = SimpleCacheObjectCacheFactory::make(namespace: $this->dfdb->prefix . 'products')
-                    ->get(md5($productId))
-            ) {
-                is_array($data) ? convert_array_to_object($data) : $data;
-            }
-        }
-
-        if (
-                !$data = $this->dfdb->getRow(
-                    $this->dfdb->prepare(
-                        "SELECT * 
-                            FROM {$this->dfdb->prefix}product 
-                            WHERE $dbField = ?",
-                        [
-                            $value
-                        ]
-                    ),
-                    Database::ARRAY_A
-                )
-        ) {
+        if ($dbField === null) {
             return false;
         }
 
-        if (!is_null__($data)) {
-            $product = $this->create($data);
-            ProductCachePsr16::update($product);
+        $productId = $this->resolveCachedProductId($field, $value);
+
+        if ($productId !== null && $productId !== '') {
+            $cached = SimpleCacheObjectCacheFactory::make(
+                    namespace: $this->dfdb->prefix . 'products'
+            )->get(md5($productId));
+
+            if (is_array($cached)) {
+                return $this->create($cached);
+            }
+
+            if ($cached instanceof self) {
+                return $cached;
+            }
+
+            $dbField = 'product_id';
+            $value = $productId;
         }
 
-        if (is_array($product)) {
-            $product = convert_array_to_object($product);
+        $data = $this->dfdb->getRow(
+            $this->dfdb->prepare(
+                sprintf(
+                    "SELECT *
+                     FROM {$this->dfdb->prefix}product
+                     WHERE %s = ?",
+                    $dbField
+                ),
+                [$value]
+            ),
+            Database::ARRAY_A
+        );
+
+        if (! is_array($data) || $data === []) {
+            return false;
         }
+
+        $product = $this->create($data);
+
+        ProductCachePsr16::update($product);
 
         return $product;
+    }
+
+    /**
+     * @param string $field
+     * @param string $value
+     * @return string|null
+     * @throws ContainerExceptionInterface
+     * @throws InvalidArgumentException
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
+     * @throws TypeException
+     */
+    private function resolveCachedProductId(string $field, string $value): ?string
+    {
+        return match ($field) {
+            'id' => $value,
+
+            'owner', 'author' => SimpleCacheObjectCacheFactory::make(
+                    namespace: $this->dfdb->prefix . 'productauthor'
+            )->get(md5($value), null),
+
+            'slug' => SimpleCacheObjectCacheFactory::make(
+                    namespace: $this->dfdb->prefix . 'productslug'
+            )->get(md5($value), null),
+
+            'sku' => SimpleCacheObjectCacheFactory::make(
+                    namespace: $this->dfdb->prefix . 'productsku'
+            )->get(md5($value), null),
+
+            default => null,
+        };
     }
 
     /**
      * Create a new instance of Content. Optionally populating it
      * from a data array.
      *
-     * @param array $data
+     * @param array<string, mixed> $data
      * @return Product
      * @throws Exception
      */
     public function create(array $data = []): Product
     {
         $product = $this->__create();
-        if ($data) {
-            $product = $this->populate($product, $data);
+
+        if ($data !== []) {
+            $product->populate($data);
         }
+
         return $product;
     }
 
@@ -156,41 +191,77 @@ final class Product extends stdClass
     }
 
     /**
+     * @param array<string, mixed> $data
      * @throws Exception
      */
-    public function populate(Product $product, array $data = []): self
+    public function populate(array $data = []): self
     {
-        $product->id = isset($data['product_id']) ? esc_html(string: $data['product_id']) : null;
-        $product->title = isset($data['product_title']) ? esc_html(string: $data['product_title']) : null;
-        $product->slug = isset($data['product_slug']) ? esc_html(string: $data['product_slug']) : null;
-        $product->body = isset($data['product_body']) ? purify_html(string: $data['product_body']) : null;
-        $product->author = isset($data['product_author']) ? esc_html(string: $data['product_author']) : null;
-        $product->sku = isset($data['product_sku']) ? esc_html((string) $data['product_sku']) : null;
-        $product->price = isset($data['product_price']) ? esc_html(string: (string) $data['product_price']) : null;
-        $product->currency = isset($data['product_currency']) ? esc_html(string: (string) $data['product_currency']) : null;
+        $data = $this->normalizeData($data);
 
-        $product->purchaseUrl = isset($data['product_purchase_url']) ?
-        esc_html(string: (string) $data['product_purchase_url']) :
-        null;
+        $this->id = $this->clean($data['id']);
+        $this->title = $this->clean($data['title']);
+        $this->slug = $this->clean($data['slug']);
+        $this->body = $data['body'] !== null ? purify_html((string) $data['body']) : null;
+        $this->author = $this->clean($data['author']);
+        $this->sku = $this->clean($data['sku']);
+        $this->price = $this->clean($data['price']);
+        $this->currency = $this->clean($data['currency']);
+        $this->purchaseUrl = $this->clean($data['purchaseUrl']);
+        $this->showInMenu = $this->clean($data['showInMenu']);
+        $this->showInSearch = $this->clean($data['showInSearch']);
+        $this->featuredImage = $this->clean($data['featuredImage']);
+        $this->status = $this->clean($data['status']);
+        $this->created = $this->clean($data['created']);
+        $this->createdGmt = $this->clean($data['createdGmt']);
+        $this->published = $this->clean($data['published']);
+        $this->publishedGmt = $this->clean($data['publishedGmt']);
+        $this->modified = $this->clean($data['modified']);
+        $this->modifiedGmt = $this->clean($data['modifiedGmt']);
 
-        $product->showInMenu = isset($data['product_show_in_menu']) ? esc_html(string: (string) $data['product_show_in_menu']) : null;
-        $product->showInSearch = isset($data['product_show_in_search']) ? esc_html(string: (string) $data['product_show_in_search']) : null;
+        return $this;
+    }
 
-        $product->featuredImage = isset($data['product_featured_image']) ?
-        esc_html(string: $data['product_featured_image']) :
-        null;
+    /**
+     * Accepts both database-shaped rows and cache/object-shaped arrays.
+     *
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
+     */
+    private function normalizeData(array $data): array
+    {
+        return [
+            'id' => $data['id'] ?? $data['product_id'] ?? null,
+            'title' => $data['title'] ?? $data['product_title'] ?? null,
+            'slug' => $data['slug'] ?? $data['product_slug'] ?? null,
+            'body' => $data['body'] ?? $data['product_body'] ?? null,
+            'author' => $data['author'] ?? $data['product_author'] ?? null,
+            'sku' => $data['sku'] ?? $data['product_sku'] ?? null,
+            'price' => $data['price'] ?? $data['product_price'] ?? null,
+            'currency' => $data['currency'] ?? $data['product_currency'] ?? null,
+            'purchaseUrl' => $data['purchaseUrl'] ?? $data['product_purchase_url'] ?? null,
+            'showInMenu' => $data['showInMenu'] ?? $data['product_show_in_menu'] ?? null,
+            'showInSearch' => $data['showInSearch'] ?? $data['product_show_in_search'] ?? null,
+            'featuredImage' => $data['featuredImage'] ?? $data['product_featured_image'] ?? null,
+            'status' => $data['status'] ?? $data['product_status'] ?? null,
+            'created' => $data['created'] ?? $data['product_created'] ?? null,
+            'createdGmt' => $data['createdGmt'] ?? $data['product_created_gmt'] ?? null,
+            'published' => $data['published'] ?? $data['product_published'] ?? null,
+            'publishedGmt' => $data['publishedGmt'] ?? $data['product_published_gmt'] ?? null,
+            'modified' => $data['modified'] ?? $data['product_modified'] ?? null,
+            'modifiedGmt' => $data['modifiedGmt'] ?? $data['product_modified_gmt'] ?? null,
+        ];
+    }
 
-        $product->status = isset($data['product_status']) ? esc_html(string: $data['product_status']) : null;
-        $product->created = isset($data['product_created']) ? esc_html(string: $data['product_created']) : null;
-        $product->createdGmt = isset($data['product_created_gmt']) ? esc_html(string: $data['product_created_gmt']) : null;
-        $product->published = isset($data['product_published']) ? esc_html(string: $data['product_published']) : null;
-        $product->publishedGmt = isset($data['product_published_gmt']) ? esc_html(string: $data['product_published_gmt']) : null;
-        $product->modified = isset($data['product_modified']) ? esc_html(string: $data['product_modified']) : null;
+    /**
+     * @throws Exception
+     */
+    private function clean(mixed $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
 
-        $product->modifiedGmt = isset($data['product_modified_gmt']) ?
-        esc_html(string: $data['product_modified_gmt']) : null;
-
-        return $product;
+        return esc_html((string) $value);
     }
 
     /**
@@ -205,8 +276,16 @@ final class Product extends stdClass
      */
     public function __isset(string $key)
     {
-        if (isset($this->{$key})) {
+        if (property_exists($this, $key) && $this->{$key} !== null) {
             return true;
+        }
+
+        if (array_key_exists($key, $this->attributes)) {
+            return true;
+        }
+
+        if ($this->id === null) {
+            return false;
         }
 
         return AttributesFactory::product()->exists($this->id, $key);
@@ -222,15 +301,27 @@ final class Product extends stdClass
      * @throws ReflectionException
      * @throws TypeException
      */
-    public function __get(string $key): string
+    public function __get(string $key): mixed
     {
-        if (isset($this->{$key})) {
-            $value = $this->{$key};
-        } else {
-            $value = AttributesFactory::product()->get($this->id, $key, default: '');
+        if (property_exists($this, $key)) {
+            return $this->{$key};
         }
 
-        return isset($value) ? purify_html($value) : '';
+        if (array_key_exists($key, $this->attributes)) {
+            return $this->attributes[$key];
+        }
+
+        if ($this->id === null) {
+            return null;
+        }
+
+        $value = AttributesFactory::product()->get(
+            id: $this->id,
+            key: $key,
+            default: null
+        );
+
+        return is_string($value) ? purify_html($value) : $value;
     }
 
     /**
@@ -244,7 +335,12 @@ final class Product extends stdClass
      */
     public function __set(string $key, mixed $value): void
     {
-        $this->{$key} = $value;
+        if (property_exists($this, $key)) {
+            $this->{$key} = $value === null ? null : (string) $value;
+            return;
+        }
+
+        $this->attributes[$key] = $value;
     }
 
     /**
@@ -254,9 +350,12 @@ final class Product extends stdClass
      */
     public function __unset(string $key)
     {
-        if (isset($this->{$key})) {
-            unset($this->{$key});
+        if (property_exists($this, $key)) {
+            $this->{$key} = null;
+            return;
         }
+
+        unset($this->attributes[$key]);
     }
 
     /**
@@ -271,9 +370,11 @@ final class Product extends stdClass
      * @throws ReflectionException
      * @throws TypeException
      */
-    public function get(string $key): string
+    public function get(string $key, mixed $default = null): mixed
     {
-        return $this->__get($key);
+        $value = $this->__get($key);
+
+        return $value ?? $default;
     }
 
     /**
@@ -294,12 +395,36 @@ final class Product extends stdClass
     /**
      * Return an array representation.
      *
-     * @return array Array representation.
+     * @return array<string, mixed> Array representation.
      */
-    public function toArray(): array
+    public function toArray(bool $includeAttributes = true): array
     {
-        unset($this->dfdb);
+        $data = [
+            'id' => $this->id,
+            'title' => $this->title,
+            'slug' => $this->slug,
+            'body' => $this->body,
+            'author' => $this->author,
+            'sku' => $this->sku,
+            'price' => $this->price,
+            'currency' => $this->currency,
+            'purchaseUrl' => $this->purchaseUrl,
+            'showInMenu' => $this->showInMenu,
+            'showInSearch' => $this->showInSearch,
+            'featuredImage' => $this->featuredImage,
+            'status' => $this->status,
+            'created' => $this->created,
+            'createdGmt' => $this->createdGmt,
+            'published' => $this->published,
+            'publishedGmt' => $this->publishedGmt,
+            'modified' => $this->modified,
+            'modifiedGmt' => $this->modifiedGmt,
+        ];
 
-        return get_object_vars($this);
+        if ($includeAttributes) {
+            $data['attributes'] = $this->attributes;
+        }
+
+        return $data;
     }
 }
