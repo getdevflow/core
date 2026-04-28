@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\User\Model;
 
 use App\Infrastructure\Persistence\Cache\UserCachePsr16;
+use Qubus\Exception\Data\TypeException;
 use Qubus\Expressive\Database;
 use App\Infrastructure\Services\AttributesFactory;
 use App\Shared\Services\Sanitizer;
@@ -15,38 +16,41 @@ use Psr\SimpleCache\InvalidArgumentException;
 use Qubus\EventDispatcher\ActionFilter\Action;
 use Qubus\Exception\Exception;
 use ReflectionException;
-use stdClass;
 
 use function App\Shared\Helpers\get_current_site_id;
 use function md5;
 use function Qubus\Security\Helpers\esc_html;
 use function Qubus\Security\Helpers\purify_html;
-use function Qubus\Support\Helpers\convert_array_to_object;
-use function Qubus\Support\Helpers\is_null__;
 use function sprintf;
 use function strtolower;
 
-/**
- * @property string $id
- * @property string $login
- * @property string $token
- * @property string $fname
- * @property string $mname
- * @property string $lname
- * @property string $email
- * @property string $pass
- * @property string $url
- * @property string $bio
- * @property string $timezone
- * @property string $dateFormat
- * @property string $timeFormat
- * @property string locale
- * @property string $registered
- * @property string $modified
- * @property string $activationKey
- */
-final class User extends stdClass
+final class User
 {
+    public ?string $id = null;
+    public ?string $login = null;
+    public ?string $token = null;
+    public ?string $fname = null;
+    public ?string $mname = null;
+    public ?string $lname = null;
+    public ?string $email = null;
+    public ?string $pass = null;
+    public ?string $url = null;
+    public ?string $bio = null;
+    public ?string $timezone = null;
+    public ?string $dateFormat = null;
+    public ?string $timeFormat = null;
+    public ?string $locale = null;
+    public ?string $registered = null;
+    public ?string $modified = null;
+    public ?string $activationKey = null;
+
+    /**
+     * Runtime-only attributes. These do not automatically persist.
+     *
+     * @var array<string, mixed>
+     */
+    private array $attributes = [];
+
     public function __construct(protected Database $dfdb)
     {
     }
@@ -63,67 +67,99 @@ final class User extends stdClass
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
      */
-    public function findBy(string $field, string $value): User|false
+    public function findBy(string $field, string $value): self|false
     {
-        if ('' === $value) {
+        if ($value === '') {
             return false;
         }
 
-        $userId = match ($field) {
-            'id' => $value,
-            'token' => SimpleCacheObjectCacheFactory::make(namespace: 'usertoken')->get(md5($value), ''),
-            'login' => SimpleCacheObjectCacheFactory::make(
-                namespace: 'userlogin'
-            )->get(md5(Sanitizer::username($value)), ''),
-            'email' => SimpleCacheObjectCacheFactory::make('useremail')->get(md5($value), ''),
-            default => false,
-        };
+        $field = strtolower($field);
 
         $dbField = match ($field) {
             'id' => 'user_id',
             'token' => 'user_token',
             'login' => 'user_login',
             'email' => 'user_email',
-            default => false,
+            default => null,
         };
 
-        $user = null;
-
-        if ('' !== $userId) {
-            if ($data = SimpleCacheObjectCacheFactory::make(namespace: 'users')->get(md5($userId))) {
-                is_array($data) ? convert_array_to_object($data) : $data;
-            }
-        }
-
-        if (
-            !$data = $this->dfdb->getRow(
-                $this->dfdb->prepare(
-                    sprintf(
-                        "SELECT u.* 
-                            FROM {$this->dfdb->basePrefix}user u 
-                            WHERE u.%s = ?",
-                        $dbField
-                    ),
-                    [
-                        $value,
-                    ]
-                ),
-                Database::ARRAY_A
-            )
-        ) {
+        if ($dbField === null) {
             return false;
         }
 
-        if (!is_null__($data)) {
-            $user = $this->create($data);
-            UserCachePsr16::update($user);
+        $lookupValue = $this->normalizeLookupValue($field, $value);
+
+        /**
+         * If a secondary cache resolves login/email/token to a user ID,
+         * query by user_id instead of querying by the original login/email/token.
+         */
+        if ($lookupValue !== null && $lookupValue !== '') {
+            $cached = SimpleCacheObjectCacheFactory::make(namespace: 'users')
+                    ->get(md5($lookupValue));
+
+            if (is_array($cached)) {
+                return $this->create($cached);
+            }
+
+            if ($cached instanceof self) {
+                return $cached;
+            }
+
+            $dbField = 'user_id';
+            $value = $lookupValue;
         }
 
-        if (is_array($user)) {
-            $user = convert_array_to_object($user);
+        $data = $this->dfdb->getRow(
+            $this->dfdb->prepare(
+                sprintf(
+                "SELECT u.*
+                FROM {$this->dfdb->basePrefix}user u
+                WHERE u.%s = ?",
+                    $dbField
+                ),
+                [$value]
+            ),
+            Database::ARRAY_A
+        );
+
+        if (! is_array($data) || $data === []) {
+            return false;
         }
+
+        $user = $this->create($data);
+
+        UserCachePsr16::update($user);
 
         return $user;
+    }
+
+    /**
+     * @param string $field
+     * @param string $value
+     * @return string|null
+     * @throws ContainerExceptionInterface
+     * @throws Exception
+     * @throws InvalidArgumentException
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
+     * @throws TypeException
+     */
+    private function normalizeLookupValue(string $field, string $value): ?string
+    {
+        return match ($field) {
+            'id' => $value,
+
+            'token' => SimpleCacheObjectCacheFactory::make(namespace: 'usertoken')
+                    ->get(md5($value), null),
+
+            'login' => SimpleCacheObjectCacheFactory::make(namespace: 'userlogin')
+                    ->get(md5(Sanitizer::username($value)), null),
+
+            'email' => SimpleCacheObjectCacheFactory::make(namespace: 'useremail')
+                    ->get(md5(strtolower($value)), null),
+
+            default => null,
+        };
     }
 
     /**
@@ -136,49 +172,80 @@ final class User extends stdClass
      */
     public function create(array $data = []): User
     {
-        $user = $this->__create();
-        if ($data) {
-            $user = $this->populate($user, $data);
-        }
-        return $user;
-    }
+        $user = new self($this->dfdb);
 
-    /**
-     * Create a new User object.
-     *
-     * @return User
-     */
-    protected function __create(): User
-    {
-        return new User($this->dfdb);
+        if ($data !== []) {
+            $user->populate($data);
+        }
+
+        return $user;
     }
 
     /**
      * @throws Exception
      */
-    public function populate(User $user, array $data = []): self
+    public function populate(array $data = []): self
     {
-        $user->id = isset($data['user_id']) ? esc_html(string: $data['user_id']) : null;
-        $user->login = isset($data['user_login']) ? esc_html(string: $data['user_login']) : null;
-        $user->token = isset($data['user_token']) ? esc_html(string: $data['user_token']) : null;
-        $user->fname = isset($data['user_fname']) ?  esc_html(string: $data['user_fname']) : null;
-        $user->mname = isset($data['user_mname']) ? esc_html(string: $data['user_mname']) : null;
-        $user->lname = isset($data['user_lname']) ? esc_html($data['user_lname']) : null;
-        $user->email = isset($data['user_email']) ? esc_html(string: $data['user_email']) : null;
-        $user->pass = isset($data['user_pass']) ? esc_html(string: $data['user_pass']): null;
-        $user->url = isset($data['user_url']) ? esc_html(string: $data['user_url']) : null;
-        $user->bio = isset($data['user_bio']) ? purify_html(string: $data['user_bio']) : null;
-        $user->timezone = isset($data['user_timezone']) ? esc_html(string: $data['user_timezone']) : null;
-        $user->dateFormat = isset($data['user_date_format']) ? esc_html(string: $data['user_date_format']) : null;
-        $user->timeFormat = isset($data['user_time_format']) ? esc_html(string: $data['user_time_format']) : null;
-        $user->locale = isset($data['user_locale']) ? esc_html(string: $data['user_locale']) : null;
-        $user->registered = isset($data['user_registered']) ? esc_html(string: $data['user_registered']) : null;
-        $user->modified = isset($data['user_modified']) ? esc_html(string: $data['user_modified']) : null;
-        $user->activationKey = isset($data['user_activation_key']) ?
-            esc_html(string: $data['user_activation_key']) :
-            null;
+        $data = $this->normalizeData($data);
 
-        return $user;
+        $this->id = $this->clean($data['id']);
+        $this->login = $this->clean($data['login']);
+        $this->token = $this->clean($data['token']);
+        $this->fname = $this->clean($data['fname']);
+        $this->mname = $this->clean($data['mname']);
+        $this->lname = $this->clean($data['lname']);
+        $this->email = $this->clean($data['email']);
+        $this->pass = $data['pass'] !== null ? (string) $data['pass'] : null;
+        $this->url = $this->clean($data['url']);
+        $this->bio = $data['bio'] !== null ? purify_html((string) $data['bio']) : null;
+        $this->timezone = $this->clean($data['timezone']);
+        $this->dateFormat = $this->clean($data['dateFormat']);
+        $this->timeFormat = $this->clean($data['timeFormat']);
+        $this->locale = $this->clean($data['locale']);
+        $this->registered = $this->clean($data['registered']);
+        $this->modified = $this->clean($data['modified']);
+        $this->activationKey = $this->clean($data['activationKey']);
+
+        return $this;
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
+     */
+    private function normalizeData(array $data): array
+    {
+        return [
+            'id' => $data['id'] ?? $data['user_id'] ?? null,
+            'login' => $data['login'] ?? $data['user_login'] ?? null,
+            'token' => $data['token'] ?? $data['user_token'] ?? null,
+            'fname' => $data['fname'] ?? $data['user_fname'] ?? null,
+            'mname' => $data['mname'] ?? $data['user_mname'] ?? null,
+            'lname' => $data['lname'] ?? $data['user_lname'] ?? null,
+            'email' => $data['email'] ?? $data['user_email'] ?? null,
+            'pass' => $data['pass'] ?? $data['user_pass'] ?? null,
+            'url' => $data['url'] ?? $data['user_url'] ?? null,
+            'bio' => $data['bio'] ?? $data['user_bio'] ?? null,
+            'timezone' => $data['timezone'] ?? $data['user_timezone'] ?? null,
+            'dateFormat' => $data['dateFormat'] ?? $data['user_date_format'] ?? null,
+            'timeFormat' => $data['timeFormat'] ?? $data['user_time_format'] ?? null,
+            'locale' => $data['locale'] ?? $data['user_locale'] ?? null,
+            'registered' => $data['registered'] ?? $data['user_registered'] ?? null,
+            'modified' => $data['modified'] ?? $data['user_modified'] ?? null,
+            'activationKey' => $data['activationKey'] ?? $data['user_activation_key'] ?? null,
+        ];
+    }
+
+    /**
+     * @throws Exception
+     */
+    private function clean(mixed $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        return esc_html((string) $value);
     }
 
     /**
@@ -193,11 +260,20 @@ final class User extends stdClass
      */
     public function __isset(string $key)
     {
-        if (!isset($this->{$key})) {
+        if (property_exists($this, $key) && $this->{$key} !== null) {
+            return true;
+        }
+
+        if (array_key_exists($key, $this->attributes)) {
+            return true;
+        }
+
+        if ($this->id === null) {
             return false;
         }
 
-        return AttributesFactory::user()->exists(get_current_site_id(), $this->id, $key);
+        return AttributesFactory::user()
+            ->exists(get_current_site_id(), $this->id, $key);
     }
 
     /**
@@ -210,16 +286,28 @@ final class User extends stdClass
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
      */
-    public function __get(string $key): string
+    public function __get(string $key): mixed
     {
-        if (isset($this->{$key})) {
-            $value = $this->{$key};
-        } else {
-            $value = AttributesFactory::user()
-                ->get(siteId: get_current_site_id(), userId: $this->id, key: $key, default: '');
+        if (property_exists($this, $key)) {
+            return $this->{$key};
         }
 
-        return isset($value) ? purify_html($value) : '';
+        if (array_key_exists($key, $this->attributes)) {
+            return $this->attributes[$key];
+        }
+
+        if ($this->id === null) {
+            return null;
+        }
+
+        $value = AttributesFactory::user()
+            ->get(
+                siteId: get_current_site_id(),
+                userId: $this->id,
+                key: $key,
+            );
+
+        return is_string($value) ? purify_html($value) : $value;
     }
 
     /**
@@ -233,12 +321,12 @@ final class User extends stdClass
      */
     public function __set(string $key, mixed $value): void
     {
-        if ('id' === strtolower($key)) {
-            $this->id = $value;
+        if (property_exists($this, $key)) {
+            $this->{$key} = $value === null ? null : (string) $value;
             return;
         }
 
-        $this->{$key} = $value;
+        $this->attributes[$key] = $value;
     }
 
     /**
@@ -248,9 +336,12 @@ final class User extends stdClass
      */
     public function __unset(string $key)
     {
-        if (isset($this->{$key})) {
-            unset($this->{$key});
+        if (property_exists($this, $key)) {
+            $this->{$key} = null;
+            return;
         }
+
+        unset($this->attributes[$key]);
     }
 
     /**
@@ -259,15 +350,29 @@ final class User extends stdClass
      * Retrieves from the user and site_user table.
      *
      * @param string $key Property
+     * @param mixed|null $default
      * @return string
      * @throws ContainerExceptionInterface
      * @throws Exception
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
      */
-    public function get(string $key): string
+    public function get(string $key, mixed $default = null): string
     {
-        return $this->__get($key);
+        $value = $this->__get($key);
+
+        return $value ?? $default;
+    }
+
+    /**
+     * @throws ContainerExceptionInterface
+     * @throws Exception
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
+     */
+    public function has(string $key): bool
+    {
+        return $this->__isset($key);
     }
 
     /**
@@ -284,7 +389,7 @@ final class User extends stdClass
      */
     public function isSet(string $key): bool
     {
-        return $this->__isset($key);
+        return $this->has($key);
     }
 
     /**
@@ -292,11 +397,33 @@ final class User extends stdClass
      *
      * @return array Array representation.
      */
-    public function toArray(): array
+    public function toArray(bool $includePassword = false): array
     {
-        unset($this->dfdb);
+        $data = [
+            'id' => $this->id,
+            'login' => $this->login,
+            'token' => $this->token,
+            'fname' => $this->fname,
+            'mname' => $this->mname,
+            'lname' => $this->lname,
+            'email' => $this->email,
+            'url' => $this->url,
+            'bio' => $this->bio,
+            'timezone' => $this->timezone,
+            'dateFormat' => $this->dateFormat,
+            'timeFormat' => $this->timeFormat,
+            'locale' => $this->locale,
+            'registered' => $this->registered,
+            'modified' => $this->modified,
+            'activationKey' => $this->activationKey,
+            'attributes' => $this->attributes,
+        ];
 
-        return get_object_vars($this);
+        if ($includePassword) {
+            $data['pass'] = $this->pass;
+        }
+
+        return $data;
     }
 
     /**
@@ -310,13 +437,26 @@ final class User extends stdClass
      */
     public function setRole(string $role, ?string $siteId = null): void
     {
-        if(is_null__($siteId)) {
-            $siteId = get_current_site_id();
+        if ($this->id === null) {
+            throw new Exception('Cannot set a role for a user without an ID.');
         }
 
-        $oldRole = AttributesFactory::user()->get(siteId: $siteId, userId: $this->id, key: 'role');
+        $siteId ??= get_current_site_id();
+        $attributes = AttributesFactory::user();
 
-        AttributesFactory::user()->set(siteId: $siteId, userId: $this->id, key: 'role', value: $role);
+        $oldRole = $attributes->get(
+            siteId: $siteId,
+            userId: $this->id,
+            key: 'role',
+            default: ''
+        );
+
+        $attributes->set(
+            siteId: $siteId,
+            userId: $this->id,
+            key: 'role',
+            value: $role
+        );
 
         /**
          * Fires after the user's role has been added/changed.

@@ -11,6 +11,7 @@ use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Psr\SimpleCache\InvalidArgumentException;
 use Qubus\EventDispatcher\ActionFilter\Action;
+use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
 use ReflectionException;
 
@@ -26,16 +27,19 @@ class UserCachePsr16 implements UserCache
      * @throws InvalidArgumentException
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
+     * @throws TypeException
      */
     public static function update(User|array $user): void
     {
         if ($user instanceof User) {
-            $user = $user->toArray();
+            $user = $user->toArray(includePassword: true);
         }
 
         if (empty($user)) {
             return;
         }
+
+        $dfdb = dfdb();
 
         SimpleCacheObjectCacheFactory::make(namespace: 'users')->set(md5($user['id']), $user);
         SimpleCacheObjectCacheFactory::make(namespace: 'userlogin')->set(md5($user['login']), $user['id']);

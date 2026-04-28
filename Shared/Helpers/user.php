@@ -571,7 +571,7 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
     if ($userdata instanceof ServerRequestInterface) {
         $userdata = $userdata->getParsedBody();
     } elseif ($userdata instanceof User) {
-        $userdata = $userdata->toArray();
+        $userdata = $userdata->toArray(includePassword: true);
     }
 
     $defaults = [
@@ -598,7 +598,7 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
         }
 
         // hashed in cms_update_user(), plaintext if called directly
-        $userPass = $userdata['pass'] ?? $oldUserData['pass'];
+        $userPass = $userdata['pass'] ?? $oldUserData->pass;
 
         /**
          * Create a new user object.
@@ -905,10 +905,10 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
         'fname' => $userFname,
         'mname' => $userMname,
         'lname' => $userLname,
-        'pass' => $userPass,
+        'pass' => $userPass ?? '',
         'email' => $userEmail,
         'url' => $userUrl,
-        'bio' => $userBio,
+        'bio' => $userBio ?? '',
         'timezone' => $userTimezone,
         'dateFormat' => $userDateFormat,
         'timeFormat' => $userTimeFormat,
@@ -1029,7 +1029,7 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
             ]);
 
             command($command);
-        } catch (CommandCouldNotBeHandledException | UnresolvableCommandHandlerException | ReflectionException $e) {
+        } catch (UnresolvableCommandHandlerException | ReflectionException $e) {
             logger(level: 'error', message: $e->getMessage());
         }
     }
@@ -1091,7 +1091,7 @@ function cms_update_user(array|ServerRequestInterface|User $userdata): string|Us
     if ($userdata instanceof ServerRequestInterface) {
         $userdata = $userdata->getParsedBody();
     } elseif ($userdata instanceof User) {
-        $userdata = $userdata->toArray();
+        $userdata = $userdata->toArray(includePassword: true);
     }
 
     $id = $userdata['id'] ?? '';
@@ -1109,7 +1109,6 @@ function cms_update_user(array|ServerRequestInterface|User $userdata): string|Us
     $user = get_object_vars($userObj);
 
     $userAttributes = [
-        'bio',
         'role',
         'status',
         'adminLayout',

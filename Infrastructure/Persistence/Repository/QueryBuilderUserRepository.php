@@ -77,7 +77,6 @@ class QueryBuilderUserRepository implements UserCommandRepository
                         'user_lname' => $user->lname,
                         'user_email' => $user->email,
                         'user_token' => $user->token,
-                        'user_pass' => $user->pass,
                         'user_url' => $user->url,
                         'user_bio' => $user->bio,
                         'user_timezone' => $user->timezone,
