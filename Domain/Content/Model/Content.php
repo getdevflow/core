@@ -8,46 +8,46 @@ use App\Infrastructure\Persistence\Cache\ContentCachePsr16;
 use Qubus\Expressive\Database;
 use App\Infrastructure\Services\AttributesFactory;
 use App\Shared\Services\SimpleCacheObjectCacheFactory;
-use App\Shared\Services\Trait\HydratorAware;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Psr\SimpleCache\InvalidArgumentException;
 use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
 use ReflectionException;
-use stdClass;
 
 use function Codefy\Framework\Helpers\config;
 use function md5;
 use function Qubus\Security\Helpers\esc_html;
 use function Qubus\Security\Helpers\purify_html;
-use function Qubus\Support\Helpers\convert_array_to_object;
-use function Qubus\Support\Helpers\is_null__;
 
-/**
- * @property string $id
- * @property string $title
- * @property string $slug
- * @property string $body
- * @property string $author
- * @property string $type
- * @property string $parent
- * @property string $sidebar
- * @property string $showInMenu
- * @property string $showInSearch
- * @property string $relativeUrl
- * @property string $featuredImage
- * @property string $status
- * @property string $created
- * @property string $createdGmt
- * @property string published
- * @property string $publishedGmt
- * @property string $modified
- * @property string $modifiedGmt
- */
-final class Content extends stdClass
+final class Content
 {
-    use HydratorAware;
+    public ?string $id = null;
+    public ?string $title = null;
+    public ?string $slug = null;
+    public ?string $body = null;
+    public ?string $author = null;
+    public ?string $type = null;
+    public ?string $parent = null;
+    public ?string $sidebar = null;
+    public ?string $showInMenu = null;
+    public ?string $showInSearch = null;
+    public ?string $relativeUrl = null;
+    public ?string $featuredImage = null;
+    public ?string $status = null;
+    public ?string $created = null;
+    public ?string $createdGmt = null;
+    public ?string $published = null;
+    public ?string $publishedGmt = null;
+    public ?string $modified = null;
+    public ?string $modifiedGmt = null;
+
+    /**
+     * Runtime-only custom values.
+     *
+     * @var array<string, mixed>
+     */
+    private array $attributes = [];
 
     public function __construct(protected Database $dfdb)
     {
@@ -67,66 +67,95 @@ final class Content extends stdClass
      */
     public function findBy(string $field, string $value): Content|false
     {
-        if ('' === $value) {
+        if ($value === '') {
             return false;
         }
 
-        $contentId = match ($field) {
-            'id', 'ID' => $value,
-            'owner', 'author' => SimpleCacheObjectCacheFactory::make(namespace: $this->dfdb->prefix . 'contentauthor')
-                ->get(md5($value), ''),
-            'slug' => SimpleCacheObjectCacheFactory::make(namespace: $this->dfdb->prefix . 'contentslug')
-                ->get(md5($value), ''),
-            'type' => SimpleCacheObjectCacheFactory::make(namespace: $this->dfdb->prefix . 'contenttype')
-                ->get(md5($value), ''),
-            default => false,
-        };
+        $field = strtolower($field);
 
         $dbField = match ($field) {
-            'id', 'ID' => 'content_id',
+            'id' => 'content_id',
             'owner', 'author' => 'content_author',
             'slug' => 'content_slug',
             'type' => 'content_type',
-            default => false,
+            default => null,
         };
 
-        $content = null;
-
-        if ('' !== $contentId) {
-            if (
-                $data = SimpleCacheObjectCacheFactory::make(namespace: $this->dfdb->prefix . 'content')
-                    ->get(md5($contentId))
-            ) {
-                is_array($data) ? convert_array_to_object($data) : $data;
-            }
-        }
-
-        if (
-                !$data = $this->dfdb->getRow(
-                    $this->dfdb->prepare(
-                        "SELECT * 
-                            FROM {$this->dfdb->prefix}content 
-                            WHERE $dbField = ?",
-                        [
-                            $value
-                        ]
-                    ),
-                    Database::ARRAY_A
-                )
-        ) {
+        if ($dbField === null) {
             return false;
         }
 
-        if (!is_null__($data)) {
-            $content = $this->create($data);
-            ContentCachePsr16::update($content);
+        $contentId = $this->resolveCachedContentId($field, $value);
+        if ($contentId !== null && $contentId !== '') {
+            $cached = SimpleCacheObjectCacheFactory::make(
+                    namespace: $this->dfdb->prefix . 'content'
+            )->get(md5($contentId));
+
+            if (is_array($cached)) {
+                return $this->create($cached);
+            }
+
+            if ($cached instanceof self) {
+                return $cached;
+            }
+
+            $dbField = 'content_id';
+            $value = $contentId;
         }
 
-        if (is_array($content)) {
-            $content = convert_array_to_object($content);
+        $data = $this->dfdb->getRow(
+            $this->dfdb->prepare(
+                sprintf(
+                    "SELECT *
+                     FROM {$this->dfdb->prefix}content
+                     WHERE %s = ?",
+                        $dbField
+                ),
+                [$value]
+            ),
+            Database::ARRAY_A
+        );
+
+        if (! is_array($data) || $data === []) {
+            return false;
         }
+
+        $content = $this->create($data);
+
+        ContentCachePsr16::update($content);
 
         return $content;
+    }
+
+    /**
+     * @param string $field
+     * @param string $value
+     * @return string|null
+     * @throws ContainerExceptionInterface
+     * @throws InvalidArgumentException
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
+     * @throws TypeException
+     */
+    private function resolveCachedContentId(string $field, string $value): ?string
+    {
+        return match ($field) {
+            'id' => $value,
+
+            'owner', 'author' => SimpleCacheObjectCacheFactory::make(
+                    namespace: $this->dfdb->prefix . 'contentauthor'
+            )->get(md5($value), null),
+
+            'slug' => SimpleCacheObjectCacheFactory::make(
+                    namespace: $this->dfdb->prefix . 'contentslug'
+            )->get(md5($value), null),
+
+            'type' => SimpleCacheObjectCacheFactory::make(
+                    namespace: $this->dfdb->prefix . 'contenttype'
+            )->get(md5($value), null),
+
+            default => null,
+        };
     }
 
     /**
@@ -138,12 +167,14 @@ final class Content extends stdClass
      * @throws TypeException
      * @throws Exception
      */
-    public function create(array $data = []): Content
+    public function create(array $data = []): self
     {
         $content = $this->__create();
-        if ($data) {
-            $content = $this->populate($content, $data);
+
+        if ($data !== []) {
+            $content->populate($data);
         }
+
         return $content;
     }
 
@@ -158,53 +189,95 @@ final class Content extends stdClass
     }
 
     /**
+     * @param array<string, mixed> $data
      * @throws TypeException
      * @throws Exception
      */
-    public function populate(Content $content, array $data = []): self
+    public function populate(array $data = []): self
     {
-        if (config()->string(key: 'cms.relative_url') === 'contenttype') {
-            $relativeUrl = esc_html(string: $data['content_type'] . '/' . $data['content_slug'] . '/');
-        } else {
-            $relativeUrl = esc_html(string: $data['content_slug'] . '/');
+        $data = $this->normalizeData($data);
+
+        $this->id = $this->clean($data['id']);
+        $this->title = $this->clean($data['title']);
+        $this->slug = $this->clean($data['slug']);
+        $this->body = $data['body'] !== null ? purify_html((string) $data['body']) : null;
+        $this->author = $this->clean($data['author']);
+        $this->type = $this->clean($data['type']);
+        $this->parent = $this->clean($data['parent']);
+        $this->sidebar = $this->clean($data['sidebar']);
+        $this->showInMenu = $this->clean($data['showInMenu']);
+        $this->showInSearch = $this->clean($data['showInSearch']);
+        $this->featuredImage = $this->clean($data['featuredImage']);
+        $this->status = $this->clean($data['status']);
+        $this->created = $this->clean($data['created']);
+        $this->createdGmt = $this->clean($data['createdGmt']);
+        $this->published = $this->clean($data['published']);
+        $this->publishedGmt = $this->clean($data['publishedGmt']);
+        $this->modified = $this->clean($data['modified']);
+        $this->modifiedGmt = $this->clean($data['modifiedGmt']);
+        $this->relativeUrl = $this->makeRelativeUrl();
+
+        return $this;
+    }
+
+    /**
+     * Accepts both database-shaped rows and cache/object-shaped arrays.
+     *
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
+     */
+    private function normalizeData(array $data): array
+    {
+        return [
+            'id' => $data['id'] ?? $data['content_id'] ?? null,
+            'title' => $data['title'] ?? $data['content_title'] ?? null,
+            'slug' => $data['slug'] ?? $data['content_slug'] ?? null,
+            'body' => $data['body'] ?? $data['content_body'] ?? null,
+            'author' => $data['author'] ?? $data['content_author'] ?? null,
+            'type' => $data['type'] ?? $data['content_type'] ?? null,
+            'parent' => $data['parent'] ?? $data['content_parent'] ?? null,
+            'sidebar' => $data['sidebar'] ?? $data['content_sidebar'] ?? null,
+            'showInMenu' => $data['showInMenu'] ?? $data['content_show_in_menu'] ?? null,
+            'showInSearch' => $data['showInSearch'] ?? $data['content_show_in_search'] ?? null,
+            'relativeUrl' => $data['relativeUrl'] ?? $data['content_relative_url'] ?? null,
+            'featuredImage' => $data['featuredImage'] ?? $data['content_featured_image'] ?? null,
+            'status' => $data['status'] ?? $data['content_status'] ?? null,
+            'created' => $data['created'] ?? $data['content_created'] ?? null,
+            'createdGmt' => $data['createdGmt'] ?? $data['content_created_gmt'] ?? null,
+            'published' => $data['published'] ?? $data['content_published'] ?? null,
+            'publishedGmt' => $data['publishedGmt'] ?? $data['content_published_gmt'] ?? null,
+            'modified' => $data['modified'] ?? $data['content_modified'] ?? null,
+            'modifiedGmt' => $data['modifiedGmt'] ?? $data['content_modified_gmt'] ?? null,
+        ];
+    }
+
+    /**
+     * @throws Exception
+     */
+    private function clean(mixed $value): ?string
+    {
+        if ($value === null) {
+            return null;
         }
 
-        $content->id = isset($data['content_id']) ? esc_html(string: $data['content_id']) : null;
-        $content->title = isset($data['content_title']) ? esc_html(string: $data['content_title']) : null;
-        $content->slug = isset($data['content_slug']) ? esc_html(string: $data['content_slug']) : null;
-        $content->body = isset($data['content_body']) ? purify_html(string: $data['content_body']) : null;
-        $content->author = isset($data['content_author']) ? esc_html(string: $data['content_author']) : null;
-        $content->type = isset($data['content_type']) ? esc_html($data['content_type']) : null;
-        $content->parent = isset($data['content_parent']) ? esc_html(string: $data['content_parent']) : null;
-        $content->sidebar = isset($data['content_sidebar']) ? esc_html(string: (string) $data['content_sidebar']) : null;
-        $content->showInMenu = isset($data['content_show_in_menu']) ? esc_html(string: (string) $data['content_show_in_menu']) : null;
-        $content->showInSearch = isset($data['content_show_in_search']) ? esc_html(string: (string) $data['content_show_in_search']) : null;
-        $content->relativeUrl = esc_html(string: $relativeUrl);
+        return esc_html((string) $value);
+    }
 
-        $content->featuredImage = isset($data['content_featured_image']) ?
-        esc_html(string: $data['content_featured_image']) :
-        null;
+    /**
+     * @throws Exception
+     * @throws TypeException
+     */
+    private function makeRelativeUrl(): ?string
+    {
+        if ($this->slug === null || $this->slug === '') {
+            return null;
+        }
 
-        $content->status = isset($data['content_status']) ? esc_html(string: $data['content_status']) : null;
-        $content->created = isset($data['content_created']) ? esc_html(string: $data['content_created']) : null;
+        if (config()->string(key: 'cms.relative_url') === 'contenttype' && $this->type !== null && $this->type !== '') {
+            return esc_html($this->type . '/' . $this->slug . '/');
+        }
 
-        $content->createdGmt = isset($data['content_created_gmt']) ?
-        esc_html(string: $data['content_created_gmt']) :
-        null;
-
-        $content->published = isset($data['content_published']) ? esc_html(string: $data['content_published']) : null;
-
-        $content->publishedGmt = isset($data['content_published_gmt']) ?
-        esc_html(string: $data['content_published_gmt']) :
-        null;
-
-        $content->modified = isset($data['content_modified']) ? esc_html(string: $data['content_modified']) : null;
-
-        $content->modifiedGmt = isset($data['content_modified_gmt']) ?
-        esc_html(string: $data['content_modified_gmt']) :
-        null;
-
-        return $content;
+        return esc_html($this->slug . '/');
     }
 
     /**
@@ -219,8 +292,16 @@ final class Content extends stdClass
      */
     public function __isset(string $key)
     {
-        if (isset($this->{$key})) {
+        if (property_exists($this, $key) && $this->{$key} !== null) {
             return true;
+        }
+
+        if (array_key_exists($key, $this->attributes)) {
+            return true;
+        }
+
+        if ($this->id === null) {
+            return false;
         }
 
         return AttributesFactory::content()->exists($this->id, $key);
@@ -236,15 +317,27 @@ final class Content extends stdClass
      * @throws ReflectionException
      * @throws TypeException
      */
-    public function __get(string $key): string
+    public function __get(string $key): mixed
     {
-        if (isset($this->{$key})) {
-            $value = $this->{$key};
-        } else {
-            $value = AttributesFactory::content()->get(id: $this->id, key: $key, default: '');
+        if (property_exists($this, $key)) {
+            return $this->{$key};
         }
 
-        return isset($value) ? purify_html($value) : '';
+        if (array_key_exists($key, $this->attributes)) {
+            return $this->attributes[$key];
+        }
+
+        if ($this->id === null) {
+            return null;
+        }
+
+        $value = AttributesFactory::content()->get(
+            id: $this->id,
+            key: $key,
+            default: null
+        );
+
+        return is_string($value) ? purify_html($value) : $value;
     }
 
     /**
@@ -258,7 +351,12 @@ final class Content extends stdClass
      */
     public function __set(string $key, mixed $value): void
     {
-        $this->{$key} = $value;
+        if (property_exists($this, $key)) {
+            $this->{$key} = $value === null ? null : (string) $value;
+            return;
+        }
+
+        $this->attributes[$key] = $value;
     }
 
     /**
@@ -268,9 +366,12 @@ final class Content extends stdClass
      */
     public function __unset(string $key)
     {
-        if (isset($this->{$key})) {
-            unset($this->{$key});
+        if (property_exists($this, $key)) {
+            $this->{$key} = null;
+            return;
         }
+
+        unset($this->attributes[$key]);
     }
 
     /**
@@ -285,9 +386,11 @@ final class Content extends stdClass
      * @throws ReflectionException
      * @throws TypeException
      */
-    public function get(string $key): string
+    public function get(string $key, mixed $default = null): mixed
     {
-        return $this->__get($key);
+        $value = $this->__get($key);
+
+        return $value ?? $default;
     }
 
     /**
@@ -312,10 +415,34 @@ final class Content extends stdClass
      *
      * @return array Array representation.
      */
-    public function toArray(): array
+    public function toArray(bool $includeAttributes = true): array
     {
-        unset($this->dfdb);
+        $data = [
+            'id' => $this->id,
+            'title' => $this->title,
+            'slug' => $this->slug,
+            'body' => $this->body,
+            'author' => $this->author,
+            'type' => $this->type,
+            'parent' => $this->parent,
+            'sidebar' => $this->sidebar,
+            'showInMenu' => $this->showInMenu,
+            'showInSearch' => $this->showInSearch,
+            'relativeUrl' => $this->relativeUrl,
+            'featuredImage' => $this->featuredImage,
+            'status' => $this->status,
+            'created' => $this->created,
+            'createdGmt' => $this->createdGmt,
+            'published' => $this->published,
+            'publishedGmt' => $this->publishedGmt,
+            'modified' => $this->modified,
+            'modifiedGmt' => $this->modifiedGmt,
+        ];
 
-        return get_object_vars($this);
+        if ($includeAttributes) {
+            $data['attributes'] = $this->attributes;
+        }
+
+        return $data;
     }
 }
