@@ -19,8 +19,6 @@ use stdClass;
 use function md5;
 use function Qubus\Security\Helpers\esc_html;
 use function Qubus\Security\Helpers\purify_html;
-use function Qubus\Support\Helpers\convert_array_to_object;
-use function Qubus\Support\Helpers\is_null__;
 
 final class Product extends stdClass
 {
