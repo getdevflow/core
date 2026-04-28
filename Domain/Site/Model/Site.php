@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Domain\Site\Model;
 
 use App\Infrastructure\Persistence\Cache\SiteCachePsr16;
+use Qubus\Exception\Data\TypeException;
 use Qubus\Expressive\Database;
 use App\Shared\Services\SimpleCacheObjectCacheFactory;
-use App\Shared\Services\Trait\HydratorAware;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Psr\SimpleCache\InvalidArgumentException;
@@ -16,25 +16,20 @@ use ReflectionException;
 use stdClass;
 
 use function Qubus\Security\Helpers\esc_html;
-use function Qubus\Support\Helpers\convert_array_to_object;
-use function Qubus\Support\Helpers\is_null__;
 
-/**
- * @property string $id
- * @property string $key
- * @property string $name
- * @property string $slug
- * @property string $domain
- * @property string $mapping
- * @property string $path
- * @property string $owner
- * @property string $status
- * @property string $registered
- * @property string $modified
- */
 final class Site extends stdClass
 {
-    use HydratorAware;
+    public ?string $id = null;
+    public ?string $key = null;
+    public ?string $name = null;
+    public ?string $slug = null;
+    public ?string $domain = null;
+    public ?string $mapping = null;
+    public ?string $path = null;
+    public ?string $owner = null;
+    public ?string $status = null;
+    public ?string $registered = null;
+    public ?string $modified = null;
 
     public function __construct(protected Database $dfdb)
     {
@@ -49,79 +44,104 @@ final class Site extends stdClass
      */
     public function findBy(string $field, string $value): Site|false
     {
-        if ('' === $value) {
+        if ($value === '') {
             return false;
         }
 
-        $siteId = match ($field) {
-            'id', 'ID' => $value,
-            'key' => SimpleCacheObjectCacheFactory::make(namespace: 'sitekey')
-                    ->get(md5($value), ''),
-            'slug' => SimpleCacheObjectCacheFactory::make(namespace:'siteslug')
-                    ->get(md5($value), ''),
-            default => false,
-        };
+        $field = strtolower($field);
 
         $dbField = match ($field) {
-            'id', 'ID' => 'site_id',
+            'id' => 'site_id',
             'key' => 'site_key',
             'slug' => 'site_slug',
-            default => false,
+            default => null,
         };
 
-        $site = null;
-
-        if ('' !== $siteId) {
-            if (
-                    $data = SimpleCacheObjectCacheFactory::make(namespace: 'sites')
-                        ->get(md5($siteId))
-            ) {
-                is_array($data) ? convert_array_to_object($data) : $data;
-            }
-        }
-
-        if (
-                !$data = $this->dfdb->getRow(
-                    $this->dfdb->prepare(
-                        "SELECT * 
-                            FROM {$this->dfdb->basePrefix}site 
-                            WHERE $dbField = ?",
-                        [
-                            $value
-                        ]
-                    ),
-                    Database::ARRAY_A
-                )
-        ) {
+        if ($dbField === null) {
             return false;
         }
 
-        if (!is_null__($data)) {
-            $site = $this->create($data);
-            SiteCachePsr16::update($site);
+        $siteId = $this->resolveCachedSiteId($field, $value);
+        if ($siteId !== null && $siteId !== '') {
+            $cached = SimpleCacheObjectCacheFactory::make(namespace: 'sites')
+                ->get(md5($siteId));
+
+            if (is_array($cached)) {
+                return $this->create($cached);
+            }
+
+            if ($cached instanceof self) {
+                return $cached;
+            }
+
+            $dbField = 'site_id';
+            $value = $siteId;
         }
 
-        if (is_array($site)) {
-            $site = convert_array_to_object($site);
+        $data = $this->dfdb->getRow(
+            $this->dfdb->prepare(
+                sprintf(
+                    "SELECT *
+                     FROM {$this->dfdb->basePrefix}site
+                     WHERE %s = ?",
+                    $dbField
+                ),
+                [$value]
+            ),
+            Database::ARRAY_A
+        );
+
+        if (! is_array($data) || $data === []) {
+            return false;
         }
+
+        $site = $this->create($data);
+
+        SiteCachePsr16::update($site);
 
         return $site;
+    }
+
+    /**
+     * @param string $field
+     * @param string $value
+     * @return string|null
+     * @throws ContainerExceptionInterface
+     * @throws InvalidArgumentException
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
+     * @throws TypeException
+     */
+    private function resolveCachedSiteId(string $field, string $value): ?string
+    {
+        return match ($field) {
+            'id' => $value,
+
+            'key' => SimpleCacheObjectCacheFactory::make(namespace: 'sitekey')
+                    ->get(md5($value), null),
+
+            'slug' => SimpleCacheObjectCacheFactory::make(namespace: 'siteslug')
+                    ->get(md5($value), null),
+
+            default => null,
+        };
     }
 
     /**
      * Create a new instance of Site. Optionally populating it
      * from a data array.
      *
-     * @param array $data
+     * @param array<string, mixed> $data
      * @return Site
      * @throws Exception
      */
     public function create(array $data = []): Site
     {
         $site = $this->__create();
-        if ($data) {
-            $site = $this->populate($site, $data);
+        if ($data !== []) {
+            $site->populate($data);
         }
+
         return $site;
     }
 
@@ -136,23 +156,61 @@ final class Site extends stdClass
     }
 
     /**
+     * @param array<string, mixed> $data
      * @throws Exception
      */
-    public function populate(Site $site, array $data = []): self
+    public function populate(array $data = []): self
     {
-        $site->id = isset($data['site_id']) ? esc_html(string: $data['site_id']) : null;
-        $site->key = isset($data['site_key']) ? esc_html(string: $data['site_key']) : null;
-        $site->name = isset($data['site_name']) ? esc_html(string: $data['site_name']) : null;
-        $site->slug = isset($data['site_slug']) ? esc_html(string: $data['site_slug']) : null;
-        $site->domain = isset($data['site_domain']) ? esc_html(string: $data['site_domain']) : null;
-        $site->mapping = isset($data['site_mapping']) ? esc_html(string: $data['site_mapping']) : null;
-        $site->path = isset($data['site_path']) ? esc_html(string: $data['site_path']) : null;
-        $site->owner = isset($data['site_owner']) ? esc_html(string: $data['site_owner']) : null;
-        $site->status = isset($data['site_status']) ? esc_html(string: $data['site_status']) : null;
-        $site->registered = isset($data['site_registered']) ? esc_html(string: $data['site_registered']) : null;
-        $site->modified = isset($data['site_modified']) ? esc_html(string: $data['site_modified']) : null;
+        $data = $this->normalizeData($data);
 
-        return $site;
+        $this->id = $this->clean($data['id']);
+        $this->key = $this->clean($data['key']);
+        $this->name = $this->clean($data['name']);
+        $this->slug = $this->clean($data['slug']);
+        $this->domain = $this->clean($data['domain']);
+        $this->mapping = $this->clean($data['mapping']);
+        $this->path = $this->clean($data['path']);
+        $this->owner = $this->clean($data['owner']);
+        $this->status = $this->clean($data['status']);
+        $this->registered = $this->clean($data['registered']);
+        $this->modified = $this->clean($data['modified']);
+
+        return $this;
+    }
+
+    /**
+     * Accepts both DB-shaped rows and cache/object-shaped arrays.
+     *
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
+     */
+    private function normalizeData(array $data): array
+    {
+        return [
+            'id' => $data['id'] ?? $data['site_id'] ?? null,
+            'key' => $data['key'] ?? $data['site_key'] ?? null,
+            'name' => $data['name'] ?? $data['site_name'] ?? null,
+            'slug' => $data['slug'] ?? $data['site_slug'] ?? null,
+            'domain' => $data['domain'] ?? $data['site_domain'] ?? null,
+            'mapping' => $data['mapping'] ?? $data['site_mapping'] ?? null,
+            'path' => $data['path'] ?? $data['site_path'] ?? null,
+            'owner' => $data['owner'] ?? $data['site_owner'] ?? null,
+            'status' => $data['status'] ?? $data['site_status'] ?? null,
+            'registered' => $data['registered'] ?? $data['site_registered'] ?? null,
+            'modified' => $data['modified'] ?? $data['site_modified'] ?? null,
+        ];
+    }
+
+    /**
+     * @throws Exception
+     */
+    private function clean(mixed $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        return esc_html((string) $value);
     }
 
     /**
@@ -163,22 +221,23 @@ final class Site extends stdClass
      */
     public function __isset(string $key)
     {
-        if (isset($this->{$key})) {
-            return true;
-        }
-
-        return false;
+        return property_exists($this, $key) && $this->{$key} !== null;
     }
 
     /**
      * Retrieve the value of a property.
      *
      * @param string $key Property
-     * @return string
+     * @param mixed $default
+     * @return mixed
      */
-    public function get(string $key): string
+    public function get(string $key, mixed $default = ''): mixed
     {
-        return $this->{$key} ?? '';
+        if (! property_exists($this, $key)) {
+            return $default;
+        }
+
+        return $this->{$key} ?? $default;
     }
 
     /**
@@ -199,8 +258,18 @@ final class Site extends stdClass
      */
     public function toArray(): array
     {
-        unset($this->dfdb);
-
-        return get_object_vars($this);
+        return [
+            'id' => $this->id,
+            'key' => $this->key,
+            'name' => $this->name,
+            'slug' => $this->slug,
+            'domain' => $this->domain,
+            'mapping' => $this->mapping,
+            'path' => $this->path,
+            'owner' => $this->owner,
+            'status' => $this->status,
+            'registered' => $this->registered,
+            'modified' => $this->modified,
+        ];
     }
 }
