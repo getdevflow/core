@@ -10,6 +10,10 @@ use App\Domain\Site\Model\Site;
 use App\Domain\Site\Repository\SiteCommandRepository;
 use App\Domain\Site\ValueObject\SiteId;
 use App\Domain\User\ValueObject\UserId;
+use App\Infrastructure\Services\Content\Event\ContentUpdated;
+use App\Infrastructure\Services\Product\Event\ProductUpdated;
+use App\Shared\Services\SimpleCacheObjectCacheFactory;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Qubus\Expressive\Database;
 use Exception as NativeException;
 use Psr\Container\ContainerExceptionInterface;
@@ -20,13 +24,14 @@ use Qubus\Expressive\QueryBuilderException;
 use ReflectionException;
 
 use function App\Shared\Helpers\get_content_by;
+use function App\Shared\Helpers\get_current_user_id;
 use function App\Shared\Helpers\get_product_by;
 use function App\Shared\Helpers\get_site_by;
 use function Qubus\Support\Helpers\is_false__;
 
 class QueryBuilderSiteRepository implements SiteCommandRepository
 {
-    public function __construct(protected Database $dfdb)
+    public function __construct(protected Database $dfdb, protected EventDispatcherInterface $event)
     {
     }
 
@@ -119,6 +124,8 @@ class QueryBuilderSiteRepository implements SiteCommandRepository
                         ->where(condition: 'content_author = ?', parameters: $authorId->toNative())
                         ->update();
                 });
+
+                SimpleCacheObjectCacheFactory::make(namespace: $this->dfdb->prefix . 'content')->clear();
             }
 
             if(!is_false__($product)) {
@@ -129,6 +136,8 @@ class QueryBuilderSiteRepository implements SiteCommandRepository
                         ->where(condition: 'product_author = ?', parameters: $authorId->toNative())
                         ->update();
                 });
+
+                SimpleCacheObjectCacheFactory::make(namespace: $this->dfdb->prefix . 'products')->clear();
             }
         } catch (QueryBuilderException $e) {
             throw new NativeException(message: $e->getMessage());

@@ -1122,6 +1122,7 @@ function cms_delete_site_user(string $userId, array $params = []): Error|bool
         if (!empty($sites)) {
             foreach ($sites as $site) {
                 SimpleCacheObjectCacheFactory::make(namespace: 'sites')->delete(key: md5($site->id));
+                AttributesFactory::user()->createIfMissing(siteId: $site->id, userId: $params['assign_id']);
 
                 add_user_to_site($params['assign_id'], $site->id, $params['role']);
 
@@ -1267,8 +1268,8 @@ function remove_user_from_site(string $userId, array $params = []): void
     try {
         command(
             new RemoveSiteUserCommand([
-                'siteId' => $site->id,
-                'userId' => $oldUser->id,
+                'siteId' => SiteId::fromNative($site->id),
+                'userId' => UserId::fromNative($oldUser->id),
             ])
         );
 
@@ -1284,6 +1285,8 @@ function remove_user_from_site(string $userId, array $params = []): void
                 ])
             );
         }
+
+        SiteCachePsr16::clean($site);
     } catch (CommandPropertyNotFoundException|UnresolvableCommandHandlerException|ReflectionException $e) {
         logger(level: 'error', message: $e->getMessage());
     }
