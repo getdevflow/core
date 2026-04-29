@@ -15,6 +15,7 @@ use App\Domain\ContentType\Validator\UpdateContentTypeValidator;
 use App\Infrastructure\Services\ContentType\Event\ContentTypeCreated;
 use App\Infrastructure\Services\ContentType\Event\ContentTypeDeleted;
 use App\Infrastructure\Services\ContentType\Event\ContentTypeUpdated;
+use App\Shared\Services\SimpleCacheObjectCacheFactory;
 use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
 use Codefy\CommandBus\Exceptions\UnresolvableCommandHandlerException;
 use Codefy\QueryBus\UnresolvableQueryHandlerException;
@@ -24,6 +25,7 @@ use Psr\EventDispatcher\EventDispatcherInterface;
 use Psr\SimpleCache\InvalidArgumentException;
 use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
+use Qubus\Expressive\Database;
 use ReflectionException;
 
 use function App\Shared\Helpers\get_all_content_types;
@@ -34,7 +36,7 @@ use function Qubus\Security\Helpers\t__;
 
 final readonly class ContentTypeService
 {
-    public function __construct(protected EventDispatcherInterface $event)
+    public function __construct(protected EventDispatcherInterface $event, protected Database $dfdb)
     {
     }
 
@@ -85,6 +87,10 @@ final readonly class ContentTypeService
         }
     }
 
+    /**
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
+     */
     public function updateContentType(UpdateContentTypeValidator $data): void
     {
         try {
@@ -95,9 +101,10 @@ final readonly class ContentTypeService
             );
 
             /** @var ContentType $contentType */
-            $contentType = get_content_type_by('id', $data->toDtoArray()['contentTypeId']->toNative());
+            $contentType = get_content_type_by('id', $data->toDtoArray()['id']->toNative());
 
             $this->event->dispatch(new ContentTypeUpdated($contentType->toArray()));
+            SimpleCacheObjectCacheFactory::make($this->dfdb->prefix . 'content')->clear();
 
             Devflow::$PHP->flash->success(Devflow::$PHP->flash->notice(num: 200));
         } catch (
@@ -118,7 +125,7 @@ final readonly class ContentTypeService
     public function deleteContentType(DestroyContentTypeValidator $data): void
     {
         /** @var string $contentTypeId */
-        $contentTypeId = $data->toDtoArray()['contentTypeId']->toNative();
+        $contentTypeId = $data->toDtoArray()['id']->toNative();
 
         try {
             command(

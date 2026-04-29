@@ -12,7 +12,7 @@ use Qubus\Exception\Data\TypeException;
 final readonly class DestroyContentTypeData implements DataTransformer
 {
     private function __construct(
-        public ContentTypeId $contentTypeId,
+        public ContentTypeId $id,
     ) {
     }
 
@@ -24,7 +24,7 @@ final readonly class DestroyContentTypeData implements DataTransformer
     public static function fromValidatedData(DataValidator $data): DataTransformer
     {
         return new self(
-            contentTypeId: ContentTypeId::fromString($data->string(key: 'id'))
+            id: ContentTypeId::fromString($data->string(key: 'id'))
         );
     }
 }

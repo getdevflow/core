@@ -84,13 +84,12 @@ final class AdminContentTypeController extends BaseController
     /**
      * @param ServerRequest $request
      * @param ContentTypeService $service
-     * @param string $contentTypeId
      * @return ResponseInterface
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
      */
-    public function contentTypeChange(ServerRequest $request, ContentTypeService $service, string $contentTypeId): ResponseInterface
+    public function contentTypeChange(ServerRequest $request, ContentTypeService $service): ResponseInterface
     {
-        $request = $request->withParsedBody(['id' => $contentTypeId]);
-
         $service->updateContentType(
             data: UpdateContentTypeValidator::make(
                 request: $request

@@ -7,10 +7,10 @@ namespace App\Infrastructure\Services\ContentType\Event;
 final readonly class ContentTypeDeleted
 {
     /**
-     * @param string $contentTypeId
+     * @param string $id
      */
     public function __construct(
-        public string $contentTypeId,
+        public string $id,
     ) {
     }
 }
