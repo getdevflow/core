@@ -319,10 +319,6 @@ final class Content extends EventSourcedAggregate implements AggregateRoot
      */
     public function changeContentParentWasRemoved(?ContentId $contentParent = null): void
     {
-        if (is_null__($this->parent) && is_null__($contentParent)) {
-            return;
-        }
-
         if (
                 (!is_null__($this->parent) && !is_null__($contentParent)) &&
                 (!$contentParent->equals($this->parent))

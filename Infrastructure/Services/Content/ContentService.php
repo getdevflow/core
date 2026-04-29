@@ -228,15 +228,17 @@ final readonly class ContentService
 
         if (is_content_parent($contentId)) {
             foreach (is_content_parent($contentId) as $children) {
+                /** @var Content $child */
+                $child = get_content_by_id($children['content_id']);
                 try {
                     command(
                         new RemoveContentParentCommand([
                             'id' => ContentId::fromString($contentId),
-                            'parent' => ContentId::fromString($children['id']),
+                            'parent' => ContentId::fromString($child->id),
                         ])
                     );
 
-                    ContentCachePsr16::clean((array) $children);
+                    ContentCachePsr16::clean($child->toArray());
                 } catch (PDOException $ex) {
                     logger(
                         level: 'error',
