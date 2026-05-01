@@ -10,8 +10,6 @@ use App\Domain\Site\Model\Site;
 use App\Domain\Site\Repository\SiteCommandRepository;
 use App\Domain\Site\ValueObject\SiteId;
 use App\Domain\User\ValueObject\UserId;
-use App\Infrastructure\Services\Content\Event\ContentUpdated;
-use App\Infrastructure\Services\Product\Event\ProductUpdated;
 use App\Shared\Services\SimpleCacheObjectCacheFactory;
 use Psr\EventDispatcher\EventDispatcherInterface;
 use Qubus\Expressive\Database;
@@ -24,7 +22,6 @@ use Qubus\Expressive\QueryBuilderException;
 use ReflectionException;
 
 use function App\Shared\Helpers\get_content_by;
-use function App\Shared\Helpers\get_current_user_id;
 use function App\Shared\Helpers\get_product_by;
 use function App\Shared\Helpers\get_site_by;
 use function Qubus\Support\Helpers\is_false__;
