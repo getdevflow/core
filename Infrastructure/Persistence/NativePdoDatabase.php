@@ -17,53 +17,66 @@ use ReflectionException;
 use function App\Shared\Helpers\is_multisite;
 use function array_merge;
 use function preg_match;
-use function Qubus\Security\Helpers\t__;
-use function Qubus\Support\Helpers\is_null__;
 
 final class NativePdoDatabase extends QueryBuilder
 {
+    private const string SCOPE_ALL = 'all';
+    private const string SCOPE_SITE = 'site';
+    private const string SCOPE_GLOBAL = 'global';
+    private const string SCOPE_MS_GLOBAL = 'ms_global';
+
     protected ?string $connectionType = null;
-
     public string $sitePrefix = '';
-
     public string $basePrefix = '';
-
     public string $prefix = '';
-
     public ?string $siteKey = null;
 
+    /**
+     * @var list<string>
+     */
     public array $siteTables = [
         'option',
         'plugin',
         'content',
-        'contentmeta',
         'contenttype',
         'product',
-        'productmeta',
+        'elfinder_file',
+        'elfinder_trash',
+        'event_store',
+        'pages',
+        'page_translations',
+        'settings',
+        'uploads',
     ];
-
+    /**
+     * @var list<string>
+     */
     public array $globalTables = [
         'user',
         'site_user'
     ];
-
+    /**
+     * @var list<string>
+     */
     public array $msGlobalTables = [
         'site'
     ];
 
     public string $option = '';
-
     public string $plugin = '';
-
     public string $content = '';
-
     public string $contenttype = '';
-
     public string $site = '';
-
     public string $user = '';
-
+    public string $site_user = '';
     public string $product = '';
+    public string $elfinder_file = '';
+    public string $elfinder_trash = '';
+    public string $event_store = '';
+    public string $pages = '';
+    public string $page_translations = '';
+    public string $settings = '';
+    public string $uploads = '';
 
     /**
      * @param Connection $connection
@@ -82,14 +95,18 @@ final class NativePdoDatabase extends QueryBuilder
             key: "database.connections.{$this->connectionType}.prefix"
         );
 
-        $this->siteKey = Registry::getInstance()->has(id: 'siteKey') ?
-        Registry::getInstance()->get('siteKey') :
+        $registry = Registry::getInstance();
+
+        $this->siteKey = $registry->has(id: 'siteKey') ?
+        $registry->get('siteKey') :
         null;
 
-        $this->sitePrefix = $this->siteKey ?? $this->basePrefix;
+        $this->sitePrefix = $this->resolveSitePrefix($this->siteKey);
         $this->prefix = $this->sitePrefix;
 
-        Registry::getInstance()->set('tblPrefix', $this->prefix);
+        $this->refreshTableNames();
+
+        $registry->set('tblPrefix', $this->prefix);
 
         parent::__construct($this->connection);
     }
@@ -98,43 +115,27 @@ final class NativePdoDatabase extends QueryBuilder
      * Sets the table prefix for Devflow tables.
      *
      * @param ?string $prefix Alphanumeric name for the new prefix.
-     * @param bool $setTableNames Optional. Whether the table names, e.g. Database::$post, should be updated or not.
+     * @param bool $setTableNames Optional. Whether the table names, e.g. Database::$content, should be updated or not.
      * @return string|Error Old prefix or Error on error
      * @throws TypeException
+     * @throws ReflectionException
      */
     public function setPrefix(?string $prefix = null, bool $setTableNames = true): Error|string
     {
-        if (is_null__($prefix) || empty($prefix)) {
-            return new Error(t__(msgid: 'Database prefix cannot be null.', domain: 'devflow'), 'invalid_db_prefix');
-        }
+        $this->assertValidPrefix($prefix);
 
-        if (preg_match('|[^a-z0-9_]|i', $prefix)) {
-            return new Error(t__(msgid: 'Invalid database prefix.', domain: 'devflow'), 'invalid_db_prefix');
-        }
-
-        $oldPrefix = '';
-
-        if ($this->basePrefix  !== '') {
-            $oldPrefix = $this->basePrefix;
-        }
+        $oldPrefix = $this->basePrefix;
 
         $this->basePrefix = $prefix;
+        $this->sitePrefix = $this->resolveSitePrefix($this->siteKey);
+        $this->prefix = $this->sitePrefix;
 
         if ($setTableNames) {
-            foreach ($this->tables('global') as $table => $prefixedTable) {
-                $this->{$table} = $prefixedTable;
-            }
-
-            if (empty($this->siteKey)) {
-                return $oldPrefix;
-            }
-
-            $this->sitePrefix = $this->getSitePrefix();
-
-            foreach ($this->tables('site') as $table => $prefixedTable) {
-                $this->{$table} = $prefixedTable;
-            }
+            $this->refreshTableNames();
         }
+
+        Registry::getInstance()->set('tblPrefix', $this->prefix);
+
         return $oldPrefix;
     }
 
@@ -144,17 +145,20 @@ final class NativePdoDatabase extends QueryBuilder
      * @param string $siteKey Site id to use.
      * @return string Previous site id.
      * @throws TypeException
+     * @throws ReflectionException
      */
     public function setSiteKey(string $siteKey): string
     {
         $oldSiteKey = $this->siteKey;
+
         $this->siteKey = $siteKey;
+        $this->sitePrefix = $this->resolveSitePrefix($siteKey);
+        $this->prefix = $this->sitePrefix;
 
-        $this->sitePrefix = $this->getSitePrefix();
+        $this->refreshTableNames();
 
-        foreach ($this->tables(scope: 'site') as $table => $prefixedTable) {
-            $this->{$table} = $prefixedTable;
-        }
+        Registry::getInstance()->set('siteKey', $siteKey);
+        Registry::getInstance()->set('tblPrefix', $this->prefix);
 
         return $oldSiteKey;
     }
@@ -168,19 +172,7 @@ final class NativePdoDatabase extends QueryBuilder
      */
     public function getSitePrefix(?string $siteKey = null): string
     {
-        if (is_multisite()) {
-            if (null === $siteKey) {
-                $siteKey = $this->siteKey;
-            }
-
-            if (is_multisite() && is_null__($siteKey)) {
-                return $this->basePrefix;
-            } else {
-                return $siteKey;
-            }
-        } else {
-            return $this->basePrefix;
-        }
+        return $this->resolveSitePrefix($siteKey ?? $this->siteKey);
     }
 
     /**
@@ -199,47 +191,113 @@ final class NativePdoDatabase extends QueryBuilder
      * @return string[] Table names.
      * @throws TypeException
      */
-    public function tables(string $scope = 'all', bool $prefix = true, ?string $siteKey = null): array
+    public function tables(string $scope = self::SCOPE_ALL, bool $prefix = true, ?string $siteKey = null): array
     {
-        switch ($scope) {
-            case 'all':
-                $tables = array_merge($this->globalTables, $this->siteTables);
-                if (is_multisite()) {
-                    $tables = array_merge($tables, $this->msGlobalTables);
-                }
-                break;
-            case 'site':
-                $tables = $this->siteTables;
-                break;
-            case 'global':
-                $tables = $this->globalTables;
-                if (is_multisite()) {
-                    $tables = array_merge($tables, $this->msGlobalTables);
-                }
-                break;
-            case 'ms_global':
-                $tables = $this->msGlobalTables;
-                break;
-            default:
-                return [];
+        $tables = match ($scope) {
+            self::SCOPE_ALL => $this->allTables(),
+            self::SCOPE_SITE => $this->siteTables,
+            self::SCOPE_GLOBAL => $this->globalScopedTables(),
+            self::SCOPE_MS_GLOBAL => $this->msGlobalTables,
+            default => throw new TypeException(sprintf('Invalid table scope [%s].', $scope)),
+        };
+
+        if (!$prefix) {
+            return array_combine($tables, $tables) ?: [];
         }
 
-        if ($prefix) {
-            if (!is_null__($siteKey)) {
-                $siteKey = $this->siteKey;
-            }
-            $sitePrefix = $this->getSitePrefix($siteKey);
-            $basePrefix = $this->basePrefix;
-            $globalTables = array_merge($this->globalTables, $this->msGlobalTables);
-            foreach ($tables as $k => $table) {
-                if (in_array($table, $globalTables, true)) {
-                    $tables[$table] = $basePrefix . $table;
-                } else {
-                    $tables[$table] = $sitePrefix . $table;
-                }
-                unset($tables[$k]);
+        $sitePrefix = $this->resolveSitePrefix($siteKey ?? $this->siteKey);
+        $globalTables = array_merge($this->globalTables, $this->msGlobalTables);
+
+        $prefixed = [];
+
+        foreach ($tables as $table) {
+            $prefixed[$table] = in_array($table, $globalTables, true)
+                ? $this->basePrefix . $table
+                : $sitePrefix . $table;
+        }
+
+        return $prefixed;
+    }
+
+    /**
+     * Useful when you want `$db->forSite('site_2_')->option`.
+     *
+     * @throws TypeException
+     */
+    public function forSite(?string $siteKey): self
+    {
+        $clone = clone $this;
+        $clone->siteKey = $siteKey;
+        $clone->sitePrefix = $clone->resolveSitePrefix($siteKey);
+        $clone->prefix = $clone->sitePrefix;
+        $clone->refreshTableNames();
+
+        return $clone;
+    }
+
+    /**
+     * @throws TypeException
+     */
+    private function refreshTableNames(): void
+    {
+        foreach ($this->tables(self::SCOPE_ALL) as $property => $tableName) {
+            if (property_exists($this, $property)) {
+                $this->{$property} = $tableName;
             }
         }
+    }
+
+    /**
+     * @throws TypeException
+     */
+    private function resolveSitePrefix(?string $siteKey = null): string
+    {
+        if (!is_multisite()) {
+            return $this->basePrefix;
+        }
+
+        return $siteKey ?: $this->basePrefix;
+    }
+
+    /**
+     * @return list<string>
+     * @throws TypeException
+     */
+    private function allTables(): array
+    {
+        $tables = array_merge($this->globalTables, $this->siteTables);
+
+        if (is_multisite()) {
+            $tables = array_merge($tables, $this->msGlobalTables);
+        }
+
         return $tables;
+    }
+
+    /**
+     * @return list<string>
+     * @throws TypeException
+     */
+    private function globalScopedTables(): array
+    {
+        if (!is_multisite()) {
+            return $this->globalTables;
+        }
+
+        return array_merge($this->globalTables, $this->msGlobalTables);
+    }
+
+    /**
+     * @throws TypeException
+     */
+    private function assertValidPrefix(string $prefix): void
+    {
+        if ($prefix === '') {
+            throw new TypeException('Database prefix cannot be empty.');
+        }
+
+        if (preg_match('/[^a-z0-9_]/i', $prefix) === 1) {
+            throw new TypeException('Invalid database prefix.');
+        }
     }
 }
