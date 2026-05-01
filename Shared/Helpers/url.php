@@ -6,6 +6,7 @@ namespace App\Shared\Helpers;
 
 use App\Shared\Services\Utils;
 use Qubus\Exception\Exception;
+use Qubus\Http\Exception\MalformedUrlException;
 use Qubus\Http\Request;
 
 use function Codefy\Framework\Helpers\config;
@@ -25,6 +26,7 @@ use function str_starts_with;
 use function trim;
 
 use const FILTER_VALIDATE_URL;
+use const PHP_QUERY_RFC3986;
 use const PHP_URL_SCHEME;
 
 /**
@@ -85,31 +87,69 @@ function set_url_scheme(string $url, ?string $scheme = null): string
  * @param string $value A query variable value, or a URL to act upon.
  * @param string $url A URL to act upon.
  * @return string Returns modified url query string.
+ * @throws MalformedUrlException
  * @throws Exception
  */
 function add_query_arg(string $key, string $value, string $url): string
 {
-    $uri = parse_url($url);
-    $query = $uri['query'] ?? '';
-    parse_str($query, $params);
+    $parts = parse_url($url);
+
+    if ($parts === false) {
+        throw new MalformedUrlException(
+            sprintf('Invalid URL given: %s', $url)
+        );
+    }
+
+    /** @var array<string, mixed> $params */
+    $params = [];
+
+    if (isset($parts['query'])) {
+        parse_str($parts['query'], $params);
+    }
+
     $params[$key] = $value;
-    $query = http_build_query($params);
+
+    $query = http_build_query($params, '', '&', PHP_QUERY_RFC3986);
+
     $result = '';
-    if ($uri['scheme']) {
-        $result .= $uri['scheme'] . ':';
+
+    if (isset($parts['scheme'])) {
+        $result .= $parts['scheme'] . ':';
     }
-    if ($uri['host']) {
-        $result .= '//' . $uri['host'];
+
+    if (isset($parts['host'])) {
+        $result .= '//';
+
+        if (isset($parts['user'])) {
+            $result .= $parts['user'];
+
+            if (isset($parts['pass'])) {
+                $result .= ':' . $parts['pass'];
+            }
+
+            $result .= '@';
+        }
+
+        $result .= $parts['host'];
     }
-    if (isset($uri['port'])) {
-        $result .= __observer()->filter->applyFilter('query.arg.port', ':' . $uri['port']);
+
+    if (isset($parts['port'])) {
+        $result .= __observer()->filter->applyFilter(
+            'query.arg.port',
+            ':' . $parts['port']
+        );
     }
-    if ($uri['path']) {
-        $result .= $uri['path'];
-    }
-    if ($query) {
+
+    $result .= $parts['path'] ?? '';
+
+    if ($query !== '') {
         $result .= '?' . $query;
     }
+
+    if (isset($parts['fragment'])) {
+        $result .= '#' . $parts['fragment'];
+    }
+
     return $result;
 }
 
