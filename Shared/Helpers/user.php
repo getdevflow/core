@@ -491,10 +491,8 @@ function delete_site_user_record(string $siteId, string $userId): void
  *
  * If the user ID is not given, then the current user will be used instead. If
  * the user ID is given, then the user data will be retrieved. The filter for
- * the result, will also pass the original option name and finally the user data
- * object as the third parameter.
- *
- * The option will first check for the per site name and then the global name.
+ * the result, will also pass the original option name and finally the user id
+ * as the third parameter.
  *
  * Uses `get.user.option.$option` filter.
  *
@@ -954,23 +952,23 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
     );
 
     /**
-     * Filters a user's meta values and keys immediately after the user is created or updated
-     * and before any user meta is inserted or updated.
+     * Filters a user's attribute values and keys immediately after the user is created or updated
+     * and before any user attribute is inserted or updated.
      *
      * @file core/Shared/Helpers/user.php
      * @param array $attribute {
-     *     Default meta values and keys for the user.
+     *     Default attribute values and keys for the user.
      *
      *     @type string $role           The user's role.
      *     @type string $status         The user's status.
-     *     @type int    $admin_layout   The user's layout option.
-     *     @type int    $admin_sidebar  The user's sidebar option.
-     *     @type int    $admin_skin     The user's skin option.
+     *     @type int    $admin.layout   The user's layout option.
+     *     @type int    $admin.sidebar  The user's sidebar option.
+     *     @type int    $admin.skin     The user's skin option.
      * }
      * @param object $user  User object.
      * @param bool $update  Whether the user is being updated rather than created.
      */
-    $attributes = __observer()->filter->applyFilter('insert.usermeta', $attribute, $user, $update);
+    $attributes = __observer()->filter->applyFilter('insert.user.attribute', $attribute, $user, $update);
 
     if (is_false__($update)) {
 
@@ -1070,7 +1068,7 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
 /**
  * Update a user in the database.
  *
- * It is possible to update a user's password by specifying the 'user_pass'
+ * It is possible to update a user's password by specifying the 'pass'
  * value in the $userdata parameter array.
  *
  * See {@see cms_insert_user()} For what fields can be set in $userdata.
@@ -1616,7 +1614,7 @@ function blacklisted_usernames(): array
         'www3', 'www4', 'you', 'yourname', 'yourusername', 'zlib', 'getdevflow'
     ];
 
-    return __observer()->filter->applyFilter('blacklisted_usernames', $blacklist);
+    return __observer()->filter->applyFilter('blacklisted.usernames', $blacklist);
 }
 
 /**
@@ -1791,7 +1789,7 @@ function get_user_datetime_format(): string
     $dateFormat = get_user_date_format();
     $timeFormat = get_user_time_format();
     return __observer()->filter->applyFilter(
-        'user_datetime_format',
+        'user.datetime.format',
         concat_ws($dateFormat, $timeFormat, ' '),
         $timeFormat,
         $dateFormat
