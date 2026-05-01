@@ -131,7 +131,7 @@ function theme_url(string $path = '', string $theme = ''): string
 }
 
 /**
- * @param string|null $type Returns links by specified type
+ * @param string|null $type Returns page builder links by specified type
  *                          or all if type is not specified.
  * @throws TypeException
  * @return array<mixed>
