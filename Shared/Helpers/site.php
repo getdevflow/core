@@ -1476,7 +1476,7 @@ function does_site_exist(): \Psr\Http\Message\ResponseInterface
 /**
  * A function which retrieves cms site name.
  *
- * Purpose of this function is for the `site_name`
+ * Purpose of this function is for the `get.site.name`
  * filter.
  *
  * @file core/Shared/Helpers/site.php
@@ -1506,13 +1506,13 @@ function get_site_name(string $siteId): string
      * @param string    $name The site's name.
      * @param string    $siteId The site ID.
      */
-    return __observer()->filter->applyFilter('site.name', $name, $siteId);
+    return __observer()->filter->applyFilter('get.site.name', $name, $siteId);
 }
 
 /**
  * A function which retrieves cms site domain.
  *
- * Purpose of this function is for the `site_domain`
+ * Purpose of this function is for the `get.site.domain`
  * filter.
  *
  * @file core/Shared/Helpers/site.php
@@ -1542,13 +1542,13 @@ function get_site_domain(string $siteId): string
      * @param string    $domain The site's domain.
      * @param string    $siteId The site ID.
      */
-    return __observer()->filter->applyFilter('site.domain', $domain, $siteId);
+    return __observer()->filter->applyFilter('get.site.domain', $domain, $siteId);
 }
 
 /**
  * A function which retrieves cms site path.
  *
- * Purpose of this function is for the `site_path`
+ * Purpose of this function is for the `get.site.path`
  * filter.
  *
  * @file core/Shared/Helpers/site.php
@@ -1578,13 +1578,13 @@ function get_site_path(string $siteId): string
      * @param string    $path The site's path.
      * @param string    $siteId The site ID.
      */
-    return __observer()->filter->applyFilter('site.path', $path, $siteId);
+    return __observer()->filter->applyFilter('get.site.path', $path, $siteId);
 }
 
 /**
  * A function which retrieves cms site owner.
  *
- * Purpose of this function is for the `site_owner`
+ * Purpose of this function is for the `get.site.owner`
  * filter.
  *
  * @file core/Shared/Helpers/site.php
@@ -1614,13 +1614,13 @@ function get_site_owner(string $siteId): string
      * @param string    $owner The site's owner.
      * @param string    $siteId The site ID.
      */
-    return __observer()->filter->applyFilter('site.owner', $owner, $siteId);
+    return __observer()->filter->applyFilter('get.site.owner', $owner, $siteId);
 }
 
 /**
  * A function which retrieves cms site status.
  *
- * Purpose of this function is for the `site_status`
+ * Purpose of this function is for the `get.site.status`
  * filter.
  *
  * @file core/Shared/Helpers/site.php
@@ -1650,7 +1650,7 @@ function get_site_status(string $siteId): string
      * @param string    $status The site's status.
      * @param string    $siteId The site ID.
      */
-    return __observer()->filter->applyFilter('site.status', $status, $siteId);
+    return __observer()->filter->applyFilter('get.site.status', $status, $siteId);
 }
 
 /**
@@ -1732,7 +1732,7 @@ function get_siteinfo(string $show = '', string $filter = 'raw'): string
              * @param mixed $output The URL returned by siteinfo().
              * @param mixed $show   Type of information requested.
              */
-            $output = __observer()->filter->applyFilter('siteinfo.url', $output, $show);
+            $output = __observer()->filter->applyFilter('get.siteinfo.url', $output, $show);
         } else {
             /**
              * Filters the site information returned by get_siteinfo().
@@ -1741,7 +1741,7 @@ function get_siteinfo(string $show = '', string $filter = 'raw'): string
              * @param mixed $output The requested non-URL site information.
              * @param mixed $show   Type of information requested.
              */
-            $output = __observer()->filter->applyFilter('siteinfo', $output, $show);
+            $output = __observer()->filter->applyFilter('get.siteinfo', $output, $show);
         }
     }
 
@@ -1796,8 +1796,6 @@ function switch_to_site(?string $siteKey = null): bool
     }
 
     dfdb()->setSiteKey($siteKey);
-    Registry::getInstance()->set('tblPrefix', dfdb()->getSitePrefix());
-    Registry::getInstance()->set('siteKey', $siteKey);
 
     __observer()->action->doAction('switch_site', $siteKey, $prevSiteKey, 'switch');
 
@@ -1835,8 +1833,6 @@ function restore_current_site(): bool
     }
 
     dfdb()->setSiteKey($siteKey);
-    Registry::getInstance()->set('siteKey', $siteKey);
-    Registry::getInstance()->set('tblPrefix', dfdb()->getSitePrefix());
 
     __observer()->action->doAction('switch_site', $siteKey, $prevSiteKey, 'restore');
 

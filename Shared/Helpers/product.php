@@ -145,7 +145,7 @@ function get_product_by_id(string $productId): object|false
 /**
  * A function which retrieves product datetime.
  *
- * Purpose of this function is for the `product.datetime`
+ * Purpose of this function is for the `get.product.datetime`
  * filter.
  *
  * @file core/Shared/Helpers/product.php
@@ -167,13 +167,13 @@ function get_product_datetime(?string $product = null): string
      * @param string $datetime  The product's datetime.
      * @param string $productId Product id or product object.
      */
-    return __observer()->filter->applyFilter('product.datetime', $datetime, $product);
+    return __observer()->filter->applyFilter('get.product.datetime', $datetime, $product);
 }
 
 /**
  * A function which retrieves product modified datetime.
  *
- * Purpose of this function is for the `product.modified`
+ * Purpose of this function is for the `get.product.modified`
  * filter.
  *
  * @file core/Shared/Helpers/product.php
@@ -206,13 +206,13 @@ function get_product_modified(string $productId): string
      * @param string $format   Format to return datetime string.
      * @param string $productId Product id or product object.
      */
-    return __observer()->filter->applyFilter('product.modified', $modified, $format, $product);
+    return __observer()->filter->applyFilter('get.product.modified', $modified, $format, $product);
 }
 
 /**
  * A function which retrieves a product body.
  *
- * Purpose of this function is for the `product.body`
+ * Purpose of this function is for the `get.product.body`
  * filter.
  *
  * @file core/Shared/Helpers/product.php
@@ -241,13 +241,13 @@ function get_product_body(string $productId): string
      * @param string $body The product's body content.
      * @param string $productId Product id or product object.
      */
-    return __observer()->filter->applyFilter('product.body', $body, $productId);
+    return __observer()->filter->applyFilter('get.product.body', $body, $productId);
 }
 
 /**
  * A function which retrieves a product product_type name.
  *
- * Purpose of this function is for the `product.sku`
+ * Purpose of this function is for the `get.product.sku`
  * filter.
  *
  * @file core/Shared/Helpers/product.php
@@ -276,13 +276,13 @@ function get_product_sku(string $productId): false|string
      * @param string $sku The product's sku.
      * @param string $productId  Product id.
      */
-    return __observer()->filter->applyFilter('product.sku', $sku, $productId);
+    return __observer()->filter->applyFilter('get.product.sku', $sku, $productId);
 }
 
 /**
  * A function which retrieves a product title.
  *
- * Purpose of this function is for the `product.title`
+ * Purpose of this function is for the `get.product.title`
  * filter.
  *
  * @file core/Shared/Helpers/product.php
@@ -311,13 +311,13 @@ function get_product_title(string $productId): string
      * @param string   $title The product's title.
      * @param string $product  Product object.
      */
-    return __observer()->filter->applyFilter('product.title', $title, $product);
+    return __observer()->filter->applyFilter('get.product.title', $title, $product);
 }
 
 /**
  * A function which retrieves a product slug.
  *
- * Purpose of this function is for the `product.slug`
+ * Purpose of this function is for the `get.product.slug`
  * filter.
  *
  * @file core/Shared/Helpers/product.php
@@ -346,7 +346,7 @@ function get_product_slug(string $productId): string
      * @param string $slug The product's slug.
      * @param string $product   Product object.
      */
-    return __observer()->filter->applyFilter('product.slug', $slug, $product);
+    return __observer()->filter->applyFilter('get.product.slug', $slug, $product);
 }
 
 /**
@@ -448,7 +448,7 @@ function delete_product_attribute(string $productId, string $key): AttributeBag
 /**
  * A function which retrieves a product author id.
  *
- * Purpose of this function is for the `product.author.id`
+ * Purpose of this function is for the `get.product.author.id`
  * filter.
  *
  * @file core/Shared/Helpers/product.php
@@ -477,13 +477,13 @@ function get_product_author_id(string $productId): false|string
      * @param string $authorId The product's author id.
      * @param object $product Product object.
      */
-    return __observer()->filter->applyFilter('product.author.id', $authorId, $product);
+    return __observer()->filter->applyFilter('get.product.author.id', $authorId, $product);
 }
 
 /**
  * A function which retrieves a product author.
  *
- * Purpose of this function is for the `product.author`
+ * Purpose of this function is for the `get.product.author`
  * filter.
  *
  * @file core/Shared/Helpers/product.php
@@ -513,13 +513,13 @@ function get_product_author(string $productId, bool $reverse = false): false|str
      * @param string $author The product's author.
      * @param object $product Product object.
      */
-    return __observer()->filter->applyFilter('product.author', $author, $product);
+    return __observer()->filter->applyFilter('get.product.author', $author, $product);
 }
 
 /**
  * A function which retrieves a product status.
  *
- * Purpose of this function is for the `product.status`
+ * Purpose of this function is for the `get.product.status`
  * filter.
  *
  * @file core/Shared/Helpers/product.php
@@ -548,7 +548,7 @@ function get_product_status(string $productId): false|string
      * @param string  $status The product's status.
      * @param Product $product Product object.
      */
-    return __observer()->filter->applyFilter('product.status', $status, $product);
+    return __observer()->filter->applyFilter('get.product.status', $status, $product);
 }
 
 /**
@@ -1244,7 +1244,7 @@ function the_product_modified_time(string $productId, string $format = ''): stri
 /**
  * A function which retrieves product show in menu.
  *
- * Purpose of this function is for the `product.show.in.menu`
+ * Purpose of this function is for the `get.product.show.in.menu`
  * filter.
  *
  * @file core/Shared/Helpers/product.php
@@ -1273,13 +1273,13 @@ function get_product_show_in_menu(string $productId): int
      * @param int    $menu      The product's show in menu option.
      * @param string $productId The product ID.
      */
-    return __observer()->filter->applyFilter('product.show.in.menu', (int) $menu, $productId);
+    return __observer()->filter->applyFilter('get.product.show.in.menu', (int) $menu, $productId);
 }
 
 /**
  * A function which retrieves product show in search.
  *
- * Purpose of this function is for the `product.show.in.search`
+ * Purpose of this function is for the `get.product.show.in.search`
  * filter.
  *
  * @file core/Shared/Helpers/product.php
@@ -1308,7 +1308,7 @@ function get_product_show_in_search(string $productId): int
      * @param int    $search    The product's show in search option.
      * @param string $productId The product ID.
      */
-    return __observer()->filter->applyFilter('product.show.in.search', (int) $search, $productId);
+    return __observer()->filter->applyFilter('get.product.show.in.search', (int) $search, $productId);
 }
 
 /**
@@ -1362,23 +1362,23 @@ function cms_unique_product_slug(
  * @file core/Shared/Helpers/product.php
  * @param array|ServerRequestInterface|Product $productdata An array of data that is used for insert or update.
  *
- *      @type string $productTitle The product's title.
- *      @type string $productBody The product's body.
- *      @type string $productSlug The product's slug.
- *      @type string $productAuthor The product's author.
- *      @type string $productSku The product's parent.
- *      @type string $productPrice The product's price.
- *      @type string $productCurrency The product's currency.
- *      @type string $productPurchaseUrl The product's purchase url.
- *      @type string $productShowInMenu Whether to show product in menu.
- *      @type string $productShowInSearch Whether to show product in search.
- *      @type string $productRelativeUrl The product's relative url.
- *      @type string $productFeaturedImage THe product's featured image.
- *      @type string $productStatus THe product's status.
- *      @type string $productPublished Timestamp describing the moment when the product
- *                                     was published. Defaults to Y-m-d h:i A.
+ *      @type string $title The product's title.
+ *      @type string $body The product's body.
+ *      @type string $slug The product's slug.
+ *      @type string $author The product's author.
+ *      @type string $sku The product's parent.
+ *      @type string $price The product's price.
+ *      @type string $currency The product's currency.
+ *      @type string $purchaseUrl The product's purchase url.
+ *      @type string $showInMenu Whether to show product in menu.
+ *      @type string $showInSearch Whether to show product in search.
+ *      @type string $relativeUrl The product's relative url.
+ *      @type string $featuredImage THe product's featured image.
+ *      @type string $status THe product's status.
+ *      @type string $published Timestamp describing the moment when the product
+ *                              was published. Defaults to Y-m-d h:i A.
  * @return Error|string|null The newly created product's product_id or throws an error or returns null
- *                     if the product could not be created or updated.
+ *                           if the product could not be created or updated.
  * @throws CommandCouldNotBeHandledException
  * @throws CommandPropertyNotFoundException
  * @throws Exception
@@ -2090,7 +2090,7 @@ function cms_delete_product(string $productId): Product|bool
 }
 
 /**
- * Retrieves an array of css class names.
+ * Retrieves an array of CSS class names.
  *
  * @file core/Shared/Helpers/product.php
  * @param string $productId Product id of current product.

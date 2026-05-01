@@ -122,7 +122,7 @@ function get_content_by_type_and_id(string $contentTypeSlug, string $contentId):
         return false;
     }
 
-    return Content::hydrate($results);
+    return $results;
 }
 
 /**
@@ -172,7 +172,7 @@ function get_content_by_id(string $contentId): object|false
 /**
  * A function which retrieves content datetime.
  *
- * Purpose of this function is for the `content.datetime`
+ * Purpose of this function is for the `get.content.datetime`
  * filter.
  *
  * @file core/Shared/Helpers/content.php
@@ -194,13 +194,13 @@ function get_content_datetime(?string $content = null): string
      * @param string $datetime  The content's datetime.
      * @param string $contentId Content id or content object.
      */
-    return __observer()->filter->applyFilter('content.datetime', $datetime, $content);
+    return __observer()->filter->applyFilter('get.content.datetime', $datetime, $content);
 }
 
 /**
  * A function which retrieves content modified datetime.
  *
- * Purpose of this function is for the `content.modified`
+ * Purpose of this function is for the `get.content.modified`
  * filter.
  *
  * @file core/Shared/Helpers/content.php
@@ -233,13 +233,13 @@ function get_content_modified(string $contentId): string
      * @param string $format   Format to return datetime string.
      * @param string $contentId Content id or content object.
      */
-    return __observer()->filter->applyFilter('content.modified', $modified, $format, $content);
+    return __observer()->filter->applyFilter('get.content.modified', $modified, $format, $content);
 }
 
 /**
  * A function which retrieves a content body.
  *
- * Purpose of this function is for the `content.body`
+ * Purpose of this function is for the `get.content.body`
  * filter.
  *
  * @file core/Shared/Helpers/content.php
@@ -268,13 +268,13 @@ function get_content_body(string $contentId): string
      * @param string $body    The content's body.
      * @param string $content Content object.
      */
-    return __observer()->filter->applyFilter('content.body', $body, $content);
+    return __observer()->filter->applyFilter('get.content.body', $body, $content);
 }
 
 /**
  * A function which retrieves a content content_type name.
  *
- * Purpose of this function is for the `content.contenttype.name`
+ * Purpose of this function is for the `get.content.contenttype.name`
  * filter.
  *
  * @file core/Shared/Helpers/content.php
@@ -308,13 +308,13 @@ function get_content_contenttype_name(string $contentId): false|string
      * @param string $contentTypeName The content's content_type name.
      * @param string $content         Content object.
      */
-    return __observer()->filter->applyFilter('content.contenttype.name', $contentTypeName, $content);
+    return __observer()->filter->applyFilter('get.content.contenttype.name', $contentTypeName, $content);
 }
 
 /**
  * A function which retrieves a content content_type link.
  *
- * Purpose of this function is for the `content.contenttype.link`
+ * Purpose of this function is for the `get.content.contenttype.link`
  * filter.
  *
  * @file core/Shared/Helpers/content.php
@@ -336,13 +336,13 @@ function get_content_contenttype_link(string $contentId): string
      * @param string $link      The content's content_type link.
      * @param string $contentId Content id.
      */
-    return __observer()->filter->applyFilter('content.contenttype.link', $link, $contentId);
+    return __observer()->filter->applyFilter('get.content.contenttype.link', $link, $contentId);
 }
 
 /**
  * A function which retrieves a content title.
  *
- * Purpose of this function is for the `content.title`
+ * Purpose of this function is for the `get.content.title`
  * filter.
  *
  * @file core/Shared/Helpers/content.php
@@ -371,13 +371,13 @@ function get_content_title(string $contentId): string
      * @param string $title The content's title.
      * @param string $content  Content object.
      */
-    return __observer()->filter->applyFilter('content.title', $title, $content);
+    return __observer()->filter->applyFilter('get.content.title', $title, $content);
 }
 
 /**
  * A function which retrieves a content slug.
  *
- * Purpose of this function is for the `content.slug`
+ * Purpose of this function is for the `get.content.slug`
  * filter.
  *
  * @file core/Shared/Helpers/content.php
@@ -406,13 +406,13 @@ function get_content_slug(string $contentId): string
      * @param string $slug The content's slug.
      * @param string $content   Content object.
      */
-    return __observer()->filter->applyFilter('content.slug', $slug, $content);
+    return __observer()->filter->applyFilter('get.content.slug', $slug, $content);
 }
 
 /**
  * A function which retrieves a content's relative url.
  *
- * Purpose of this function is for the `{$contenttype}.relative.url`
+ * Purpose of this function is for the `get.{$contenttype}.relative.url`
  * filter.
  *
  * @file core/Shared/Helpers/content.php
@@ -442,7 +442,7 @@ function get_content_relative_url(string $contentId): string
      * @param string $content   The content object.
      */
     return __observer()->filter->applyFilter(
-        "{$content->type}.relative.url",
+        "get.{$content->type}.relative.url",
         $relativeUrl,
         $content
     );
@@ -451,7 +451,7 @@ function get_content_relative_url(string $contentId): string
 /**
  * A function which retrieves a content's permalink.
  *
- * Purpose of this function is for the `{$contenttype}.link`
+ * Purpose of this function is for the `get.{$contenttype}.link`
  * filter.
  *
  * @file core/Shared/Helpers/content.php
@@ -480,7 +480,7 @@ function get_permalink(string $contentId): string
      * @param string $link The content's link.
      * @param object $content Content object.
      */
-    return __observer()->filter->applyFilter("{$content->type}.link", $link, $content);
+    return __observer()->filter->applyFilter("get.{$content->type}.link", $link, $content);
 }
 
 /**
@@ -604,7 +604,7 @@ function delete_content_attribute(string $contentId, string $key): AttributeBag
 /**
  * A function which retrieves a content author id.
  *
- * Purpose of this function is for the `content.author.id`
+ * Purpose of this function is for the `get.content.author.id`
  * filter.
  *
  * @file core/Shared/Helpers/content.php
@@ -633,13 +633,13 @@ function get_content_author_id(string $contentId): false|string
      * @param string $authorId The content's author id.
      * @param object $content Content object.
      */
-    return __observer()->filter->applyFilter('content.author.id', $authorId, $content);
+    return __observer()->filter->applyFilter('get.content.author.id', $authorId, $content);
 }
 
 /**
  * A function which retrieves a content author.
  *
- * Purpose of this function is for the `content.author`
+ * Purpose of this function is for the `get.content.author`
  * filter.
  *
  * @file core/Shared/Helpers/content.php
@@ -669,13 +669,13 @@ function get_content_author(string $contentId, bool $reverse = false): false|str
      * @param string $author The content's author.
      * @param object   $content Content object.
      */
-    return __observer()->filter->applyFilter('content.author', $author, $content);
+    return __observer()->filter->applyFilter('get.content.author', $author, $content);
 }
 
 /**
  * A function which retrieves a content status.
  *
- * Purpose of this function is for the `content.status`
+ * Purpose of this function is for the `get.content.status`
  * filter.
  *
  * @file core/Shared/Helpers/content.php
@@ -704,7 +704,7 @@ function get_content_status(string $contentId): false|string
      * @param string $status The content's status.
      * @param Content   $content Content object.
      */
-    return __observer()->filter->applyFilter('content.status', $status, $content);
+    return __observer()->filter->applyFilter('get.content.status', $status, $content);
 }
 
 /**
@@ -848,7 +848,7 @@ function the_created_date(string $contentId, string $format = ''): string
 /**
  * A function which retrieves content created time.
  *
- * Purpose of this function is for the `content.created.time`
+ * Purpose of this function is for the `get.content.created.time`
  * filter.
  *
  * @file core/Shared/Helpers/content.php
@@ -1400,7 +1400,7 @@ function the_modified_time(string $contentId, string $format = ''): string
 /**
  * A function which retrieves content content_type id.
  *
- * Purpose of this function is for the `content.content.type.id`
+ * Purpose of this function is for the `get.content.content.type.id`
  * filter.
  *
  * @file core/Shared/Helpers/content.php
@@ -1433,13 +1433,13 @@ function get_content_content_type_id(string $contentId): string
      * @param string $contentTypeId The content's content_type id.
      * @param string $contentId  The content ID.
      */
-    return __observer()->filter->applyFilter('content.content.type.id', $contentType->id, $contentId);
+    return __observer()->filter->applyFilter('get.content.content.type.id', $contentType->id, $contentId);
 }
 
 /**
  * A function which retrieves content content_type.
  *
- * Purpose of this function is for the `content.content.type`
+ * Purpose of this function is for the `get.content.content.type`
  * filter.
  *
  * @file core/Shared/Helpers/content.php
@@ -1468,13 +1468,13 @@ function get_content_contenttype(string $contentId): string
      * @param string   $contenttype  The content's content_type.
      * @param string   $contentId    The content ID.
      */
-    return __observer()->filter->applyFilter('content.content.type', $contenttype, $contentId);
+    return __observer()->filter->applyFilter('get.content.content.type', $contenttype, $contentId);
 }
 
 /**
  * A function which retrieves a content's parent id.
  *
- * Purpose of this function is for the `content.parent.id`
+ * Purpose of this function is for the `get.content.parent.id`
  * filter.
  *
  * @file core/Shared/Helpers/content.php
@@ -1507,13 +1507,13 @@ function get_content_parent_id(string $contentId): string
      * @param string $parentId  The content's parent id.
      * @param string $contentId The content ID.
      */
-    return __observer()->filter->applyFilter('content.parent.id', $parentId, $contentId);
+    return __observer()->filter->applyFilter('get.content.parent.id', $parentId, $contentId);
 }
 
 /**
  * A function which retrieves content parent.
  *
- * Purpose of this function is for the `content.parent`
+ * Purpose of this function is for the `get.content.parent`
  * filter.
  *
  * @file core/Shared/Helpers/content.php
@@ -1542,13 +1542,13 @@ function get_content_parent(string $contentId): string
      * @param string $parent    The content's parent.
      * @param string $contentId The content ID.
      */
-    return __observer()->filter->applyFilter('content.parent', $parent, $contentId);
+    return __observer()->filter->applyFilter('get.content.parent', $parent, $contentId);
 }
 
 /**
  * A function which retrieves content sidebar.
  *
- * Purpose of this function is for the `content.sidebar`
+ * Purpose of this function is for the `get.content.sidebar`
  * filter.
  *
  * @file core/Shared/Helpers/content.php
@@ -1577,13 +1577,13 @@ function get_content_sidebar(string $contentId): int
      * @param int    $sidebar   The content's sidebar option.
      * @param string $contentId The content ID.
      */
-    return __observer()->filter->applyFilter('content.sidebar', (int) $sidebar, $contentId);
+    return __observer()->filter->applyFilter('get.content.sidebar', (int) $sidebar, $contentId);
 }
 
 /**
  * A function which retrieves content show in menu.
  *
- * Purpose of this function is for the `content.show.in.menu`
+ * Purpose of this function is for the `get.content.show.in.menu`
  * filter.
  *
  * @file core/Shared/Helpers/content.php
@@ -1612,13 +1612,13 @@ function get_content_show_in_menu(string $contentId): int
      * @param int    $menu      The content's show in menu option.
      * @param string $contentId The content ID.
      */
-    return __observer()->filter->applyFilter('content.show.in.menu', (int) $menu, $contentId);
+    return __observer()->filter->applyFilter('get.content.show.in.menu', (int) $menu, $contentId);
 }
 
 /**
  * A function which retrieves content show in search.
  *
- * Purpose of this function is for the `content.show.in.search`
+ * Purpose of this function is for the `get.content.show.in.search`
  * filter.
  *
  * @file core/Shared/Helpers/content.php
@@ -1647,7 +1647,7 @@ function get_content_show_in_search(string $contentId): int
      * @param int    $search    The content's show in search option.
      * @param string $contentId The content ID.
      */
-    return __observer()->filter->applyFilter('content.show.in.search', (int) $search, $contentId);
+    return __observer()->filter->applyFilter('get.content.show.in.search', (int) $search, $contentId);
 }
 
 /**
@@ -1707,20 +1707,20 @@ function cms_unique_content_slug(
  * @internal Should only be used for rest API's.
  * @param array|ServerRequestInterface|Content $contentdata An array of data that is used for insert or update.
  *
- *      @type string $contentTitle The content's title.
- *      @type string $contentBody The content's body.
- *      @type string $contentSlug The content's slug.
- *      @type string $contentAuthor The content's author.
- *      @type string $contentType The content's contenttype.
- *      @type string $contentParent The content's parent.
- *      @type string $contentSidebar The content's sidebar.
- *      @type string $contentShowInMenu Whether to show content in menu.
- *      @type string $contentShowInSearch Whether to show content in search.
- *      @type string $contentRelativeUrl The content's relative url.
- *      @type string $contentFeaturedImage THe content's featured image.
- *      @type string $contentStatus THe content's status.
- *      @type string $contentPublished Timestamp describing the moment when the content
- *                                     was published. Defaults to Y-m-d h:i A.
+ *      @type string $title The content's title.
+ *      @type string $body The content's body.
+ *      @type string $slug The content's slug.
+ *      @type string $author The content's author.
+ *      @type string $type The content's contenttype.
+ *      @type string $parent The content's parent.
+ *      @type string $sidebar The content's sidebar.
+ *      @type string $showInMenu Whether to show content in menu.
+ *      @type string $showInSearch Whether to show content in search.
+ *      @type string $relativeUrl The content's relative url.
+ *      @type string $featuredImage THe content's featured image.
+ *      @type string $status THe content's status.
+ *      @type string $published Timestamp describing the moment when the content
+ *                              was published. Defaults to Y-m-d h:i A.
  * @return Error|string|null The newly created content's content_id or throws an error or returns null
  *                     if the content could not be created or updated.
  * @throws CommandPropertyNotFoundException
@@ -2401,7 +2401,7 @@ function cms_delete_content(string $contentId): Content|bool
 
     /**
      * Action hook fires immediately before a content is deleted from the
-     * content document.
+     * content table.
      *
      * @param string $contentId Content ID.
      */
@@ -2511,7 +2511,7 @@ function get_content_parent_dropdown_list(?string $parentId = null, string $cont
 }
 
 /**
- * Retrieves an array of css class names.
+ * Retrieves an array of CSS class names.
  *
  * @file core/Shared/Helpers/content.php
  * @param string $contentId Content id of current content.

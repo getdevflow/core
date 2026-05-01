@@ -66,7 +66,7 @@ function get_content_type_by(string $field, string $value): false|object
 /**
  * A function which retrieves a content type title.
  *
- * Purpose of this function is for the `content.type.title`
+ * Purpose of this function is for the `get.content.type.title`
  * filter.
  *
  * @file core/Shared/Helpers/content-type.php
@@ -95,13 +95,13 @@ function get_content_type_title(string $contentTypeId): string
      * @param string    $title The content_type's title.
      * @param string    $contentTypeId The content_type id.
      */
-    return __observer()->filter->applyFilter('content.type.title', $title, $contentTypeId);
+    return __observer()->filter->applyFilter('get.content.type.title', $title, $contentTypeId);
 }
 
 /**
  * A function which retrieves a content_type slug.
  *
- * Purpose of this function is for the `content.type.slug`
+ * Purpose of this function is for the `get.content.type.slug`
  * filter.
  *
  * @file core/Shared/Helpers/content-type.php
@@ -130,13 +130,13 @@ function get_content_type_slug(string $contentTypeId): string
      * @param string    $slug The content_type's slug.
      * @param string    $contentTypeId The content_type id.
      */
-    return __observer()->filter->applyFilter('content.type.slug', $slug, $contentTypeId);
+    return __observer()->filter->applyFilter('get.content.type.slug', $slug, $contentTypeId);
 }
 
 /**
  * A function which retrieves a content_type description.
  *
- * Purpose of this function is for the `content.type.description`
+ * Purpose of this function is for the `get.content.type.description`
  * filter.
  *
  * @file core/Shared/Helpers/content-type.php
@@ -165,13 +165,13 @@ function get_content_type_description(string $contentTypeId): string
      * @param string    $description The content_type's description.
      * @param string    $contentTypeId The content_type id.
      */
-    return __observer()->filter->applyFilter('content.type.description', $description, $contentTypeId);
+    return __observer()->filter->applyFilter('get.content.type.description', $description, $contentTypeId);
 }
 
 /**
  * A function which retrieves a content_type's permalink.
  *
- * Purpose of this function is for the `content.type.permalink`
+ * Purpose of this function is for the `get.content.type.permalink`
  * filter.
  *
  * @file core/Shared/Helpers/content-type.php
@@ -193,7 +193,7 @@ function get_content_type_permalink(string $contentTypeId): string
      * @param string    $link The content_type's permalink.
      * @param string    $contentTypeId The content_type id.
      */
-    return __observer()->filter->applyFilter('content.type.permalink', $link, $contentTypeId);
+    return __observer()->filter->applyFilter('get.content.type.permalink', $link, $contentTypeId);
 }
 
 /**
@@ -527,7 +527,7 @@ function cms_delete_content_type(string $contentTypeId): false|string|Error
      * @file core/Shared/Helpers/content-type.php
      * @param string $contentTypeId ContentType id.
      */
-    __observer()->action->doAction('after_delete_contenttype', $contentTypeId);
+    __observer()->action->doAction('after_deleted_contenttype', $contentTypeId);
 
     return $contenttype->id;
 }

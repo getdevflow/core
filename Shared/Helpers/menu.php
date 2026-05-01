@@ -17,7 +17,7 @@ use function Qubus\Support\Helpers\add_trailing_slash;
 /**
  * Add an admin submenu page link.
  *
- * Uses admin_submenu_$location_{$menuRoute} filter hook.
+ * Uses admin.submenu.$location.{$menuRoute} filter hook.
  *
  * @file core/Shared/Helpers/menu.php
  * @param string $location Submenu location.
