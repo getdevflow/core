@@ -133,7 +133,7 @@ final class Options
          *                                           Default false to skip it.
          * @param string $optionKey Meta key name.
          */
-        $pre = Filter::getInstance()->applyFilter("pre_option_{$optionKey}", false);
+        $pre = Filter::getInstance()->applyFilter("pre.option.{$optionKey}", false);
 
         if (false !== $pre) {
             return $pre;
@@ -186,7 +186,7 @@ final class Options
          * @param string $optionKey Option name.
          */
         return Filter::getInstance()->applyFilter(
-            "get_option_{$optionKey}",
+            "get.option.{$optionKey}",
             maybe_unserialize($value),
             $optionKey
         );
