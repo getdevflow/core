@@ -19,7 +19,7 @@ use ReflectionException;
 use function App\Shared\Helpers\load_devflow_textdomain;
 use function Qubus\Security\Helpers\esc_html;
 
-class TranslatorServiceProvider extends CodefyServiceProvider
+class LocaleServiceProvider extends CodefyServiceProvider
 {
     /**
      * @throws Exception
