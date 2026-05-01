@@ -144,7 +144,7 @@ function delete_option(string $key): bool
  * Returns the object subtype for a given array ID of a specific type.
  *
  * @file core/Shared/Helpers/db.php
- * @param string $type Type of array to request metadata for. (e.g. content, user, product).
+ * @param string $type Type of array to request attribute for. (e.g. content, user, product).
  * @param string $id ID of the array to retrieve its subtype.
  * @return string The array subtype or an empty string if unspecified subtype.
  * @throws ContainerExceptionInterface
