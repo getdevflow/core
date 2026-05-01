@@ -785,7 +785,7 @@ function cms_dev_mode(): void
 {
     if (config(key: 'app.env') === 'development') {
         echo '<div class="alert dismissable alert-danger center sticky">' . trans_html(
-            string: 'Your system is currently in `dev` mode. Please remember to set your system to `prod` mode after testing. When `prod` mode is set, this warning message will disappear.',
+            string: 'Your system is currently in dev mode. Please remember to set your system to prod mode after testing. When prod mode is set, this warning message will disappear.',
         ) . '</div>';
     }
 }

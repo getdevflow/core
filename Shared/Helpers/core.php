@@ -1432,7 +1432,7 @@ function show_update_message(): void
                     $alert = '<div class="alert alert-dismissible show alert-info center" role="alert">';
                     $alert .= sprintf(
                         trans_html(
-                            'Devflow release %s is available for download/upgrade. Before upgrading, make sure to backup your system.',
+                            'Devflow release %s is available for download or upgrade. Before upgrading, make sure to backup your system.',
                         ),
                         $update->latestVersion
                     );
