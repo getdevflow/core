@@ -40,7 +40,7 @@ use function App\Shared\Helpers\is_content_parent;
 use function Codefy\Framework\Helpers\abort;
 use function Codefy\Framework\Helpers\command;
 use function Codefy\Framework\Helpers\logger;
-use function Qubus\Security\Helpers\t__;
+use function Codefy\Framework\Helpers\trans;
 use function Qubus\Support\Helpers\is_false__;
 use function sprintf;
 
@@ -67,9 +67,8 @@ final readonly class ContentService
             abort(
                 code: 404,
                 uri: admin_url(),
-                message: t__(
-                    msgid: sprintf('The content type slug `%s` does not exist.', $type),
-                    domain: 'devflow'
+                message: trans(
+                    sprintf('The content type slug `%s` does not exist.', $type),
                 )
             );
         }
@@ -94,7 +93,7 @@ final readonly class ContentService
             abort(
                 code: 404,
                 uri: admin_url(),
-                message: t__(msgid: 'The content does not exist.', domain: 'devflow')
+                message: trans('The content does not exist.')
             );
         }
 
@@ -121,7 +120,7 @@ final readonly class ContentService
             $this->event->dispatch(new ContentCreated($content->toArray()));
 
             Devflow::$PHP->flash->success(
-                message: t__(msgid: 'Content added successfully.', domain: 'devflow'),
+                message: trans('Content added successfully.'),
             );
         } catch (
             ContainerExceptionInterface |
@@ -134,7 +133,7 @@ final readonly class ContentService
             logger(level: 'error', message: $e->getMessage(), context: ['ContentService' => 'createContent']);
 
             Devflow::$PHP->flash->error(
-                message: t__(msgid: 'Could not create content. Please try again later.', domain: 'devflow'),
+                message: trans('Could not create content. Please try again later.'),
             );
         }
 
@@ -168,7 +167,7 @@ final readonly class ContentService
             logger('error', $e->getMessage());
 
             Devflow::$PHP->flash->error(
-                message: t__(msgid: 'Change exception occurred and was logged.', domain: 'devflow')
+                message: trans('Change exception occurred and was logged.')
             );
         }
     }
@@ -194,7 +193,7 @@ final readonly class ContentService
             $this->event->dispatch(new ContentUpdated($content->toArray()));
 
             Devflow::$PHP->flash->success(
-                message: t__(msgid: 'Removal of featured image was successful.', domain: 'devflow')
+                message: trans('Removal of featured image was successful.')
             );
         } catch (
             CommandPropertyNotFoundException |
@@ -204,7 +203,7 @@ final readonly class ContentService
             logger(level: 'error', message: $e->getMessage(), context: ['ContentService' => 'removeFeaturedImage']);
 
             Devflow::$PHP->flash->error(
-                message: t__(msgid: 'Removal exception occurred and was logged.', domain: 'devflow')
+                message: trans('Removal exception occurred and was logged.')
             );
         }
     }
@@ -253,7 +252,7 @@ final readonly class ContentService
                     );
 
                     Devflow::$PHP->flash->error(
-                        message: t__(msgid: 'A deletion exception occurred and was logged.', domain: 'devflow')
+                        message: trans('A deletion exception occurred and was logged.')
                     );
                 }
             }
@@ -271,7 +270,7 @@ final readonly class ContentService
             $this->event->dispatch(new ContentDeleted($contentId));
 
             Devflow::$PHP->flash->success(
-                message: t__(msgid: 'Removal was successful.', domain: 'devflow')
+                message: trans('Removal was successful.')
             );
         } catch (
             CommandPropertyNotFoundException |
@@ -281,7 +280,7 @@ final readonly class ContentService
             logger('error', $e->getMessage());
 
             Devflow::$PHP->flash->error(
-                message: t__(msgid: 'A deletion exception occurred and was logged.', domain: 'devflow')
+                message: trans('A deletion exception occurred and was logged.')
             );
         }
     }

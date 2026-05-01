@@ -34,9 +34,8 @@ use function App\Shared\Helpers\get_user_timezone;
 use function App\Shared\Helpers\update_option;
 use function Codefy\Framework\Helpers\command;
 use function Codefy\Framework\Helpers\logger;
+use function Codefy\Framework\Helpers\trans;
 use function Codefy\Framework\Helpers\view;
-use function Qubus\Security\Helpers\esc_html__;
-use function Qubus\Security\Helpers\t__;
 use function Qubus\Support\Helpers\is_false__;
 use function sprintf;
 
@@ -59,7 +58,7 @@ final class AdminOptionsController extends BaseController
     {
         if (!current_user_can(perm: 'manage:options')) {
             Devflow::$PHP->flash->{'error'}(
-                message: t__(msgid: 'Access denied', domain: 'devflow'),
+                message: trans('Access denied'),
             );
             return $this->redirect(admin_url());
         }
@@ -99,7 +98,7 @@ final class AdminOptionsController extends BaseController
     {
         if (!current_user_can(perm: 'manage:options')) {
             Devflow::$PHP->flash->error(
-                message: t__(msgid: 'Access denied', domain: 'devflow'),
+                message: trans('Access denied'),
             );
             return $this->redirect(admin_url());
         }
@@ -168,9 +167,8 @@ final class AdminOptionsController extends BaseController
             );
 
             Devflow::$PHP->flash->error(
-                message: esc_html__(
-                    string: 'General options exception occurred and was logged.',
-                    domain: 'devflow'
+                message: trans(
+                    'General options exception occurred and was logged.',
                 )
             );
         }
@@ -193,14 +191,14 @@ final class AdminOptionsController extends BaseController
     {
         if (!current_user_can(perm: 'manage:options')) {
             Devflow::$PHP->flash->error(
-                message: t__(msgid: 'Access denied', domain: 'devflow'),
+                message: trans('Access denied'),
             );
             return $this->redirect(admin_url());
         }
 
         return view(
             template: 'framework::backend/general',
-            data: ['title' => t__(msgid: 'General Options', domain: 'devflow')]
+            data: ['title' => trans('General Options')]
         );
     }
 
@@ -221,7 +219,7 @@ final class AdminOptionsController extends BaseController
     {
         if (!current_user_can(perm: 'manage:options')) {
             Devflow::$PHP->flash->error(
-                message: t__(msgid: 'Access denied', domain: 'devflow'),
+                message: trans('Access denied'),
             );
             return $this->redirect(admin_url());
         }
@@ -264,9 +262,8 @@ final class AdminOptionsController extends BaseController
             );
 
             Devflow::$PHP->flash->error(
-                message: esc_html__(
-                    string: 'Reading options exception occurred and was logged.',
-                    domain: 'devflow'
+                message: trans(
+                    'Reading options exception occurred and was logged.',
                 )
             );
         }
@@ -289,14 +286,14 @@ final class AdminOptionsController extends BaseController
     {
         if (!current_user_can(perm: 'manage:options')) {
             Devflow::$PHP->flash->error(
-                message: t__(msgid: 'Access denied', domain: 'devflow'),
+                message: trans('Access denied'),
             );
             return $this->redirect(admin_url());
         }
 
         return view(
             template: 'framework::backend/reading',
-            data: ['title' => t__(msgid: 'Reading Options', domain: 'devflow')]
+            data: ['title' => trans('Reading Options')]
         );
     }
 }

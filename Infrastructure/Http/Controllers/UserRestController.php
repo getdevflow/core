@@ -21,8 +21,8 @@ use function App\Shared\Helpers\get_current_site_id;
 use function App\Shared\Helpers\get_user_by;
 use function App\Shared\Helpers\remove_user_from_site;
 use function array_merge;
+use function Codefy\Framework\Helpers\trans;
 use function Qubus\Error\Helpers\is_error;
-use function Qubus\Security\Helpers\t__;
 use function Qubus\Support\Helpers\is_false__;
 use function Qubus\Support\Helpers\is_null__;
 
@@ -38,7 +38,7 @@ final class UserRestController extends BaseController
             $users = get_all_users();
 
             if (empty($users)) {
-                return JsonResponseFactory::create(t__(msgid: 'No data.', domain: 'devflow'), 404);
+                return JsonResponseFactory::create(trans('No data.'), 404);
             }
         } catch (Exception $e) {
             return JsonResponseFactory::create($e->getMessage(), 400);
@@ -62,7 +62,7 @@ final class UserRestController extends BaseController
             $user = get_user_by('id', $id);
 
             if (is_false__($user)) {
-                return JsonResponseFactory::create(t__(msgid: 'No data.', domain: 'devflow'), 404);
+                return JsonResponseFactory::create(trans('No data.'), 404);
             }
         } catch (NotFoundExceptionInterface $e) {
             return JsonResponseFactory::create($e->getMessage(), 400);
@@ -85,7 +85,7 @@ final class UserRestController extends BaseController
                 return JsonResponseFactory::create($create->getMessage(), 400);
             }
             if (is_null__($create)) {
-                return JsonResponseFactory::create(t__(msgid: 'No data.', domain: 'devflow'), 404);
+                return JsonResponseFactory::create(trans('No data.'), 404);
             }
         } catch (Exception $e) {
             return JsonResponseFactory::create($e->getMessage(), 400);
@@ -110,7 +110,7 @@ final class UserRestController extends BaseController
             }
 
             if (is_null__($update)) {
-                return JsonResponseFactory::create(t__(msgid: 'No data.', domain: 'devflow'), 404);
+                return JsonResponseFactory::create(trans('No data.'), 404);
             }
         } catch (Exception $e) {
             return JsonResponseFactory::create($e->getMessage(), 400);
@@ -139,9 +139,9 @@ final class UserRestController extends BaseController
                 ]
             );
         } catch (Exception $e) {
-            return JsonResponseFactory::create(t__(msgid: 'Bad request.', domain: 'devflow'));
+            return JsonResponseFactory::create(trans('Bad request.'));
         }
 
-        return JsonResponseFactory::create(t__(msgid: 'User removed from site.', domain: 'devflow'));
+        return JsonResponseFactory::create(trans('User removed from site.'));
     }
 }

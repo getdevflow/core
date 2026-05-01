@@ -20,6 +20,7 @@ use function abs;
 use function Codefy\Framework\Helpers\config;
 use function Codefy\Framework\Helpers\public_path;
 use function Codefy\Framework\Helpers\storage_path;
+use function Codefy\Framework\Helpers\trans_html;
 use function date;
 use function dechex;
 use function file_exists;
@@ -30,8 +31,6 @@ use function ord;
 use function preg_replace_callback;
 use function Qubus\Security\Helpers\__observer;
 use function Qubus\Security\Helpers\esc_html;
-use function Qubus\Security\Helpers\esc_html__;
-use function Qubus\Security\Helpers\t__;
 use function Qubus\Support\Helpers\is_null__;
 use function sprintf;
 use function str_replace;
@@ -112,8 +111,8 @@ function sanitize_meta(string $metaKey, mixed $metaValue, string $arrayType, str
 function cms_admin_copyright_footer(): mixed
 {
     $copyright = '<!--  Copyright Line -->' . "\n";
-    $copyright .= '<strong>&#169; ' . t__(msgid: sprintf('Copyright %s', date('Y')), domain: 'devflow') . ' | ' .
-    t__(msgid: 'Powered by', domain: 'devflow') . ' <a href="//getdevflow.com/">' .
+    $copyright .= '<strong>&#169; ' . trans_html(sprintf('Copyright %s', date('Y'))) . ' | ' .
+    trans_html('Powered by') . ' <a href="//getdevflow.com/">' .
     esc_html('Devflow') . '</a></strong> ' .
     Devflow::release() . "\n";
     $copyright .= '<!--  End Copyright Line -->' . "\n";
@@ -785,9 +784,8 @@ function get_http_response_code(string $url): int
 function cms_dev_mode(): void
 {
     if (config(key: 'app.env') === 'development') {
-        echo '<div class="alert dismissable alert-danger center sticky">' . esc_html__(
+        echo '<div class="alert dismissable alert-danger center sticky">' . trans_html(
             string: 'Your system is currently in `dev` mode. Please remember to set your system to `prod` mode after testing. When `prod` mode is set, this warning message will disappear.',
-            domain: 'devflow'
         ) . '</div>';
     }
 }

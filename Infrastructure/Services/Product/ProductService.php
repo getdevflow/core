@@ -36,7 +36,7 @@ use function App\Shared\Helpers\get_products;
 use function Codefy\Framework\Helpers\abort;
 use function Codefy\Framework\Helpers\command;
 use function Codefy\Framework\Helpers\logger;
-use function Qubus\Security\Helpers\t__;
+use function Codefy\Framework\Helpers\trans;
 use function Qubus\Support\Helpers\is_false__;
 
 final readonly class ProductService
@@ -72,7 +72,7 @@ final readonly class ProductService
             abort(
                 code: 404,
                 uri: admin_url(),
-                message: t__(msgid: 'The product does not exist.', domain: 'devflow')
+                message: trans('The product does not exist.')
             );
         }
 
@@ -99,7 +99,7 @@ final readonly class ProductService
             $this->event->dispatch(new ProductCreated($product->toArray(), get_current_user_id()));
 
             Devflow::$PHP->flash->success(
-                message: t__(msgid: 'Product added successfully.', domain: 'devflow'),
+                message: trans('Product added successfully.'),
             );
         } catch (
             ContainerExceptionInterface |
@@ -113,7 +113,7 @@ final readonly class ProductService
             logger(level: 'error', message: $e->getMessage(), context: ['ProductService' => 'createProduct']);
 
             Devflow::$PHP->flash->error(
-                message: t__(msgid: 'Could not create product. Please try again later.', domain: 'devflow'),
+                message: trans('Could not create product. Please try again later.'),
             );
         }
 
@@ -147,7 +147,7 @@ final readonly class ProductService
             logger('error', $e->getMessage());
 
             Devflow::$PHP->flash->error(
-                message: t__(msgid: 'Change exception occurred and was logged.', domain: 'devflow')
+                message: trans('Change exception occurred and was logged.')
             );
         }
     }
@@ -173,7 +173,7 @@ final readonly class ProductService
             $this->event->dispatch(new ProductUpdated($product->toArray(), get_current_user_id()));
 
             Devflow::$PHP->flash->success(
-                message: t__(msgid: 'Removal of featured image was successful.', domain: 'devflow')
+                message: trans('Removal of featured image was successful.')
             );
         } catch (
             CommandPropertyNotFoundException |
@@ -183,7 +183,7 @@ final readonly class ProductService
             logger(level: 'error', message: $e->getMessage(), context: ['ProductService' => 'removeFeaturedImage']);
 
             Devflow::$PHP->flash->error(
-                message: t__(msgid: 'Removal exception occurred and was logged.', domain: 'devflow')
+                message: trans('Removal exception occurred and was logged.')
             );
         }
     }
@@ -217,7 +217,7 @@ final readonly class ProductService
             $this->event->dispatch(new ProductDeleted($productId, get_current_user_id()));
 
             Devflow::$PHP->flash->success(
-                message: t__(msgid: 'Removal was successful.', domain: 'devflow')
+                message: trans('Removal was successful.')
             );
         } catch (
             CommandPropertyNotFoundException |
@@ -227,7 +227,7 @@ final readonly class ProductService
             logger('error', $e->getMessage());
 
             Devflow::$PHP->flash->error(
-                message: t__(msgid: 'A deletion exception occurred and was logged.', domain: 'devflow')
+                message: trans('A deletion exception occurred and was logged.')
             );
         }
     }

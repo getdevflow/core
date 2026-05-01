@@ -22,8 +22,8 @@ use function App\Shared\Helpers\admin_url;
 use function App\Shared\Helpers\current_user_can;
 use function App\Shared\Helpers\get_theme;
 use function Codefy\Framework\Helpers\config;
+use function Codefy\Framework\Helpers\trans;
 use function Codefy\Framework\Helpers\view;
-use function Qubus\Security\Helpers\t__;
 use function Qubus\Support\Helpers\is_null__;
 
 final class PageBuilderController extends BaseController
@@ -59,7 +59,7 @@ final class PageBuilderController extends BaseController
     {
         if (false === current_user_can(perm: 'vihzhuo:manage')) {
             Devflow::$PHP->flash->error(
-                message: t__(msgid: 'Access denied.', domain: 'devflow')
+                message: trans('Access denied.')
             );
 
             return $this->redirect(admin_url());

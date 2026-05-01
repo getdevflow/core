@@ -56,6 +56,7 @@ use function Codefy\Framework\Helpers\config;
 use function Codefy\Framework\Helpers\logger;
 use function Codefy\Framework\Helpers\public_path;
 use function Codefy\Framework\Helpers\resource_path;
+use function Codefy\Framework\Helpers\trans_html;
 use function crc32;
 use function date;
 use function file_get_contents;
@@ -63,8 +64,6 @@ use function md5;
 use function mkdir;
 use function Qubus\Security\Helpers\__observer;
 use function Qubus\Security\Helpers\esc_html;
-use function Qubus\Security\Helpers\esc_html__;
-use function Qubus\Security\Helpers\t__;
 use function Qubus\Security\Helpers\unslash;
 use function Qubus\Support\Helpers\is_false__;
 use function Qubus\Support\Helpers\is_null__;
@@ -515,9 +514,8 @@ function cms_insert_site(array|ServerRequestInterface|Site $sitedata): Error|str
 
         if (is_false__($siteBefore)) {
             return new SiteError(
-                esc_html__(
+                trans_html(
                     string: 'The ID of this entity is invalid.',
-                    domain: 'devflow'
                 ),
                 'invalid_id'
             );
@@ -591,9 +589,8 @@ function cms_insert_site(array|ServerRequestInterface|Site $sitedata): Error|str
     // site_domain cannot be empty.
     if (empty($siteDomain)) {
         return new SiteError(
-            esc_html__(
+            trans_html(
                 string: 'Site domain cannot be empty.',
-                domain: 'devflow'
             ),
             'empty_value',
         );
@@ -601,9 +598,8 @@ function cms_insert_site(array|ServerRequestInterface|Site $sitedata): Error|str
 
     if (!$update && if_site_domain_exists($siteDomain)) {
         return new SiteError(
-            esc_html__(
+            trans_html(
                 string: 'Sorry, that site already exists!',
-                domain: 'devflow'
             ),
             'duplicate',
         );
@@ -702,9 +698,8 @@ function cms_insert_site(array|ServerRequestInterface|Site $sitedata): Error|str
         if_site_exists($siteDomain, $sitePath)
     ) {
         return new SiteError(
-            esc_html__(
+            trans_html(
                 string: 'Sorry, that site domain and path is already used.',
-                domain: 'devflow'
             ),
             'duplicate',
         );
@@ -966,9 +961,8 @@ function cms_update_site(array|ServerRequestInterface|Site $sitedata): Error|str
     $id = $sitedata['id'] ?? '';
     if ('' === $id) {
         return new SiteError(
-            esc_html__(
+            trans_html(
                 string: 'The ID of this entity is invalid.',
-                domain: 'devflow'
             ),
             'invalid_id',
         );
@@ -1012,9 +1006,8 @@ function cms_delete_site(string $siteId): Error|string
 
     if (is_false__($oldSite)) {
         return new SiteError(
-            esc_html__(
+            trans_html(
                 string: 'Site does not exist.',
-                domain: 'devflow'
             ),
             code: 'not_found'
         );
@@ -1097,9 +1090,8 @@ function cms_delete_site_user(string $userId, array $params = []): Error|bool
 
     if ($user->role === 'super') {
         Devflow::$PHP->flash->error(
-            esc_html__(
+            trans_html(
                 string: 'You are not allowed to delete a super administrator account.',
-                domain: 'devflow'
             )
         );
         return false;
@@ -1149,7 +1141,7 @@ function cms_delete_site_user(string $userId, array $params = []): Error|bool
                         ->delete();
                 });
             } catch (PDOException $e) {
-                return new SiteError($e->getCode(), t__(msgid: 'Site deletion exception occurred.', domain: 'devflow'));
+                return new SiteError($e->getCode(), trans_html('Site deletion exception occurred.'));
             }
 
             foreach ($sites as $oldSite) {
@@ -1197,7 +1189,7 @@ function cms_delete_site_user(string $userId, array $params = []): Error|bool
             sprintf(
                 'ERROR[%s]: %s',
                 $e->getCode(),
-                t__(msgid: 'User delete exception occurred.', domain: 'devflow')
+                trans_html('User delete exception occurred.')
             )
         );
     }
@@ -1238,9 +1230,8 @@ function remove_user_from_site(string $userId, array $params = []): void
     $site = get_site_by(field: 'id', value: $params['site_id']);
     if(is_false__($site)) {
         throw new EntityNotFoundException(
-            esc_html__(
+            trans_html(
                 string: sprintf('The site with ID %s does not exist.', $params['site_id']),
-                domain: 'devflow'
             )
         );
     }
@@ -1249,18 +1240,16 @@ function remove_user_from_site(string $userId, array $params = []): void
     $oldUser = get_userdata($userId);
     if (is_false__($oldUser)) {
         throw new EntityNotFoundException(
-            esc_html__(
+            trans_html(
                 string: sprintf('The user with ID %s does not exist.', $userId),
-                domain: 'devflow'
             )
         );
     }
 
     if ($oldUser->role === 'super') {
         throw new \Exception(
-            esc_html__(
+            trans_html(
                 string: 'You are not allowed to remove super admins from this site.',
-                domain: 'devflow'
             )
         );
     }

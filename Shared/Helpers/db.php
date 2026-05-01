@@ -48,12 +48,13 @@ use function Codefy\Framework\Helpers\config;
 use function Codefy\Framework\Helpers\logger;
 use function Codefy\Framework\Helpers\mail;
 use function Codefy\Framework\Helpers\storage_path;
+use function Codefy\Framework\Helpers\trans;
+use function Codefy\Framework\Helpers\trans_html;
 use function count;
 use function in_array;
 use function md5;
 use function Qubus\Security\Helpers\__observer;
 use function Qubus\Security\Helpers\esc_html;
-use function Qubus\Security\Helpers\esc_html__;
 use function Qubus\Support\Helpers\is_false__;
 use function Qubus\Support\Helpers\is_null__;
 use function sprintf;
@@ -613,9 +614,8 @@ function reassign_content(string $userId, string $assignId): bool
         } catch (PDOException | \Exception $e) {
             Devflow::$PHP->flash->error(
                 sprintf(
-                    esc_html__(
+                    trans_html(
                         string: 'Reassign content error: %s',
-                        domain: 'devflow'
                     ),
                     $e->getMessage()
                 )
@@ -827,27 +827,25 @@ function cms_nodeq_login_details(): void
                     Key::loadFromAsciiSafeString(config()->string(key: 'auth.encryption_key'))
                 );
 
-                $message = esc_html__(string: 'Hi there,', domain: 'devflow') . "<br />";
+                $message = trans_html('Hi there,') . "<br />";
                 $message .= "<p>" . sprintf(
-                    esc_html__(
+                    trans_html(
                         string: "Welcome to %s! Here's how to log in: ",
-                        domain: 'devflow'
                     ),
                     $siteName
                 );
                 $message .= $r['login_url'] . "</p>";
-                $message .= sprintf(esc_html__(string: 'Username: %s', domain: 'devflow'), $user->login) . "<br />";
-                $message .= sprintf(esc_html__(string: 'Password: %s', domain: 'devflow'), $password) . "<br />";
+                $message .= sprintf(trans_html('Username: %s'), $user->login) . "<br />";
+                $message .= sprintf(trans_html('Password: %s'), $password) . "<br />";
                 $message .= "<p>" . sprintf(
-                    esc_html__(
+                    trans(
                         string: 'If you have any problems, please contact us at <a href="mailto:%s">%s</a>.',
-                        domain: 'devflow'
                     ),
                     get_option(key: 'admin_email'),
                     get_option(key: 'admin_email')
                 ) . "</p>";
 
-                $message = process_email_html($message, esc_html__(string: 'New Account', domain: 'devflow'));
+                $message = process_email_html($message, trans_html('New Account'));
                 $headers[] = sprintf("From: %s <auto-reply@%s>", $siteName, $r['domain_name']);
                 $headers[] = 'Content-Type: text/html; charset="UTF-8"';
                 $headers[] = sprintf("X-Mailer: Devflow %s", Devflow::release());
@@ -855,7 +853,7 @@ function cms_nodeq_login_details(): void
                     mail(
                         $user->email,
                         sprintf(
-                            esc_html__(string: '[%s] New Account', domain: 'devflow'),
+                            trans_html('[%s] New Account'),
                             $siteName
                         ),
                         $message,
@@ -930,27 +928,25 @@ function cms_nodeq_reset_password(): void
                     Key::loadFromAsciiSafeString(config('auth.encryption_key'))
                 );
 
-                $message = esc_html__(string: 'Hi there,', domain: 'devflow') . "<br />";
+                $message = trans_html('Hi there,') . "<br />";
                 $message .= "<p>" . sprintf(
-                    esc_html__(
+                    trans_html(
                         string: "Your password has been reset for %s: ",
-                        domain: 'devflow'
                     ),
                     $siteName
                 );
                 $message .= $r['login_url'] . "</p>";
-                $message .= sprintf(esc_html__(string: 'Username: %s', domain: 'devflow'), $user->login) . "<br />";
-                $message .= sprintf(esc_html__(string: 'Password: %s', domain: 'devflow'), $password) . "<br />";
+                $message .= sprintf(trans_html('Username: %s'), $user->login) . "<br />";
+                $message .= sprintf(trans_html('Password: %s'), $password) . "<br />";
                 $message .= "<p>" . sprintf(
-                    esc_html__(
+                    trans(
                         string: 'If you have any problems, please contact us at <a href="mailto:%s">%s</a>.',
-                        domain: 'devflow'
                     ),
                     get_option(key: 'admin_email'),
                     get_option(key: 'admin_email')
                 ) . "</p>";
 
-                $message = process_email_html($message, esc_html__(string: 'Password Reset', domain: 'devflow'));
+                $message = process_email_html($message, trans_html('Password Reset'));
                 $headers[] = sprintf("From: %s <auto-reply@%s>", $siteName, $r['domain_name']);
                 $headers[] = 'Content-Type: text/html; charset="UTF-8"';
                 $headers[] = sprintf("X-Mailer: Devflow %s", Devflow::release());
@@ -958,7 +954,7 @@ function cms_nodeq_reset_password(): void
                     mail(
                         $user->email,
                         sprintf(
-                            esc_html__(string: '[%s] Password Reset', domain: 'devflow'),
+                            trans_html('[%s] Password Reset'),
                             $siteName
                         ),
                         $message,

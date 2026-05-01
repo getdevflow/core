@@ -28,9 +28,9 @@ use function App\Shared\Helpers\site_directory_key;
 use function App\Shared\Helpers\site_path;
 use function App\Shared\Helpers\site_url;
 use function array_merge;
+use function Codefy\Framework\Helpers\trans;
 use function Codefy\Framework\Helpers\view;
 use function error_reporting;
-use function Qubus\Security\Helpers\t__;
 use function sprintf;
 
 final class AdminMediaController extends BaseController
@@ -71,7 +71,7 @@ final class AdminMediaController extends BaseController
                     'URL' => site_url(
                         path: sprintf('site/%s/%s', $siteDirectoryKey, $dir)
                     ),
-                    'alias' => t__(msgid: 'Media Library', domain: 'devflow'),
+                    'alias' => trans('Media Library'),
                     'accessControl' => Devflow::$PHP->configContainer->string(key: 'elfinder.access'),
                     'tmbURL' => site_url(sprintf('site/%s/%s.tmb', $siteDirectoryKey, $dir)),
                 ];
@@ -132,7 +132,7 @@ final class AdminMediaController extends BaseController
     {
         if (!is_user_logged_in()) {
             Devflow::$PHP->flash->error(
-                message: t__(msgid: 'Access denied.', domain: 'devflow')
+                message: trans('Access denied.')
             );
 
             return $this->redirect(login_url());
@@ -140,7 +140,7 @@ final class AdminMediaController extends BaseController
 
         return view(
             template: 'framework::backend/elfinder',
-            data: ['title' => t__(msgid: 'elFinder', domain: 'devflow')]
+            data: ['title' => trans('elFinder')]
         );
     }
 }

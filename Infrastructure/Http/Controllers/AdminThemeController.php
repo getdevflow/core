@@ -25,8 +25,8 @@ use function App\Shared\Helpers\current_user_can;
 use function App\Shared\Helpers\deactivate_theme;
 use function App\Shared\Helpers\is_user_logged_in;
 use function Codefy\Framework\Helpers\logger;
+use function Codefy\Framework\Helpers\trans;
 use function Codefy\Framework\Helpers\view;
-use function Qubus\Security\Helpers\t__;
 
 final class AdminThemeController extends BaseController
 {
@@ -44,7 +44,7 @@ final class AdminThemeController extends BaseController
     {
         if (false === current_user_can(perm: 'manage:themes')) {
             Devflow::$PHP->flash->error(
-                message: t__(msgid: 'Access denied.', domain: 'devflow')
+                message: trans('Access denied.')
             );
 
             return $this->redirect(admin_url());
@@ -74,7 +74,7 @@ final class AdminThemeController extends BaseController
 
         return view(
             template: 'framework::backend/admin/theme/index',
-            data: ['title' => t__(msgid: 'Themes', domain: 'devflow')]
+            data: ['title' => trans('Themes')]
         );
     }
 
@@ -92,7 +92,7 @@ final class AdminThemeController extends BaseController
     {
         if (false === is_user_logged_in()) {
             Devflow::$PHP->flash->error(
-                message: t__(msgid: 'Access denied.', domain: 'devflow')
+                message: trans('Access denied.')
             );
             return $this->redirect(admin_url());
         }
@@ -100,11 +100,11 @@ final class AdminThemeController extends BaseController
         try {
             activate_theme($request->getQueryParams()['id']);
 
-            Devflow::$PHP->flash->success(t__(msgid: 'Theme activated.', domain: 'devflow'));
+            Devflow::$PHP->flash->success(trans('Theme activated.'));
         } catch (\Exception $e) {
             logger(level: 'error', message: $e->getMessage());
             Devflow::$PHP->flash->error(
-                message: t__(msgid: 'Theme activation exception occurred and was logged.', domain: 'devflow')
+                message: trans('Theme activation exception occurred and was logged.')
             );
         }
 
@@ -126,7 +126,7 @@ final class AdminThemeController extends BaseController
     public function deactivate(ServerRequest $request): ResponseInterface
     {
         if (false === is_user_logged_in()) {
-            Devflow::$PHP->flash->error(message: t__(msgid: 'Access denied.', domain: 'devflow'));
+            Devflow::$PHP->flash->error(message: trans('Access denied.'));
 
             return $this->redirect(admin_url());
         }
@@ -134,11 +134,11 @@ final class AdminThemeController extends BaseController
         try {
             deactivate_theme();
 
-            Devflow::$PHP->flash->success(t__(msgid: 'Theme deactivated.', domain: 'devflow'));
+            Devflow::$PHP->flash->success(trans('Theme deactivated.'));
         } catch (\Exception $e) {
             logger(level: 'error', message: $e->getMessage());
             Devflow::$PHP->flash->error(
-                message: t__(msgid: 'Theme deactivation exception occurred and was logged.', domain: 'devflow')
+                message: trans('Theme deactivation exception occurred and was logged.')
             );
         }
 

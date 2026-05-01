@@ -55,11 +55,11 @@ use function Codefy\Framework\Helpers\config;
 use function Codefy\Framework\Helpers\logger;
 use function Codefy\Framework\Helpers\mail;
 use function Codefy\Framework\Helpers\storage_path;
+use function Codefy\Framework\Helpers\trans;
+use function Codefy\Framework\Helpers\trans_html;
 use function in_array;
 use function Qubus\Security\Helpers\__observer;
 use function Qubus\Security\Helpers\esc_html;
-use function Qubus\Security\Helpers\esc_html__;
-use function Qubus\Security\Helpers\t__;
 use function Qubus\Security\Helpers\trim__;
 use function Qubus\Security\Helpers\unslash;
 use function Qubus\Support\Helpers\concat_ws;
@@ -592,7 +592,7 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
         $oldUserData = get_userdata($userId->toNative());
 
         if (!$oldUserData) {
-            return new UserError(message: esc_html__(string: 'Invalid user id.', domain: 'devflow'));
+            return new UserError(message: trans_html(string: 'Invalid user id.'));
         }
 
         // hashed in cms_update_user(), plaintext if called directly
@@ -613,12 +613,11 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
         $userId = new UserId();
 
         if (mb_strlen($userdata['pass']) < config()->integer(key: 'cms.password_length')) {
-            return new UserError(message: esc_html__(
+            return new UserError(message: trans_html(
                 string: sprintf(
                     'Password must be at least %s characters long.',
                     config()->integer(key: 'cms.password_length')
                 ),
-                domain: 'devflow'
             ));
         }
         /**
@@ -666,24 +665,21 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
 
     // userLogin must be between 3 and 60 characters.
     if (empty($userLogin)) {
-        return new UserError(message: esc_html__(
+        return new UserError(message: trans_html(
             string: 'Cannot create a user with an empty username.',
-            domain: 'devflow'
         ));
     } elseif (mb_strlen($userLogin) < 3) {
-        return new UserError(message: esc_html__(
+        return new UserError(message: trans_html(
             string: 'Username must be at least 3 characters long.',
-            domain: 'devflow'
         ));
     } elseif (mb_strlen($userLogin) > 60) {
-        return new UserError(message: esc_html__(
+        return new UserError(message: trans_html(
             string: 'Username may not be longer than 60 characters.',
-            domain: 'devflow'
         ));
     }
 
     if (!$update && username_exists($userLogin)) {
-        return new UserError(message: esc_html__(string: 'Sorry, that username cannot be used.', domain: 'devflow'));
+        return new UserError(message: trans_html(string: 'Sorry, that username cannot be used.'));
     }
 
     /**
@@ -697,9 +693,8 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
     if (in_array(strtolower($userLogin), array_map('\strtolower', $illegalLogins))) {
         return new UserError(
             message: sprintf(
-                t__(
-                    msgid: 'Sorry, the username <strong>%s</strong> is not allowed.',
-                    domain: 'devflow'
+                trans(
+                    'Sorry, the username <strong>%s</strong> is not allowed.',
                 ),
                 $userLogin
             )
@@ -739,7 +734,7 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
         ) && email_exists($userEmail)
     ) {
         return new UserError(
-            message: esc_html__(string: 'Sorry, that email address cannot be used.', domain: 'devflow')
+            message: trans_html(string: 'Sorry, that email address cannot be used.')
         );
     }
 
@@ -1094,14 +1089,14 @@ function cms_update_user(array|ServerRequestInterface|User $userdata): string|Us
 
     $id = $userdata['id'] ?? '';
     if (!$id) {
-        return new UserError(message: esc_html__(string: 'Invalid user id.', domain: 'devflow'));
+        return new UserError(message: trans_html(string: 'Invalid user id.'));
     }
 
     // First, get all the original fields
     /** @var User $userObj */
     $userObj = get_userdata($id);
     if (!$userObj) {
-        return new UserError(message: esc_html__(string: 'Invalid user id.', domain: 'devflow'));
+        return new UserError(message: trans_html(string: 'Invalid user id.'));
     }
 
     $user = get_object_vars($userObj);
@@ -1351,23 +1346,21 @@ function send_reset_password_email(object|array $user, string $password): bool
     }
 
     $message .= "<p>" . sprintf(
-        t__(
-            msgid: "Hello %s! You requested that your password be reset. Please see your new password below: <br />",
-            domain: 'devflow'
+        trans(
+            "Hello %s! You requested that your password be reset. Please see your new password below: <br />",
         ),
         $user['fname']
     );
-    $message .= sprintf(esc_html__(string: 'Password: %s', domain: 'devflow'), $password) . "</p>";
+    $message .= sprintf(trans_html(string: 'Password: %s'), $password) . "</p>";
     $message .= "<p>" . sprintf(
-        t__(
-            msgid: 'If you still have problems with logging in, please contact us at <a href="mailto:%s">%s</a>.',
-            domain: 'devflow'
+        trans(
+            'If you still have problems with logging in, please contact us at <a href="mailto:%s">%s</a>.',
         ),
         get_option(key: 'admin_email'),
         get_option(key: 'admin_email')
     ) . "</p>";
 
-    $message = process_email_html($message, esc_html__(string: 'Password Reset', domain: 'devflow'));
+    $message = process_email_html($message, trans_html(string: 'Password Reset'));
     $headers[] = sprintf("From: %s <auto-reply@%s>", $siteName, get_domain_name());
     $headers[] = 'Content-Type: text/html; charset="UTF-8"';
     $headers[] = sprintf("X-Mailer: Devflow %s", Devflow::release());
@@ -1375,9 +1368,8 @@ function send_reset_password_email(object|array $user, string $password): bool
         mail(
             to: $user['email'],
             subject: sprintf(
-                esc_html__(
+                trans_html(
                     string: '[%s] Notice of Password Reset',
-                    domain: 'devflow'
                 ),
                 $siteName
             ),
@@ -1415,24 +1407,22 @@ function send_password_change_email(object|array $user, string $password, array 
     }
 
     $message .= "<p>" . sprintf(
-        t__(
-            msgid: "Hello %s! This is confirmation that your password on %s was updated to: <br />",
-            domain: 'devflow'
+        trans(
+            "Hello %s! This is confirmation that your password on %s was updated to: <br />",
         ),
         $user['fname'],
         get_option(key: 'sitename')
     );
-    $message .= sprintf(esc_html__(string: 'Password: %s', domain: 'devflow'), $password) . "</p>";
+    $message .= sprintf(trans_html(string: 'Password: %s'), $password) . "</p>";
     $message .= "<p>" . sprintf(
-        t__(
-            msgid: 'If you did not initiate a password change/update, please contact us at <a href="mailto:%s">%s</a>.',
-            domain: 'devflow'
+        trans(
+            'If you did not initiate a password change/update, please contact us at <a href="mailto:%s">%s</a>.',
         ),
         get_option(key: 'admin_email'),
         get_option(key: 'admin_email')
     ) . "</p>";
 
-    $message = process_email_html($message, esc_html__(string: 'Notice of Password Change', domain: 'devflow'));
+    $message = process_email_html($message, trans_html(string: 'Notice of Password Change'));
     $headers[] = sprintf("From: %s <auto-reply@%s>", $siteName, get_domain_name());
     $headers[] = 'Content-Type: text/html; charset="UTF-8"';
     $headers[] = sprintf("X-Mailer: Devflow %s", Devflow::release());
@@ -1440,9 +1430,8 @@ function send_password_change_email(object|array $user, string $password, array 
         mail(
             to: $user['email'],
             subject: sprintf(
-                esc_html__(
+                trans_html(
                     string: '[%s] Notice of Password Change',
-                    domain: 'devflow'
                 ),
                 $siteName
             ),
@@ -1479,24 +1468,22 @@ function send_email_change_email(object|array $user, array $userdata): bool
     }
 
     $message .= "<p>" . sprintf(
-        t__(
-            msgid: "Hello %s! This is confirmation that your email on %s was updated to: <br />",
-            domain: 'devflow'
+        trans(
+            "Hello %s! This is confirmation that your email on %s was updated to: <br />",
         ),
         $user['fname'],
         $siteName
     );
-    $message .= sprintf(esc_html__(string: 'Email: %s', domain: 'devflow'), $userdata['email']) . "</p>";
+    $message .= sprintf(trans_html(string: 'Email: %s'), $userdata['email']) . "</p>";
     $message .= "<p>" . sprintf(
-        t__(
-            msgid: 'If you did not initiate an email change/update, please contact us at <a href="mailto:%s">%s</a>.',
-            domain: 'devflow'
+        trans(
+            'If you did not initiate an email change/update, please contact us at <a href="mailto:%s">%s</a>.',
         ),
         get_option(key: 'admin_email'),
         get_option(key: 'admin_email')
     ) . "</p>";
 
-    $message = process_email_html($message, esc_html__(string: 'Notice of Email Change', domain: 'devflow'));
+    $message = process_email_html($message, trans_html(string: 'Notice of Email Change'));
     $headers[] = sprintf("From: %s <auto-reply@%s>", $siteName, get_domain_name());
     $headers[] = 'Content-Type: text/html; charset="UTF-8"';
     $headers[] = sprintf("X-Mailer: Devflow %s", Devflow::release());
@@ -1504,9 +1491,8 @@ function send_email_change_email(object|array $user, array $userdata): bool
         mail(
             to: $userdata['email'],
             subject: sprintf(
-                esc_html__(
+                trans_html(
                     string: '[%s] Notice of Email Change',
-                    domain: 'devflow'
                 ),
                 $siteName
             ),
@@ -1650,9 +1636,8 @@ function reset_password(string $userId): bool|string
 
         $id = queue_reset_user_password($user);
         Devflow::$PHP->flash->success(
-            t__(
-                msgid: "The password reset email has been queued for sending.",
-                domain: 'devflow'
+            trans_html(
+                "The password reset email has been queued for sending.",
             )
         );
         return $id;

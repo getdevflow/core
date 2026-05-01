@@ -38,9 +38,9 @@ use function App\Shared\Helpers\current_user_can;
 use function App\Shared\Helpers\get_all_content_with_filters;
 use function App\Shared\Helpers\get_content_type_by;
 use function Codefy\Framework\Helpers\abort;
+use function Codefy\Framework\Helpers\trans;
+use function Codefy\Framework\Helpers\trans_html;
 use function Codefy\Framework\Helpers\view;
-use function Qubus\Security\Helpers\esc_html__;
-use function Qubus\Security\Helpers\t__;
 use function Qubus\Support\Helpers\is_false__;
 use function sprintf;
 
@@ -102,7 +102,7 @@ final class AdminContentController extends BaseController
     {
         if (false === current_user_can(perm: 'create:content')) {
             Devflow::$PHP->flash->error(
-                message: t__(msgid: 'Access denied.', domain: 'devflow')
+                message: trans('Access denied.')
             );
             return $this->redirect(admin_url());
         }
@@ -112,7 +112,7 @@ final class AdminContentController extends BaseController
         return view(
             template: 'framework::backend/admin/content/create',
             data: [
-                'title' => sprintf(esc_html__('Create %s Content', domain: 'devflow'), $type->title),
+                'title' => sprintf(trans_html('Create %s Content'), $type->title),
                 'type' => $type,
                 'request' => $request->getParsedBody(),
                 'form' => new ContentForm()->buildForm($request->getParsedBody(), $type->slug, null),
@@ -173,7 +173,7 @@ final class AdminContentController extends BaseController
     {
         if (false === current_user_can(perm: 'update:content')) {
             Devflow::$PHP->flash->error(
-                message: t__(msgid: 'Access denied.', domain: 'devflow')
+                message: trans('Access denied.')
             );
             return $this->redirect(admin_url());
         }
@@ -208,7 +208,7 @@ final class AdminContentController extends BaseController
     {
         if (false === current_user_can(perm: 'update:content')) {
             Devflow::$PHP->flash->error(
-                message: t__(msgid: 'Access denied.', domain: 'devflow')
+                message: trans('Access denied.')
             );
             return $this->redirect(admin_url());
         }
@@ -219,7 +219,7 @@ final class AdminContentController extends BaseController
             abort(
                 code: 404,
                 uri: admin_url(),
-                message: t__(msgid: 'Content not found.', domain: 'devflow')
+                message: trans('Content not found.')
             );
         }
 
@@ -228,7 +228,7 @@ final class AdminContentController extends BaseController
         return view(
             template: 'framework::backend/admin/content/content-by-type',
             data: [
-                'title' => sprintf(esc_html__(string: '%s Content', domain: 'devflow'), $getContentType->title),
+                'title' => sprintf(trans_html(string: '%s Content'), $getContentType->title),
                 'contentArray' => $content,
                 'type' => $getContentType->slug
             ]

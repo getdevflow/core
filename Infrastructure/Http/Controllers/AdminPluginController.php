@@ -21,8 +21,8 @@ use function App\Shared\Helpers\admin_url;
 use function App\Shared\Helpers\current_user_can;
 use function App\Shared\Helpers\deactivate_plugin;
 use function Codefy\Framework\Helpers\logger;
+use function Codefy\Framework\Helpers\trans;
 use function Codefy\Framework\Helpers\view;
-use function Qubus\Security\Helpers\t__;
 
 final class AdminPluginController extends BaseController
 {
@@ -41,7 +41,7 @@ final class AdminPluginController extends BaseController
     {
         if (false === current_user_can(perm: 'manage:plugins')) {
             Devflow::$PHP->flash->error(
-                message: t__(msgid: 'Access denied.', domain: 'devflow')
+                message: trans('Access denied.')
             );
 
             return $this->redirect(admin_url());
@@ -49,7 +49,7 @@ final class AdminPluginController extends BaseController
 
         return view(
             template: 'framework::backend/admin/plugin/index',
-            data: ['title' => t__(msgid: 'Plugins', domain: 'devflow')]
+            data: ['title' => trans('Plugins')]
         );
     }
 
@@ -67,7 +67,7 @@ final class AdminPluginController extends BaseController
     {
         if (false === current_user_can(perm: 'activate:plugins')) {
             Devflow::$PHP->flash->error(
-                message: t__(msgid: 'Access denied.', domain: 'devflow')
+                message: trans('Access denied.')
             );
             return $this->redirect(admin_url());
         }
@@ -75,11 +75,11 @@ final class AdminPluginController extends BaseController
         try {
             activate_plugin($request->getQueryParams()['id']);
 
-            Devflow::$PHP->flash->success(t__(msgid: 'Plugin activated.', domain: 'devflow'));
+            Devflow::$PHP->flash->success(trans('Plugin activated.'));
         } catch (\Exception $e) {
             logger('error', $e->getMessage());
             Devflow::$PHP->flash->error(
-                message: t__(msgid: 'Plugin activation exception occurred and was logged.', domain: 'devflow')
+                message: trans('Plugin activation exception occurred and was logged.')
             );
         }
 
@@ -99,7 +99,7 @@ final class AdminPluginController extends BaseController
     public function deactivate(ServerRequest $request): ResponseInterface
     {
         if (false === current_user_can(perm: 'deactivate:plugins')) {
-            Devflow::$PHP->flash->error(message: t__(msgid: 'Access denied.', domain: 'devflow'));
+            Devflow::$PHP->flash->error(message: trans('Access denied.'));
 
             return $this->redirect(admin_url());
         }
@@ -107,12 +107,12 @@ final class AdminPluginController extends BaseController
         try {
             deactivate_plugin($request->getQueryParams()['id']);
 
-            Devflow::$PHP->flash->success(t__(msgid: 'Plugin deactivated.', domain: 'devflow'));
+            Devflow::$PHP->flash->success(trans('Plugin deactivated.'));
         } catch (\Exception $e) {
             logger('error', $e->getMessage());
 
             Devflow::$PHP->flash->error(
-                message: t__(msgid: 'Plugin deactivation exception occurred and was logged.', domain: 'devflow')
+                message: trans('Plugin deactivation exception occurred and was logged.')
             );
         }
 

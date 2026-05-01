@@ -46,10 +46,10 @@ use function Codefy\Framework\Helpers\ask;
 use function Codefy\Framework\Helpers\command;
 use function Codefy\Framework\Helpers\config;
 use function Codefy\Framework\Helpers\logger;
+use function Codefy\Framework\Helpers\trans_html;
 use function is_array;
 use function preg_split;
 use function Qubus\Security\Helpers\__observer;
-use function Qubus\Security\Helpers\esc_html__;
 use function Qubus\Security\Helpers\unslash;
 use function Qubus\Support\Helpers\concat_ws;
 use function Qubus\Support\Helpers\is_false__;
@@ -1421,7 +1421,7 @@ function cms_insert_product(array|ServerRequestInterface|Product $productdata): 
         $productBefore = get_product_by('id', $productId->toNative());
 
         if (is_false__($productBefore)) {
-            return new ProductError(message: esc_html__(string: 'Invalid product id.', domain: 'devflow'));
+            return new ProductError(message: trans_html(string: 'Invalid product id.'));
         }
 
         $previousStatus = get_product_status($productId->toNative());
@@ -1558,7 +1558,7 @@ function cms_insert_product(array|ServerRequestInterface|Product $productdata): 
 
     if ($productAuthor === '' || $productAuthor === null) {
         return new ProductError(
-            message: esc_html__(string: 'Product author cannot be null or empty.', domain: 'devflow')
+            message: trans_html(string: 'Product author cannot be null or empty.')
         );
     }
 
@@ -1693,9 +1693,8 @@ function cms_insert_product(array|ServerRequestInterface|Product $productdata): 
     $maybeNull = !$productTitle && !$productBody;
     if (__observer()->filter->applyFilter('cms.insert.empty.product', $maybeNull, $productdata)) {
         return new ProductError(
-            message: esc_html__(
+            message: trans_html(
                 string: 'The title and body should not be null.',
-                domain: 'devflow'
             )
         );
     }
@@ -1849,9 +1848,8 @@ function cms_insert_product(array|ServerRequestInterface|Product $productdata): 
                 ]
             );
 
-            return new ProductError(message: esc_html__(
+            return new ProductError(message: trans_html(
                 string: 'Could not insert product into the product table.',
-                domain: 'devflow'
             ));
         }
 
@@ -1899,9 +1897,8 @@ function cms_insert_product(array|ServerRequestInterface|Product $productdata): 
                 ]
             );
 
-            return new ProductError(message: esc_html__(
+            return new ProductError(message: trans_html(
                 string: 'Could not update product within the product table.',
-                domain: 'devflow'
             ));
         }
     }
@@ -2011,7 +2008,7 @@ function cms_update_product(array|ServerRequestInterface|Product $productdata): 
     $product = get_product_by_id($productdata['id']);
 
     if (is_null__($product->id) || '' === $product->id) {
-        return new ProductError(message: esc_html__(string: 'Invalid product id.', domain: 'devflow'));
+        return new ProductError(message: trans_html(string: 'Invalid product id.'));
     }
 
     // Merge old and new fields with new fields overwriting old ones.

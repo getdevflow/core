@@ -44,10 +44,10 @@ use function array_map;
 use function Codefy\Framework\Helpers\ask;
 use function Codefy\Framework\Helpers\command;
 use function Codefy\Framework\Helpers\logger;
+use function Codefy\Framework\Helpers\trans_html;
 use function is_array;
 use function preg_split;
 use function Qubus\Security\Helpers\__observer;
-use function Qubus\Security\Helpers\esc_html__;
 use function Qubus\Security\Helpers\unslash;
 use function Qubus\Support\Helpers\concat_ws;
 use function Qubus\Support\Helpers\is_false__;
@@ -1765,7 +1765,7 @@ function cms_insert_content(array|ServerRequestInterface|Content $contentdata): 
         $contentBefore = get_content_by('id', $contentId->toNative());
 
         if (is_false__($contentBefore)) {
-            return new ContentError(message: esc_html__(string: 'Invalid content id.', domain: 'devflow'));
+            return new ContentError(message: trans_html('Invalid content id.'));
         }
 
         $previousStatus = get_content_status($contentId->toNative());
@@ -1912,7 +1912,7 @@ function cms_insert_content(array|ServerRequestInterface|Content $contentdata): 
 
     if ($contentAuthor === '' || $contentAuthor === null) {
         return new ContentError(
-            message: esc_html__(string: 'Content author cannot be null or empty.', domain: 'devflow')
+            message: trans_html(string: 'Content author cannot be null or empty.')
         );
     }
 
@@ -2016,7 +2016,7 @@ function cms_insert_content(array|ServerRequestInterface|Content $contentdata): 
      */
     $maybeNull = !$contentTitle && !$contentBody;
     if (__observer()->filter->applyFilter('cms.insert.empty.content', $maybeNull, $contentdata)) {
-        return new ContentError(message: esc_html__(string: 'The title and content are null.', domain: 'devflow'));
+        return new ContentError(message: trans_html(string: 'The title and content are null.'));
     }
 
     if (!$update) {
@@ -2169,9 +2169,8 @@ function cms_insert_content(array|ServerRequestInterface|Content $contentdata): 
                 ]
             );
 
-            return new ContentError(message: esc_html__(
+            return new ContentError(message: trans_html(
                 string: 'Could not insert content into the content table.',
-                domain: 'devflow'
             ));
         }
 
@@ -2219,9 +2218,8 @@ function cms_insert_content(array|ServerRequestInterface|Content $contentdata): 
                 ]
             );
 
-            return new ContentError(message: esc_html__(
+            return new ContentError(message: trans_html(
                 string: 'Could not update content within the content table.',
-                domain: 'devflow'
             ));
         }
     }
@@ -2330,7 +2328,7 @@ function cms_update_content(array|ServerRequestInterface|Content $contentdata): 
     $content = get_content_by_id($contentdata['id']);
 
     if (is_null__($content->id) || '' === $content->id) {
-        return new ContentError(message: esc_html__(string: 'Invalid content id.', domain: 'devflow'));
+        return new ContentError(message: trans_html(string: 'Invalid content id.'));
     }
 
     // Merge old and new fields with new fields overwriting old ones.

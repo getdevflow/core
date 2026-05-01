@@ -21,8 +21,8 @@ use ReflectionException;
 
 use function App\Shared\Helpers\load_active_plugins;
 use function App\Shared\Helpers\load_active_theme;
+use function Codefy\Framework\Helpers\trans_html;
 use function Qubus\Security\Helpers\__observer;
-use function Qubus\Security\Helpers\esc_html__;
 use function sprintf;
 
 final class CmsHelperServiceProvider extends CodefyServiceProvider
@@ -122,7 +122,7 @@ final class CmsHelperServiceProvider extends CodefyServiceProvider
 
         __observer()->filter->addFilter(
             'mail.xmailer',
-            fn() => sprintf(esc_html__(string: 'Devflow %s', domain: 'devflow'), Devflow::release()),
+            fn() => sprintf(trans_html(string: 'Devflow %s'), Devflow::release()),
             10,
         );
         /**

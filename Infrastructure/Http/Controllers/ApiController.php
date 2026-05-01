@@ -12,7 +12,7 @@ use Psr\Http\Message\ResponseInterface;
 use Qubus\Http\Factories\JsonResponseFactory;
 use Qubus\Http\ServerRequest;
 
-use function Qubus\Security\Helpers\t__;
+use function Codefy\Framework\Helpers\trans;
 use function Qubus\Support\Helpers\is_false__;
 use function sprintf;
 
@@ -32,7 +32,7 @@ final class ApiController extends BaseController
                 ->pdo
                 ->exec(sprintf('SELECT * FROM %s', Devflow::db()->prefix . $table));
         } catch (PDOException $e) {
-            return JsonResponseFactory::create(t__(msgid: 'Database table does not exist.', domain: 'devflow'), 404);
+            return JsonResponseFactory::create(trans('Database table does not exist.'), 404);
         }
 
         $query = Devflow::db()
@@ -63,7 +63,7 @@ final class ApiController extends BaseController
         });
 
         if (is_false__($data)) {
-            return JsonResponseFactory::create(t__(msgid: 'No data.', domain: 'devflow'), 404);
+            return JsonResponseFactory::create(trans('No data.'), 404);
         }
 
         return JsonResponseFactory::create($data);
@@ -86,7 +86,7 @@ final class ApiController extends BaseController
                 ->exec(sprintf('SELECT * FROM %s', Devflow::db()->prefix . $table));
         } catch (PDOException $e) {
             return JsonResponseFactory::create(
-                t__(msgid: 'Database table does not exist.', domain: 'devflow'),
+                trans('Database table does not exist.'),
                 404
             );
         }
@@ -120,7 +120,7 @@ final class ApiController extends BaseController
         });
 
         if (is_false__($data)) {
-            return JsonResponseFactory::create(t__(msgid: 'No data.', domain: 'devflow'), 404);
+            return JsonResponseFactory::create(trans('No data.'), 404);
         }
 
         return JsonResponseFactory::create($data);

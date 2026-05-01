@@ -20,10 +20,10 @@ use function App\Shared\Helpers\cms_update_product;
 use function App\Shared\Helpers\get_all_products_with_filters;
 use function App\Shared\Helpers\get_product_by_id;
 use function array_merge;
+use function Codefy\Framework\Helpers\trans;
 use function is_object;
 use function is_string;
 use function Qubus\Error\Helpers\is_error;
-use function Qubus\Security\Helpers\t__;
 use function Qubus\Support\Helpers\is_false__;
 use function Qubus\Support\Helpers\is_null__;
 
@@ -64,7 +64,7 @@ final class ProductRestController extends BaseController
             );
 
             if (empty($products)) {
-                return JsonResponseFactory::create(t__(msgid: 'No data.', domain: 'devflow'), 404);
+                return JsonResponseFactory::create(trans('No data.'), 404);
             }
         } catch (Exception $e) {
             return JsonResponseFactory::create($e->getMessage(), 400);
@@ -88,7 +88,7 @@ final class ProductRestController extends BaseController
             $product = get_product_by_id($id);
 
             if (is_false__($product)) {
-                return JsonResponseFactory::create(t__(msgid: 'No data.', domain: 'devflow'), 404);
+                return JsonResponseFactory::create(trans('No data.'), 404);
             }
         } catch (NotFoundExceptionInterface $e) {
             return JsonResponseFactory::create($e->getMessage(), 400);
@@ -113,7 +113,7 @@ final class ProductRestController extends BaseController
                 return JsonResponseFactory::create($create->getMessage(), 400);
             }
             if (is_null__($create)) {
-                return JsonResponseFactory::create(t__(msgid: 'No data.', domain: 'devflow'), 404);
+                return JsonResponseFactory::create(trans('No data.'), 404);
             }
         } catch (Exception $e) {
             return JsonResponseFactory::create($e->getMessage(), 400);
@@ -140,7 +140,7 @@ final class ProductRestController extends BaseController
             }
 
             if (is_null__($update)) {
-                return JsonResponseFactory::create(t__(msgid: 'No data.', domain: 'devflow'), 404);
+                return JsonResponseFactory::create(trans('No data.'), 404);
             }
         } catch (Exception $e) {
             return JsonResponseFactory::create($e->getMessage(), 400);
@@ -162,16 +162,16 @@ final class ProductRestController extends BaseController
         try {
             $delete = cms_delete_product($id);
             if (is_false__($delete)) {
-                return JsonResponseFactory::create(t__(msgid: 'No data.', domain: 'devflow'));
+                return JsonResponseFactory::create(trans('No data.'));
             }
 
             if (is_object($delete) && $delete->id === $id) {
-                return JsonResponseFactory::create(t__(msgid: 'Resource deleted.', domain: 'devflow'));
+                return JsonResponseFactory::create(trans('Resource deleted.'));
             }
         } catch (Exception $e) {
             return JsonResponseFactory::create($e->getMessage(), 400);
         }
 
-        return JsonResponseFactory::create(t__(msgid: 'Bad request.', domain: 'devflow'));
+        return JsonResponseFactory::create(trans('Bad request.'));
     }
 }

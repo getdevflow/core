@@ -45,6 +45,7 @@ use function asort;
 use function Codefy\Framework\Helpers\config;
 use function Codefy\Framework\Helpers\public_path;
 use function Codefy\Framework\Helpers\resource_path;
+use function Codefy\Framework\Helpers\trans_html;
 use function count;
 use function curl_close;
 use function curl_exec;
@@ -76,7 +77,6 @@ use function preg_replace;
 use function preg_replace_callback;
 use function preg_split;
 use function Qubus\Security\Helpers\__observer;
-use function Qubus\Security\Helpers\t__;
 use function Qubus\Support\Helpers\php_like;
 use function Qubus\Support\Helpers\remove_trailing_slash;
 use function realpath;
@@ -748,7 +748,7 @@ function get_age(string $birthdate = '0000-00-00'): string|int
     $age = $birth->age;
 
     if ($birthdate <= '0000-00-00' || $age <= 0) {
-        return t__(msgid: 'Unknown', domain: 'devflow');
+        return trans_html('Unknown');
     }
     return $age;
 }
@@ -1431,9 +1431,8 @@ function show_update_message(): void
                 if ($update->newVersionAvailable()) {
                     $alert = '<div class="alert alert-dismissible show alert-info center" role="alert">';
                     $alert .= sprintf(
-                        t__(
-                            msgid: 'Devflow release %s is available for download/upgrade. Before upgrading, make sure to backup your system.',
-                            domain: 'devflow'
+                        trans_html(
+                            'Devflow release %s is available for download/upgrade. Before upgrading, make sure to backup your system.',
                         ),
                         $update->latestVersion
                     );

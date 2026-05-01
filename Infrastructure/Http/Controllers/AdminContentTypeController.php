@@ -26,8 +26,8 @@ use function App\Shared\Helpers\admin_url;
 use function App\Shared\Helpers\current_user_can;
 use function App\Shared\Helpers\get_content_type_by;
 use function Codefy\Framework\Helpers\abort;
+use function Codefy\Framework\Helpers\trans;
 use function Codefy\Framework\Helpers\view;
-use function Qubus\Security\Helpers\t__;
 use function Qubus\Support\Helpers\is_false__;
 
 final class AdminContentTypeController extends BaseController
@@ -64,7 +64,7 @@ final class AdminContentTypeController extends BaseController
     {
         if (false === current_user_can(perm: 'manage:content')) {
             Devflow::$PHP->flash->error(
-                message: t__(msgid: 'Access denied.', domain: 'devflow')
+                message: trans('Access denied.')
             );
             return $this->redirect(admin_url());
         }
@@ -74,7 +74,7 @@ final class AdminContentTypeController extends BaseController
         return view(
             template: 'framework::backend/admin/content-type/content-type',
             data: [
-                'title' => t__(msgid: 'Content Types', domain: 'devflow'),
+                'title' => trans('Content Types'),
                 'types' => $contentTypes,
                 'request' => $request->getParsedBody(),
             ]
@@ -116,7 +116,7 @@ final class AdminContentTypeController extends BaseController
     {
         if (false === current_user_can(perm: 'update:content')) {
             Devflow::$PHP->flash->error(
-                message: t__(msgid: 'Access denied.', domain: 'devflow')
+                message: trans('Access denied.')
             );
             return $this->redirect(admin_url());
         }
@@ -128,7 +128,7 @@ final class AdminContentTypeController extends BaseController
             abort(
                 code: 404,
                 uri: admin_url('content-type'),
-                message: t__(msgid: 'The content type does not exist.', domain: 'devflow')
+                message: trans('The content type does not exist.')
             );
         }
 
@@ -136,7 +136,7 @@ final class AdminContentTypeController extends BaseController
             abort(
                 code: 404,
                 uri: admin_url('content-type'),
-                message: t__(msgid: 'The content type does not exist.', domain: 'devflow')
+                message: trans('The content type does not exist.')
             );
         }
 

@@ -25,7 +25,6 @@ use function Codefy\Framework\Helpers\trans;
 use function Codefy\Framework\Helpers\view;
 use function phpb_trans;
 use function phpb_url;
-use function Qubus\Security\Helpers\t__;
 
 final class WebsiteManagerController extends BaseController
 {
@@ -47,7 +46,7 @@ final class WebsiteManagerController extends BaseController
     {
         if (false === current_user_can(perm: 'vihzhuo:manage')) {
             Devflow::$PHP->flash->error(
-                message: t__(msgid: 'Access denied.', domain: 'devflow')
+                message: trans('Access denied.')
             );
 
             return $this->redirect(admin_url());

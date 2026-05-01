@@ -28,8 +28,8 @@ use ReflectionException;
 use function Codefy\Framework\Helpers\ask;
 use function Codefy\Framework\Helpers\command;
 use function Codefy\Framework\Helpers\logger;
+use function Codefy\Framework\Helpers\trans_html;
 use function Qubus\Security\Helpers\__observer;
-use function Qubus\Security\Helpers\esc_html__;
 use function Qubus\Security\Helpers\esc_url;
 use function Qubus\Support\Helpers\is_false__;
 use function Qubus\Support\Helpers\is_null__;
@@ -267,7 +267,7 @@ function cms_insert_content_type(array|ServerRequestInterface|ContentType $conte
         $contentTypeBefore = get_content_type_by('id', $contentTypeId->toNative());
 
         if (is_null__($contentTypeBefore)) {
-            return new ContentTypeError(message: esc_html__(string: 'Invalid content_type id.', domain: 'devflow'));
+            return new ContentTypeError(message: trans_html('Invalid content_type id.'));
         }
 
         $previousSlug = get_content_type_slug($contentTypeId->toNative());
@@ -438,7 +438,7 @@ function cms_update_content_type(array|ServerRequestInterface|ContentType $conte
     $contenttype = get_content_type_by('id', $contentTypeData['id']);
 
     if (is_false__($contenttype)) {
-        return new ContentTypeError(message: esc_html__(string: 'Invalid content type id.', domain: 'devflow'));
+        return new ContentTypeError(message: trans_html('Invalid content type id.'));
     }
 
     // Merge old and new fields with new fields overwriting old ones.
@@ -506,9 +506,8 @@ function cms_delete_content_type(string $contentTypeId): false|string|Error
         );
 
         return new ContentTypeError(
-            message: esc_html__(
-                string: 'The system was not able to delete the content type.',
-                domain: 'devflow'
+            message: trans_html(
+                'The system was not able to delete the content type.',
             )
         );
     }

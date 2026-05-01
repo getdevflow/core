@@ -32,7 +32,7 @@ use function App\Shared\Helpers\get_all_content_types;
 use function App\Shared\Helpers\get_content_type_by;
 use function Codefy\Framework\Helpers\command;
 use function Codefy\Framework\Helpers\logger;
-use function Qubus\Security\Helpers\t__;
+use function Codefy\Framework\Helpers\trans;
 
 final readonly class ContentTypeService
 {
@@ -47,7 +47,7 @@ final readonly class ContentTypeService
             $contentTypes = get_all_content_types();
         } catch (UnresolvableQueryHandlerException|ReflectionException $e) {
             Devflow::$PHP->flash->error(
-                message: t__(msgid: 'Error fetching content types.', domain: 'devflow')
+                message: trans('Error fetching content types.')
             );
         }
 
@@ -82,7 +82,7 @@ final readonly class ContentTypeService
             logger('error', $e->getMessage());
 
             Devflow::$PHP->flash->error(
-                message: t__(msgid: 'Insertion exception occurred and was logged.', domain: 'devflow')
+                message: trans('Insertion exception occurred and was logged.')
             );
         }
     }
@@ -117,7 +117,7 @@ final readonly class ContentTypeService
             logger('error', $e->getMessage());
 
             Devflow::$PHP->flash->error(
-                message: t__(msgid: 'Change exception occurred and was logged.', domain: 'devflow')
+                message: trans('Change exception occurred and was logged.')
             );
         }
     }
@@ -141,7 +141,7 @@ final readonly class ContentTypeService
             logger('error', $e->getMessage());
 
             Devflow::$PHP->flash->error(
-                message: t__(msgid: 'Delete exception occurred and was logged.', domain: 'devflow')
+                message: trans('Delete exception occurred and was logged.')
             );
         }
     }

@@ -26,13 +26,13 @@ use function Codefy\Framework\Helpers\config;
 use function Codefy\Framework\Helpers\gate;
 use function Codefy\Framework\Helpers\logger;
 use function Codefy\Framework\Helpers\storage_path;
+use function Codefy\Framework\Helpers\trans;
 use function file_exists;
 use function filter_var;
 use function parse_str;
 use function Qubus\Routing\Helpers\redirect;
 use function Qubus\Security\Helpers\__observer;
 use function Qubus\Security\Helpers\esc_html;
-use function Qubus\Security\Helpers\t__;
 use function Qubus\Support\Helpers\is_false__;
 use function Qubus\Support\Helpers\is_null__;
 use function sprintf;
@@ -172,9 +172,9 @@ function cms_authenticate(string $login, string $password, string $rememberme): 
 
     if (is_null__($user)) {
         Devflow::$PHP->flash->error(
-            t__(
-                msgid: 'Sorry, there was an error.',
-                domain: 'devflow'
+            trans_html(
+                'Sorry, there was an error.',
+                
             ),
         );
 
@@ -197,9 +197,8 @@ function cms_authenticate(string $login, string $password, string $rememberme): 
 
     Devflow::$PHP->flash->success(
         sprintf(
-            t__(
-                msgid: 'Login was successful. Welcome <strong>%s</strong> to the admin dashboard.',
-                domain: 'devflow'
+            trans(
+                'Login was successful. Welcome <strong>%s</strong> to the admin dashboard.',
             ),
             get_name(esc_html($user['user_id']))
         ),
@@ -230,9 +229,8 @@ function cms_authenticate_user(string $login, string $password, string $remember
     if ($login === '' || $password === '') {
         if (empty($login)) {
             Devflow::$PHP->flash->error(
-                t__(
-                    msgid: '<strong>ERROR</strong>: The username/email field is empty.',
-                    domain: 'devflow'
+                trans(
+                    '<strong>ERROR</strong>: The username/email field is empty.',
                 ),
             );
             return redirect($request->getHeaderLine(name: 'Referer'));
@@ -240,9 +238,9 @@ function cms_authenticate_user(string $login, string $password, string $remember
 
         if ($password === '') {
             Devflow::$PHP->flash->error(
-                t__(
-                    msgid: '<strong>ERROR</strong>: The password field is empty.',
-                    domain: 'devflow'
+                trans(
+                    '<strong>ERROR</strong>: The password field is empty.',
+                    
                 ),
             );
             return redirect($request->getHeaderLine(name: 'Referer'));
@@ -254,9 +252,9 @@ function cms_authenticate_user(string $login, string $password, string $remember
 
         if (is_false__($user)) {
             Devflow::$PHP->flash->error(
-                t__(
-                    msgid: '<strong>ERROR</strong>: Invalid email address.',
-                    domain: 'devflow'
+                trans(
+                    '<strong>ERROR</strong>: Invalid email address.',
+                    
                 ),
             );
             return redirect($request->getHeaderLine(name: 'Referer'));
@@ -266,9 +264,9 @@ function cms_authenticate_user(string $login, string $password, string $remember
 
         if (is_false__($user)) {
             Devflow::$PHP->flash->error(
-                t__(
-                    msgid: '<strong>ERROR</strong>: Invalid username.',
-                    domain: 'devflow'
+                trans(
+                    '<strong>ERROR</strong>: Invalid username.',
+                    
                 ),
             );
             return redirect($request->getHeaderLine(name: 'Referer'));
@@ -277,9 +275,9 @@ function cms_authenticate_user(string $login, string $password, string $remember
 
     if (!Password::verify($password, $user->pass)) {
         Devflow::$PHP->flash->error(
-            t__(
-                msgid: '<strong>ERROR</strong>: The password you entered is incorrect.',
-                domain: 'devflow'
+            trans(
+                '<strong>ERROR</strong>: The password you entered is incorrect.',
+                
             ),
         );
         return redirect($request->getHeaderLine(name: 'Referer'));

@@ -16,8 +16,7 @@ use Exception;
 use Qubus\Exception\Data\TypeException;
 use Qubus\ValueObjects\StringLiteral\StringLiteral;
 
-use function Qubus\Security\Helpers\t__;
-use function Qubus\Support\Helpers\is_null__;
+use function Codefy\Framework\Helpers\trans;
 
 final class ContentType extends EventSourcedAggregate implements AggregateRoot
 {
@@ -83,7 +82,7 @@ final class ContentType extends EventSourcedAggregate implements AggregateRoot
     public function changeTitle(StringLiteral $newTitle): void
     {
         if ($newTitle->isEmpty()) {
-            throw new Exception(message: t__(msgid: 'Content Type Title cannot be null.', domain: 'devflow'));
+            throw new Exception(message: trans('Content Type Title cannot be null.'));
         }
 
         if ($newTitle->equals($this->contentTypeTitle)) {
@@ -104,7 +103,7 @@ final class ContentType extends EventSourcedAggregate implements AggregateRoot
     public function changeContentTypeSlug(StringLiteral $newSlug): void
     {
         if ($newSlug->isEmpty()) {
-            throw new Exception(message: t__(msgid: 'Content Type Slug cannot be null.', domain: 'devflow'));
+            throw new Exception(message: trans('Content Type Slug cannot be null.'));
         }
 
         if ($newSlug->equals($this->contentTypeSlug)) {
@@ -122,7 +121,7 @@ final class ContentType extends EventSourcedAggregate implements AggregateRoot
     public function changeContentTypeDescription(StringLiteral $newDescription): void
     {
         if ($newDescription->isEmpty()) {
-            throw new Exception(message: t__(msgid: 'Content Type Description cannot be null.', domain: 'devflow'));
+            throw new Exception(message: trans('Content Type Description cannot be null.'));
         }
         if ($newDescription->equals($this->contentTypeDescription)) {
             return;
@@ -142,7 +141,7 @@ final class ContentType extends EventSourcedAggregate implements AggregateRoot
     public function changeContentTypeDeleted(ContentTypeId $contentTypeId): void
     {
         if ($contentTypeId->isEmpty()) {
-            throw new Exception(message: t__(msgid: 'Content Type ID cannot be null.', domain: 'devflow'));
+            throw new Exception(message: trans('Content Type ID cannot be null.'));
         }
         if (!$contentTypeId->equals($this->contentTypeId)) {
             return;

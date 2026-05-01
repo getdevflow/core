@@ -7,9 +7,10 @@ namespace App\Infrastructure\Services\User;
 use Qubus\Expressive\Database;
 use RuntimeException;
 
+use function Codefy\Framework\Helpers\trans;
+use function Codefy\Framework\Helpers\trans_html;
 use function is_string;
 use function Qubus\Security\Helpers\purify_html;
-use function Qubus\Security\Helpers\t__;
 use function sprintf;
 
 final readonly class PdoUserAttributeDataRepository implements UserAttributeRepository
@@ -59,7 +60,7 @@ final readonly class PdoUserAttributeDataRepository implements UserAttributeRepo
 
         if ($attribute === null) {
             throw new RuntimeException(
-                sprintf(t__(msgid: 'No row found for site "%s" and user "%s".', domain: 'devflow'), $siteId, $userId)
+                sprintf(trans_html('No row found for site "%s" and user "%s".'), $siteId, $userId)
             );
         }
 
@@ -115,7 +116,7 @@ final readonly class PdoUserAttributeDataRepository implements UserAttributeRepo
 
             if ($json === false) {
                 throw new \RuntimeException(
-                    t__(msgid: 'User attribute not found', domain: 'devflow')
+                    trans('User attribute not found')
                 );
             }
 
@@ -124,7 +125,7 @@ final readonly class PdoUserAttributeDataRepository implements UserAttributeRepo
 
             if (!$updated instanceof UserAttributeBag) {
                 throw new \RuntimeException(
-                    t__(msgid: 'Attribute patch callback must return an AttributeBag instance.', domain: 'devflow')
+                    trans('Attribute patch callback must return an AttributeBag instance.')
                 );
             }
 
