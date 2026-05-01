@@ -86,7 +86,7 @@ class InstallCmsCommand extends ConsoleCommand
 
         $this->terminalRaw(string: '<info>Creating the main site...</info>');
 
-        $this->createMainSite($user['id']);
+        $siteId = $this->createMainSite($user['id']);
 
         $this->terminalRaw(string: '<info>Adding default site options...</info>');
 
@@ -105,6 +105,11 @@ class InstallCmsCommand extends ConsoleCommand
         $this->terminalRaw(string: sprintf(
             'Password: <comment>%s</comment>',
             $user['pass']
+        ));
+
+        $this->terminalRaw(string: sprintf(
+            'Main Site Id: <comment>%s</comment>',
+            $siteId
         ));
 
         // return value is important when using CI
@@ -217,14 +222,15 @@ class InstallCmsCommand extends ConsoleCommand
 
     /**
      * @param string $ownerId
+     * @return string
      * @throws ContainerExceptionInterface
      * @throws Exception
+     * @throws InvalidArgumentException
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
      * @throws TypeException
-     * @throws InvalidArgumentException
      */
-    protected function createMainSite(string $ownerId): void
+    protected function createMainSite(string $ownerId): string
     {
         $dbConnection = $this->codefy->configContainer->string(key: 'database.default');
 
@@ -270,6 +276,8 @@ class InstallCmsCommand extends ConsoleCommand
 
         AttributesFactory::user()->createIfMissing($siteId->toNative(), $ownerId);
         add_user_to_site(user: $ownerId, site: $siteId->toNative(), role: 'super');
+
+        return $siteId->toNative();
     }
 
     protected function usersExist(): bool
