@@ -20,6 +20,7 @@ use App\Domain\User\ValueObject\UserId;
 use App\Infrastructure\Persistence\Cache\ContentCachePsr16;
 use App\Infrastructure\Services\Attribute\AttributeBag;
 use App\Infrastructure\Services\AttributesFactory;
+use App\Infrastructure\Services\Content\Event\ContentUpdated;
 use App\Shared\Services\DateTime;
 use App\Shared\Services\Sanitizer;
 use App\Shared\Services\Utils;
@@ -33,6 +34,7 @@ use Psr\Container\NotFoundExceptionInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\SimpleCache\InvalidArgumentException;
 use Qubus\Error\Error;
+use Qubus\EventDispatcher\EventDispatcher;
 use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
 use Qubus\Support\DateTime\QubusDateTimeImmutable;
@@ -2705,6 +2707,8 @@ function publish_scheduled_content(): void
 {
     $contents = get_all_content();
     $now = new DateTime('now', get_user_timezone())->getDateTime();
+    /** @var EventDispatcher $event */
+    $event = Devflow::$PHP->make(name: EventDispatcher::class);
 
     try {
         foreach ($contents as $content) {
@@ -2721,6 +2725,8 @@ function publish_scheduled_content(): void
 
                 command($command);
             }
+
+            $event->dispatch(new ContentUpdated((array) $content));
         }
     } catch (PDOException $ex) {
         logger(
