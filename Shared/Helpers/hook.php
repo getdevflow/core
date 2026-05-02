@@ -21,7 +21,6 @@ use function Codefy\Framework\Helpers\config;
 use function Codefy\Framework\Helpers\public_path;
 use function Codefy\Framework\Helpers\storage_path;
 use function Codefy\Framework\Helpers\trans_html;
-use function date;
 use function dechex;
 use function file_exists;
 use function get_headers;
@@ -31,8 +30,8 @@ use function ord;
 use function preg_replace_callback;
 use function Qubus\Security\Helpers\__observer;
 use function Qubus\Security\Helpers\esc_html;
+use function Qubus\Support\Helpers\concat_ws;
 use function Qubus\Support\Helpers\is_null__;
-use function sprintf;
 use function str_replace;
 use function str_split;
 use function strlen;
@@ -102,22 +101,17 @@ function sanitize_meta(string $metaKey, mixed $metaValue, string $arrayType, str
 }
 
 /**
- * Prints copyright in the admin footer.
+ * Prints release value.
  *
  * @file core/Shared/Helpers/hook.php
  * @return mixed
  * @throws Exception
  */
-function cms_admin_copyright_footer(): mixed
+function cms_release_value(): mixed
 {
-    $copyright = '<!--  Copyright Line -->' . "\n";
-    $copyright .= '<strong>&#169; ' . trans_html(sprintf('Copyright %s', date('Y'))) . ' | ' .
-    trans_html('Powered by') . ' <a href="//getdevflow.com/">' .
-    esc_html('Devflow') . '</a></strong> ' .
-    Devflow::release() . "\n";
-    $copyright .= '<!--  End Copyright Line -->' . "\n";
+    $release = concat_ws(esc_html('Devflow'), Devflow::release(), ' ') . "\n";
 
-    return __observer()->filter->applyFilter('admin.copyright.footer', $copyright);
+    return __observer()->filter->applyFilter('release.value', $release);
 }
 
 /**
@@ -185,9 +179,6 @@ function public_site_upload_url(string $path = ''): string
 /**
  * Searches for plain email addresses in given $string and
  * encodes them (by default) with the help of cms_encode_email_str().
- *
- * Regular expression is based on John Gruber's Markdown.
- * http://daringfireball.net/projects/markdown/
  *
  * @file core/Shared/Helpers/hook.php
  * @param string $string Text with email addresses to encode
