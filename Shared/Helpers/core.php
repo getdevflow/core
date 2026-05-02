@@ -20,7 +20,6 @@ use Defuse\Crypto\Exception\BadFormatException;
 use Defuse\Crypto\Exception\EnvironmentIsBrokenException;
 use Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException;
 use Defuse\Crypto\Key;
-use Deprecated;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Psr\SimpleCache\InvalidArgumentException;
@@ -52,7 +51,6 @@ use function curl_exec;
 use function curl_getinfo;
 use function curl_init;
 use function curl_setopt;
-use function debug_backtrace;
 use function dirname;
 use function file;
 use function file_exists;
@@ -70,14 +68,12 @@ use function ltrim;
 use function mb_detect_encoding;
 use function mb_strcut;
 use function mb_strtolower;
-use function next;
 use function pathinfo;
 use function preg_quote;
 use function preg_replace;
 use function preg_replace_callback;
 use function preg_split;
 use function Qubus\Security\Helpers\__observer;
-use function Qubus\Support\Helpers\php_like;
 use function Qubus\Support\Helpers\remove_trailing_slash;
 use function realpath;
 use function rmdir;
@@ -1447,5 +1443,3 @@ function show_update_message(): void
         }
     }
 }
-
-
