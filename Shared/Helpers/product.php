@@ -17,6 +17,7 @@ use App\Domain\User\ValueObject\UserId;
 use App\Infrastructure\Persistence\Cache\ProductCachePsr16;
 use App\Infrastructure\Services\Attribute\AttributeBag;
 use App\Infrastructure\Services\AttributesFactory;
+use App\Infrastructure\Services\Product\Event\ProductUpdated;
 use App\Shared\Services\DateTime;
 use App\Shared\Services\Sanitizer;
 use App\Shared\Services\Utils;
@@ -31,6 +32,7 @@ use Psr\Container\NotFoundExceptionInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\SimpleCache\InvalidArgumentException;
 use Qubus\Error\Error;
+use Qubus\EventDispatcher\EventDispatcher;
 use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
 use Qubus\Support\DateTime\QubusDateTimeImmutable;
@@ -2198,6 +2200,8 @@ function publish_scheduled_product(): void
 {
     $products = get_all_products_with_filters();
     $now = new DateTime('now', get_user_timezone())->getDateTime();
+    /** @var EventDispatcher $event */
+    $event = Devflow::$PHP->make(name: EventDispatcher::class);
 
     try {
         foreach ($products as $product) {
@@ -2214,6 +2218,8 @@ function publish_scheduled_product(): void
 
                 command($command);
             }
+
+            $event->dispatch(new ProductUpdated($product));
         }
     } catch (PDOException $ex) {
         logger(
