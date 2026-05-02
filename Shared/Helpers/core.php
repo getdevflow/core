@@ -1448,39 +1448,4 @@ function show_update_message(): void
     }
 }
 
-/**
- * Used to trigger code deprecation warnings.
- *
- * @param string $functionName Name of function that is deprecated.
- * @param string $deprecatedVersion Version for which code becomes deprecated.
- * @param string $removedVersion Version for when deprecated code will be removed.
- * @param string|null $replacement Replacement of deprecated code if any.
- */
-#[Deprecated(message: 'deprecated with no replacement.', since: 'v2.0.0')]
-function deprecation_notice(
-    string $functionName,
-    string $deprecatedVersion,
-    string $removedVersion,
-    ?string $replacement = null
-): void {
-    $debug = debug_backtrace();
-    $caller = next($debug);
 
-    $message = sprintf(
-        '<strong>%1$s()</strong> is <strong>deprecated</strong> since version %2$s and will be removed in version %3$s. 
-                    Use <strong>%4$s</strong> instead. <br />',
-        $functionName,
-        $deprecatedVersion,
-        $removedVersion,
-        $replacement
-    );
-
-    if (php_like("%dev%", config(key: 'app.env'))) {
-        __observer()->action->addAction('admin_notices', function () use ($message, $caller) {
-            echo '<div class="alert dismissable alert-danger center sticky">' .
-                    $message . ' <strong>' . $caller['function'] . '()</strong> is called from <strong>'
-                    . $caller['file'] . '</strong> on line <strong>' . $caller['line'] . '</strong>' .
-                 '</div>';
-        });
-    }
-}
