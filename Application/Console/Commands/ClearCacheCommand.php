@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Application\Console\Commands;
 
+use Codefy\QueryBus\UnresolvableQueryHandlerException;
 use Qubus\Exception\Data\TypeException;
+use Qubus\Exception\Exception;
 use Qubus\Expressive\Database;
 use App\Shared\Services\ItemPoolObjectCacheFactory;
 use App\Shared\Services\SimpleCacheObjectCacheFactory;
@@ -13,6 +15,11 @@ use Codefy\Framework\Console\ConsoleCommand;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use ReflectionException;
+
+use function App\Shared\Helpers\get_all_sites;
+use function App\Shared\Helpers\restore_current_site;
+use function App\Shared\Helpers\switch_to_site;
+use function preg_filter;
 
 class ClearCacheCommand extends ConsoleCommand
 {
@@ -31,37 +38,35 @@ class ClearCacheCommand extends ConsoleCommand
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
      * @throws TypeException
+     * @throws UnresolvableQueryHandlerException
+     * @throws Exception
      */
     public function handle(): int
     {
-        $namespaces = [
-            $this->dfdb->prefix . 'content',
-            $this->dfdb->prefix . 'contentauthor',
-            $this->dfdb->prefix . 'contentslug',
-            $this->dfdb->prefix . 'contenttype',
-            $this->dfdb->prefix . 'content_attribute',
-            $this->dfdb->prefix . 'products',
-            $this->dfdb->prefix . 'productauthor',
-            $this->dfdb->prefix . 'productslug',
-            $this->dfdb->prefix . 'productsku',
-            $this->dfdb->prefix . 'product_attribute',
-            'auto_updater',
-            'useremail',
-            'userlogin',
-            'users',
-            'usertoken',
-            'sites',
-            'sitekey',
-            'siteslug',
-            $this->dfdb->prefix . 'options',
-        ];
+        $globalNamespaces = ['auto_updater','useremail','userlogin','users','usertoken','sites','sitekey','siteslug'];
+        $siteNamespaces = preg_filter(
+            pattern: '/^/',
+            replacement: $this->dfdb->prefix,
+            subject: [
+                'content','contentauthor','contentslug','contenttype','content_attribute','products','productauthor',
+                'productslug','productsku','product_attribute','options'
+            ]
+        );
 
-        if (true === SimpleCacheObjectCacheFactory::make(namespace: $this->dfdb->basePrefix . 'user_attribute')->clear()) {
-            ItemPoolObjectCacheFactory::make()->clear();
+        foreach ($globalNamespaces as $namespace) {
+            SimpleCacheObjectCacheFactory::make(namespace: $namespace)->clear();
+        }
 
-            foreach ($namespaces as $namespace) {
-                SimpleCacheObjectCacheFactory::make(namespace: $namespace)->clear();
+        foreach (get_all_sites() as $site) {
+            switch_to_site($site['key']);
+            if (true === SimpleCacheObjectCacheFactory::make(namespace: $this->dfdb->prefix . 'user_attribute')->clear()) {
+                ItemPoolObjectCacheFactory::make()->clear();
+
+                foreach ($siteNamespaces as $namespace) {
+                    SimpleCacheObjectCacheFactory::make(namespace: $namespace)->clear();
+                }
             }
+            restore_current_site();
         }
 
         $this->terminalRaw(string: '<comment>Cache cleared.</comment>');
