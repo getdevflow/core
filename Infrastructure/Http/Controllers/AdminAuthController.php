@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace App\Infrastructure\Http\Controllers;
 
 use App\Application\Devflow;
-use App\Domain\User\Model\User;
+use App\Infrastructure\Persistence\Cache\UserCachePsr16;
+use App\Infrastructure\Services\Queue\ResetPasswordNotification;
 use Codefy\Framework\Http\BaseController;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
@@ -22,19 +23,21 @@ use ReflectionException;
 use function App\Shared\Helpers\admin_url;
 use function App\Shared\Helpers\cms_authenticate_user;
 use function App\Shared\Helpers\cms_clear_auth_cookie;
-use function App\Shared\Helpers\cms_update_user;
 use function App\Shared\Helpers\current_user_can;
-use function App\Shared\Helpers\generate_random_password;
+use function App\Shared\Helpers\get_option;
 use function App\Shared\Helpers\get_user_by;
 use function App\Shared\Helpers\login_url;
+use function App\Shared\Helpers\reset_password;
 use function App\Shared\Helpers\site_url;
 use function Codefy\Framework\Helpers\config;
 use function Codefy\Framework\Helpers\logger;
+use function Codefy\Framework\Helpers\queue;
 use function Codefy\Framework\Helpers\trans;
 use function Codefy\Framework\Helpers\view;
 use function Qubus\Error\Helpers\is_error;
 use function Qubus\Security\Helpers\__observer;
 use function Qubus\Support\Helpers\is_false__;
+use function sprintf;
 
 final class AdminAuthController extends BaseController
 {
@@ -178,21 +181,26 @@ final class AdminAuthController extends BaseController
             }
 
             if ('' !== $currentUser->id) {
-                $password = generate_random_password(config()->integer(key: 'cms.password_length'));
-                $newUser = new User(Devflow::db())->findBy(field: 'email', value: $currentUser->email);
+                $password = reset_password($currentUser->id);
 
-                foreach ($currentUser->toArray() as $key => $value) {
-                    unset($newUser->pass);
-                    $newUser->{$key} = $value;
-                }
-                $newUser->pass = $password;
-                $update = cms_update_user($newUser);
-
-                if (is_error($update)) {
+                if (is_error($password)) {
                     Devflow::$PHP->flash->error(
                         message: trans('Request error.')
                     );
                 } else {
+                    queue(
+                        new ResetPasswordNotification([
+                            'login' => $currentUser->login,
+                            'pass' => $password,
+                            'sitename' => (string) get_option(key: 'sitename'),
+                            'email' => $currentUser->email,
+                            'url' => sprintf(site_url('admin/%s/'), config()->string(key: 'auth.login_route'))
+                        ])
+                    )
+                    ->createItem();
+
+                    UserCachePsr16::clean($currentUser);
+
                     Devflow::$PHP->flash->success(
                         message: trans(
                             'A new password was sent to your email. May take a few minutes to arrive, so please be patient',

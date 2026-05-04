@@ -16,6 +16,8 @@ use App\Domain\User\ValueObject\UserId;
 use App\Domain\User\ValueObject\Username;
 use App\Domain\User\ValueObject\UserToken;
 use App\Infrastructure\Persistence\Cache\UserCachePsr16;
+use App\Infrastructure\Services\Queue\EmailChangeNotification;
+use App\Shared\Services\SimpleCacheObjectCacheFactory;
 use Qubus\Expressive\Database;
 use App\Infrastructure\Services\AttributesFactory;
 use App\Infrastructure\Services\NativePhpCookies;
@@ -28,10 +30,6 @@ use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
 use Codefy\CommandBus\Exceptions\UnresolvableCommandHandlerException;
 use Codefy\Framework\Support\Password;
 use Codefy\QueryBus\UnresolvableQueryHandlerException;
-use Defuse\Crypto\Crypto;
-use Defuse\Crypto\Exception\BadFormatException;
-use Defuse\Crypto\Exception\EnvironmentIsBrokenException;
-use Defuse\Crypto\Key;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -39,9 +37,6 @@ use Psr\SimpleCache\InvalidArgumentException;
 use Qubus\Error\Error;
 use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
-use Qubus\Http\Session\SessionException;
-use Qubus\NoSql\Collection;
-use Qubus\NoSql\Exceptions\InvalidJsonException;
 use Qubus\Support\DateTime\QubusDateTimeImmutable;
 use Qubus\ValueObjects\StringLiteral\StringLiteral;
 use Qubus\ValueObjects\Web\EmailAddress;
@@ -53,8 +48,7 @@ use function Codefy\Framework\Helpers\ask;
 use function Codefy\Framework\Helpers\command;
 use function Codefy\Framework\Helpers\config;
 use function Codefy\Framework\Helpers\logger;
-use function Codefy\Framework\Helpers\mail;
-use function Codefy\Framework\Helpers\storage_path;
+use function Codefy\Framework\Helpers\queue;
 use function Codefy\Framework\Helpers\trans;
 use function Codefy\Framework\Helpers\trans_html;
 use function in_array;
@@ -582,6 +576,7 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
     ];
 
     $userdata = Utils::parseArgs($userdata, $defaults);
+    $existing = false;
 
     // Are we updating or creating?
     if (!empty($userdata['id']) && !is_false__(get_user_by('id', $userdata['id']))) {
@@ -597,6 +592,14 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
 
         // hashed in cms_update_user(), plaintext if called directly
         $userPass = $userdata['pass'] ?? $oldUserData->pass;
+
+        /**
+         * If a user already exists in the system, then the user
+         * will be added to the current site.
+         */
+        if(isset($userdata['user_exists']) && $userdata['user_exists'] === 'true') {
+            $existing = true;
+        }
 
         /**
          * Create a new user object.
@@ -638,9 +641,6 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
         $user->pass = $userPass;
         $user->role = $userdata['role'];
     }
-
-    // Store values to save in user meta.
-    $meta = [];
 
     //Remove any non-printable chars from the login string to see if we have ended up with an empty username
     $rawUserLogin = $userdata['login'];
@@ -885,7 +885,7 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
 
     $userAdminSkin = 'skin-red';
 
-    $attribute['admin.skin'] = $userdata['adminSkin'] ?? $userAdminSkin;
+    $attribute['admin.skin'] = !empty($userdata['adminSkin']) ? $userdata['adminSkin'] : $userAdminSkin;
 
     $userRegistered = QubusDateTimeImmutable::now();
 
@@ -1022,6 +1022,10 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
             ]);
 
             command($command);
+
+            if($existing) {
+                AttributesFactory::user()->createIfMissing(get_current_site_id(), $user->id);
+            }
         } catch (UnresolvableCommandHandlerException | ReflectionException $e) {
             logger(level: 'error', message: $e->getMessage());
         }
@@ -1037,6 +1041,7 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
 
     /** Flush the cache. */
     UserCachePsr16::clean($user);
+    SimpleCacheObjectCacheFactory::make(namespace: 'users')->clear();
 
     if ($update) {
         /**
@@ -1117,24 +1122,6 @@ function cms_update_user(array|ServerRequestInterface|User $userdata): string|Us
         // If password is changing, hash it now
         $plaintextPass = $userdata['pass'];
         $userdata['pass'] = Password::hash($plaintextPass);
-
-        /**
-         * Filters whether to send the password change email.
-         *
-         * @file core/Shared/Helpers/user.php
-         * @see cms_insert_user() For `$user` and `$userdata` fields.
-         *
-         * @param bool  $send     Whether to send the email.
-         * @param array $user     The original user array before changes.
-         * @param array $userdata The updated user array.
-         *
-         */
-        $sendPasswordChangeEmail = __observer()->filter->applyFilter(
-            'send.password.change.email',
-            true,
-            $user,
-            $userdata
-        );
     }
 
     if (isset($userdata['email']) && $user['email'] !== $userdata['email']) {
@@ -1162,18 +1149,6 @@ function cms_update_user(array|ServerRequestInterface|User $userdata): string|Us
     $userId = cms_insert_user($userdata);
 
     if (!$userId instanceof Error) {
-        if (!empty($sendPasswordChangeEmail)) {
-            /**
-             * Fires when user is updated successfully.
-             *
-             * @file core/Shared/Helpers/user.php
-             * @param array  $user          The original user array before changes.
-             * @param string $plaintextPass Plaintext password before hashing.
-             * @param array  $userdata      The updated user array.
-             */
-            __observer()->action->doAction('password_change_email', $user, $plaintextPass, $userdata);
-        }
-
         if (!empty($sendEmailChangeEmail)) {
             /**
              * Fires when user is updated successfully.
@@ -1213,303 +1188,46 @@ function cms_update_user(array|ServerRequestInterface|User $userdata): string|Us
 }
 
 /**
- * New user email queued when account is created.
- *
- * @file core/Shared/Helpers/user.php
- * @param string $userId User id.
- * @param string $pass Plaintext password.
- * @return bool True on success, false on failure or Exception.
- * @throws EnvironmentIsBrokenException
- * @throws Exception
- */
-function queue_new_user_email(string $userId, string $pass): bool
-{
-    $table = 'login';
-    $collection = new Collection(storage_path("app/queue/{$table}"));
-
-    $collection->begin();
-    try {
-        $collection->insert([
-            'login_url' => login_url(),
-            'domain_name' => get_domain_name(),
-            'userid' => $userId,
-            'pass' => Crypto::encrypt(
-                $pass,
-                Key::loadFromAsciiSafeString(config(key: 'auth.encryption_key'))
-            ),
-            'sent' => 0
-        ]);
-        $collection->commit();
-        return true;
-    } catch (BadFormatException $e) {
-        $collection->rollback();
-        logger(
-            'error',
-            sprintf(
-                'CRYPTOFORMAT[%s]: %s',
-                $e->getCode(),
-                $e->getMessage()
-            )
-        );
-        return false;
-    } catch (TypeException | InvalidJsonException $e) {
-        logger(
-            'error',
-            sprintf(
-                'NODEQSTATE[%s]: %s',
-                $e->getCode(),
-                $e->getMessage()
-            ),
-            [
-                'User Function' => 'queue_new_user_email'
-            ]
-        );
-        return false;
-    }
-}
-
-/**
- * Reset password email queued when reset button is clicked on the user's screen.
- *
- * @file core/Shared/Helpers/user.php
- * @param User $user User object.
- * @return string|bool User id on success, false on failure.
- * @throws EnvironmentIsBrokenException
- */
-function queue_reset_user_password(User $user): bool|string
-{
-    $table = 'password_reset';
-    $collection = new Collection(storage_path("app/queue/{$table}"));
-
-    $collection->begin();
-    try {
-        $collection->insert([
-            'login_url' => login_url(),
-            'domain_name' => get_domain_name(),
-            'userid' => $user->id,
-            'pass' => Crypto::encrypt(
-                $user->pass,
-                Key::loadFromAsciiSafeString(config(key: 'auth.encryption_key'))
-            ),
-            'sent' => 0
-        ]);
-        $collection->commit();
-        return (string) $user->id;
-    } catch (BadFormatException $e) {
-        $collection->rollback();
-        logger(
-            'error',
-            sprintf(
-                'CRYPTOFORMAT[%s]: %s',
-                $e->getCode(),
-                $e->getMessage()
-            )
-        );
-        return false;
-    } catch (Exception $e) {
-        $collection->rollback();
-        logger(
-            'error',
-            sprintf(
-                'NODEQSTATE[%s]: %s',
-                $e->getCode(),
-                $e->getMessage()
-            ),
-            [
-                'User Function' => 'queue_reset_user_password'
-            ]
-        );
-        return false;
-    }
-}
-
-/**
- * Email sent to user with new generated password.
- *
- * @file core/Shared/Helpers/user.php
- * @param object|array $user User object|array.
- * @param string $password Plaintext password.
- * @return bool True on success, false on failure or Exception.
- * @throws Exception
- * @throws InvalidArgumentException
- * @throws ReflectionException
- * @throws SessionException
- */
-function send_reset_password_email(object|array $user, string $password): bool
-{
-    $message = '';
-
-    $siteName = get_option(key: 'sitename');
-
-    if ($user instanceof User) {
-        $user = $user->toArray();
-    }
-
-    $message .= "<p>" . sprintf(
-        trans(
-            "Hello %s! You requested that your password be reset. Please see your new password below: <br />",
-        ),
-        $user['fname']
-    );
-    $message .= sprintf(trans_html(string: 'Password: %s'), $password) . "</p>";
-    $message .= "<p>" . sprintf(
-        trans(
-            'If you still have problems with logging in, please contact us at <a href="mailto:%s">%s</a>.',
-        ),
-        get_option(key: 'admin_email'),
-        get_option(key: 'admin_email')
-    ) . "</p>";
-
-    $message = process_email_html($message, trans_html(string: 'Password Reset'));
-    $headers[] = sprintf("From: %s <auto-reply@%s>", $siteName, get_domain_name());
-    $headers[] = 'Content-Type: text/html; charset="UTF-8"';
-    $headers[] = sprintf("X-Mailer: Devflow %s", Devflow::release());
-    try {
-        mail(
-            to: $user['email'],
-            subject: sprintf(
-                trans_html(
-                    string: '[%s] Notice of Password Reset',
-                ),
-                $siteName
-            ),
-            message: $message,
-            headers: $headers
-        );
-    } catch (\PHPMailer\PHPMailer\Exception | Exception $e) {
-        Devflow::$PHP->flash->error($e->getMessage());
-    }
-
-    return false;
-}
-
-/**
- * Email sent to user with changed/updated password.
- *
- * @file core/Shared/Helpers/user.php
- * @param object|array $user User array.
- * @param string $password Plaintext password.
- * @param array $userdata Updated user array.
- * @return bool True on success, false on failure or Exception.
- * @throws Exception
- * @throws InvalidArgumentException
- * @throws ReflectionException
- * @throws SessionException
- */
-function send_password_change_email(object|array $user, string $password, array $userdata): bool
-{
-    $message = '';
-
-    $siteName = get_option(key: 'sitename');
-
-    if ($user instanceof User) {
-        $user = $user->toArray();
-    }
-
-    $message .= "<p>" . sprintf(
-        trans(
-            "Hello %s! This is confirmation that your password on %s was updated to: <br />",
-        ),
-        $user['fname'],
-        get_option(key: 'sitename')
-    );
-    $message .= sprintf(trans_html(string: 'Password: %s'), $password) . "</p>";
-    $message .= "<p>" . sprintf(
-        trans(
-            'If you did not initiate a password change/update, please contact us at <a href="mailto:%s">%s</a>.',
-        ),
-        get_option(key: 'admin_email'),
-        get_option(key: 'admin_email')
-    ) . "</p>";
-
-    $message = process_email_html($message, trans_html(string: 'Notice of Password Change'));
-    $headers[] = sprintf("From: %s <auto-reply@%s>", $siteName, get_domain_name());
-    $headers[] = 'Content-Type: text/html; charset="UTF-8"';
-    $headers[] = sprintf("X-Mailer: Devflow %s", Devflow::release());
-    try {
-        mail(
-            to: $user['email'],
-            subject: sprintf(
-                trans_html(
-                    string: '[%s] Notice of Password Change',
-                ),
-                $siteName
-            ),
-            message: $message,
-            headers: $headers
-        );
-    } catch (\PHPMailer\PHPMailer\Exception | Exception | ReflectionException $e) {
-        Devflow::$PHP->flash->error($e->getMessage());
-    }
-
-    return false;
-}
-
-/**
  * Email sent to user with changed/updated email.
  *
  * @file core/Shared/Helpers/user.php
  * @param object|array $user Original user array.
  * @param array $userdata Updated user array.
  * @return bool True on success, false on failure or Exception.
+ * @throws ContainerExceptionInterface
  * @throws Exception
  * @throws InvalidArgumentException
+ * @throws NotFoundExceptionInterface
  * @throws ReflectionException
- * @throws SessionException
  */
 function send_email_change_email(object|array $user, array $userdata): bool
 {
-    $message = '';
-
-    $siteName = get_option(key: 'sitename');
-
     if ($user instanceof User) {
         $user = $user->toArray();
     }
 
-    $message .= "<p>" . sprintf(
-        trans(
-            "Hello %s! This is confirmation that your email on %s was updated to: <br />",
-        ),
-        $user['fname'],
-        $siteName
-    );
-    $message .= sprintf(trans_html(string: 'Email: %s'), $userdata['email']) . "</p>";
-    $message .= "<p>" . sprintf(
-        trans(
-            'If you did not initiate an email change/update, please contact us at <a href="mailto:%s">%s</a>.',
-        ),
-        get_option(key: 'admin_email'),
-        get_option(key: 'admin_email')
-    ) . "</p>";
-
-    $message = process_email_html($message, trans_html(string: 'Notice of Email Change'));
-    $headers[] = sprintf("From: %s <auto-reply@%s>", $siteName, get_domain_name());
-    $headers[] = 'Content-Type: text/html; charset="UTF-8"';
-    $headers[] = sprintf("X-Mailer: Devflow %s", Devflow::release());
-    try {
-        mail(
-            to: $userdata['email'],
-            subject: sprintf(
-                trans_html(
-                    string: '[%s] Notice of Email Change',
-                ),
-                $siteName
-            ),
-            message: $message,
-            headers: $headers
-        );
-    } catch (\PHPMailer\PHPMailer\Exception | Exception | ReflectionException $e) {
-        Devflow::$PHP->flash->error($e->getMessage());
+    if($user['email'] === $userdata['email']) {
+        return true;
     }
 
-    return false;
+    queue(
+        new EmailChangeNotification([
+            'login' => (string) $user['login'],
+            'admin' => (string) get_option(key: 'admin_email'),
+            'sitename' => (string) get_option(key: 'sitename'),
+            'email' => (string) $userdata['email'],
+            'url' => sprintf(site_url('admin/%s/'), Devflow::$PHP->configContainer->string(key: 'auth.login_route')),
+        ])
+    )
+    ->createItem();
+
+    return true;
 }
 
 /**
  * An extensive list of blacklisted usernames.
  *
- * Uses `blacklisted_usernames` filter.
+ * Uses `blacklisted.usernames` filter.
  *
  * @file core/Shared/Helpers/user.php
  * @return array Array of blacklisted usernames.
@@ -1608,22 +1326,16 @@ function blacklisted_usernames(): array
  *
  * @file core/Shared/Helpers/user.php
  * @param string $userId ID of user whose password is to be reset.
- * @return bool|string User id on success or Exception on failure.
- * @throws EnvironmentIsBrokenException
+ * @return bool|string User password on success or Exception on failure.
  * @throws Exception
+ * @throws InvalidArgumentException
  * @throws ReflectionException
- * @throws SessionException
  * @throws TypeException
  * @throws UnresolvableCommandHandlerException
  */
 function reset_password(string $userId): bool|string
 {
     $password = generate_random_password(config()->integer(key: 'cms.password_length'));
-
-    /** @var User $user */
-    $user = Devflow::$PHP->make(name: User::class);
-    $user->id = $userId;
-    $user->pass = $password;
 
     try {
         $command = new UpdateUserPasswordCommand([
@@ -1634,14 +1346,8 @@ function reset_password(string $userId): bool|string
 
         command($command);
 
-        $id = queue_reset_user_password($user);
-        Devflow::$PHP->flash->success(
-            trans_html(
-                "The password reset email has been queued for sending.",
-            )
-        );
-        return $id;
-    } catch (SessionException | CommandPropertyNotFoundException $e) {
+        return $password;
+    } catch (CommandPropertyNotFoundException $e) {
         logger(level: 'error', message: $e->getMessage());
         Devflow::$PHP->flash->error($e->getMessage());
     }

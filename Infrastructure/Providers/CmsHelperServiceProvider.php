@@ -65,7 +65,7 @@ final class CmsHelperServiceProvider extends CodefyServiceProvider
          */
         __observer()->action->doAction('admin_menu');
         /**
-         * Registers & enqueues javascript to be printed in frontend footer section.
+         * Registers & enqueues JavaScript to be printed in frontend footer section.
          */
         __observer()->action->doAction('enqueue_js');
         /**
@@ -85,20 +85,8 @@ final class CmsHelperServiceProvider extends CodefyServiceProvider
         __observer()->action->addAction('save_site', 'App\Shared\Helpers\create_site_directories', 5, 3);
         __observer()->action->addAction('deleted_site', 'App\Shared\Helpers\delete_site_tables', 5, 2);
         __observer()->action->addAction('deleted_site', 'App\Shared\Helpers\delete_site_directories', 5, 2);
-        __observer()->action->addAction(
-            'reset_password_route',
-            'App\Shared\Helpers\send_reset_password_email',
-            5,
-            2
-        );
         __observer()->action->addAction('reassign_content', 'App\Shared\Helpers\reassign_content', 5, 2);
         __observer()->action->addAction('reassign_sites', 'App\Shared\Helpers\reassign_sites', 5, 2);
-        __observer()->action->addAction(
-            'password_change_email',
-            'App\Shared\Helpers\send_password_change_email',
-            5,
-            3
-        );
         __observer()->action->addAction(
             'email_change_email',
             'App\Shared\Helpers\send_email_change_email',

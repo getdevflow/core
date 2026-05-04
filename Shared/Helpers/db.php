@@ -22,11 +22,6 @@ use App\Shared\Services\SimpleCacheObjectCacheFactory;
 use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
 use Codefy\CommandBus\Exceptions\UnresolvableCommandHandlerException;
 use Codefy\QueryBus\UnresolvableQueryHandlerException;
-use Defuse\Crypto\Crypto;
-use Defuse\Crypto\Exception\BadFormatException;
-use Defuse\Crypto\Exception\EnvironmentIsBrokenException;
-use Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException;
-use Defuse\Crypto\Key;
 use PDOException;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
@@ -34,7 +29,6 @@ use Psr\SimpleCache\InvalidArgumentException;
 use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
 use Qubus\Http\Session\SessionException;
-use Qubus\NoSql\Node;
 use Qubus\Support\Collection\ArrayCollection;
 use Qubus\Support\Collection\Collection;
 use Qubus\Support\DateTime\QubusDateTimeImmutable;
@@ -44,11 +38,7 @@ use ReflectionException;
 use function Codefy\Framework\Helpers\app;
 use function Codefy\Framework\Helpers\ask;
 use function Codefy\Framework\Helpers\command;
-use function Codefy\Framework\Helpers\config;
 use function Codefy\Framework\Helpers\logger;
-use function Codefy\Framework\Helpers\mail;
-use function Codefy\Framework\Helpers\storage_path;
-use function Codefy\Framework\Helpers\trans;
 use function Codefy\Framework\Helpers\trans_html;
 use function count;
 use function in_array;
@@ -786,221 +776,6 @@ function populate_options_cache(): bool
     }
 
     return false;
-}
-
-/**
- * Login Details Email
- *
- * Function used to send login details to new
- * user.
- *
- * @file core/Shared/Helpers/db.php
- * @throws ContainerExceptionInterface
- * @throws EnvironmentIsBrokenException
- * @throws Exception
- * @throws InvalidArgumentException
- * @throws NotFoundExceptionInterface
- * @throws ReflectionException
- * @throws SessionException
- */
-function cms_nodeq_login_details(): void
-{
-    $table = 'login';
-    $nodeq = Node::open(storage_path("app/queue/{$table}"));
-
-    $sql = $nodeq->where('sent', (int) 0)->get();
-
-    if (count(array_filter($sql)) === 0) {
-        foreach ($sql as $r) {
-            $nodeq->where('_id', esc_html($r['_id']))->delete();
-        }
-    }
-
-    if (count($sql) > 0) {
-        foreach ($sql as $r) {
-            $siteName = get_option(key: 'sitename');
-            /** @var User $user */
-            $user = get_userdata($r['userid']);
-            try {
-                $password = Crypto::decrypt(
-                    $r['pass'],
-                    Key::loadFromAsciiSafeString(config()->string(key: 'auth.encryption_key'))
-                );
-
-                $message = trans_html('Hi there,') . "<br />";
-                $message .= "<p>" . sprintf(
-                    trans_html(
-                        string: "Welcome to %s! Here's how to log in: ",
-                    ),
-                    $siteName
-                );
-                $message .= $r['login_url'] . "</p>";
-                $message .= sprintf(trans_html('Username: %s'), $user->login) . "<br />";
-                $message .= sprintf(trans_html('Password: %s'), $password) . "<br />";
-                $message .= "<p>" . sprintf(
-                    trans(
-                        string: 'If you have any problems, please contact us at <a href="mailto:%s">%s</a>.',
-                    ),
-                    get_option(key: 'admin_email'),
-                    get_option(key: 'admin_email')
-                ) . "</p>";
-
-                $message = process_email_html($message, trans_html('New Account'));
-                $headers[] = sprintf("From: %s <auto-reply@%s>", $siteName, $r['domain_name']);
-                $headers[] = 'Content-Type: text/html; charset="UTF-8"';
-                $headers[] = sprintf("X-Mailer: Devflow %s", Devflow::release());
-                try {
-                    mail(
-                        $user->email,
-                        sprintf(
-                            trans_html('[%s] New Account'),
-                            $siteName
-                        ),
-                        $message,
-                        $headers
-                    );
-                } catch (\PHPMailer\PHPMailer\Exception $e) {
-                    Devflow::$PHP->flash->error($e->getMessage());
-                }
-
-                $upd = $nodeq->where('_id', esc_html($r['_id']));
-                $upd->update([
-                    'sent' => 1
-                ]);
-            } catch (BadFormatException $e) {
-                logger(
-                    'error',
-                    sprintf(
-                        'CRYPTOFORMAT[%s]: %s',
-                        $e->getCode(),
-                        $e->getMessage()
-                    )
-                );
-            } catch (WrongKeyOrModifiedCiphertextException $e) {
-                logger(
-                    'error',
-                    sprintf(
-                        'CRYPTOKEY[%s]: %s',
-                        $e->getCode(),
-                        $e->getMessage()
-                    )
-                );
-            }
-        }
-    }
-}
-
-/**
- * Reset Password Email
- *
- * Function used to send reset password to a user.
- *
- * @file core/Shared/Helpers/db.php
- * @throws ContainerExceptionInterface
- * @throws EnvironmentIsBrokenException
- * @throws Exception
- * @throws InvalidArgumentException
- * @throws NotFoundExceptionInterface
- * @throws ReflectionException
- */
-function cms_nodeq_reset_password(): void
-{
-    $table = 'password_reset';
-    $nodeq = Node::open(storage_path("app/queue/{$table}"));
-
-    $sql = $nodeq->where('sent', (int) 0)->get();
-
-    if (count($sql) === 0) {
-        foreach ($sql as $r) {
-            $nodeq->where('_id', esc_html($r['_id']))
-                ->delete();
-        }
-    }
-
-    if (count($sql) > 0) {
-        foreach ($sql as $r) {
-            $siteName = get_option(key: 'sitename');
-            /** @var User $user */
-            $user = get_userdata($r['userid']);
-            try {
-                $password = Crypto::decrypt(
-                    $r['pass'],
-                    Key::loadFromAsciiSafeString(config('auth.encryption_key'))
-                );
-
-                $message = trans_html('Hi there,') . "<br />";
-                $message .= "<p>" . sprintf(
-                    trans_html(
-                        string: "Your password has been reset for %s: ",
-                    ),
-                    $siteName
-                );
-                $message .= $r['login_url'] . "</p>";
-                $message .= sprintf(trans_html('Username: %s'), $user->login) . "<br />";
-                $message .= sprintf(trans_html('Password: %s'), $password) . "<br />";
-                $message .= "<p>" . sprintf(
-                    trans(
-                        string: 'If you have any problems, please contact us at <a href="mailto:%s">%s</a>.',
-                    ),
-                    get_option(key: 'admin_email'),
-                    get_option(key: 'admin_email')
-                ) . "</p>";
-
-                $message = process_email_html($message, trans_html('Password Reset'));
-                $headers[] = sprintf("From: %s <auto-reply@%s>", $siteName, $r['domain_name']);
-                $headers[] = 'Content-Type: text/html; charset="UTF-8"';
-                $headers[] = sprintf("X-Mailer: Devflow %s", Devflow::release());
-                try {
-                    mail(
-                        $user->email,
-                        sprintf(
-                            trans_html('[%s] Password Reset'),
-                            $siteName
-                        ),
-                        $message,
-                        $headers
-                    );
-                } catch (\PHPMailer\PHPMailer\Exception $e) {
-                    Devflow::$PHP->flash->error($e->getMessage());
-                }
-
-                $upd = $nodeq->where(
-                    '_id',
-                    esc_html($r['_id'])
-                );
-                $upd->update([
-                    'sent' => 1
-                ]);
-            } catch (BadFormatException $e) {
-                logger(
-                    'error',
-                    sprintf(
-                        'CRYPTOFORMAT[%s]: %s',
-                        $e->getCode(),
-                        $e->getMessage()
-                    )
-                );
-            } catch (WrongKeyOrModifiedCiphertextException $e) {
-                logger(
-                    'error',
-                    sprintf(
-                        'CRYPTOKEY[%s]: %s',
-                        $e->getCode(),
-                        $e->getMessage()
-                    )
-                );
-            } catch (Exception $e) {
-                logger(
-                    'error',
-                    sprintf(
-                        'CRYPTO[%s]: %s',
-                        $e->getCode(),
-                        $e->getMessage()
-                    )
-                );
-            }
-        }
-    }
 }
 
 /**

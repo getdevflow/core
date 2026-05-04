@@ -44,7 +44,7 @@ use function asort;
 use function Codefy\Framework\Helpers\config;
 use function Codefy\Framework\Helpers\public_path;
 use function Codefy\Framework\Helpers\resource_path;
-use function Codefy\Framework\Helpers\trans_html;
+use function Codefy\Framework\Helpers\trans;
 use function count;
 use function curl_close;
 use function curl_exec;
@@ -74,6 +74,7 @@ use function preg_replace;
 use function preg_replace_callback;
 use function preg_split;
 use function Qubus\Security\Helpers\__observer;
+use function Qubus\Security\Helpers\purify_html;
 use function Qubus\Support\Helpers\remove_trailing_slash;
 use function realpath;
 use function rmdir;
@@ -114,8 +115,8 @@ function make_clickable(string $value, array $protocols = ['http', 'mail'], arra
     // Build safe attribute string
     $attr = '';
     foreach ($attributes as $key => $val) {
-        $key = htmlspecialchars($key, ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5, 'UTF-8');
-        $val = htmlspecialchars($val, ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5, 'UTF-8');
+        $key = purify_html($key);
+        $val = purify_html($val);
         $attr .= " {$key}=\"{$val}\"";
     }
 
@@ -136,7 +137,7 @@ function make_clickable(string $value, array $protocols = ['http', 'mail'], arra
                 static function ($m) use (&$links, $attr) {
                     $scheme = $m['scheme'] ?: 'http';
                     $url    = $m['url'] ?: $m['www'];
-                    $safe   = htmlspecialchars($url, ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5, 'UTF-8');
+                    $safe   = purify_html($url);
                     return '<' . array_push(
                         $links,
                         "<a{$attr} href=\"{$scheme}://{$safe}\">{$safe}</a>"
@@ -149,7 +150,7 @@ function make_clickable(string $value, array $protocols = ['http', 'mail'], arra
             preg_replace_callback(
                 '~(?P<email>[^\s<]+@[^\s<]+?\.[^\s<]+)(?<![\.,:])~',
                 static function ($m) use (&$links, $attr) {
-                    $email = htmlspecialchars($m['email'], ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5, 'UTF-8');
+                    $email = purify_html($m['email']);
                     return '<' . array_push(
                         $links,
                         "<a{$attr} href=\"mailto:{$email}\">{$email}</a>"
@@ -162,7 +163,7 @@ function make_clickable(string $value, array $protocols = ['http', 'mail'], arra
             preg_replace_callback(
                 '~(?<!\\w)(?P<symbol>[@#])(?P<handle>\\w++)~',
                 static function ($m) use (&$links, $attr) {
-                    $handle = htmlspecialchars($m['handle'], ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5, 'UTF-8');
+                    $handle = purify_html($m['handle']);
                     $symbol = $m['symbol'];
                     $url    = $symbol === '@'
                             ? "https://x.com/{$handle}"
@@ -180,7 +181,7 @@ function make_clickable(string $value, array $protocols = ['http', 'mail'], arra
             preg_replace_callback(
                 '~' . preg_quote($protocol, '~') . '://([^\s<]+?)(?<![\.,:])~i',
                 static function ($m) use (&$links, $attr, $protocol) {
-                    $link = htmlspecialchars($m[1], ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5, 'UTF-8');
+                    $link = purify_html($m[1]);
                     return '<' . array_push(
                         $links,
                         "<a{$attr} href=\"{$protocol}://{$link}\">{$link}</a>"
@@ -744,7 +745,7 @@ function get_age(string $birthdate = '0000-00-00'): string|int
     $age = $birth->age;
 
     if ($birthdate <= '0000-00-00' || $age <= 0) {
-        return trans_html('Unknown');
+        return trans('Unknown');
     }
     return $age;
 }
@@ -822,7 +823,7 @@ function convert_seconds_to_time(int $seconds): string
 /**
  * Add the template to the message body.
  *
- * Looks for {content} into the template and replaces it with the message.
+ * Looks for {{content}} or {{notification_message}} in the template and replaces it with the message.
  *
  * Uses `email.template` filter hook.
  *
@@ -833,11 +834,11 @@ function convert_seconds_to_time(int $seconds): string
  */
 function set_email_template(string $body): string
 {
-    $tpl = file_get_contents(resource_path('tpl' . Devflow::$PHP::DS . 'system_email.tpl'));
+    $tpl = file_get_contents(resource_path('tpl' . Devflow::$PHP::DS . 'notification-email.html'));
 
     $template = __observer()->filter->applyFilter('email.template', $tpl);
 
-    return str_replace('{content}', $body, $template);
+    return str_replace(['{{content}}', '{{notification_message}}'], $body, $template);
 }
 
 /**
@@ -866,7 +867,7 @@ function replace_template_vars(string $template): string
     $toReplace = __observer()->filter->applyFilter('email.template.tags', $varArray);
 
     foreach ($toReplace as $tag => $var) {
-        $template = str_replace(search: '{' . $tag . '}', replace: $var, subject: $template);
+        $template = str_replace(search: '{{' . $tag . '}}', replace: $var, subject: $template);
     }
 
     return $template;
@@ -887,14 +888,11 @@ function replace_template_vars(string $template): string
  */
 function process_email_html(string $text, string $title): string
 {
-    // Convert URLs to links
-    $links = make_clickable($text);
-
     // Add template to message
-    $template = set_email_template($links);
+    $template = set_email_template($text);
 
     // Replace title tag with $title.
-    $body = str_replace('{title}', $title, $template);
+    $body = str_replace('{{title}}', $title, $template);
 
     // Replace variables in email
     return __observer()->filter->applyFilter('email.template.body', replace_template_vars($body));
@@ -1427,7 +1425,7 @@ function show_update_message(): void
                 if ($update->newVersionAvailable()) {
                     $alert = '<div class="alert alert-dismissible show alert-info center" role="alert">';
                     $alert .= sprintf(
-                        trans_html(
+                        trans(
                             'Devflow release %s is available for download or upgrade. Before upgrading, make sure to backup your system.',
                         ),
                         $update->latestVersion

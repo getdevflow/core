@@ -8,7 +8,10 @@ use App\Application\Devflow;
 use App\Domain\User\Model\User;
 use App\Domain\User\Query\FindUserByIdQuery;
 use App\Domain\User\ValueObject\UserId;
+use App\Infrastructure\Persistence\Cache\UserCachePsr16;
 use App\Infrastructure\Services\NativePhpCookies;
+use App\Infrastructure\Services\Queue\NewAccountNotification;
+use App\Infrastructure\Services\Queue\ResetPasswordNotification;
 use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
 use Codefy\CommandBus\Exceptions\UnresolvableCommandHandlerException;
 use Codefy\Framework\Http\BaseController;
@@ -48,14 +51,15 @@ use function App\Shared\Helpers\get_users_by_site_key;
 use function App\Shared\Helpers\is_multisite;
 use function App\Shared\Helpers\is_user_logged_in;
 use function App\Shared\Helpers\login_url;
-use function App\Shared\Helpers\queue_new_user_email;
 use function App\Shared\Helpers\remove_user_from_site;
 use function App\Shared\Helpers\reset_password;
+use function App\Shared\Helpers\site_url;
 use function App\Shared\Helpers\sort_list;
 use function array_merge;
 use function Codefy\Framework\Helpers\ask;
 use function Codefy\Framework\Helpers\config;
 use function Codefy\Framework\Helpers\logger;
+use function Codefy\Framework\Helpers\queue;
 use function Codefy\Framework\Helpers\storage_path;
 use function Codefy\Framework\Helpers\trans;
 use function Codefy\Framework\Helpers\view;
@@ -148,8 +152,17 @@ final class AdminUserController extends BaseController
                 return $this->redirect($request->getHeaderLine(name: 'Referer'));
             }
 
-            if ($request->get('sendemail') === 1) {
-                queue_new_user_email($userId, $request->get('pass'));
+            if ((int) $request->get('sendemail') === 1) {
+                queue(
+                    new NewAccountNotification([
+                        'login' => (string) $request->get('login'),
+                        'email' => (string) $request->get('email'),
+                        'pass' => (string) $request->get('pass'),
+                        'url' => sprintf(site_url('admin/%s/'), Devflow::$PHP->configContainer->string(key: 'auth.login_route')),
+                        'sitename' => (string) get_option(key: 'sitename'),
+                    ])
+                )
+                ->createItem();
             }
 
             Devflow::$PHP->flash->success(
@@ -459,6 +472,7 @@ final class AdminUserController extends BaseController
             Devflow::$PHP->flash->error(
                 message: trans('Access denied.')
             );
+            return $this->redirect($request->getHeaderLine(name: 'Referer'));
         }
 
         try {
@@ -467,15 +481,32 @@ final class AdminUserController extends BaseController
                 Devflow::$PHP->flash->error(trans('User not found.'));
             }
 
-            $_userId = reset_password($userId);
-            if (is_string($_userId) && !is_false__($_userId)) {
+            $password = reset_password($userId);
+            if (is_string($password) && $password !== '') {
                 Devflow::$PHP->flash->success(
                     sprintf(
                         trans('Password successfully updated for <strong>%s</strong>.'),
-                        get_name($_userId)
+                        get_name($userId)
                     ),
                 );
+                UserCachePsr16::clean($user);
+                queue(
+                    new ResetPasswordNotification([
+                        'login' => $user->login,
+                        'pass' => $password,
+                        'sitename' => (string) get_option(key: 'sitename'),
+                        'email' => $user->email,
+                        'url' => sprintf(site_url('admin/%s/'), config()->string(key: 'auth.login_route')),
+                    ])
+                )
+                ->createItem();
             }
+
+            Devflow::$PHP->flash->success(
+                trans(
+                    "The password reset email has been queued for sending.",
+                )
+            );
         } catch (
             NotFoundExceptionInterface |
             ContainerExceptionInterface |
