@@ -12,6 +12,7 @@ use Qubus\Exception\Exception;
 use Qubus\Expressive\Database;
 use Exception as NativeException;
 use Qubus\Expressive\QueryBuilderException;
+use Qubus\Support\DateTime\QubusDateTimeImmutable;
 use ReflectionException;
 
 class QueryBuilderUserRepository implements UserCommandRepository
@@ -127,6 +128,7 @@ class QueryBuilderUserRepository implements UserCommandRepository
                     ->set([
                         'user_pass' => $user->pass,
                         'user_token' => $user->token,
+                        'user_modified' => (string) QubusDateTimeImmutable::now(),
                     ])
                     ->where('user_id = ?', $user->id)
                     ->update();
