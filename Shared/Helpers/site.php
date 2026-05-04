@@ -18,13 +18,13 @@ use App\Domain\User\Model\User;
 use App\Domain\User\Query\FindMultisiteUniqueUsersQuery;
 use App\Domain\User\ValueObject\UserId;
 use App\Infrastructure\Persistence\Cache\SiteCachePsr16;
+use App\Infrastructure\Persistence\Cache\UserCachePsr16;
 use App\Infrastructure\Services\Site\SiteSchema;
 use Qubus\Expressive\Database;
 use App\Infrastructure\Services\AttributesFactory;
 use App\Shared\Services\DateTime;
 use App\Shared\Services\Registry;
 use App\Shared\Services\Sanitizer;
-use App\Shared\Services\SimpleCacheObjectCacheFactory;
 use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
 use Codefy\CommandBus\Exceptions\UnresolvableCommandHandlerException;
 use Codefy\Domain\Model\EntityNotFoundException;
@@ -60,7 +60,6 @@ use function Codefy\Framework\Helpers\trans_html;
 use function crc32;
 use function date;
 use function file_get_contents;
-use function md5;
 use function mkdir;
 use function Qubus\Security\Helpers\__observer;
 use function Qubus\Security\Helpers\esc_html;
@@ -1106,14 +1105,14 @@ function cms_delete_site_user(string $userId, array $params = []): Error|bool
         /**
          * Clean cache of the assigned user.
          */
-        SimpleCacheObjectCacheFactory::make(namespace: 'users')->delete(key: md5($assignUser->id));
+        UserCachePsr16::clean($assignUser);
         /**
          * We need to reassign the site(s) to the selected user and create the
          * needed site_user record.
          */
         if (!empty($sites)) {
             foreach ($sites as $site) {
-                SimpleCacheObjectCacheFactory::make(namespace: 'sites')->delete(key: md5($site->id));
+                SiteCachePsr16::clean($site);
                 AttributesFactory::user()->createIfMissing(siteId: $site->id, userId: $params['assign_id']);
 
                 add_user_to_site($params['assign_id'], $site->id, $params['role']);
@@ -1148,7 +1147,7 @@ function cms_delete_site_user(string $userId, array $params = []): Error|bool
                 /** @var Site $site */
                 $site = Devflow::$PHP->make(name: Site::class);
                 $site->create((array) $oldSite);
-                SimpleCacheObjectCacheFactory::make(namespace: 'sites')->delete(key: md5($site->id));
+                SiteCachePsr16::clean($site);
                 /**
                  * Action hook triggered after the site is deleted.
                  *
@@ -1197,7 +1196,7 @@ function cms_delete_site_user(string $userId, array $params = []): Error|bool
     /**
      * Clear the cache of the deleted user.
      */
-    SimpleCacheObjectCacheFactory::make(namespace: 'users')->delete(key: md5($user->id));
+    UserCachePsr16::clean($user);
 
     /**
      * Action hook fires immediately after a user has been deleted from the system.
@@ -1276,6 +1275,7 @@ function remove_user_from_site(string $userId, array $params = []): void
         }
 
         SiteCachePsr16::clean($site);
+        UserCachePsr16::clean($oldUser);
     } catch (CommandPropertyNotFoundException|UnresolvableCommandHandlerException|ReflectionException $e) {
         logger(level: 'error', message: $e->getMessage());
     }
