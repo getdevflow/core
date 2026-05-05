@@ -14,6 +14,7 @@ use App\Domain\User\ValueObject\UserId;
 use App\Domain\User\ValueObject\Username;
 use App\Domain\User\ValueObject\UserToken;
 use App\Infrastructure\Services\AttributesFactory;
+use App\Shared\Services\EnvWriter;
 use Codefy\Framework\Support\Password;
 use Psr\SimpleCache\InvalidArgumentException;
 use Qubus\Expressive\Database;
@@ -34,6 +35,7 @@ use Qubus\ValueObjects\Web\EmailAddress;
 use ReflectionException;
 
 use function App\Shared\Helpers\add_user_to_site;
+use function App\Shared\Helpers\create_site_directories;
 use function App\Shared\Helpers\generate_random_password;
 use function App\Shared\Helpers\generate_random_username;
 use function App\Shared\Helpers\generate_unique_key;
@@ -42,6 +44,7 @@ use function Codefy\Framework\Helpers\logger;
 use function Codefy\Framework\Helpers\storage_path;
 use function file_put_contents;
 use function Qubus\Error\Helpers\is_error;
+use function Qubus\Security\Helpers\__observer;
 use function sprintf;
 
 use const LOCK_EX;
@@ -68,6 +71,8 @@ class InstallCmsCommand extends ConsoleCommand
      */
     public function handle(): int
     {
+        $envWriter = new EnvWriter($this->codefy->basePath() . $this->codefy::DS . '.env');
+
         if ($this->usersExist()) {
             $this->terminalRaw(string: '<error>Error: system already installed.</error>');
             return self::FAILURE;
@@ -87,6 +92,7 @@ class InstallCmsCommand extends ConsoleCommand
         $this->terminalRaw(string: '<info>Creating the main site...</info>');
 
         $siteId = $this->createMainSite($user['id']);
+        $envWriter->set('CMS_MAIN_SITE_ID', $siteId);
 
         $this->terminalRaw(string: '<info>Adding default site options...</info>');
 
@@ -107,11 +113,6 @@ class InstallCmsCommand extends ConsoleCommand
             $user['pass']
         ));
 
-        $this->terminalRaw(string: sprintf(
-            'Main Site Id: <comment>%s</comment>',
-            $siteId
-        ));
-
         // return value is important when using CI
         // to fail the build when the command fails
         // 0 = success, other values = fail
@@ -119,7 +120,6 @@ class InstallCmsCommand extends ConsoleCommand
     }
 
     /**
-     * @throws ReflectionException
      * @throws Exception
      */
     protected function createSuperAdmin(): array|Error
@@ -142,9 +142,9 @@ class InstallCmsCommand extends ConsoleCommand
         $user->dateFormat = 'd F Y';
         $user->timeFormat = 'h:i A';
         $user->locale = $this->codefy->configContainer->string(key: 'app.locale');
-        $user->registered = QubusDateTimeImmutable::now(
+        $registered = QubusDateTimeImmutable::now(
             $this->codefy->configContainer->string(key: 'app.timezone')
-        )->format('Y-m-d H:i:s');
+        );
 
         try {
             $command = new CreateUserCommand([
@@ -163,7 +163,7 @@ class InstallCmsCommand extends ConsoleCommand
                 'timeFormat' => new StringLiteral($user->timeFormat),
                 'locale' => new StringLiteral($user->locale),
                 'activationKey' => new StringLiteral(''),
-                'registered' => $user->registered
+                'registered' => $registered
             ]);
             command($command);
 
@@ -265,6 +265,8 @@ class InstallCmsCommand extends ConsoleCommand
             ]);
 
             command($command);
+
+            create_site_directories($site);
         } catch (
             UnresolvableCommandHandlerException |
             ReflectionException |
@@ -283,9 +285,9 @@ class InstallCmsCommand extends ConsoleCommand
     protected function usersExist(): bool
     {
         $prefix = $this->dfdb->basePrefix;
-        $sql = "SELECT * FROM {$prefix}user";
-        $users = $this->dfdb->getResults($sql);
+        $sql = "SELECT COUNT(*) FROM {$prefix}user";
+        $users = $this->dfdb->getVar($sql);
 
-        return count($users) > 0 && file_exists(storage_path('install.lock'));
+        return $users > 0 && file_exists(storage_path('install.lock'));
     }
 }

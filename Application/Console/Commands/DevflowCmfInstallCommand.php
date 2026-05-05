@@ -8,6 +8,8 @@ use Codefy\Framework\Application;
 use Codefy\Framework\Console\ConsoleCommand;
 use Symfony\Component\Console\Exception\ExceptionInterface;
 
+use function file_exists;
+
 class DevflowCmfInstallCommand extends ConsoleCommand
 {
     protected string $name = 'devflow:install';
@@ -24,6 +26,11 @@ class DevflowCmfInstallCommand extends ConsoleCommand
      */
     public function handle(): int
     {
+        if(file_exists($this->codefy->storagePath() . '/install.lock')) {
+            $this->terminalRaw(string: '<comment>Your system is already installed.</comment>');
+            return self::SUCCESS;
+        }
+
         $this->terminalRaw(string: '<info>Starting Devflow installer...</info>');
 
         if ($this->call('devflow:setup') !== self::SUCCESS) {

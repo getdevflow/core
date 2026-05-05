@@ -9,7 +9,10 @@ use Codefy\Framework\Application;
 use Codefy\Framework\Console\ConsoleCommand;
 use RuntimeException;
 
+use Symfony\Component\Console\Exception\ExceptionInterface;
+
 use function App\Shared\Helpers\generate_unique_key;
+use function file_exists;
 
 class DevflowCmfSetupCommand extends ConsoleCommand
 {
@@ -22,12 +25,19 @@ class DevflowCmfSetupCommand extends ConsoleCommand
         parent::__construct(codefy: $codefy);
     }
 
+    /**
+     * @throws ExceptionInterface
+     */
     public function handle(): int
     {
-        $basePath = rtrim($this->detectBasePath(), $this->codefy::DS);
+        if(file_exists($this->codefy->storagePath() . '/install.lock')) {
+            $this->terminalRaw(string: '<comment>Your system is already installed.</comment>');
+            return self::SUCCESS;
+        }
+
+        $basePath = rtrim($this->codefy->basePath(), $this->codefy::DS);
         $envPath = $basePath . '/.env';
         $examplePath = $basePath . '/.env.example';
-        $encKeyPath = $basePath . '/.enc.key';
 
         if (! file_exists($envPath) && file_exists($examplePath)) {
             copy($examplePath, $envPath);
@@ -35,11 +45,12 @@ class DevflowCmfSetupCommand extends ConsoleCommand
 
         $env = new EnvWriter($envPath);
 
-        $env->set('APP_BASE_PATH', $basePath);
         $env->set('APP_KEY', $this->generateSecret());
         $env->set('APP_SALT', $this->generateSecret());
 
-        file_put_contents($encKeyPath, $this->generateSecret() . PHP_EOL, LOCK_EX);
+        if ($this->call('generate:key:file') !== self::SUCCESS) {
+            return self::FAILURE;
+        }
 
         $this->terminalRaw(string: '<info>Devflow environment setup completed.</info>');
 
