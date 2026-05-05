@@ -23,7 +23,6 @@ class QueryBusContentTypeRepository implements ContentTypeQueryRepository
     }
 
     /**
-     * @throws ReflectionException
      * @throws Exception
      */
     public function findById(string $contentTypeId): array|null|object
@@ -48,6 +47,9 @@ class QueryBusContentTypeRepository implements ContentTypeQueryRepository
         return $content;
     }
 
+    /**
+     * @throws Exception
+     */
     public function findBySlug(string $contentTypeSlug): array|null|object
     {
         $sql = "SELECT * FROM {$this->dfdb->prefix}content_type WHERE content_type_slug = ?";
@@ -70,6 +72,9 @@ class QueryBusContentTypeRepository implements ContentTypeQueryRepository
         return $content;
     }
 
+    /**
+     * @throws Exception
+     */
     public function findAll(): array
     {
         $sql = "SELECT * FROM {$this->dfdb->prefix}content_type";

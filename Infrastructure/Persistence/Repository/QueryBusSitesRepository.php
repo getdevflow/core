@@ -82,7 +82,6 @@ class QueryBusSitesRepository implements SitesQueryRepository
     }
 
     /**
-     * @throws ReflectionException
      * @throws Exception
      */
     public function findByOwner(string $owner): array|object
