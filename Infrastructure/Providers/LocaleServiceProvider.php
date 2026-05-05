@@ -34,25 +34,24 @@ class LocaleServiceProvider extends CodefyServiceProvider
         $translator = new Translator();
         TranslatorFunctions::register($translator);
 
+        if ($this->codefy->isRunningInConsole()) {
+            return;
+        }
+
         /** @var Database $database */
         $database = $this->codefy->make(name: Database::class);
 
-        if (!$this->codefy->isRunningInConsole()) {
-            Filter::getInstance()->removeFilter(hook: 'core_locale', callback: function ($locale) {
-                return '';
-            });
+        Filter::getInstance()->removeFilter(hook: 'core_locale', callback: function ($locale) {
+            return '';
+        });
 
-            Filter::getInstance()->addFilter(hook: 'core_locale', callback: function ($locale) use ($database) {
-                $sql = "SELECT option_value FROM {$database->prefix}option WHERE option_key = 'site_locale' LIMIT 1";
-                $locale = $database->getVar($sql);
-                return esc_html($locale);
-            });
-        }
+        Filter::getInstance()->addFilter(hook: 'core_locale', callback: function ($locale) use ($database) {
+            $sql = "SELECT option_value FROM {$database->prefix}option WHERE option_key = 'site_locale' LIMIT 1";
+            $locale = $database->getVar($sql);
+            return esc_html($locale);
+        });
 
         /** Do not touch. */
-
-        if (!$this->codefy->isRunningInConsole()) {
-            load_devflow_textdomain();
-        }
+        load_devflow_textdomain();
     }
 }
