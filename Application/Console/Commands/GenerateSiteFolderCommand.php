@@ -17,6 +17,10 @@ use Symfony\Component\Console\Input\InputArgument;
 
 use function App\Shared\Helpers\create_site_directories;
 use function App\Shared\Helpers\get_site_by;
+use function App\Shared\Helpers\site_directory_key;
+use function Codefy\Framework\Helpers\public_path;
+use function is_dir;
+use function Qubus\Support\Helpers\is_false__;
 
 class GenerateSiteFolderCommand extends ConsoleCommand
 {
@@ -63,9 +67,19 @@ EOT
         /** @var Site $site */
         $site = get_site_by('id', $this->getOptions(key: 'siteId'));
 
+        if(is_false__($site)) {
+            $this->terminalRaw(string: '<error>The site does not exist.</error>');
+            return self::FAILURE;
+        }
+
+        $directoryExists = public_path('site/' . (string) site_directory_key($site->key));
+        if(is_dir($directoryExists)) {
+            $this->terminalRaw(string: '<comment>The directory already exists!</comment>');
+            return self::SUCCESS;
+        }
+
         if(create_site_directories($site) === true) {
             $this->terminalRaw(string: '<info>Success!</info>');
-
             return self::SUCCESS;
         }
 
