@@ -70,9 +70,6 @@ final class UserAuth implements Gate
         return $this->getToken() !== null;
     }
 
-    /**
-     * @throws \ReflectionException
-     */
     private function resolveUserByToken(string $token): object|bool|null
     {
         try {
