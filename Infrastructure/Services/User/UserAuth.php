@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Infrastructure\Services;
+namespace App\Infrastructure\Services\User;
 
 use App\Domain\User\Model\User;
 use Codefy\Framework\Auth\Gate;

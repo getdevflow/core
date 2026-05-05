@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Http\Middleware;
 
-use App\Infrastructure\Services\UserAuth;
+use App\Infrastructure\Services\User\UserAuth;
 use Codefy\Framework\Proxy\Codefy;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;

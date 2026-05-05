@@ -7,7 +7,7 @@ namespace App\Infrastructure\Providers;
 use App\Infrastructure\Persistence\FileResource;
 use App\Infrastructure\Persistence\Repository\AuthenticationRepository;
 use App\Infrastructure\Services\RbacLoader;
-use App\Infrastructure\Services\UserAuth;
+use App\Infrastructure\Services\User\UserAuth;
 use Codefy\Framework\Auth\Auth;
 use Codefy\Framework\Auth\Gate;
 use Codefy\Framework\Auth\Rbac\Rbac;
