@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Site\Model;
 
 use App\Infrastructure\Persistence\Cache\SiteCachePsr16;
+use App\Infrastructure\Services\Trait\CleanAware;
 use Qubus\Exception\Data\TypeException;
 use Qubus\Expressive\Database;
 use App\Shared\Services\SimpleCacheObjectCacheFactory;
@@ -14,10 +15,10 @@ use Psr\SimpleCache\InvalidArgumentException;
 use Qubus\Exception\Exception;
 use ReflectionException;
 
-use function Qubus\Security\Helpers\esc_html;
-
 final class Site
 {
+    use CleanAware;
+
     public ?string $id = null;
     public ?string $key = null;
     public ?string $name = null;
@@ -198,18 +199,6 @@ final class Site
             'registered' => $data['registered'] ?? $data['site_registered'] ?? null,
             'modified' => $data['modified'] ?? $data['site_modified'] ?? null,
         ];
-    }
-
-    /**
-     * @throws Exception
-     */
-    private function clean(mixed $value): ?string
-    {
-        if ($value === null) {
-            return null;
-        }
-
-        return esc_html((string) $value);
     }
 
     /**

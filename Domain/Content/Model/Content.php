@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Content\Model;
 
 use App\Infrastructure\Persistence\Cache\ContentCachePsr16;
+use App\Infrastructure\Services\Trait\CleanAware;
 use Qubus\Expressive\Database;
 use App\Infrastructure\Services\AttributesFactory;
 use App\Shared\Services\SimpleCacheObjectCacheFactory;
@@ -22,6 +23,8 @@ use function Qubus\Security\Helpers\purify_html;
 
 final class Content
 {
+    use CleanAware;
+
     public ?string $id = null;
     public ?string $title = null;
     public ?string $slug = null;
@@ -249,18 +252,6 @@ final class Content
             'modified' => $data['modified'] ?? $data['content_modified'] ?? null,
             'modifiedGmt' => $data['modifiedGmt'] ?? $data['content_modified_gmt'] ?? null,
         ];
-    }
-
-    /**
-     * @throws Exception
-     */
-    private function clean(mixed $value): ?string
-    {
-        if ($value === null) {
-            return null;
-        }
-
-        return esc_html((string) $value);
     }
 
     /**

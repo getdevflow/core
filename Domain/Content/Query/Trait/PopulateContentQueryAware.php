@@ -4,15 +4,17 @@ declare(strict_types=1);
 
 namespace App\Domain\Content\Query\Trait;
 
+use App\Infrastructure\Services\Trait\CleanAware;
 use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
 
 use function Codefy\Framework\Helpers\config;
-use function Qubus\Security\Helpers\esc_html;
 use function Qubus\Security\Helpers\purify_html;
 
 trait PopulateContentQueryAware
 {
+    use CleanAware;
+
     /**
      * Populate an array of values from result query.
      *
@@ -23,49 +25,32 @@ trait PopulateContentQueryAware
      */
     private function populate(?array $data = []): ?array
     {
-        if (config(key: 'cms.relative_url') === 'contenttype') {
-            $relativeUrl = esc_html(string: $data['content_type'] . '/' . $data['content_slug'] . '/');
+        if (config()->string(key: 'cms.relative_url') === 'contenttype') {
+            $relativeUrl = $data['content_type'] . '/' . $data['content_slug'] . '/';
         } else {
-            $relativeUrl = esc_html(string: $data['content_slug'] . '/');
+            $relativeUrl = $data['content_slug'] . '/';
         }
 
         return [
-            'id' => isset($data['content_id']) ? esc_html(string: $data['content_id']) : null,
-            'slug' => isset($data['content_slug']) ? esc_html(string: $data['content_slug']) : null,
-            'title' => isset($data['content_title']) ? esc_html(string: $data['content_title']) : null,
+            'id' => $this->clean($data['content_id']),
+            'slug' => $this->clean($data['content_slug']),
+            'title' => $this->clean($data['content_title']),
             'body' => isset($data['content_body']) ? purify_html($data['content_body']) : null,
-            'author' => isset($data['content_author']) ? esc_html(string: $data['content_author']) : null,
-            'type' => isset($data['content_type']) ? esc_html(string: $data['content_type']) : null,
-            'parent' => isset($data['content_parent']) ? esc_html(string: $data['content_parent']) : null,
-            'sidebar' => isset($data['content_sidebar']) ? esc_html(string: (string) $data['content_sidebar']) : null,
-            'showInMenu' => isset($data['content_show_in_menu']) ? esc_html(string: (string) $data['content_show_in_menu']) : null,
-            'showInSearch' => isset($data['content_show_in_search']) ? esc_html(string: (string) $data['content_show_in_search']) : null,
-            'relativeUrl' => esc_html(string: $relativeUrl),
-
-            'featuredImage' => isset($data['content_featured_image']) ?
-                    esc_html(string: $data['content_featured_image']) :
-                    null,
-
-            'status' => isset($data['content_status']) ? esc_html(string: $data['content_status']) : null,
-
-            'created' => isset($data['content_created']) ? esc_html(string: $data['content_created']) : null,
-
-            'createdGmt' => isset($data['content_created_gmt']) ?
-                    esc_html(string: $data['content_created_gmt']) :
-                    null,
-
-            'published' => isset($data['content_published']) ?
-                    esc_html(string: $data['content_published']) :
-                    null,
-
-            'publishedGmt' => isset($data['content_published_gmt']) ?
-                    esc_html(string: $data['content_published_gmt']) :
-                    null,
-
-            'modified' => isset($data['content_modified']) ? esc_html(string: $data['content_modified']) : null,
-
-            'modifiedGmt' => isset($data['content_modified_gmt']) ?
-                    esc_html(string: $data['content_modified_gmt']) : null,
+            'author' => $this->clean($data['content_author']),
+            'type' => $this->clean($data['content_type']),
+            'parent' => $this->clean($data['content_parent']),
+            'sidebar' => $this->clean((string) $data['content_sidebar']),
+            'showInMenu' => $this->clean((string) $data['content_show_in_menu']),
+            'showInSearch' => $this->clean((string) $data['content_show_in_search']),
+            'relativeUrl' => $this->clean($relativeUrl),
+            'featuredImage' => $this->clean($data['content_featured_image']),
+            'status' => $this->clean($data['content_status']),
+            'created' => $this->clean($data['content_created']),
+            'createdGmt' => $this->clean($data['content_created_gmt']),
+            'published' => $this->clean($data['content_published']),
+            'publishedGmt' => $this->clean($data['content_published_gmt']),
+            'modified' => $this->clean($data['content_modified']),
+            'modifiedGmt' => $this->clean($data['content_modified_gmt']),
         ];
     }
 }

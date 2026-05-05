@@ -6,6 +6,7 @@ namespace App\Domain\Product\Model;
 
 use App\Infrastructure\Persistence\Cache\ProductCachePsr16;
 use App\Infrastructure\Services\AttributesFactory;
+use App\Infrastructure\Services\Trait\CleanAware;
 use Qubus\Exception\Data\TypeException;
 use Qubus\Expressive\Database;
 use App\Shared\Services\SimpleCacheObjectCacheFactory;
@@ -17,11 +18,12 @@ use ReflectionException;
 use stdClass;
 
 use function md5;
-use function Qubus\Security\Helpers\esc_html;
 use function Qubus\Security\Helpers\purify_html;
 
 final class Product extends stdClass
 {
+    use CleanAware;
+
     public ?string $id = null;
     public ?string $title = null;
     public ?string $slug = null;
@@ -248,18 +250,6 @@ final class Product extends stdClass
             'modified' => $data['modified'] ?? $data['product_modified'] ?? null,
             'modifiedGmt' => $data['modifiedGmt'] ?? $data['product_modified_gmt'] ?? null,
         ];
-    }
-
-    /**
-     * @throws Exception
-     */
-    private function clean(mixed $value): ?string
-    {
-        if ($value === null) {
-            return null;
-        }
-
-        return esc_html((string) $value);
     }
 
     /**

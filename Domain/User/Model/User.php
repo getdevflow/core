@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\User\Model;
 
 use App\Infrastructure\Persistence\Cache\UserCachePsr16;
+use App\Infrastructure\Services\Trait\CleanAware;
 use Qubus\Exception\Data\TypeException;
 use Qubus\Expressive\Database;
 use App\Infrastructure\Services\AttributesFactory;
@@ -19,13 +20,14 @@ use ReflectionException;
 
 use function App\Shared\Helpers\get_current_site_id;
 use function md5;
-use function Qubus\Security\Helpers\esc_html;
 use function Qubus\Security\Helpers\purify_html;
 use function sprintf;
 use function strtolower;
 
 final class User
 {
+    use CleanAware;
+
     public ?string $id = null;
     public ?string $login = null;
     public ?string $token = null;
@@ -234,18 +236,6 @@ final class User
             'modified' => $data['modified'] ?? $data['user_modified'] ?? null,
             'activationKey' => $data['activationKey'] ?? $data['user_activation_key'] ?? null,
         ];
-    }
-
-    /**
-     * @throws Exception
-     */
-    private function clean(mixed $value): ?string
-    {
-        if ($value === null) {
-            return null;
-        }
-
-        return esc_html((string) $value);
     }
 
     /**

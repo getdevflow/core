@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace App\Domain\ContentType\Query\Trait;
 
+use App\Infrastructure\Services\Trait\CleanAware;
 use Qubus\Exception\Exception;
-
-use function Qubus\Security\Helpers\esc_html;
 
 trait PopulateContentTypeQueryAware
 {
+    use CleanAware;
+    
     /**
      * Populate an array of values from result query.
      *
@@ -20,10 +21,10 @@ trait PopulateContentTypeQueryAware
     private function populate(?array $data = []): ?array
     {
         return [
-            'id' => isset($data['content_type_id']) ? esc_html(string: $data['content_type_id']) : null,
-            'title' => isset($data['content_type_title']) ? esc_html(string: $data['content_type_title']) : null,
-            'slug' => isset($data['content_type_slug']) ? esc_html(string: $data['content_type_slug']) : null,
-            'description' => isset($data['content_type_description']) ? esc_html(string: $data['content_type_description']) : null,
+            'id' => $this->clean($data['content_type_id']),
+            'title' => $this->clean($data['content_type_title']),
+            'slug' => $this->clean($data['content_type_slug']),
+            'description' => $this->clean($data['content_type_description']),
         ];
     }
 }

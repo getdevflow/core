@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Product\Query\Trait;
 
+use App\Infrastructure\Services\Trait\CleanAware;
 use Qubus\EventDispatcher\ActionFilter\Filter;
 use Qubus\Exception\Exception;
 use ReflectionException;
@@ -14,6 +15,8 @@ use function sprintf;
 
 trait PopulateProductQueryAware
 {
+    use CleanAware;
+    
     /**
      * Populate an array of values from result query.
      *
@@ -30,36 +33,31 @@ trait PopulateProductQueryAware
         );
 
         return [
-            'id' => isset($data['product_id']) ? esc_html(string: $data['product_id']) : null,
-            'slug' => isset($data['product_slug']) ? esc_html(string: $data['product_slug']) : null,
-            'title' => isset($data['product_title']) ? esc_html(string: $data['product_title']) : null,
+            'id' => $this->clean($data['product_id']),
+            'slug' => $this->clean($data['product_slug']),
+            'title' => $this->clean($data['product_title']),
             'body' => isset($data['product_body']) ? purify_html($data['product_body']) : null,
-            'author' => isset($data['product_author']) ? esc_html(string: $data['product_author']) : null,
-            'sku' => isset($data['product_sku']) ? esc_html(string: (string) $data['product_sku']) : null,
-            'price' => isset($data['product_price']) ? esc_html(string: (string) $data['product_price']) : null,
-            'currency' => isset($data['product_currency']) ? esc_html(string: (string) $data['product_currency']) : null,
+            'author' => $this->clean($data['product_author']),
+            'sku' => $this->clean((string) $data['product_sku']),
+            'price' => $this->clean((string) $data['product_price']),
+            'currency' => $this->clean((string) $data['product_currency']),
             
-            'purchaseUrl' => isset($data['product_purchase_url']) ?
-                    esc_html(string: (string) $data['product_purchase_url']) :
-                    null,
+            'purchaseUrl' => $this->clean((string) $data['product_purchase_url']),
             
             'relativeUrl' => $relativeUrl,
-            'showInMenu' => isset($data['product_show_in_menu']) ? esc_html(string: (string) $data['product_show_in_menu']) : null,
-            'showInSearch' => isset($data['product_show_in_search']) ? esc_html(string: (string) $data['product_show_in_search']) : null,
+            'showInMenu' => $this->clean((string) $data['product_show_in_menu']),
+            'showInSearch' => $this->clean((string) $data['product_show_in_search']),
             
-            'featuredImage' => isset($data['product_featured_image']) ?
-                    esc_html(string: $data['product_featured_image']) :
-                    null,
+            'featuredImage' => $this->clean($data['product_featured_image']),
             
-            'status' => isset($data['product_status']) ? esc_html(string: $data['product_status']) : null,
-            'created' => isset($data['product_created']) ? esc_html(string: $data['product_created']) : null,
-            'createdGmt' => isset($data['product_created_gmt']) ? esc_html(string: $data['product_created_gmt']) : null,
-            'published' => isset($data['product_published']) ? esc_html(string: $data['product_published']) : null,
-            'publishedGmt' => isset($data['product_published_gmt']) ? esc_html(string: $data['product_published_gmt']) : null,
-            'modified' => isset($data['product_modified']) ? esc_html(string: $data['product_modified']) : null,
+            'status' => $this->clean($data['product_status']),
+            'created' => $this->clean($data['product_created']),
+            'createdGmt' => $this->clean($data['product_created_gmt']),
+            'published' => $this->clean($data['product_published']),
+            'publishedGmt' => $this->clean($data['product_published_gmt']),
+            'modified' => $this->clean($data['product_modified']),
             
-            'modifiedGmt' => isset($data['product_modified_gmt']) ?
-                    esc_html(string: $data['product_modified_gmt']) : null,
+            'modifiedGmt' => $this->clean($data['product_modified_gmt']),
         ];
     }
 }
