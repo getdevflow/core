@@ -113,11 +113,18 @@ function user_lookup(?string $active = null): void
 {
     $dfdb = dfdb();
 
-    $sql = "SELECT DISTINCT u.user_id, u.user_login, u.user_fname, u.user_lname 
-    FROM {$dfdb->basePrefix}user u 
-    JOIN {$dfdb->basePrefix}site_user su  
-    ON u.user_id = su.user_id 
-    WHERE su.site_id <> ?";
+    $sql = "SELECT
+    u.user_id,
+    u.user_login,
+    u.user_fname,
+    u.user_lname
+FROM {$dfdb->basePrefix}user u
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM {$dfdb->basePrefix}site_user su
+    WHERE su.user_id = u.user_id
+      AND su.site_id = ?
+)";
 
     $users = $dfdb->getResults(query: $dfdb->prepare($sql, [get_current_site_id()]), output: Database::ARRAY_A);
     foreach ($users as $user) {
