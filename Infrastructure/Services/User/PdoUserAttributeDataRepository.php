@@ -106,8 +106,7 @@ final readonly class PdoUserAttributeDataRepository implements UserAttributeRepo
                  FROM {$this->dfdb->basePrefix}site_user 
                  WHERE site_id = :site_id 
                  AND user_id = :user_id 
-                 LIMIT 1 
-                 FOR UPDATE"
+                 LIMIT 1"
             );
 
             $stmt->execute(['site_id' => $siteId, 'user_id' => $userId]);
