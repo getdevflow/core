@@ -253,7 +253,18 @@ final class Site
     /**
      * Return an array representation.
      *
-     * @return array Array representation.
+     * @return array{
+     *     id:string,
+     *     key:string,
+     *     name:string,
+     *     domain:string,
+     *     mapping:string,
+     *     path:string,
+     *     owner:string,
+     *     status:string,
+     *     registered:string,
+     *     modified:string
+     * } Array representation.
      */
     public function toArray(): array
     {

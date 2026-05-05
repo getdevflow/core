@@ -33,7 +33,6 @@ use DateInvalidTimeZoneException;
 use PDOException;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
-use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\SimpleCache\InvalidArgumentException;
@@ -163,29 +162,25 @@ function if_site_exists(string $siteDomain, string $sitePath): bool
  * @access private
  *
  * @file core/Shared/Helpers/site.php
- * @param string $siteId Site ID.
  * @param Site $site Site object.
  * @param bool $update Whether the site is being created or updated.
  * @return bool True on success or false on failure.
- * @throws ContainerExceptionInterface
  * @throws Exception
- * @throws InvalidArgumentException
- * @throws NotFoundExceptionInterface
- * @throws ReflectionException
  * @throws TypeException
  */
-function create_site_directories(string $siteId, Site $site, bool $update = false): bool
+function create_site_directories(Site $site, bool $update = false): bool
 {
     if (is_true__($update)) {
         return false;
     }
 
-    $site = get_site_by('id', $siteId);
-    if (is_false__($site)) {
+    $siteArray = $site->toArray();
+
+    if (is_null__($siteArray['id'])) {
         return false;
     }
 
-    $key = site_directory_key($site->key);
+    $key = site_directory_key($siteArray['key']);
 
     mkdir(
         directory: public_path(
@@ -562,12 +557,8 @@ function cms_insert_site(array|ServerRequestInterface|Site $sitedata): Error|str
     }
     $site->key = $siteKey;
 
-    /** @var RequestInterface $request */
-    $request = app(name: RequestInterface::class);
-    $host = $request->getHost();
-
     $rawSiteDomain = isset($sitedata['subdomain']) ?
-    trim(strtolower($sitedata['subdomain'])) . '.' . $host :
+    trim(strtolower($sitedata['subdomain'])) . '.' . config()->string(key: 'cms.main_site_url') :
     trim(strtolower($sitedata['domain']));
     $sanitizedSiteDomain = Sanitizer::item($rawSiteDomain);
     /**
@@ -882,11 +873,10 @@ function cms_insert_site(array|ServerRequestInterface|Site $sitedata): Error|str
      * Fires immediately after a new site is saved.
      *
      * @file core/Shared/Helpers/site.php
-     * @param string $siteId Site ID.
      * @param Site $site     Site object.
      * @param bool $update   Whether this is an existing site or a new site.
      */
-    __observer()->action->doAction('save_site', $siteId->toNative(), $site, $update);
+    __observer()->action->doAction('save_site', $site, $update);
 
     /**
      * Action hook triggered after site has been saved.
@@ -895,21 +885,19 @@ function cms_insert_site(array|ServerRequestInterface|Site $sitedata): Error|str
      * is the site's status.
      *
      * @file core/Shared/Helpers/site.php
-     * @param string $siteId    The site's id.
      * @param Site $site       Site object.
      * @param bool $update     Whether this is an existing site or a new site.
      */
-    __observer()->action->doAction("save_site_{$siteStatus}", $siteId->toNative(), $site, $update);
+    __observer()->action->doAction("save_site_{$siteStatus}", $site, $update);
 
     /**
      * Action hook triggered after site has been saved.
      *
      * @file core/Shared/Helpers/site.php
-     * @param string $siteId   The site's id.
      * @param Site $site       Site object.
      * @param bool $update     Whether this is an existing site or a new site.
      */
-    __observer()->action->doAction('cms_after_insert_site_data', $siteId->toNative(), $site, $update);
+    __observer()->action->doAction('cms_after_insert_site_data', $site, $update);
 
     return $siteId->toNative();
 }
@@ -975,6 +963,7 @@ function cms_update_site(array|ServerRequestInterface|Site $sitedata): Error|str
      */
     if (!is_null__($siteId) && $ownerChange) {
         delete_site_user_record($siteId, $details['site_owner']);
+        AttributesFactory::user()->createIfMissing($sitedata['id'], $sitedata['owner']);
         add_user_to_site(user: $sitedata['owner'], site: $sitedata['id'], role: 'admin');
     }
 
@@ -1288,7 +1277,6 @@ function remove_user_from_site(string $userId, array $params = []): void
  * @access private Used when the action hook `save_site` is called.
  *
  * @file core/Shared/Helpers/site.php
- * @param string $siteId Site id of the newly created site.
  * @param Site $site Site object of newly created site.
  * @param bool $update Whether the site is being created or updated.
  * @return string|bool Returns the site id if successful or false on failure.
@@ -1300,7 +1288,7 @@ function remove_user_from_site(string $userId, array $params = []): void
  * @throws TypeException
  * @throws \Exception
  */
-function new_site_schema(string $siteId, Site $site, bool $update): bool|string
+function new_site_schema(Site $site, bool $update): bool|string
 {
     $dfdb = dfdb();
 
@@ -1308,10 +1296,7 @@ function new_site_schema(string $siteId, Site $site, bool $update): bool|string
         return false;
     }
 
-    /** @var Site $site */
-    $site = get_site_by('id', $siteId);
-
-    if (!$site) {
+    if (is_null__($site->id)) {
         return false;
     }
 
@@ -1685,13 +1670,17 @@ function cms_unique_site_slug(string $originalSlug, string $originalTitle, strin
  * @param string $show
  * @param string $filter
  * @return string
+ * @throws ContainerExceptionInterface
  * @throws Exception
  * @throws InvalidArgumentException
+ * @throws NotFoundExceptionInterface
  * @throws ReflectionException
+ * @throws TypeException
  */
 function get_siteinfo(string $show = '', string $filter = 'raw'): string
 {
     $dispatch = [
+        'domain' => get_site_domain(get_current_site_id()),
         'homeurl' => home_url(),
         'siteurl' => site_url(),
         'description' => get_option(key: 'site_description'),
@@ -1743,9 +1732,12 @@ function get_siteinfo(string $show = '', string $filter = 'raw'): string
  * @file core/Shared/Helpers/site.php
  * @param string $show
  * @return string
+ * @throws ContainerExceptionInterface
  * @throws Exception
  * @throws InvalidArgumentException
+ * @throws NotFoundExceptionInterface
  * @throws ReflectionException
+ * @throws TypeException
  */
 function siteinfo(string $show = ''): string
 {
@@ -1842,4 +1834,36 @@ function site_switching_in_effect(): bool
 {
     return Registry::getInstance()->has(id: 'switched_stack')
     && !empty(Registry::getInstance()->get(id: 'switched_stack'));
+}
+
+/**
+ * Whether site is the main site.
+ *
+ * @param string|null $siteId
+ * @return bool
+ * @throws ContainerExceptionInterface
+ * @throws Exception
+ * @throws InvalidArgumentException
+ * @throws NotFoundExceptionInterface
+ * @throws ReflectionException
+ * @throws TypeException
+ */
+function is_main_site(?string $siteId = null): bool
+{
+    /** @var Site $site */
+    $site = get_site_by('id', $siteId ?? get_current_site_id());
+    $connection = config()->string(key: 'database.default');
+
+    if($site->key === config()->string(key: "database.connections.$connection.prefix")) {
+        return true;
+    }
+    if($site->domain === config()->string(key: 'cms.main_site_url')) {
+        return true;
+    }
+    if($site->id === config()->string(key: 'cms.main_site_id')) {
+        return true;
+    }
+
+    return false;
+
 }

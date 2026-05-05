@@ -31,7 +31,9 @@ use function App\Shared\Helpers\cms_update_site;
 use function App\Shared\Helpers\current_user_can;
 use function App\Shared\Helpers\get_all_sites;
 use function App\Shared\Helpers\get_all_users;
+use function App\Shared\Helpers\get_current_site_id;
 use function App\Shared\Helpers\get_site_by;
+use function App\Shared\Helpers\is_main_site;
 use function App\Shared\Helpers\is_multisite;
 use function App\Shared\Helpers\sort_list;
 use function Codefy\Framework\Helpers\config;
@@ -39,7 +41,6 @@ use function Codefy\Framework\Helpers\logger;
 use function Codefy\Framework\Helpers\trans;
 use function Codefy\Framework\Helpers\view;
 use function Qubus\Error\Helpers\is_error;
-use function Qubus\Routing\Helpers\request;
 use function Qubus\Support\Helpers\is_false__;
 use function sprintf;
 
@@ -292,7 +293,7 @@ final class AdminSiteController extends BaseController
             return $this->redirect(admin_url());
         }
 
-        if(config()->string(key: 'cms.main_site_url') !== request()->getHost()) {
+        if(!is_main_site(get_current_site_id())) {
             Devflow::$PHP->flash->error(
                 message: trans('The action is not allowed.')
             );
@@ -457,15 +458,7 @@ final class AdminSiteController extends BaseController
         }
 
         try {
-            $connection = config()->string(key: 'database.default');
-
-            /** @var Site $checkSite */
-            $checkSite = get_site_by('id', $siteId);
-
-            if (
-                    $checkSite->key === config()->string(key: "database.connections.$connection.prefix") ||
-                    $checkSite->domain === config()->string(key: 'cms.main_site_url')
-            ) {
+            if (is_main_site($siteId)) {
                 Devflow::$PHP->flash->error(
                     message: trans('This action is not allowed.')
                 );
