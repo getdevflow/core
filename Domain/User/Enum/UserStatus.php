@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\User\Enum;
 
-use function Qubus\Security\Helpers\t__;
+use function Codefy\Framework\Helpers\trans;
 
 enum UserStatus: string
 {
@@ -16,10 +16,10 @@ enum UserStatus: string
     public function label(): string
     {
         return match ($this) {
-            self::A => t__(msgid: 'Active', domain: 'devflow'),
-            self::I => t__(msgid: 'Inactive', domain: 'devflow'),
-            self::B => t__(msgid: 'Blocked', domain: 'devflow'),
-            self::S => t__(msgid: 'Spammer', domain: 'devflow'),
+            self::A => trans('Active'),
+            self::I => trans('Inactive'),
+            self::B => trans('Blocked'),
+            self::S => trans('Spammer'),
         };
     }
 

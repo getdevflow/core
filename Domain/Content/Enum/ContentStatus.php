@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Content\Enum;
 
 use function array_column;
+use function Codefy\Framework\Helpers\trans;
 
 enum ContentStatus: string
 {
@@ -25,11 +26,11 @@ enum ContentStatus: string
     public function label(): string
     {
         return match ($this) {
-            self::PUBLISHED => 'Published',
-            self::SCHEDULED => 'Scheduled',
-            self::DRAFT => 'Draft',
-            self::PENDING => 'Pending',
-            self::ARCHIVED => 'Archived',
+            self::PUBLISHED => trans('Published'),
+            self::SCHEDULED => trans('Scheduled'),
+            self::DRAFT => trans('Draft'),
+            self::PENDING => trans('Pending'),
+            self::ARCHIVED => trans('Archived'),
         };
     }
 
