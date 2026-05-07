@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\Console\Commands;
 
+use App\Infrastructure\Persistence\Repository\ExtensionRepository;
 use Codefy\QueryBus\UnresolvableQueryHandlerException;
 use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
@@ -19,6 +20,7 @@ use ReflectionException;
 use function App\Shared\Helpers\get_all_sites;
 use function App\Shared\Helpers\restore_current_site;
 use function App\Shared\Helpers\switch_to_site;
+use function Codefy\Framework\Helpers\base_path;
 use function preg_filter;
 
 class ClearCacheCommand extends ConsoleCommand
@@ -52,6 +54,11 @@ class ClearCacheCommand extends ConsoleCommand
                 'productslug','productsku','product_attribute','options'
             ]
         );
+
+        $repository = new ExtensionRepository(
+            composerLockPath: base_path('composer.lock')
+        );
+        $repository->clearCache();
 
         foreach ($globalNamespaces as $namespace) {
             SimpleCacheObjectCacheFactory::make(namespace: $namespace)->clear();

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Infrastructure\Http\Controllers;
 
 use App\Application\Devflow;
+use App\Infrastructure\Persistence\Repository\ExtensionRepository;
 use App\Shared\Services\ItemPoolObjectCacheFactory;
 use App\Shared\Services\SimpleCacheObjectCacheFactory;
 use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
@@ -27,6 +28,7 @@ use function App\Shared\Helpers\current_user_can;
 use function App\Shared\Helpers\get_current_site_key;
 use function App\Shared\Helpers\get_users_by_site_key;
 use function App\Shared\Helpers\is_user_logged_in;
+use function Codefy\Framework\Helpers\base_path;
 use function Codefy\Framework\Helpers\trans;
 use function Codefy\Framework\Helpers\view;
 use function preg_filter;
@@ -120,6 +122,12 @@ final class AdminDashboardController extends BaseController
 
         if (true === SimpleCacheObjectCacheFactory::make(namespace: Devflow::db()->prefix . 'user_attribute')->clear()) {
             ItemPoolObjectCacheFactory::make()->clear();
+
+            $repository = new ExtensionRepository(
+                composerLockPath: base_path('composer.lock')
+            );
+            $repository->clearCache();
+
 
             foreach ($namespaces as $namespace) {
                 SimpleCacheObjectCacheFactory::make(namespace: $namespace)->clear();
