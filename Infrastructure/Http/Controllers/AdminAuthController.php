@@ -24,8 +24,10 @@ use function App\Shared\Helpers\admin_url;
 use function App\Shared\Helpers\cms_authenticate_user;
 use function App\Shared\Helpers\cms_clear_auth_cookie;
 use function App\Shared\Helpers\current_user_can;
+use function App\Shared\Helpers\get_current_user_id;
 use function App\Shared\Helpers\get_option;
 use function App\Shared\Helpers\get_user_by;
+use function App\Shared\Helpers\get_userdata;
 use function App\Shared\Helpers\login_url;
 use function App\Shared\Helpers\reset_password;
 use function App\Shared\Helpers\site_url;
@@ -146,6 +148,8 @@ final class AdminAuthController extends BaseController
             );
             return $this->redirect($redirectLink);
         }
+
+        UserCachePsr16::clean(get_userdata(get_current_user_id()));
 
         /**
          * This function is documented in core/Shared/Helpers/auth.php.
