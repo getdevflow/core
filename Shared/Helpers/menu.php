@@ -25,6 +25,7 @@ use function Qubus\Support\Helpers\add_trailing_slash;
  * @param string $menuRoute The route part of the url.
  * @param string $screen Unique name of menu's screen.
  * @param string|null $permission The permission required for this menu to be displayed to the user.
+ * @param bool $newTab Whether to open menu link in a new tab/window.
  * @return mixed
  * @throws ContainerExceptionInterface
  * @throws Exception
@@ -38,25 +39,38 @@ function add_admin_submenu(
     string $menuTitle,
     string $menuRoute,
     string $screen,
-    ?string $permission = null
+    ?string $permission = null,
+    bool $newTab = false
 ): mixed {
-    if ($permission !== null) {
-        if (!current_user_can($permission)) {
-            return false;
-        }
+    if ($permission !== null && !current_user_can($permission)) {
+        return false;
     }
+
     $menuRoute = add_trailing_slash($menuRoute);
 
-    if ('' !== current_screen('screen_child', $screen)) {
-        $menu = '<li' . current_screen('screen_child', $screen) . '>
-        <a href="' . admin_url($menuRoute) . '">
-        <i class="fa-regular fa-circle" style="color:#3498db;font-weight:bold;"></i> 
-        <strong>' . $menuTitle . '</strong></a></li>' . "\n";
-    } else {
-        $menu = '<li' . current_screen('screen_child', $screen) . '>
-        <a href="' . admin_url($menuRoute) . '"><i class="fa-regular fa-circle"></i> ' .
-        $menuTitle . '</a></li>' . "\n";
-    }
+    $target = $newTab ? ' target="_blank" rel="noopener noreferrer"' : '';
+
+    $isActive = '' !== current_screen('screen_child', $screen);
+
+    $icon = $isActive
+        ? '<i class="fa-regular fa-circle" style="color:#3498db;font-weight:bold;"></i>'
+        : '<i class="fa-regular fa-circle"></i>';
+
+    $title = $isActive
+        ? '<strong>' . $menuTitle . '</strong>'
+        : $menuTitle;
+
+
+    $menu = sprintf(
+        '<li%s><a href="%s"%s>%s %s</a></li>%s',
+        current_screen('screen_child', $screen),
+        admin_url($menuRoute),
+        $target,
+        $icon,
+        $title,
+        "\n"
+    );
+
     /**
      * Filter's the admin menu.
      *
@@ -76,6 +90,7 @@ function add_admin_submenu(
  * @param string $menuRoute The route part of the url.
  * @param string $screen Unique name of menu's screen.
  * @param string|null $permission The permission required for this menu to be displayed to the user.
+ * @param bool $newTab Whether to open menu link in a new tab/window.
  * @return false|string         Return the new menu or false if permission is not met.
  * @throws ContainerExceptionInterface
  * @throws Exception
@@ -88,9 +103,10 @@ function add_dashboard_submenu(
     string $menuTitle,
     string $menuRoute,
     string $screen,
-    ?string $permission = null
+    ?string $permission = null,
+    bool $newTab = false
 ): false|string {
-    return add_admin_submenu('dashboard', $menuTitle, $menuRoute, $screen, $permission);
+    return add_admin_submenu('dashboard', $menuTitle, $menuRoute, $screen, $permission, $newTab);
 }
 
 /**
@@ -101,6 +117,7 @@ function add_dashboard_submenu(
  * @param string $menuRoute The route part of the url.
  * @param string $screen Unique name of menu's screen.
  * @param string|null $permission The permission required for this menu to be displayed to the user.
+ * @param bool $newTab Whether to open menu link in a new tab/window.
  * @return false|string         Return the new menu or false if permission is not met.
  * @throws ContainerExceptionInterface
  * @throws Exception
@@ -113,9 +130,10 @@ function add_sites_submenu(
     string $menuTitle,
     string $menuRoute,
     string $screen,
-    ?string $permission = null
+    ?string $permission = null,
+    bool $newTab = false
 ): false|string {
-    return add_admin_submenu('sites', $menuTitle, $menuRoute, $screen, $permission);
+    return add_admin_submenu('sites', $menuTitle, $menuRoute, $screen, $permission, $newTab);
 }
 
 /**
@@ -126,6 +144,7 @@ function add_sites_submenu(
  * @param string $menuRoute The route part of the url.
  * @param string $screen Unique name of menu's screen.
  * @param string|null $permission The permission required for this menu to be displayed to the user.
+ * @param bool $newTab Whether to open menu link in a new tab/window.
  * @return false|string         Return the new menu or false if permission is not met.
  * @throws ContainerExceptionInterface
  * @throws Exception
@@ -138,9 +157,10 @@ function add_plugins_submenu(
     string $menuTitle,
     string $menuRoute,
     string $screen,
-    ?string $permission = null
+    ?string $permission = null,
+    bool $newTab = false
 ): false|string {
-    return add_admin_submenu('plugins', $menuTitle, $menuRoute, $screen, $permission);
+    return add_admin_submenu('plugins', $menuTitle, $menuRoute, $screen, $permission, $newTab);
 }
 
 /**
@@ -151,6 +171,7 @@ function add_plugins_submenu(
  * @param string $menuRoute The route part of the url.
  * @param string $screen Unique name of menu's screen.
  * @param string|null $permission The permission required for this menu to be displayed to the user.
+ * @param bool $newTab Whether to open menu link in a new tab/window.
  * @return false|string         Return the new menu or false if permission is not met.
  * @throws ContainerExceptionInterface
  * @throws Exception
@@ -163,9 +184,10 @@ function add_themes_submenu(
     string $menuTitle,
     string $menuRoute,
     string $screen,
-    ?string $permission = null
+    ?string $permission = null,
+    bool $newTab = false
 ): false|string {
-    return add_admin_submenu('themes', $menuTitle, $menuRoute, $screen, $permission);
+    return add_admin_submenu('themes', $menuTitle, $menuRoute, $screen, $permission, $newTab);
 }
 
 /**
@@ -176,6 +198,7 @@ function add_themes_submenu(
  * @param string $menuRoute The route part of the url.
  * @param string $screen Unique name of menu's screen.
  * @param string|null $permission The permission required for this menu to be displayed to the user.
+ * @param bool $newTab Whether to open menu link in a new tab/window.
  * @return false|string         Return the new menu or false if permission is not met.
  * @throws ContainerExceptionInterface
  * @throws Exception
@@ -188,9 +211,10 @@ function add_users_submenu(
     string $menuTitle,
     string $menuRoute,
     string $screen,
-    ?string $permission = null
+    ?string $permission = null,
+    bool $newTab = false
 ): false|string {
-    return add_admin_submenu('users', $menuTitle, $menuRoute, $screen, $permission);
+    return add_admin_submenu('users', $menuTitle, $menuRoute, $screen, $permission, $newTab);
 }
 
 /**
@@ -201,6 +225,7 @@ function add_users_submenu(
  * @param string $menuRoute The route part of the url.
  * @param string $screen Unique name of menu's screen.
  * @param string|null $permission The permission required for this menu to be displayed to the user.
+ * @param bool $newTab Whether to open menu link in a new tab/window.
  * @return false|string         Return the new menu or false if permission is not met.
  * @throws ContainerExceptionInterface
  * @throws Exception
@@ -213,7 +238,8 @@ function add_options_submenu(
     string $menuTitle,
     string $menuRoute,
     string $screen,
-    ?string $permission = null
+    ?string $permission = null,
+    bool $newTab = false
 ): false|string {
-    return add_admin_submenu('options', $menuTitle, $menuRoute, $screen, $permission);
+    return add_admin_submenu('options', $menuTitle, $menuRoute, $screen, $permission, $newTab);
 }
