@@ -6,6 +6,7 @@ namespace App\Shared\Helpers;
 
 use App\Application\Devflow;
 use App\Domain\User\Model\User;
+use App\Infrastructure\Persistence\Cache\UserCachePsr16;
 use Qubus\Expressive\Database;
 use App\Infrastructure\Services\NativePhpCookies;
 use Codefy\Framework\Auth\Rbac\Rbac;
@@ -282,6 +283,8 @@ function cms_authenticate_user(string $login, string $password, string $remember
         );
         return redirect($request->getHeaderLine(name: 'Referer'));
     }
+
+    UserCachePsr16::update($user);
 
     /**
      * Filters log in details.
