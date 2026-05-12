@@ -73,9 +73,35 @@ class InstallCmsCommand extends ConsoleCommand
     {
         $envWriter = new EnvWriter($this->codefy->basePath() . $this->codefy::DS . '.env');
 
-        if ($this->usersExist()) {
-            $this->terminalRaw(string: '<error>Error: system already installed.</error>');
-            return self::FAILURE;
+        switch ($this->getInstallState()) {
+            case 'installed':
+                $this->terminalRaw(
+                    string: '<error>Error: system already installed.</error>'
+                );
+
+                return self::SUCCESS;
+
+            case 'partial_users':
+                $this->terminalRaw(
+                    string: '<error>Error: partial installation detected.</error>'
+                );
+
+                $this->terminalRaw(
+                    string: '<comment>Users exist but install.lock is missing.</comment>'
+                );
+
+                return self::FAILURE;
+
+            case 'partial_lock':
+                $this->terminalRaw(
+                    string: '<error>Error: stale install.lock detected.</error>'
+                );
+
+                $this->terminalRaw(
+                    string: '<comment>Remove install.lock or reset the installation.</comment>'
+                );
+
+                return self::FAILURE;
         }
 
         $this->terminalRaw(string: '<info>Installer started....</info>');
@@ -98,7 +124,7 @@ class InstallCmsCommand extends ConsoleCommand
 
         $this->createSiteOptions();
 
-        file_put_contents(storage_path(path: 'install.lock'), LOCK_EX);
+        file_put_contents(storage_path(path: 'install.lock'), 'installed', LOCK_EX);
 
         $this->terminalRaw(string: '<info>New account details: </info>');
         $this->terminalRaw(string: '<info>=====================</info>');
@@ -282,12 +308,26 @@ class InstallCmsCommand extends ConsoleCommand
         return $siteId->toNative();
     }
 
-    protected function usersExist(): bool
+    protected function getInstallState(): string
     {
         $prefix = $this->dfdb->basePrefix;
         $sql = "SELECT COUNT(*) FROM {$prefix}user";
         $users = $this->dfdb->getVar($sql);
 
-        return $users > 0 && file_exists(storage_path('install.lock'));
+        $hasUsers = $users > 0;
+
+        $hasLock = file_exists(
+            storage_path('install.lock')
+        );
+
+        return match (true) {
+            ! $hasUsers && ! $hasLock => 'fresh',
+
+            $hasUsers && $hasLock => 'installed',
+
+            $hasUsers && ! $hasLock => 'partial_users',
+
+            ! $hasUsers && $hasLock => 'partial_lock',
+        };
     }
 }
