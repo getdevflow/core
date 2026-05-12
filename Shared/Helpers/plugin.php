@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Shared\Helpers;
 
 use App\Application\Devflow;
+use JsonException;
+use Psr\SimpleCache\InvalidArgumentException;
 use Qubus\Expressive\Database;
 use App\Infrastructure\Services\Options;
 use App\Shared\Services\PhpFileParser;
@@ -246,14 +248,14 @@ function plugin_url(string $path = '', string $plugin = ''): string
     $path = normalize_path($path);
     $plugin = normalize_path($plugin);
 
-    $pluginUrl = site_url('plugins/');
+    $pluginUrl = rtrim(site_url('plugins'), '/');
 
     $url = set_url_scheme($pluginUrl);
 
     if (!empty($plugin) && is_string($plugin)) {
         $folder = plugin_basename(dirname($plugin));
-        if ('.' != $folder) {
-            $url .= ltrim($folder, '/');
+        if ('.' !== $folder) {
+            $url .= '/' . trim($folder, '/');
         }
     }
 
@@ -312,4 +314,47 @@ function plugin_info(string $pluginsDir = ''): array
     }
 
     return $info;
+}
+
+/**
+ * @throws NotFoundExceptionInterface
+ * @throws ReflectionException
+ * @throws ContainerExceptionInterface
+ * @throws TypeException
+ * @throws InvalidArgumentException
+ */
+function plugin_available_for_subsites(string $className): bool
+{
+    $plugins = get_global_option('available_plugins', []);
+
+    return is_array($plugins) && in_array($className, $plugins, true);
+}
+
+/**
+ * @throws NotFoundExceptionInterface
+ * @throws ContainerExceptionInterface
+ * @throws InvalidArgumentException
+ * @throws JsonException
+ * @throws ReflectionException
+ * @throws TypeException
+ */
+function set_plugin_available_for_subsites(string $className, bool $available): void
+{
+    $plugins = get_global_option('available_plugins', []);
+
+    if (! is_array($plugins)) {
+        $plugins = [];
+    }
+
+    if ($available) {
+        $plugins[] = $className;
+        $plugins = array_values(array_unique($plugins));
+    } else {
+        $plugins = array_values(array_filter(
+            $plugins,
+            static fn (string $plugin): bool => $plugin !== $className
+        ));
+    }
+
+    update_global_option('available_plugins', $plugins);
 }

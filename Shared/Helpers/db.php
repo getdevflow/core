@@ -15,6 +15,8 @@ use App\Domain\Site\Query\FindSitesByOwnerQuery;
 use App\Domain\Site\ValueObject\SiteId;
 use App\Domain\User\Model\User;
 use App\Domain\User\ValueObject\UserId;
+use JsonException;
+use Psr\SimpleCache\CacheInterface;
 use Qubus\Expressive\Database;
 use App\Infrastructure\Services\Options;
 use App\Shared\Services\Sanitizer;
@@ -35,6 +37,8 @@ use Qubus\Support\DateTime\QubusDateTimeImmutable;
 use Qubus\Support\Inflector;
 use ReflectionException;
 
+use Throwable;
+
 use function Codefy\Framework\Helpers\app;
 use function Codefy\Framework\Helpers\ask;
 use function Codefy\Framework\Helpers\command;
@@ -42,6 +46,7 @@ use function Codefy\Framework\Helpers\logger;
 use function Codefy\Framework\Helpers\trans_html;
 use function count;
 use function in_array;
+use function json_decode;
 use function md5;
 use function Qubus\Security\Helpers\__observer;
 use function Qubus\Security\Helpers\esc_html;
@@ -49,6 +54,8 @@ use function Qubus\Support\Helpers\is_false__;
 use function Qubus\Support\Helpers\is_null__;
 use function sprintf;
 use function strtolower;
+
+use const JSON_THROW_ON_ERROR;
 
 /**
  * Global database function.
@@ -918,4 +925,204 @@ function is_super_admin(?string $userId = null): bool
     }
 
     return false;
+}
+
+/**
+ * @throws NotFoundExceptionInterface
+ * @throws ReflectionException
+ * @throws ContainerExceptionInterface
+ * @throws TypeException
+ */
+function global_option_cache(): CacheInterface
+{
+    return SimpleCacheObjectCacheFactory::make(namespace: 'global_options');
+}
+
+/**
+ * Retrieve a global option.
+ *
+ * @param string $key
+ * @param mixed|null $default
+ * @return mixed
+ * @throws ContainerExceptionInterface
+ * @throws InvalidArgumentException
+ * @throws NotFoundExceptionInterface
+ * @throws ReflectionException
+ * @throws TypeException
+ */
+function get_global_option(
+    string $key,
+    mixed $default = null
+): mixed {
+    $dfdb = dfdb();
+    $cacheKey = 'global_option_' . $key;
+    $cache = global_option_cache();
+
+    if ($cache->has($cacheKey)) {
+        return $cache->get($cacheKey);
+    }
+
+    $option = $dfdb
+        ->table($dfdb->basePrefix . 'global_option')
+        ->select('option_value')
+        ->where('option_key', $key)
+        ->findOne(null);
+
+    if (!$option) {
+        return $default;
+    }
+
+    $value = $option->option_value;
+
+    if ($value===null) {
+        return $default;
+    }
+
+    try {
+        $decoded = json_decode(
+            json: $value,
+            associative: true,
+            flags: JSON_THROW_ON_ERROR
+        );
+    } catch (Throwable) {
+        $decoded = $value;
+    }
+
+    $cache->set($cacheKey, $decoded);
+
+    return $decoded;
+}
+
+/**
+ * Create a global option.
+ *
+ * @param string $key
+ * @param mixed $value
+ * @param bool $autoload
+ * @return bool
+ * @throws ContainerExceptionInterface
+ * @throws InvalidArgumentException
+ * @throws JsonException
+ * @throws NotFoundExceptionInterface
+ * @throws ReflectionException
+ * @throws TypeException
+ */
+function create_global_option(
+    string $key,
+    mixed $value,
+    bool $autoload = false
+): bool {
+    $dfdb = dfdb();
+
+    $exists = $dfdb
+        ->table($dfdb->basePrefix . 'global_option')
+        ->where('option_key', $key)
+        ->count('option_key');
+
+    if ($exists <= 0) {
+        return false;
+    }
+
+    $encoded = json_encode(
+        value: $value,
+        flags: JSON_THROW_ON_ERROR
+    );
+
+    $dfdb
+        ->table($dfdb->basePrefix . 'global_option')
+        ->insert([
+            'option_key' => $key,
+            'option_value' => $encoded,
+            'autoload' => $autoload ? 1:0,
+        ]);
+
+    global_option_cache()->set(
+        'global_option_' . $key,
+        $value
+    );
+
+    return true;
+}
+
+/**
+ * Update or create a global option.
+ *
+ * @param string $key
+ * @param mixed $value
+ * @param bool $autoload
+ * @return bool
+ * @throws ContainerExceptionInterface
+ * @throws InvalidArgumentException
+ * @throws JsonException
+ * @throws NotFoundExceptionInterface
+ * @throws ReflectionException
+ * @throws TypeException
+ */
+function update_global_option(
+    string $key,
+    mixed $value,
+    bool $autoload = false
+): bool {
+    $dfdb = dfdb();
+
+    $exists = $dfdb
+        ->table($dfdb->basePrefix . 'global_option')
+        ->where('option_key', $key)
+        ->count('option_key');
+
+    $encoded = json_encode(
+        value: $value,
+        flags: JSON_THROW_ON_ERROR
+    );
+
+    if ($exists > 0) {
+        $dfdb
+            ->table($dfdb->basePrefix . 'global_option')
+            ->where('option_key', $key)
+            ->update([
+                'option_value' => $encoded,
+                'autoload' => $autoload ? 1:0,
+            ]);
+    } else {
+        $dfdb
+            ->table($dfdb->basePrefix . 'global_option')
+            ->insert([
+                'option_key' => $key,
+                'option_value' => $encoded,
+                'autoload' => $autoload ? 1:0,
+            ]);
+    }
+
+    global_option_cache()->set(
+        'global_option_' . $key,
+        $value
+    );
+
+    return true;
+}
+
+/**
+ * Delete a global option.
+ *
+ * @param string $key
+ * @return bool
+ * @throws ContainerExceptionInterface
+ * @throws InvalidArgumentException
+ * @throws NotFoundExceptionInterface
+ * @throws ReflectionException
+ * @throws TypeException
+ */
+function delete_global_option(string $key): bool
+{
+    $dfdb = dfdb();
+    $dfdb
+        ->table($dfdb->basePrefix . 'global_option')
+        ->where('option_key', $key)
+        ->delete();
+
+    global_option_cache()->delete(
+        'global_option_' . $key
+    );
+
+    return true;
 }

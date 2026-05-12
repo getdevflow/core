@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Shared\Helpers;
 
+use JsonException;
 use Qubus\Expressive\Database;
 use App\Infrastructure\Services\Options;
 use App\Shared\Services\Items;
@@ -900,4 +901,47 @@ function product_published_datetime(): ?string
         return get_product_datetime(product_id());
     }
     return $publishedDatetime;
+}
+
+/**
+ * @throws NotFoundExceptionInterface
+ * @throws ReflectionException
+ * @throws ContainerExceptionInterface
+ * @throws TypeException
+ * @throws InvalidArgumentException
+ */
+function theme_available_for_subsites(string $className): bool
+{
+    $themes = get_global_option('available_themes', []);
+
+    return is_array($themes) && in_array($className, $themes, true);
+}
+
+/**
+ * @throws NotFoundExceptionInterface
+ * @throws ContainerExceptionInterface
+ * @throws InvalidArgumentException
+ * @throws JsonException
+ * @throws ReflectionException
+ * @throws TypeException
+ */
+function set_theme_available_for_subsites(string $className, bool $available): void
+{
+    $themes = get_global_option('available_themes', []);
+
+    if (! is_array($themes)) {
+        $themes = [];
+    }
+
+    if ($available) {
+        $themes[] = $className;
+        $themes = array_values(array_unique($themes));
+    } else {
+        $themes = array_values(array_filter(
+            $themes,
+            static fn (string $theme): bool => $theme !== $className
+        ));
+    }
+
+    update_global_option('available_themes', $themes);
 }
