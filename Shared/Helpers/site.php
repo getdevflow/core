@@ -55,11 +55,13 @@ use function Codefy\Framework\Helpers\config;
 use function Codefy\Framework\Helpers\logger;
 use function Codefy\Framework\Helpers\public_path;
 use function Codefy\Framework\Helpers\resource_path;
+use function Codefy\Framework\Helpers\trans;
 use function Codefy\Framework\Helpers\trans_html;
 use function crc32;
 use function date;
 use function file_get_contents;
 use function mkdir;
+use function Qubus\Routing\Helpers\redirect;
 use function Qubus\Security\Helpers\__observer;
 use function Qubus\Security\Helpers\esc_html;
 use function Qubus\Security\Helpers\unslash;
@@ -926,6 +928,10 @@ function cms_update_site(array|ServerRequestInterface|Site $sitedata): Error|str
         $sitedata = $sitedata->getParsedBody();
     } elseif ($sitedata instanceof Site) {
         $sitedata = $sitedata->toArray();
+    }
+
+    if(is_main_site($sitedata['id']) && $sitedata['status'] === 'archive') {
+        return new SiteError(trans('You cannot archive the main site.'));
     }
 
     $dfdb = dfdb();

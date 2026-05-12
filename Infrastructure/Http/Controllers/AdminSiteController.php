@@ -184,8 +184,9 @@ final class AdminSiteController extends BaseController
             $id = cms_update_site($dataArrayMerge);
             if (is_error($id)) {
                 Devflow::$PHP->flash->error(
-                    message: trans('Change error occurred.')
+                    message: trans($id->getMessage())
                 );
+                return $this->redirect($request->getHeaderLine('Referer'));
             }
 
             Devflow::$PHP->flash->success(Devflow::$PHP->flash->notice(num: 200));
