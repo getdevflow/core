@@ -27,6 +27,8 @@ use function App\Shared\Helpers\admin_url;
 use function App\Shared\Helpers\current_user_can;
 use function App\Shared\Helpers\get_current_site_key;
 use function App\Shared\Helpers\get_users_by_site_key;
+use function App\Shared\Helpers\global_option_cache;
+use function App\Shared\Helpers\is_main_site;
 use function App\Shared\Helpers\is_user_logged_in;
 use function Codefy\Framework\Helpers\base_path;
 use function Codefy\Framework\Helpers\trans;
@@ -122,6 +124,10 @@ final class AdminDashboardController extends BaseController
 
         if (true === SimpleCacheObjectCacheFactory::make(namespace: Devflow::db()->prefix . 'user_attribute')->clear()) {
             ItemPoolObjectCacheFactory::make()->clear();
+
+            if (is_main_site()) {
+                global_option_cache()->clear();
+            }
 
             $repository = new ExtensionRepository(
                 composerLockPath: base_path('composer.lock')

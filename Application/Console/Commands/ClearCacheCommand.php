@@ -18,6 +18,8 @@ use Psr\Container\NotFoundExceptionInterface;
 use ReflectionException;
 
 use function App\Shared\Helpers\get_all_sites;
+use function App\Shared\Helpers\global_option_cache;
+use function App\Shared\Helpers\is_main_site;
 use function App\Shared\Helpers\restore_current_site;
 use function App\Shared\Helpers\switch_to_site;
 use function Codefy\Framework\Helpers\base_path;
@@ -62,6 +64,10 @@ class ClearCacheCommand extends ConsoleCommand
 
         foreach ($globalNamespaces as $namespace) {
             SimpleCacheObjectCacheFactory::make(namespace: $namespace)->clear();
+        }
+
+        if (is_main_site()) {
+            global_option_cache()->clear();
         }
 
         foreach (get_all_sites() as $site) {
