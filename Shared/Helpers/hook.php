@@ -412,7 +412,7 @@ function cms_editor(?string $selector = null): void
         function elFinderBrowser(callback, value, meta) {
             tinymce.activeEditor.windowManager.open({
                 file: "<?= admin_url(path: 'elfinder/'); ?>",
-                title: "elFinder 2.1.67",
+                title: "elFinder 2.1.69",
                 width: 900,
                 height: 425,
                 resizable: "yes"
