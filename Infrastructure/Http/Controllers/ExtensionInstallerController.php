@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Http\Controllers;
 
+use App\Application\Devflow;
 use App\Infrastructure\Persistence\Repository\ExtensionRepository;
 use Exception;
 use JsonException;
@@ -19,11 +20,15 @@ use RuntimeException;
 use Symfony\Component\Process\Process;
 use Throwable;
 
+use function App\Shared\Helpers\admin_url;
+use function App\Shared\Helpers\current_user_can;
 use function array_any;
 use function Codefy\Framework\Helpers\base_path;
+use function Codefy\Framework\Helpers\trans;
 use function Codefy\Framework\Helpers\view;
 use function in_array;
 use function preg_match;
+use function Qubus\Routing\Helpers\redirect;
 use function trim;
 
 final class ExtensionInstallerController
@@ -40,6 +45,12 @@ final class ExtensionInstallerController
      */
     public function plugins(): ResponseInterface
     {
+        if (!current_user_can(perm: 'install:plugins')) {
+            Devflow::$PHP->flash->error(message: trans('Access denied.'));
+
+            return redirect(admin_url('plugin'));
+        }
+
         $repository = new ExtensionRepository(
             composerLockPath: base_path('composer.lock')
         );
@@ -61,6 +72,12 @@ final class ExtensionInstallerController
      */
     public function themes(): ResponseInterface
     {
+        if (!current_user_can(perm: 'install:themes')) {
+            Devflow::$PHP->flash->error(message: trans('Access denied.'));
+
+            return redirect(admin_url('theme'));
+        }
+
         $repository = new ExtensionRepository(
             composerLockPath: base_path('composer.lock')
         );
