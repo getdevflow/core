@@ -223,10 +223,18 @@ function delete_site_tables(string $siteId, Site $oldSite): bool
         return false;
     }
 
+    $sqlite = config()->string(key: 'database.default') === 'sqlite';
+
+    $sql = "SHOW TABLES LIKE ?";
+
+    if($sqlite) {
+        $sql = "SELECT name FROM sqlite_master WHERE type IN ('table') AND name LIKE ?";
+    }
+
     $tables = [];
     $sql = $dfdb->getResults(
         $dfdb->prepare(
-            "SHOW TABLES LIKE ?",
+            $sql,
             [
                 "%$oldSite->key%"
             ]
@@ -250,11 +258,17 @@ function delete_site_tables(string $siteId, Site $oldSite): bool
     $dropTables = __observer()->filter->applyFilter('site.drop.tables', $tables, $oldSite->key);
 
     try {
-        $dfdb->getConnection()->pdo->exec(statement: "SET GLOBAL FOREIGN_KEY_CHECKS=0;");
-        foreach ((array) $dropTables as $table) {
-            $dfdb->getConnection()->pdo->exec(statement: sprintf("DROP TABLE IF EXISTS %s", $table));
+        if($sqlite) {
+            foreach ((array) $dropTables as $table) {
+                $dfdb->getConnection()->pdo->exec(statement: sprintf("DROP TABLE IF EXISTS %s", $table));
+            }
+        } else {
+            $dfdb->getConnection()->pdo->exec(statement: "SET GLOBAL FOREIGN_KEY_CHECKS=0;");
+            foreach ((array) $dropTables as $table) {
+                $dfdb->getConnection()->pdo->exec(statement: sprintf("DROP TABLE IF EXISTS %s", $table));
+            }
+            $dfdb->getConnection()->pdo->exec(statement: "SET GLOBAL FOREIGN_KEY_CHECKS=1;");
         }
-        $dfdb->getConnection()->pdo->exec(statement: "SET GLOBAL FOREIGN_KEY_CHECKS=1;");
 
         return true;
     } catch (PDOException | \Exception $e) {
@@ -1107,7 +1121,7 @@ function cms_delete_site_user(string $userId, array $params = []): Error|bool
          */
         if (!empty($sites)) {
             foreach ($sites as $site) {
-                SiteCachePsr16::clean($site);
+                SiteCachePsr16::clean((array) $site);
                 AttributesFactory::user()->createIfMissing(siteId: $site->id, userId: $params['assign_id']);
 
                 add_user_to_site($params['assign_id'], $site->id, $params['role']);
