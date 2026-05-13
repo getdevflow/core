@@ -56,7 +56,7 @@ final class SiteSchema
                         ->primary(name: 'contentTypeId')
                         ->unique(name: $this->prefix . 'contentTypeId');
                     $table->string(name: 'content_type_title', length: 191);
-                    $table->string(name: 'content_type_slug', length: 191);
+                    $table->string(name: 'content_type_slug', length: 191)->unique($this->prefix . 'content_type_slug');
                     $table->text(name: 'content_type_description')->size(value: 'big');
                     $table->index('content_type_slug', $this->prefix . 'contentTypeIndex');
                 }
@@ -112,7 +112,7 @@ final class SiteSchema
                 $table->string(name: 'option_id', length: 36)
                     ->primary(name: 'optionId')
                     ->unique(name: $this->prefix . 'optionId');
-                $table->string(name: 'option_key', length: 191);
+                $table->string(name: 'option_key', length: 191)->unique(name: $this->prefix . 'option_key');
                 $table->text(name: 'option_value')->size(value: 'big');
                 $table->unique('option_key', $this->prefix . 'optionIndex');
             });
