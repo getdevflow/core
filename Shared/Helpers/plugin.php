@@ -58,36 +58,6 @@ function plugin_basename(string $filename): string
 }
 
 /**
- * When a plugin is activated, the action `activate_name` hook is called.
- * `name` is replaced by the actual file name of the plugin being activated.
- * So if the plugin is located at 'public/plugins/SamplePlugin.php', then the hook will
- * call 'activate_Sample'.
- *
- * @param string $filename Plugin's filename.
- * @param mixed $function The function that should be triggered by the hook.
- */
-function register_activation_hook(string $filename, mixed $function): void
-{
-    $pluginName = plugin_basename($filename);
-    __observer()->action->addAction(hook: "activate_{$pluginName}", callback: $function);
-}
-
-/**
- * When a plugin is deactivated, the action `deactivate_name` hook is called.
- * `name` is replaced by the actual file name of the plugin being deactivated.
- * So if the plugin is located at 'public/plugins/SamplePlugin.php', then the hook will
- * call 'deactivate_Sample'.
- *
- * @param string $filename Plugin's filename.
- * @param mixed $function The function that should be triggered by the hook.
- */
-function register_deactivation_hook(string $filename, mixed $function): void
-{
-    $pluginName = plugin_basename($filename);
-    __observer()->action->addAction(hook: "deactivate_{$pluginName}", callback: $function);
-}
-
-/**
  * Get the filesystem directory path (with trailing slash) for the plugin __FILE__ passed in.
  *
  * @param string $filename The filename of the plugin (__FILE__).
@@ -132,6 +102,8 @@ function activate_plugin(string $plugin): void
                     data: ['plugin_id' => Ulid::generateAsString(), 'plugin_classname' => $plugin]
                 );
         });
+
+        Devflow::$PHP->execute([$plugin, 'onActivation']);
     } catch (PDOException | Exception $ex) {
         logger(
             level: 'error',
@@ -163,6 +135,8 @@ function deactivate_plugin(string $plugin): void
                 ->where(condition: 'plugin_classname = ?', parameters: $plugin)
                 ->delete();
         });
+
+        Devflow::$PHP->execute([$plugin, 'onDeactivation']);
     } catch (PDOException | Exception $ex) {
         logger(
             level: 'error',

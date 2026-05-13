@@ -16,6 +16,26 @@ abstract class Plugin implements Extension
     }
 
     /**
+     * Code that should run on activation.
+     *
+     * @return void
+     */
+    public function onActivation(): void
+    {
+        return;
+    }
+
+    /**
+     * Code that should run on deactivation.
+     *
+     * @return void
+     */
+    public function onDeactivation(): void
+    {
+        return;
+    }
+
+    /**
      * Plugin's id.
      */
     protected function id(): string
