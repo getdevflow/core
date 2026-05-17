@@ -386,6 +386,7 @@ function cms_editor(?string $selector = null): void
             selector: "<?= $mceSelector; ?>",
             theme: "<?= $mceTheme; ?>",
             browser_spellcheck: true,
+            convert_urls: false,
             relative_urls: false,
             remove_script_host: false,
             height: 400,

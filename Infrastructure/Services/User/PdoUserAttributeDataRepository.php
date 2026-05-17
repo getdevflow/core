@@ -4,13 +4,16 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Services\User;
 
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
+use Qubus\Exception\Exception;
 use Qubus\Expressive\Database;
+use ReflectionException;
 use RuntimeException;
 
 use function Codefy\Framework\Helpers\trans;
 use function Codefy\Framework\Helpers\trans_html;
 use function is_string;
-use function Qubus\Security\Helpers\purify_html;
 use function sprintf;
 
 final readonly class PdoUserAttributeDataRepository implements UserAttributeRepository
@@ -23,12 +26,15 @@ final readonly class PdoUserAttributeDataRepository implements UserAttributeRepo
      * @param string $siteId
      * @param string $userId
      * @return UserAttributeBag|null
-     * @throws \Exception
+     * @throws Exception
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
      */
     public function find(string $siteId, string $userId): ?UserAttributeBag
     {
         $stmt = $this->dfdb->getConnection()->pdo->prepare(
-                "SELECT user_attribute 
+            "SELECT user_attribute 
              FROM {$this->dfdb->basePrefix}site_user 
              WHERE site_id = :site_id 
              AND user_id = :user_id
@@ -43,7 +49,13 @@ final readonly class PdoUserAttributeDataRepository implements UserAttributeRepo
             return null;
         }
 
-        return UserAttributeBag::fromJson($siteId, $userId, is_string($json) ? purify_html($json) : null);
+        $bag = UserAttributeBag::fromJson(
+            $siteId,
+            $userId,
+            is_string($json) ? $json : null
+        );
+
+        return $bag->withExpandedUrls();
     }
 
     /**
@@ -52,7 +64,10 @@ final readonly class PdoUserAttributeDataRepository implements UserAttributeRepo
      * @param mixed $key
      * @param mixed|null $default
      * @return mixed
-     * @throws \Exception
+     * @throws ContainerExceptionInterface
+     * @throws Exception
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
      */
     public function get(string $siteId, string $userId, string $key, mixed $default = null): mixed
     {
@@ -76,7 +91,7 @@ final readonly class PdoUserAttributeDataRepository implements UserAttributeRepo
     public function exists(string $siteId, string $userId): bool
     {
         $stmt = $this->dfdb->getConnection()->pdo->prepare(
-                "SELECT 1  
+            "SELECT 1  
              FROM {$this->dfdb->basePrefix}site_user 
              WHERE site_id = :site_id 
              AND user_id = :user_id
@@ -102,7 +117,7 @@ final readonly class PdoUserAttributeDataRepository implements UserAttributeRepo
 
         try {
             $stmt = $this->dfdb->getConnection()->pdo->prepare(
-                    "SELECT user_attribute
+                "SELECT user_attribute
                  FROM {$this->dfdb->basePrefix}site_user 
                  WHERE site_id = :site_id 
                  AND user_id = :user_id 
@@ -129,7 +144,7 @@ final readonly class PdoUserAttributeDataRepository implements UserAttributeRepo
             }
 
             $update = $this->dfdb->getConnection()->pdo->prepare(
-                    "UPDATE {$this->dfdb->basePrefix}site_user
+                "UPDATE {$this->dfdb->basePrefix}site_user
                  SET user_attribute = :user_attribute
                  WHERE site_id = :site_id 
                  AND user_id = :user_id"
@@ -138,7 +153,7 @@ final readonly class PdoUserAttributeDataRepository implements UserAttributeRepo
             $update->execute([
                 'site_id' => $siteId,
                 'user_id' => $userId,
-                'user_attribute' => $updated->toJson(),
+                'user_attribute' => $updated->withCompressedUrls()->toJson(),
             ]);
 
             $this->dfdb->getConnection()->pdo->commit();
@@ -159,14 +174,14 @@ final readonly class PdoUserAttributeDataRepository implements UserAttributeRepo
     {
         $this->dfdb->transactional(function () use ($attribute) {
             $stmt = $this->dfdb->getConnection()->pdo->prepare(
-                    "INSERT INTO {$this->dfdb->basePrefix}site_user (site_id, user_id, user_attribute)
+                "INSERT INTO {$this->dfdb->basePrefix}site_user (site_id, user_id, user_attribute)
                  VALUES (:site_id, :user_id, :user_attribute)"
             );
 
             $stmt->execute([
                 'site_id' => $attribute->siteId(),
                 'user_id' => $attribute->userId(),
-                'user_attribute' => $attribute->toJson(),
+                'user_attribute' => $attribute->withCompressedUrls()->toJson(),
             ]);
         });
     }
@@ -180,7 +195,7 @@ final readonly class PdoUserAttributeDataRepository implements UserAttributeRepo
     {
         $this->dfdb->transactional(function () use ($attribute) {
             $stmt = $this->dfdb->getConnection()->pdo->prepare(
-                    "UPDATE {$this->dfdb->basePrefix}site_user
+                "UPDATE {$this->dfdb->basePrefix}site_user
                  SET user_attribute = :user_attribute
                  WHERE site_id = :site_id
                  AND user_id = :user_id"
@@ -189,7 +204,7 @@ final readonly class PdoUserAttributeDataRepository implements UserAttributeRepo
             $stmt->execute([
                 'site_id' => $attribute->siteId(),
                 'user_id' => $attribute->userId(),
-                'user_attribute' => $attribute->toJson(),
+                'user_attribute' => $attribute->withCompressedUrls()->toJson(),
             ]);
         });
     }
@@ -204,7 +219,7 @@ final readonly class PdoUserAttributeDataRepository implements UserAttributeRepo
     {
         $this->dfdb->transactional(function () use ($siteId, $userId) {
             $stmt = $this->dfdb->getConnection()->pdo->prepare(
-                    "DELETE FROM {$this->dfdb->basePrefix}site_user
+                "DELETE FROM {$this->dfdb->basePrefix}site_user
                  WHERE site_id = :site_id
                  AND user_id = :user_id"
             );

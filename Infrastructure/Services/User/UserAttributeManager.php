@@ -183,10 +183,11 @@ final readonly class UserAttributeManager
     private function load(string $siteId, string $userId): ?UserAttributeBag
     {
         try {
-            $cached = $this->cache->get(md5($siteId.$userId));
+            $cached = $this->cache->get(md5($siteId . $userId));
 
             if (is_string($cached) && $cached !== '') {
-                return UserAttributeBag::fromJson($siteId, $userId, $cached);
+                $bag = UserAttributeBag::fromJson($siteId, $userId, $cached);
+                return $bag->withExpandedUrls();
             }
         } catch (Throwable) {
         }

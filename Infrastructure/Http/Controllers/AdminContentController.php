@@ -15,6 +15,7 @@ use App\Infrastructure\Services\Content\Pipes\CastSidebarAttributeToInt;
 use App\Infrastructure\Services\Content\Pipes\UniqueContentSlug;
 use App\Shared\Pipes\CastShowInAttributesToInt;
 use App\Shared\Pipes\CheckForScheduledStatus;
+use App\Shared\Pipes\CompressUrls;
 use App\Shared\Pipes\FormatCreatedDateTime;
 use App\Shared\Pipes\FormatPublishedDateTime;
 use App\Shared\Pipes\OptimizeFeaturedImage;
@@ -59,8 +60,11 @@ final class AdminContentController extends BaseController
      * @throws TypeException
      * @throws \Exception
      */
-    public function contentCreate(ServerRequest $request, ContentService $service, string $contentTypeSlug): ResponseInterface
-    {
+    public function contentCreate(
+        ServerRequest $request,
+        ContentService $service,
+        string $contentTypeSlug
+    ): ResponseInterface {
         $request = Devflow::$PHP->make(Pipeline::class)
             ->send($request)
             ->through([
@@ -71,6 +75,7 @@ final class AdminContentController extends BaseController
                 OptimizeFeaturedImage::class,
                 CastSidebarAttributeToInt::class,
                 CastShowInAttributesToInt::class,
+                CompressUrls::class,
             ])
             ->thenReturn();
 
@@ -98,8 +103,11 @@ final class AdminContentController extends BaseController
      * @throws UnresolvableQueryHandlerException
      * @throws \Exception
      */
-    public function contentCreateView(ServerRequest $request, ContentService $service, string $contentTypeSlug): ResponseInterface
-    {
+    public function contentCreateView(
+        ServerRequest $request,
+        ContentService $service,
+        string $contentTypeSlug
+    ): ResponseInterface {
         if (false === current_user_can(perm: 'create:content')) {
             Devflow::$PHP->flash->error(
                 message: trans('Access denied.')
@@ -143,6 +151,7 @@ final class AdminContentController extends BaseController
                 OptimizeFeaturedImage::class,
                 CastSidebarAttributeToInt::class,
                 CastShowInAttributesToInt::class,
+                CompressUrls::class,
             ])
             ->thenReturn();
 
@@ -245,8 +254,11 @@ final class AdminContentController extends BaseController
      * @throws InvalidArgumentException
      * @throws NotFoundExceptionInterface
      */
-    public function removeFeaturedImage(ServerRequest $request, ContentService $service, string $contentId): ResponseInterface
-    {
+    public function removeFeaturedImage(
+        ServerRequest $request,
+        ContentService $service,
+        string $contentId
+    ): ResponseInterface {
         $request = $request->withParsedBody(['id' => $contentId, 'featuredImage' => '']);
 
         $service->removeFeaturedImage(

@@ -4,9 +4,13 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Services\Attribute;
 
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
+use Qubus\Exception\Exception;
 use Qubus\Expressive\Database;
+use ReflectionException;
 
-use function Qubus\Security\Helpers\purify_html;
+use function is_string;
 use function sprintf;
 
 final readonly class PdoAttributeDataRepository implements AttributeRepository
@@ -35,13 +39,16 @@ final readonly class PdoAttributeDataRepository implements AttributeRepository
      * @param string $type
      * @param string $id
      * @return AttributeBag
-     * @throws \Exception
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
+     * @throws Exception
+     * @throws ReflectionException
      */
     public function getAttribute(string $type, string $id): AttributeBag
     {
         $table = $this->table($type);
         $stmt = $this->dfdb->getConnection()->pdo->prepare(
-                "SELECT {$type}_attribute
+            "SELECT {$type}_attribute
              FROM {$table}
              WHERE {$type}_id = :id
              LIMIT 1"
@@ -55,7 +62,9 @@ final readonly class PdoAttributeDataRepository implements AttributeRepository
             throw new \RuntimeException(sprintf("%s %s not found.", $type, $id));
         }
 
-        return AttributeBag::fromJson(is_string($json) ? purify_html($json) : null);
+        $bag = AttributeBag::fromJson(is_string($json) ? $json : null);
+
+        return $bag->withExpandedUrls();
     }
 
     /**
@@ -63,20 +72,23 @@ final readonly class PdoAttributeDataRepository implements AttributeRepository
      * @param string $id
      * @param AttributeBag $attribute
      * @return void
-     * @throws \Exception
+     * @throws ContainerExceptionInterface
+     * @throws Exception
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
      */
     public function saveAttribute(string $type, string $id, AttributeBag $attribute): void
     {
         $table = $this->table($type);
         $stmt = $this->dfdb->getConnection()->pdo->prepare(
-                "UPDATE {$table}
+            "UPDATE {$table}
              SET {$type}_attribute = :attribute
              WHERE {$type}_id = :id"
         );
 
         $stmt->execute([
             'id' => $id,
-            'attribute' => $attribute->toJson(),
+            'attribute' => $attribute->withCompressedUrls()->toJson(),
         ]);
     }
 
@@ -97,8 +109,7 @@ final readonly class PdoAttributeDataRepository implements AttributeRepository
                 "SELECT {$type}_attribute
                  FROM {$table}
                  WHERE {$type}_id = :id
-                 LIMIT 1
-                 FOR UPDATE"
+                 LIMIT 1"
             );
 
             $stmt->execute(['id' => $id]);
@@ -124,7 +135,7 @@ final readonly class PdoAttributeDataRepository implements AttributeRepository
 
             $update->execute([
                 'id' => $id,
-                'attribute' => $updated->toJson(),
+                'attribute' => $updated->withCompressedUrls()->toJson(),
             ]);
 
             $this->dfdb->getConnection()->pdo->commit();

@@ -1549,7 +1549,7 @@ function cms_insert_product(array|ServerRequestInterface|Product $productdata): 
         'pre.product.body',
         $rawProductBody
     );
-    $product->body = $productBody;
+    $product->body = cms_compress_internal_urls($productBody);
 
     /**
      * Check for product author

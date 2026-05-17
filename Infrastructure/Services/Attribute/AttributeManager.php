@@ -9,6 +9,7 @@ use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Psr\SimpleCache\CacheInterface;
 use Psr\SimpleCache\InvalidArgumentException;
+use Qubus\Exception\Exception;
 use ReflectionException;
 
 use function App\Shared\Helpers\dfdb;
@@ -166,6 +167,10 @@ final readonly class AttributeManager
      *
      * @param string $id
      * @return AttributeBag
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
+     * @throws Exception
      */
     private function load(string $id): AttributeBag
     {
@@ -173,7 +178,8 @@ final readonly class AttributeManager
             $cached = $this->cache->get(md5($id));
 
             if (is_string($cached) && $cached !== '') {
-                return AttributeBag::fromJson($cached);
+                $bag = AttributeBag::fromJson($cached);
+                return $bag->withExpandedUrls();
             }
         } catch (InvalidArgumentException $e) {
             logger(level: 'error', message: $e->getMessage());

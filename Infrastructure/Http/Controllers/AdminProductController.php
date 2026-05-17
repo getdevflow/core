@@ -14,6 +14,7 @@ use App\Infrastructure\Services\Product\Pipes\UniqueProductSlug;
 use App\Infrastructure\Services\Product\ProductService;
 use App\Shared\Pipes\CastShowInAttributesToInt;
 use App\Shared\Pipes\CheckForScheduledStatus;
+use App\Shared\Pipes\CompressUrls;
 use App\Shared\Pipes\FormatCreatedDateTime;
 use App\Shared\Pipes\FormatPublishedDateTime;
 use App\Shared\Pipes\OptimizeFeaturedImage;
@@ -94,6 +95,7 @@ final class AdminProductController extends BaseController
                 CheckForScheduledStatus::class,
                 OptimizeFeaturedImage::class,
                 CastShowInAttributesToInt::class,
+                CompressUrls::class,
             ])
             ->thenReturn();
 
@@ -158,6 +160,7 @@ final class AdminProductController extends BaseController
                 CheckForScheduledStatus::class,
                 OptimizeFeaturedImage::class,
                 CastShowInAttributesToInt::class,
+                CompressUrls::class,
             ])
             ->thenReturn();
 
@@ -233,8 +236,11 @@ final class AdminProductController extends BaseController
      * @throws InvalidArgumentException
      * @throws NotFoundExceptionInterface
      */
-    public function removeFeaturedImage(ServerRequest $request, ProductService $service, string $productId): ResponseInterface
-    {
+    public function removeFeaturedImage(
+        ServerRequest $request,
+        ProductService $service,
+        string $productId
+    ): ResponseInterface {
         $request = $request->withParsedBody(['id' => $productId, 'featuredImage' => '']);
 
         $service->removeFeaturedImage(

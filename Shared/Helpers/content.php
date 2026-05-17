@@ -1903,7 +1903,7 @@ function cms_insert_content(array|ServerRequestInterface|Content $contentdata): 
         'pre.content.body',
         $rawContentBody
     );
-    $content->body = $contentBody;
+    $content->body = cms_compress_internal_urls($contentBody);
 
     /**
      * Check for content author
@@ -2175,7 +2175,6 @@ function cms_insert_content(array|ServerRequestInterface|Content $contentdata): 
                 string: 'Could not insert content into the content table.',
             ));
         }
-
     } else {
         /**
          * Fires immediately before existing content is updated in the content document.
@@ -2382,7 +2381,7 @@ function cms_delete_content(string $contentId): Content|bool
                 );
 
                 ContentCachePsr16::clean((array) $children);
-            } catch (PDOException|\InvalidArgumentException $ex) {
+            } catch (PDOException | \InvalidArgumentException $ex) {
                 logger(
                     'error',
                     sprintf(
@@ -2415,7 +2414,7 @@ function cms_delete_content(string $contentId): Content|bool
         );
 
         ContentCachePsr16::clean($content->toArray());
-    } catch (PDOException|\InvalidArgumentException $ex) {
+    } catch (PDOException | \InvalidArgumentException $ex) {
         logger(
             'error',
             sprintf(

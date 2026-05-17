@@ -5,9 +5,13 @@ declare(strict_types=1);
 namespace App\Domain\Content\Query\Trait;
 
 use App\Infrastructure\Services\Trait\CleanAware;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
 use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
+use ReflectionException;
 
+use function App\Shared\Helpers\cms_render_content;
 use function Codefy\Framework\Helpers\config;
 use function Qubus\Security\Helpers\purify_html;
 
@@ -20,8 +24,11 @@ trait PopulateContentQueryAware
      *
      * @param array|null $data
      * @return array|null
-     * @throws TypeException
      * @throws Exception
+     * @throws TypeException
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
      */
     private function populate(?array $data = []): ?array
     {
@@ -35,7 +42,7 @@ trait PopulateContentQueryAware
             'id' => $this->clean($data['content_id']),
             'slug' => $this->clean($data['content_slug']),
             'title' => $this->clean($data['content_title']),
-            'body' => isset($data['content_body']) ? purify_html($data['content_body']) : null,
+            'body' => isset($data['content_body']) ? purify_html(cms_render_content($data['content_body'])) : null,
             'author' => $this->clean($data['content_author']),
             'type' => $this->clean($data['content_type']),
             'parent' => $this->clean($data['content_parent']),

@@ -5,7 +5,13 @@ declare(strict_types=1);
 namespace App\Infrastructure\Services\Attribute;
 
 use JsonException;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
+use Qubus\Exception\Exception;
+use ReflectionException;
 
+use function App\Shared\Helpers\cms_compress_attribute_urls;
+use function App\Shared\Helpers\cms_expand_attribute_urls;
 use function array_key_exists;
 use function is_array;
 use function Qubus\Security\Helpers\purify_html;
@@ -152,7 +158,7 @@ final class AttributeBag
             $current = $current[$segment];
         }
 
-        return purify_html($current);
+        return $this->purifyValue($current);
     }
 
     public function setPath(string $path, mixed $value): self
@@ -244,5 +250,40 @@ final class AttributeBag
         }
 
         return $left;
+    }
+
+    private function purifyValue(mixed $value): mixed
+    {
+        if (is_string($value)) {
+            return purify_html($value);
+        }
+
+        if (is_array($value)) {
+            return array_map(fn (mixed $item): mixed => $this->purifyValue($item), $value);
+        }
+
+        return $value;
+    }
+
+    /**
+     * @throws NotFoundExceptionInterface
+     * @throws ContainerExceptionInterface
+     * @throws ReflectionException
+     * @throws Exception
+     */
+    public function withCompressedUrls(): self
+    {
+        return new self(cms_compress_attribute_urls($this->items));
+    }
+
+    /**
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
+     * @throws ContainerExceptionInterface
+     * @throws Exception
+     */
+    public function withExpandedUrls(): self
+    {
+        return new self(cms_expand_attribute_urls($this->items));
     }
 }
