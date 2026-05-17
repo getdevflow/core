@@ -16,6 +16,7 @@ use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
 use ReflectionException;
 
+use function App\Shared\Helpers\cms_expand_internal_urls;
 use function Codefy\Framework\Helpers\config;
 use function md5;
 use function Qubus\Security\Helpers\esc_html;
@@ -91,7 +92,7 @@ final class Content
         $contentId = $this->resolveCachedContentId($field, $value);
         if ($contentId !== null && $contentId !== '') {
             $cached = SimpleCacheObjectCacheFactory::make(
-                    namespace: $this->dfdb->prefix . 'content'
+                namespace: $this->dfdb->prefix . 'content'
             )->get(md5($contentId));
 
             if (is_array($cached)) {
@@ -112,7 +113,7 @@ final class Content
                     "SELECT *
                      FROM {$this->dfdb->prefix}content
                      WHERE %s = ?",
-                        $dbField
+                    $dbField
                 ),
                 [$value]
             ),
@@ -146,15 +147,15 @@ final class Content
             'id' => $value,
 
             'owner', 'author' => SimpleCacheObjectCacheFactory::make(
-                    namespace: $this->dfdb->prefix . 'contentauthor'
+                namespace: $this->dfdb->prefix . 'contentauthor'
             )->get(md5($value), null),
 
             'slug' => SimpleCacheObjectCacheFactory::make(
-                    namespace: $this->dfdb->prefix . 'contentslug'
+                namespace: $this->dfdb->prefix . 'contentslug'
             )->get(md5($value), null),
 
             'type' => SimpleCacheObjectCacheFactory::make(
-                    namespace: $this->dfdb->prefix . 'contenttype'
+                namespace: $this->dfdb->prefix . 'contenttype'
             )->get(md5($value), null),
 
             default => null,
@@ -167,8 +168,11 @@ final class Content
      *
      * @param array $data
      * @return Content
-     * @throws TypeException
+     * @throws ContainerExceptionInterface
      * @throws Exception
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
+     * @throws TypeException
      */
     public function create(array $data = []): self
     {
@@ -193,8 +197,12 @@ final class Content
 
     /**
      * @param array<string, mixed> $data
-     * @throws TypeException
+     * @return Content
+     * @throws ContainerExceptionInterface
      * @throws Exception
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
+     * @throws TypeException
      */
     public function populate(array $data = []): self
     {
@@ -203,7 +211,7 @@ final class Content
         $this->id = $this->clean($data['id']);
         $this->title = $this->clean($data['title']);
         $this->slug = $this->clean($data['slug']);
-        $this->body = $data['body'] !== null ? purify_html((string) $data['body']) : null;
+        $this->body = $data['body'] !== null ? purify_html(cms_expand_internal_urls($data['body'])) : null;
         $this->author = $this->clean($data['author']);
         $this->type = $this->clean($data['type']);
         $this->parent = $this->clean($data['parent']);

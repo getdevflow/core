@@ -20,6 +20,7 @@ use App\Domain\User\ValueObject\UserId;
 use App\Infrastructure\Persistence\Cache\SiteCachePsr16;
 use App\Infrastructure\Persistence\Cache\UserCachePsr16;
 use App\Infrastructure\Services\Site\SiteSchema;
+use JsonException;
 use Qubus\Expressive\Database;
 use App\Infrastructure\Services\AttributesFactory;
 use App\Shared\Services\DateTime;
@@ -61,13 +62,13 @@ use function crc32;
 use function date;
 use function file_get_contents;
 use function mkdir;
-use function Qubus\Routing\Helpers\redirect;
 use function Qubus\Security\Helpers\__observer;
 use function Qubus\Security\Helpers\esc_html;
 use function Qubus\Security\Helpers\unslash;
 use function Qubus\Support\Helpers\is_false__;
 use function Qubus\Support\Helpers\is_null__;
 use function Qubus\Support\Helpers\is_true__;
+use function rtrim;
 use function sprintf;
 use function str_replace;
 use function strtotime;
@@ -227,7 +228,7 @@ function delete_site_tables(string $siteId, Site $oldSite): bool
 
     $sql = "SHOW TABLES LIKE ?";
 
-    if($sqlite) {
+    if ($sqlite) {
         $sql = "SELECT name FROM sqlite_master WHERE type IN ('table') AND name LIKE ?";
     }
 
@@ -258,7 +259,7 @@ function delete_site_tables(string $siteId, Site $oldSite): bool
     $dropTables = __observer()->filter->applyFilter('site.drop.tables', $tables, $oldSite->key);
 
     try {
-        if($sqlite) {
+        if ($sqlite) {
             foreach ((array) $dropTables as $table) {
                 $dfdb->getConnection()->pdo->exec(statement: sprintf("DROP TABLE IF EXISTS %s", $table));
             }
@@ -392,8 +393,8 @@ function site_user_lookup(?string $active = null): void
 
     foreach ($users as $user) {
         echo '<option value="' . esc_html($user['user_id'])
-                . '"' . selected(esc_html($user['user_id']), $active, false) . '>'
-                . get_name(esc_html($user['user_id'])) . '</option>';
+        . '"' . selected(esc_html($user['user_id']), $active, false) . '>'
+        . get_name(esc_html($user['user_id'])) . '</option>';
     }
 }
 
@@ -799,7 +800,6 @@ function cms_insert_site(array|ServerRequestInterface|Site $sitedata): Error|str
             ]);
 
             command($command);
-
         } catch (PDOException $e) {
             logger(
                 'error',
@@ -836,7 +836,6 @@ function cms_insert_site(array|ServerRequestInterface|Site $sitedata): Error|str
             ]);
 
             command($command);
-
         } catch (
             PDOException |
             UnresolvableCommandHandlerException |
@@ -944,7 +943,7 @@ function cms_update_site(array|ServerRequestInterface|Site $sitedata): Error|str
         $sitedata = $sitedata->toArray();
     }
 
-    if(is_main_site($sitedata['id']) && $sitedata['status'] === 'archive') {
+    if (is_main_site($sitedata['id']) && $sitedata['status'] === 'archive') {
         return new SiteError(trans('You cannot archive the main site.'));
     }
 
@@ -1140,7 +1139,6 @@ function cms_delete_site_user(string $userId, array $params = []): Error|bool
         }
     } else {
         if (!empty($sites)) {
-
             try {
                 $dfdb->transactional(function () use ($dfdb, $userId) {
                     $dfdb
@@ -1236,7 +1234,7 @@ function remove_user_from_site(string $userId, array $params = []): void
 {
     /** @var Site $site */
     $site = get_site_by(field: 'id', value: $params['site_id']);
-    if(is_false__($site)) {
+    if (is_false__($site)) {
         throw new EntityNotFoundException(
             trans_html(
                 string: sprintf('The site with ID %s does not exist.', $params['site_id']),
@@ -1285,7 +1283,7 @@ function remove_user_from_site(string $userId, array $params = []): void
 
         SiteCachePsr16::clean($site);
         UserCachePsr16::clean($oldUser);
-    } catch (CommandPropertyNotFoundException|UnresolvableCommandHandlerException|ReflectionException $e) {
+    } catch (CommandPropertyNotFoundException | UnresolvableCommandHandlerException | ReflectionException $e) {
         logger(level: 'error', message: $e->getMessage());
     }
 }
@@ -1874,16 +1872,130 @@ function is_main_site(?string $siteId = null): bool
     $site = get_site_by('id', $siteId ?? get_current_site_id());
     $connection = config()->string(key: 'database.default');
 
-    if($site->key === config()->string(key: "database.connections.$connection.prefix")) {
+    if ($site->key === config()->string(key: "database.connections.$connection.prefix")) {
         return true;
     }
-    if($site->domain === config()->string(key: 'cms.main_site_url')) {
+    if ($site->domain === config()->string(key: 'cms.main_site_url')) {
         return true;
     }
-    if($site->id === config()->string(key: 'cms.main_site_id')) {
+    if ($site->id === config()->string(key: 'cms.main_site_id')) {
         return true;
     }
 
     return false;
+}
 
+/**
+ * @param string $html
+ * @return string
+ * @throws ContainerExceptionInterface
+ * @throws Exception
+ * @throws NotFoundExceptionInterface
+ * @throws ReflectionException
+ */
+function cms_expand_internal_urls(string $html): string
+{
+    $siteUrl = rtrim(site_url(), '/');
+    $uploads = rtrim(public_site_upload_url() . '/', '/');
+
+    return strtr($html, [
+        '{{site_url}}' => $siteUrl,
+        '{{site_uploads}}' => $uploads,
+    ]);
+}
+
+/**
+ * @throws NotFoundExceptionInterface
+ * @throws ContainerExceptionInterface
+ * @throws ReflectionException
+ * @throws Exception
+ */
+function cms_compress_internal_urls(string $html): string
+{
+    $siteUrl = rtrim(site_url(), '/');
+    $uploads = rtrim(public_site_upload_url(), '/');
+
+    return strtr($html, [
+        $uploads => '{{site_uploads}}',
+        $siteUrl => '{{site_url}}',
+    ]);
+}
+
+/**
+ * @throws NotFoundExceptionInterface
+ * @throws ContainerExceptionInterface
+ * @throws ReflectionException
+ * @throws Exception
+ */
+function cms_render_content(string $html): string
+{
+    return cms_expand_internal_urls($html);
+}
+
+function cms_transform_attribute_urls(mixed $value, callable $callback): mixed
+{
+    if (is_string($value)) {
+        $trimmed = trim($value);
+
+        if (
+                ($trimmed !== '') &&
+                (($trimmed[0] === '{' && str_ends_with($trimmed, '}')) ||
+                        ($trimmed[0] === '[' && str_ends_with($trimmed, ']')))
+        ) {
+            try {
+                $decoded = json_decode($value, true, 512, JSON_THROW_ON_ERROR);
+
+                if (is_array($decoded)) {
+                    return json_encode(
+                        cms_transform_attribute_urls($decoded, $callback),
+                        JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE
+                    );
+                }
+            } catch (JsonException) {
+                // Not valid JSON; fall through.
+            }
+        }
+
+        return $callback($value);
+    }
+
+    if (is_array($value)) {
+        foreach ($value as $key => $child) {
+            $value[$key] = cms_transform_attribute_urls($child, $callback);
+        }
+    }
+
+    return $value;
+}
+
+/**
+ * @param mixed $value
+ * @return mixed
+ * @throws ContainerExceptionInterface
+ * @throws Exception
+ * @throws NotFoundExceptionInterface
+ * @throws ReflectionException
+ */
+function cms_compress_attribute_urls(mixed $value): mixed
+{
+    return cms_transform_attribute_urls(
+        $value,
+        fn (string $string): string => cms_compress_internal_urls($string)
+    );
+}
+
+/**
+ * @param mixed $value
+ * @return mixed
+ * @throws ContainerExceptionInterface
+ * @throws Exception
+ * @throws NotFoundExceptionInterface
+ * @throws ReflectionException
+ */
+function cms_expand_attribute_urls(mixed $value): mixed
+{
+    return cms_transform_attribute_urls(
+        $value,
+        fn (string $string): string => cms_render_content($string)
+    );
 }

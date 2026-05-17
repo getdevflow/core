@@ -129,8 +129,8 @@ WHERE NOT EXISTS (
     $users = $dfdb->getResults(query: $dfdb->prepare($sql, [get_current_site_id()]), output: Database::ARRAY_A);
     foreach ($users as $user) {
         echo '<option value="' . esc_html($user['user_id'])
-                . '"' . selected(esc_html($user['user_id']), $active, false) . '>'
-                . get_name(esc_html($user['user_id'])) . '</option>';
+        . '"' . selected(esc_html($user['user_id']), $active, false) . '>'
+        . get_name(esc_html($user['user_id'])) . '</option>';
     }
 }
 
@@ -154,11 +154,11 @@ function get_current_user_id(): string
         return '';
     }
 
-    if(null === $user = \Codefy\Framework\Helpers\user()) {
+    if (null === $user = \Codefy\Framework\Helpers\user()) {
         return '';
     }
 
-    if($cookie->id !== $user->id) {
+    if ($cookie->id !== $user->id) {
         return '';
     }
 
@@ -178,7 +178,7 @@ function get_current_user_id(): string
  */
 function cms_get_current_user(): false|User
 {
-    if(empty(get_current_user_id())) {
+    if (empty(get_current_user_id())) {
         return false;
     }
     return get_userdata(get_current_user_id());
@@ -429,7 +429,7 @@ function get_users_dropdown_list(?string $active = null): void
  */
 function get_user_attribute(string $userId, string $key, ?string $siteId = null, mixed $default = null): mixed
 {
-    if(is_null__($siteId)) {
+    if (is_null__($siteId)) {
         $siteId = get_current_site_id();
     }
     return AttributesFactory::user()->get($siteId, $userId, $key, $default);
@@ -449,7 +449,7 @@ function get_user_attribute(string $userId, string $key, ?string $siteId = null,
  */
 function update_user_attribute(string $userId, string $key, mixed $value, ?string $siteId = null): UserAttributeBag
 {
-    if(is_null__($siteId)) {
+    if (is_null__($siteId)) {
         $siteId = get_current_site_id();
     }
 
@@ -604,7 +604,7 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
          * If a user already exists in the system, then the user
          * will be added to the current site.
          */
-        if(isset($userdata['user_exists']) && $userdata['user_exists'] === 'true') {
+        if (isset($userdata['user_exists']) && $userdata['user_exists'] === 'true') {
             $existing = true;
         }
 
@@ -900,6 +900,10 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
 
     $userActivationKey = $user->activationKey = empty($userdata['activationKey']) ? '' : $userdata['activationKey'];
 
+    // Content custom fields.
+    $attributeFields = $userdata['user_field'] ?? [];
+    $attribute = array_merge($attributeFields, $attribute);
+
     $compacted = [
         'login' => $userLogin,
         'fname' => $userFname,
@@ -973,7 +977,6 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
     $attributes = __observer()->filter->applyFilter('insert.user.attribute', $attribute, $user, $update);
 
     if (is_false__($update)) {
-
         try {
             $command = new CreateUserCommand([
                 'id' => UserId::fromString($user->id),
@@ -1000,7 +1003,6 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
         }
 
         AttributesFactory::user()->createIfMissing(get_current_site_id(), $user->id);
-
     } else {
         /**
          * User object.
@@ -1030,7 +1032,7 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
 
             command($command);
 
-            if($existing) {
+            if ($existing) {
                 AttributesFactory::user()->createIfMissing(get_current_site_id(), $user->id);
             }
         } catch (UnresolvableCommandHandlerException | ReflectionException $e) {
@@ -1213,7 +1215,7 @@ function send_email_change_email(object|array $user, array $userdata): bool
         $user = $user->toArray();
     }
 
-    if($user['email'] === $userdata['email']) {
+    if ($user['email'] === $userdata['email']) {
         return true;
     }
 
@@ -1379,9 +1381,9 @@ function get_users_reassign(string $userId = ''): void
     $dfdb = dfdb();
 
     $sql = "SELECT u.user_id FROM {$dfdb->basePrefix}user u " .
-            "JOIN {$dfdb->basePrefix}site_user su " .
-            "ON u.user_id = su.user_id " .
-            "WHERE u.user_id NOT IN (?) 
+    "JOIN {$dfdb->basePrefix}site_user su " .
+    "ON u.user_id = su.user_id " .
+    "WHERE u.user_id NOT IN (?) 
             AND su.site_id = ?";
 
     $listUsers = $dfdb->getResults($dfdb->prepare($sql, [$userId, get_current_site_id()]), Database::ARRAY_A);
@@ -1403,10 +1405,10 @@ function get_users_by_site_key(string $siteKey = ''): array|string|bool
     $dfdb = dfdb();
 
     $sql = "SELECT u.* " .
-            "FROM {$dfdb->basePrefix}user u " .
-            "JOIN {$dfdb->basePrefix}site_user su ON u.user_id = su.user_id " .
-            "JOIN {$dfdb->basePrefix}site s ON su.site_id = s.site_id " .
-            "WHERE s.site_key = ?";
+    "FROM {$dfdb->basePrefix}user u " .
+    "JOIN {$dfdb->basePrefix}site_user su ON u.user_id = su.user_id " .
+    "JOIN {$dfdb->basePrefix}site s ON su.site_id = s.site_id " .
+    "WHERE s.site_key = ?";
 
     return $dfdb->getResults($dfdb->prepare($sql, [$siteKey]), Database::ARRAY_A);
 }
