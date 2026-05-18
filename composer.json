@@ -47,7 +47,6 @@
       "Shared/Helpers/menu.php"
     ]
   },
-  "minimum-stability": "dev",
   "prefer-stable": true,
   "config": {
     "allow-plugins": {
