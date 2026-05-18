@@ -13,10 +13,6 @@ class OptionsServiceProvider extends CodefyServiceProvider
 {
     public function register(): void
     {
-        if ($this->codefy->isRunningInConsole()) {
-            return;
-        }
-
         $this->codefy->singleton(Options::class, function () {
             $database = $this->codefy->make(name: Database::class);
             return new Options(
