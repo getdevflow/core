@@ -15,6 +15,7 @@ use App\Domain\User\ValueObject\Username;
 use App\Domain\User\ValueObject\UserToken;
 use App\Infrastructure\Services\AttributesFactory;
 use App\Shared\Services\EnvWriter;
+use App\Shared\Services\Registry;
 use Codefy\Framework\Support\Password;
 use Psr\SimpleCache\InvalidArgumentException;
 use Qubus\Expressive\Database;
@@ -291,6 +292,8 @@ class InstallCmsCommand extends ConsoleCommand
             ]);
 
             command($command);
+
+            Registry::getInstance()->set('siteKey', $site->key);
 
             create_site_directories($site);
         } catch (
