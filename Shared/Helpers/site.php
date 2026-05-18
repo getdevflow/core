@@ -1912,13 +1912,24 @@ function cms_expand_internal_urls(string $html): string
  */
 function cms_compress_internal_urls(string $html): string
 {
+    $replacements = [];
+
     $siteUrl = rtrim(site_url(), '/');
     $uploads = rtrim(public_site_upload_url(), '/');
 
-    return strtr($html, [
-        $uploads => '{{site_uploads}}',
-        $siteUrl => '{{site_url}}',
-    ]);
+    if ($uploads !== '') {
+        $replacements[$uploads] = '{{site_uploads}}';
+    }
+
+    if ($siteUrl !== '') {
+        $replacements[$siteUrl] = '{{site_url}}';
+    }
+
+    if ($replacements === []) {
+        return $html;
+    }
+
+    return strtr($html, $replacements);
 }
 
 /**
