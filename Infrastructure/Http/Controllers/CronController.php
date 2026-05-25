@@ -11,6 +11,7 @@ use Codefy\QueryBus\UnresolvableQueryHandlerException;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Psr\SimpleCache\InvalidArgumentException;
+use Qubus\EventDispatcher\ActionFilter\Action;
 use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
 use Qubus\Http\ServerRequest;
@@ -43,6 +44,7 @@ final class CronController extends BaseController
             switch_to_site($site['key']);
             publish_scheduled_content();
             publish_scheduled_product();
+            Action::getInstance()->doAction('master_cron', $site);
             restore_current_site();
         }
     }
