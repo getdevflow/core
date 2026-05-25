@@ -18,7 +18,12 @@ final class Kernel extends ConsoleKernel
      *
      * @var array<class-string<SignalableCommandInterface>|callable>
      */
-    protected array $commands = [];
+    protected array $commands = [
+        \App\Application\Console\Commands\PluginInstallCommand::class,
+        \App\Application\Console\Commands\PluginRemoveCommand::class,
+        \App\Application\Console\Commands\ThemeInstallCommand::class,
+        \App\Application\Console\Commands\ThemeRemoveCommand::class,
+    ];
 
     /**
      * Place all your scheduled tasks here.

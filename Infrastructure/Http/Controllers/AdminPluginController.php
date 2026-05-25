@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Infrastructure\Http\Controllers;
 
 use App\Application\Devflow;
+use App\Infrastructure\Services\ExtensionService;
 use Codefy\Framework\Http\BaseController;
+use Codefy\QueryBus\UnresolvableQueryHandlerException;
 use JsonException;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
@@ -28,6 +30,7 @@ use function App\Shared\Helpers\set_plugin_available_for_subsites;
 use function Codefy\Framework\Helpers\logger;
 use function Codefy\Framework\Helpers\trans;
 use function Codefy\Framework\Helpers\view;
+use function is_string;
 
 final class AdminPluginController extends BaseController
 {
@@ -159,6 +162,16 @@ final class AdminPluginController extends BaseController
             );
         }
 
+        if ($available === false && $this->isPluginClassActivatedOnAnySite($plugin)) {
+            return JsonResponseFactory::create(
+                [
+                    'success' => false,
+                    'message' => 'Plugin cannot be removed because it is activated on one or more sites.',
+                ],
+                403
+            );
+        }
+
         set_plugin_available_for_subsites($plugin, $available);
 
         return JsonResponseFactory::create(
@@ -168,5 +181,20 @@ final class AdminPluginController extends BaseController
                 'available' => $available,
             ],
         );
+    }
+
+    /**
+     * @param string $pluginClass
+     * @return bool
+     * @throws ReflectionException
+     * @throws TypeException
+     * @throws UnresolvableQueryHandlerException
+     */
+    private function isPluginClassActivatedOnAnySite(string $pluginClass): bool
+    {
+        $service = new ExtensionService();
+        $activeClasses = $service->getActivePluginClassesAcrossSites();
+
+        return in_array($pluginClass, $activeClasses, true);
     }
 }

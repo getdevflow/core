@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Infrastructure\Http\Controllers;
 
 use App\Application\Devflow;
+use App\Infrastructure\Services\ExtensionService;
 use Codefy\Framework\Http\BaseController;
+use Codefy\QueryBus\UnresolvableQueryHandlerException;
 use JsonException;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
@@ -32,6 +34,8 @@ use function App\Shared\Helpers\set_theme_available_for_subsites;
 use function Codefy\Framework\Helpers\logger;
 use function Codefy\Framework\Helpers\trans;
 use function Codefy\Framework\Helpers\view;
+use function in_array;
+use function is_string;
 
 final class AdminThemeController extends BaseController
 {
@@ -187,6 +191,16 @@ final class AdminThemeController extends BaseController
             );
         }
 
+        if ($available === false && $this->isThemePackageActivatedOnAnySite($theme)) {
+            return JsonResponseFactory::create(
+                [
+                    'success' => false,
+                    'message' => 'Theme cannot be removed because it is activated on one or more sites.',
+                ],
+                403
+            );
+        };
+
         set_theme_available_for_subsites($theme, $available);
 
         return JsonResponseFactory::create(
@@ -196,5 +210,20 @@ final class AdminThemeController extends BaseController
                 'available' => $available,
             ],
         );
+    }
+
+    /**
+     * @param string $themeClass
+     * @return bool
+     * @throws ReflectionException
+     * @throws TypeException
+     * @throws UnresolvableQueryHandlerException
+     */
+    private function isThemePackageActivatedOnAnySite(string $themeClass): bool
+    {
+        $service = new ExtensionService();
+        $activeClasses = $service->getActiveThemeClassesAcrossSites();
+
+        return in_array($themeClass, $activeClasses, true);
     }
 }
