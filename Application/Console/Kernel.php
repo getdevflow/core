@@ -23,6 +23,7 @@ final class Kernel extends ConsoleKernel
         \App\Application\Console\Commands\PluginRemoveCommand::class,
         \App\Application\Console\Commands\ThemeInstallCommand::class,
         \App\Application\Console\Commands\ThemeRemoveCommand::class,
+        \App\Application\Console\Commands\SiteMigrationCommand::class,
     ];
 
     /**

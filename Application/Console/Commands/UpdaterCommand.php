@@ -9,7 +9,10 @@ use App\Infrastructure\Services\Updater;
 use Codefy\Framework\Console\ConsoleCommand;
 use Psr\SimpleCache\InvalidArgumentException;
 use Qubus\Exception\Exception;
+use RuntimeException;
+use Symfony\Component\Console\Exception\ExceptionInterface;
 use Symfony\Component\Console\Input\InputArgument;
+use Symfony\Component\Process\Process;
 use ZipArchive;
 
 use function App\Shared\Helpers\remote_file_exists;
@@ -22,7 +25,7 @@ use function curl_init;
 use function curl_setopt;
 use function fclose;
 use function fopen;
-use function shell_exec;
+use function function_exists;
 use function sprintf;
 use function unlink;
 use function version_compare;
@@ -102,6 +105,7 @@ EOT
     /**
      * @throws InvalidArgumentException
      * @throws Exception
+     * @throws ExceptionInterface
      */
     public function handle(): int
     {
@@ -138,14 +142,26 @@ EOT
                 }
                 // Check for composer updates
                 $this->terminalInfo('Checking for composer updates . . . . . . . . . .');
-                $this->terminalRaw(shell_exec(command: 'composer update'));
+                $this->runComposer([
+                    'composer',
+                    'update',
+                ]);
+
+                $this->terminalInfo('Checking for migrations to run');
+                $this->call('migrate');
+
+                $this->terminalInfo('Checking for site migrations to run');
+                $this->call('site:migrate');
 
                 // Updates complete
                 $this->terminalComment('Updates complete!');
             } elseif ($remoteUpdateCheck && $this->checkExternalFile($file) !== 200) {
                 // Check for composer updates
                 $this->terminalInfo('Checking for composer updates . . . . . . . . . .');
-                $this->terminalRaw(shell_exec(command: 'composer update'));
+                $this->runComposer([
+                    'composer',
+                    'update',
+                ]);
 
                 // Updates complete
                 $this->terminalComment('Updates complete!');
@@ -154,6 +170,29 @@ EOT
             }
         } else {
             $this->terminalComment('No updates needed.');
+        }
+
+        return self::SUCCESS;
+    }
+
+    protected function runComposer(array $command): int
+    {
+        if (! function_exists('proc_open')) {
+            throw new RuntimeException('The function proc_open() must be enabled to execute commands.');
+        }
+
+        $process = new Process(
+            command: $command,
+            cwd: $this->codefy->basePath(),
+            timeout: 300
+        );
+
+        $process->run();
+
+        if (! $process->isSuccessful()) {
+            $message = $process->getErrorOutput() ?: $process->getOutput();
+            $this->terminalError($message);
+            return self::FAILURE;
         }
 
         return self::SUCCESS;
