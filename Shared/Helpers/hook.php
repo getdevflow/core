@@ -783,6 +783,30 @@ function cms_dev_mode(): void
 }
 
 /**
+ * @return void
+ * @throws ContainerExceptionInterface
+ * @throws Exception
+ * @throws NotFoundExceptionInterface
+ * @throws ReflectionException
+ * @throws TypeException
+ * @throws \Psr\SimpleCache\InvalidArgumentException
+ */
+function advisory_alert_message(): void
+{
+    if(security_audit_has_advisories()) {
+        $audit = security_audit_result();
+
+        $html = '<div class="alert dismissable alert-danger center sticky">';
+            $html .= '<strong>' . trans_html('Composer security advisories found.') . '</strong>';
+            $html .= sprintf(trans_html('%s advisories were detected.'), esc_html((string) $audit->advisoryCount));
+            $html .= trans_html('Visit the Updates screen for details.');
+        $html .= '</div>';
+
+        echo $html;
+    }
+}
+
+/**
  * Fires the admin_head action.
  *
  * @access private

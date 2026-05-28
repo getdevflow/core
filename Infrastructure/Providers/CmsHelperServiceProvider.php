@@ -79,6 +79,7 @@ final class CmsHelperServiceProvider extends CodefyServiceProvider
         __observer()->action->addAction('cms_admin_head', 'App\Shared\Helpers\admin_enqueue_head', 5);
         __observer()->action->addAction('cms_admin_footer', 'App\Shared\Helpers\admin_enqueue_footer', 5);
         __observer()->action->addAction('login_form_top', 'App\Shared\Helpers\cms_login_form_show_message', 5);
+        __observer()->action->addAction('admin_notices', 'App\Shared\Helpers\advisory_alert_message', 5);
         __observer()->action->addAction('admin_notices', 'App\Shared\Helpers\cms_dev_mode', 5);
         __observer()->action->addAction('admin_notices', 'App\Shared\Helpers\show_update_message', 5);
         __observer()->action->addAction('save_site', 'App\Shared\Helpers\new_site_schema', 5, 2);
