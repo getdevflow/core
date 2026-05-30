@@ -622,11 +622,11 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
         $update = false;
         $userId = new UserId();
 
-        if (mb_strlen($userdata['pass']) < config()->integer(key: 'cms.password_length')) {
+        if (mb_strlen($userdata['pass']) < config()->integer(key: 'auth.password_min_length')) {
             return new UserError(message: trans_html(
                 string: sprintf(
                     'Password must be at least %s characters long.',
-                    config()->integer(key: 'cms.password_length')
+                    config()->integer(key: 'auth.password_min_length')
                 ),
             ));
         }
@@ -1344,7 +1344,7 @@ function blacklisted_usernames(): array
  */
 function reset_password(string $userId): bool|string
 {
-    $password = generate_random_password(config()->integer(key: 'cms.password_length'));
+    $password = generate_random_password(config()->integer(key: 'auth.password_min_length'));
 
     try {
         $command = new UpdateUserPasswordCommand([
