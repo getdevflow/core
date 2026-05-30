@@ -923,7 +923,7 @@ function get_domain_name(): string
  * Example Usage:
  *
  *      cms_enqueue_css('default', '//cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css')
- *      cms_enqueue_css('plugin', ['fontawesome','select2-css'], false, Plugin::basename( dirname(__FILE__) ))
+ *      cms_enqueue_css('plugin', ['fontawesome','select2-css'], false, plugin_basename( dirname(__FILE__) ))
  *      cms_enqueue_css('theme', 'theme-slug/assets/css/style.css')
  *
  * @file core/Shared/Helpers/core.php
@@ -982,7 +982,7 @@ function cms_enqueue_css(
  * Example Usage:
  *
  *      cms_enqueue_js('default', 'jquery-ui')
- *      cms_enqueue_js('plugin', 'select2-js', false, Plugin::basename( dirname(__FILE__) ))
+ *      cms_enqueue_js('plugin', 'select2-js', false, plugin_basename( dirname(__FILE__) ))
  *      cms_enqueue_js('theme', 'theme-slug/assets/js/config.js')
  *
  * @file core/Shared/Helpers/core.php
