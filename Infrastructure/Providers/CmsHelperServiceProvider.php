@@ -21,6 +21,7 @@ use ReflectionException;
 
 use function App\Shared\Helpers\load_active_plugins;
 use function App\Shared\Helpers\load_active_theme;
+use function App\Shared\Helpers\load_site_plugins;
 use function Codefy\Framework\Helpers\trans_html;
 use function Qubus\Security\Helpers\__observer;
 use function sprintf;
@@ -57,6 +58,7 @@ final class CmsHelperServiceProvider extends CodefyServiceProvider
             __observer()->action->doAction('before_setup_theme');
 
             load_active_plugins();
+            load_site_plugins();
             load_active_theme();
         }
         /**
