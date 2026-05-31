@@ -25,6 +25,7 @@ final class Kernel extends ConsoleKernel
         \App\Application\Console\Commands\ThemeRemoveCommand::class,
         \App\Application\Console\Commands\SiteMigrationCommand::class,
         \App\Application\Console\Commands\SecurityAuditCommand::class,
+        \App\Application\Console\Commands\ExtensionCacheWarmCommand::class,
     ];
 
     /**
@@ -37,6 +38,7 @@ final class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
+        $schedule->command('extension:cache:warm')->hourly();
         Action::getInstance()->doAction('scheduler', $schedule);
     }
 
