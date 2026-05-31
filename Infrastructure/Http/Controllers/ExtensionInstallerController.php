@@ -233,8 +233,8 @@ final class ExtensionInstallerController
 
             if (! in_array($type, ['plugin', 'theme'], true)) {
                 return $this->jsonResponse([
-                        'success' => false,
-                        'message' => trans_html('Invalid extension type.'),
+                    'success' => false,
+                    'message' => trans_html('Invalid extension type.'),
                 ], 422);
             }
 
@@ -380,8 +380,8 @@ final class ExtensionInstallerController
     private function isExtensionEnabledOnAnySubsite(string $package, string $type): bool
     {
         $optionKey = $type === 'plugin'
-                ? 'available_plugins'
-                : 'available_themes';
+            ? 'available_plugins'
+            : 'available_themes';
 
         $enabled = get_global_option($optionKey, []);
 
