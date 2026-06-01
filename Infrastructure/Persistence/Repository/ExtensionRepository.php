@@ -35,7 +35,7 @@ final class ExtensionRepository
     public function __construct(
         private readonly string $composerLockPath,
         private readonly string $registryBaseUrl = 'https://api.devflowcmf.com/v1',
-        private readonly int $ttl = 3600
+        private readonly int $ttl = 21600
     ) {
         $this->cache = SimpleCacheObjectCacheFactory::make(namespace: 'devflow_extensions');
     }

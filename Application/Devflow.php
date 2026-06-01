@@ -16,6 +16,6 @@ class Devflow extends Codefy
 
     public static function release(): string
     {
-        return '2.1.1';
+        return '2.2.0';
     }
 }

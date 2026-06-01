@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Infrastructure\Services;
 
 use Qubus\Exception\Data\TypeException;
+use Qubus\Exception\Exception;
 
 use function ceil;
 use function Qubus\Security\Helpers\esc_html;
@@ -269,9 +270,9 @@ class Paginator
     protected function createPage(int $pageNum, bool $isCurrent = false): array
     {
         return [
-                'num' => $pageNum,
-                'url' => $this->getPageUrl($pageNum),
-                'isCurrent' => $isCurrent,
+            'num' => $pageNum,
+            'url' => $this->getPageUrl($pageNum),
+            'isCurrent' => $isCurrent,
         ];
     }
 
@@ -291,6 +292,7 @@ class Paginator
      * Render an HTML pagination control.
      *
      * @return string
+     * @throws Exception
      */
     public function toHtml(): string
     {
@@ -300,21 +302,21 @@ class Paginator
 
         $html = '<ul class="pagination">';
         if ($this->getPrevUrl()) {
-            $html .= '<li><a href="' . esc_html($this->getPrevUrl()) . '">&laquo; ' . $this->previousText . '</a></li>';
+            $html .= '<li><a href="' . esc_html((string) $this->getPrevUrl()) . '">&laquo; ' . $this->previousText . '</a></li>';
         }
 
         foreach ($this->getPages() as $page) {
             if ($page['url']) {
                 $html .= '<li' . ($page['isCurrent'] ? ' class="active"' : '') . '>
-                <a href="' . esc_html($page['url']) . '">' . esc_html($page['num']) . '</a>
+                <a href="' . esc_html((string) $page['url']) . '">' . esc_html((string) $page['num']) . '</a>
                 </li>';
             } else {
-                $html .= '<li class="disabled"><span>' . esc_html($page['num']) . '</span></li>';
+                $html .= '<li class="disabled"><span>' . esc_html((string) $page['num']) . '</span></li>';
             }
         }
 
         if ($this->getNextUrl()) {
-            $html .= '<li><a href="' . esc_html($this->getNextUrl()) . '">' . $this->nextText . ' &raquo;</a></li>';
+            $html .= '<li><a href="' . esc_html((string) $this->getNextUrl()) . '">' . $this->nextText . ' &raquo;</a></li>';
         }
         $html .= '</ul>';
 

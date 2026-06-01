@@ -22,6 +22,7 @@ use ReflectionException;
 
 use function class_exists;
 use function Codefy\Framework\Helpers\app;
+use function Codefy\Framework\Helpers\base_path;
 use function Codefy\Framework\Helpers\logger;
 use function Codefy\Framework\Helpers\public_path;
 use function dirname;
@@ -331,4 +332,56 @@ function set_plugin_available_for_subsites(string $className, bool $available): 
     }
 
     update_global_option('available_plugins', $plugins);
+}
+
+/**
+ * @param string $siteId
+ * @return array
+ */
+function site_plugin_manifest(string $siteId): array
+{
+    $manifest = base_path("Cms/site/{$siteId}/plugins.php");
+
+    if (!is_file($manifest)) {
+        return [];
+    }
+
+    $plugins = require $manifest;
+
+    return is_array($plugins) ? $plugins : [];
+}
+
+/**
+ * @return void
+ * @throws ContainerExceptionInterface
+ * @throws InvalidArgumentException
+ * @throws NotFoundExceptionInterface
+ * @throws ReflectionException
+ * @throws TypeException
+ * @throws \Qubus\Exception\Exception
+ */
+function load_site_plugins(): void
+{
+    $site = get_site_by('id', get_current_site_id());
+
+    if (!$site) {
+        return;
+    }
+
+    $siteId = $site->id;
+
+    foreach (site_plugin_manifest($siteId) as $class) {
+        if (!class_exists($class)) {
+            logger('error', sprintf('SITEPLUGIN[missing]: %s', $class), [
+                'site_id' => $siteId,
+            ]);
+            continue;
+        }
+
+        Devflow::$PHP->execute([$class, 'handle']);
+
+        __observer()->action->doAction('site_plugin_loaded', $class, $siteId);
+    }
+
+    __observer()->action->doAction('site_plugins_loaded', $siteId);
 }

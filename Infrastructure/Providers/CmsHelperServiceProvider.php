@@ -21,6 +21,7 @@ use ReflectionException;
 
 use function App\Shared\Helpers\load_active_plugins;
 use function App\Shared\Helpers\load_active_theme;
+use function App\Shared\Helpers\load_site_plugins;
 use function Codefy\Framework\Helpers\trans_html;
 use function Qubus\Security\Helpers\__observer;
 use function sprintf;
@@ -57,6 +58,7 @@ final class CmsHelperServiceProvider extends CodefyServiceProvider
             __observer()->action->doAction('before_setup_theme');
 
             load_active_plugins();
+            load_site_plugins();
             load_active_theme();
         }
         /**
@@ -79,6 +81,7 @@ final class CmsHelperServiceProvider extends CodefyServiceProvider
         __observer()->action->addAction('cms_admin_head', 'App\Shared\Helpers\admin_enqueue_head', 5);
         __observer()->action->addAction('cms_admin_footer', 'App\Shared\Helpers\admin_enqueue_footer', 5);
         __observer()->action->addAction('login_form_top', 'App\Shared\Helpers\cms_login_form_show_message', 5);
+        __observer()->action->addAction('admin_notices', 'App\Shared\Helpers\advisory_alert_message', 5);
         __observer()->action->addAction('admin_notices', 'App\Shared\Helpers\cms_dev_mode', 5);
         __observer()->action->addAction('admin_notices', 'App\Shared\Helpers\show_update_message', 5);
         __observer()->action->addAction('save_site', 'App\Shared\Helpers\new_site_schema', 5, 2);
