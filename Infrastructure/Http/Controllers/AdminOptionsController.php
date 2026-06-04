@@ -80,7 +80,7 @@ final class AdminOptionsController extends BaseController
                 Devflow::$PHP->flash->notice(200),
             );
         }
-        return $this->redirect($request->getServerParams()['HTTP_REFERER']);
+        return $this->redirect($request->getHeaderLine('Referer'));
     }
 
     /**
@@ -173,7 +173,7 @@ final class AdminOptionsController extends BaseController
             );
         }
 
-        return $this->redirect($request->getServerParams()['HTTP_REFERER']);
+        return $this->redirect($request->getHeaderLine('Referer'));
     }
 
     /**
@@ -268,7 +268,7 @@ final class AdminOptionsController extends BaseController
             );
         }
 
-        return $this->redirect($request->getServerParams()['HTTP_REFERER']);
+        return $this->redirect($request->getHeaderLine('Referer'));
     }
 
     /**
