@@ -16,6 +16,10 @@ use Qubus\Http\ServerRequest;
 use ReflectionException;
 use Throwable;
 
+use function App\Shared\Helpers\admin_url;
+use function App\Shared\Helpers\current_user_can;
+use function App\Shared\Helpers\is_main_site;
+use function Codefy\Framework\Helpers\trans;
 use function Codefy\Framework\Helpers\trans_html;
 use function Codefy\Framework\Helpers\view;
 use function Qubus\Routing\Helpers\redirect;
@@ -37,6 +41,14 @@ final readonly class UpdatesController
      */
     public function index(): ResponseInterface
     {
+        if (!is_main_site()) {
+            Devflow::$PHP->flash->error(
+                message: trans('Access denied.')
+            );
+
+            return redirect(admin_url());
+        }
+
         return view('framework::backend/updates', [
             'updates' => $this->updates->overview(),
         ]);
