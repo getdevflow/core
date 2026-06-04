@@ -290,13 +290,19 @@ function cms_encode_email_str(string $string): string
  *
  * @file core/Shared/Helpers/hook.php
  * @param string|null $selector HTML ID attribute value for the textarea and TinyMCE. Can only be /[a-z]+/.
+ * @throws ContainerExceptionInterface
  * @throws Exception
+ * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  * @throws UnresolvableQueryHandlerException
  */
 function cms_editor(?string $selector = null): void
 {
-    cms_enqueue_js('default', '//cdnjs.cloudflare.com/ajax/libs/tinymce/4.9.11/tinymce.min.js');
+    cms_enqueue_js(
+        config: 'default',
+        asset: '//cdnjs.cloudflare.com/ajax/libs/tinymce/4.9.11/tinymce.min.js',
+        minify: 'head'
+    );
 
     if (is_null__($selector)) {
         $mceSelector = '#content_body';
