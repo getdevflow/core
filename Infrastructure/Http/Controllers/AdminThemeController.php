@@ -77,7 +77,7 @@ final class AdminThemeController extends BaseController
                 $script .= "event.preventDefault();";
                 $script .= "$(this).ekkoLightbox();";
             $script .= "});";
-            $script .= "</script>;";
+            $script .= "</script>" . "\n";
             echo $script;
         });
 
@@ -119,7 +119,7 @@ final class AdminThemeController extends BaseController
 
         Action::getInstance()->doAction('activated_theme');
 
-        return $this->redirect($request->getServerParams()['HTTP_REFERER']);
+        return $this->redirect($request->getHeaderLine('Referer'));
     }
 
     /**
@@ -153,7 +153,7 @@ final class AdminThemeController extends BaseController
 
         Action::getInstance()->doAction('deactivated_theme');
 
-        return $this->redirect($request->getServerParams()['HTTP_REFERER']);
+        return $this->redirect($request->getHeaderLine('Referer'));
     }
 
     /**
