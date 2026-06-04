@@ -301,7 +301,7 @@ function cms_editor(?string $selector = null): void
     cms_enqueue_js(
         config: 'default',
         asset: '//cdnjs.cloudflare.com/ajax/libs/tinymce/4.9.11/tinymce.min.js',
-        minify: 'head'
+        location: 'head'
     );
 
     if (is_null__($selector)) {
