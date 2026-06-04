@@ -68,6 +68,7 @@ use function ltrim;
 use function mb_detect_encoding;
 use function mb_strcut;
 use function mb_strtolower;
+use function md5;
 use function pathinfo;
 use function preg_quote;
 use function preg_replace;
@@ -915,33 +916,22 @@ function get_domain_name(): string
 }
 
 /**
- * Enqueues stylesheets.
- *
  * Uses `default.css.pipeline`, `plugin.css.pipeline` and `theme.css.pipeline`
- * filter hooks.
+ *  filter hooks.
  *
- * Example Usage:
- *
- *      cms_enqueue_css('default', '//cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css')
- *      cms_enqueue_css('plugin', ['fontawesome','select2-css'], false, plugin_basename( dirname(__FILE__) ))
- *      cms_enqueue_css('theme', 'theme-slug/assets/css/style.css')
- *
- * @file core/Shared/Helpers/core.php
- * @param string $config Set whether to use `default` config or `plugin` config.
- * @param string|array $asset Relative path or URL to stylesheet(s) to enqueue.
- * @param bool|string $minify Enable CSS assets pipeline (concatenation and minification).
- *                            Use a string that evaluates to `true` to provide the salt of the pipeline hash.
- *                            Use 'auto' to automatically calculate the salt from your assets last modification time.
- * @param string|null $slug   Slug to set asset location
- * @return void
+ * @param string $config
+ * @param string|array $asset
+ * @param bool|string $minify
+ * @param string|null $slug
+ * @return string
  * @throws Exception
  */
-function cms_enqueue_css(
+function cms_render_css(
     string $config,
     string|array $asset,
     bool|string $minify = false,
     ?string $slug = null
-): void {
+): string {
     if ($config === 'default') {
         $options = [
             'public_dir' => remove_trailing_slash(public_path()),
@@ -970,37 +960,26 @@ function cms_enqueue_css(
         $default = new ThemeAssets($options);
         $default->reset()->add($asset);
     }
-    echo $default->css();
+    return $default->css();
 }
 
 /**
- * Enqueues javascript.
- *
  * Uses `default.js.pipeline`, `plugin.js.pipeline` and `theme.js.pipeline`
- * filter hooks.
+ *  filter hooks.
  *
- * Example Usage:
- *
- *      cms_enqueue_js('default', 'jquery-ui')
- *      cms_enqueue_js('plugin', 'select2-js', false, plugin_basename( dirname(__FILE__) ))
- *      cms_enqueue_js('theme', 'theme-slug/assets/js/config.js')
- *
- * @file core/Shared/Helpers/core.php
- * @param string $config Set whether to use `default`, `plugin`  or `theme` config.
- * @param string|array $asset Relative path or URL to JavaScript(s) to enqueue.
- * @param bool|string $minify Enable js assets pipeline (concatenation and minification).
- *                            Use a string that evaluates to `true` to provide the salt of the pipeline hash.
- *                            Use 'auto' to automatically calculate the salt from your assets last modification time.
- * @param string|null $slug   Slug to set asset location.
- * @return void
+ * @param string $config
+ * @param array|string $asset
+ * @param bool|string $minify
+ * @param string|null $slug
+ * @return string
  * @throws Exception
  */
-function cms_enqueue_js(
+function cms_render_js(
     string $config,
     array|string $asset,
     bool|string $minify = false,
     ?string $slug = null
-): void {
+): string {
     if ($config === 'default') {
         $options = [
             'public_dir' => remove_trailing_slash(public_path()),
@@ -1029,8 +1008,164 @@ function cms_enqueue_js(
         $default = new ThemeAssets($options);
         $default->reset()->add($asset);
     }
-    echo $default->js();
+    return $default->js();
 }
+
+/**
+ * Registers assets and avoids duplications.
+ *
+ * @param string $type
+ * @param string $config
+ * @param array|string $asset
+ * @param bool|string $minify
+ * @param string|null $slug
+ * @param string $location
+ * @return void
+ * @throws ContainerExceptionInterface
+ * @throws NotFoundExceptionInterface
+ * @throws ReflectionException
+ */
+function cms_register_asset(
+    string $type,
+    string $config,
+    array|string $asset,
+    bool|string $minify = false,
+    ?string $slug = null,
+    string $location = 'default'
+): void {
+    $queue = Registry::getInstance()->has('cms.asset.queue')
+        ? Registry::getInstance()->get('cms.asset.queue')
+        : [
+            'css' => [],
+            'js' => [
+                'head' => [],
+                'footer' => [],
+            ],
+        ];
+
+    $key = md5(json_encode([$type, $location, $config, $asset, $minify, $slug]));
+
+    if ($type === 'js') {
+        $queue['js'][$location][$key] = [
+            'config' => $config,
+            'asset' => $asset,
+            'minify' => $minify,
+            'slug' => $slug,
+        ];
+    } else {
+        $queue['css'][$key] = [
+            'config' => $config,
+            'asset' => $asset,
+            'minify' => $minify,
+            'slug' => $slug,
+        ];
+    }
+
+    Registry::getInstance()->set('cms.asset.queue', $queue);
+}
+
+/**
+ * Prints the enqueued asset in the proper location.
+ *
+ * @param string $type
+ * @param string $location
+ * @return void
+ * @throws ContainerExceptionInterface
+ * @throws Exception
+ * @throws NotFoundExceptionInterface
+ * @throws ReflectionException
+ */
+function cms_print_registered_assets(string $type, string $location = 'default'): void
+{
+    $queue = Registry::getInstance()->has('cms.asset.queue')
+        ? Registry::getInstance()->get('cms.asset.queue')
+        : [
+            'css' => [],
+            'js' => [
+                'head' => [],
+                'footer' => [],
+            ],
+        ];
+
+    if ($type === 'js') {
+        foreach ($queue['js'][$location] ?? [] as $key => $item) {
+            echo cms_render_js($item['config'], $item['asset'], $item['minify'], $item['slug']);
+            unset($queue['js'][$location][$key]);
+        }
+    }
+
+    if ($type === 'css') {
+        foreach ($queue['css'] ?? [] as $key => $item) {
+            echo cms_render_css($item['config'], $item['asset'], $item['minify'], $item['slug']);
+            unset($queue['css'][$key]);
+        }
+    }
+
+    Registry::getInstance()->set('cms.asset.queue', $queue);
+}
+
+/**
+ * Enqueues stylesheets.
+ *
+ * Example Usage:
+ *
+ *      cms_enqueue_css('default', '//cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css')
+ *      cms_enqueue_css('plugin', ['fontawesome','select2-css'], false, plugin_basename( dirname(__FILE__) ))
+ *      cms_enqueue_css('theme', 'theme-slug/assets/css/style.css')
+ *
+ * @file core/Shared/Helpers/core.php
+ * @param string $config Set whether to use `default` config or `plugin` config.
+ * @param string|array $asset Relative path or URL to stylesheet(s) to enqueue.
+ * @param bool|string $minify Enable CSS assets pipeline (concatenation and minification).
+ *                            Use a string that evaluates to `true` to provide the salt of the pipeline hash.
+ *                            Use 'auto' to automatically calculate the salt from your assets last modification time.
+ * @param string|null $slug   Slug to set asset location
+ * @return void
+ * @throws ContainerExceptionInterface
+ * @throws NotFoundExceptionInterface
+ * @throws ReflectionException
+ */
+function cms_enqueue_css(
+    string $config,
+    string|array $asset,
+    bool|string $minify = false,
+    ?string $slug = null
+): void {
+    cms_register_asset('css', $config, $asset, $minify, $slug);
+}
+
+/**
+ * Enqueues JavaScript.
+ *
+ * Example Usage:
+ *
+ *      cms_enqueue_js('default', 'jquery-ui')
+ *      cms_enqueue_js('plugin', 'select2-js', false, plugin_basename( dirname(__FILE__) ))
+ *      cms_enqueue_js('theme', 'theme-slug/assets/js/config.js')
+ *
+ * @file core/Shared/Helpers/core.php
+ * @param string $config Set whether to use `default`, `plugin`  or `theme` config.
+ * @param string|array $asset Relative path or URL to JavaScript(s) to enqueue.
+ * @param bool|string $minify Enable js assets pipeline (concatenation and minification).
+ *                            Use a string that evaluates to `true` to provide the salt of the pipeline hash.
+ *                            Use 'auto' to automatically calculate the salt from your assets last modification time.
+ * @param string|null $slug   Slug to set asset location.
+ * @param string $location    Javascript should be in head or footer.
+ * @return void
+ * @throws ContainerExceptionInterface
+ * @throws NotFoundExceptionInterface
+ * @throws ReflectionException
+ */
+function cms_enqueue_js(
+    string $config,
+    array|string $asset,
+    bool|string $minify = false,
+    ?string $slug = null,
+    string $location = 'footer'
+): void {
+    cms_register_asset('js', $config, $asset, $minify, $slug, $location);
+}
+
 
 /**
  * Generates a random username.

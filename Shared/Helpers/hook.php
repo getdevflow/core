@@ -793,7 +793,7 @@ function cms_dev_mode(): void
  */
 function advisory_alert_message(): void
 {
-    if(security_audit_has_advisories()) {
+    if (security_audit_has_advisories()) {
         $audit = security_audit_result();
 
         $html = '<div class="alert dismissable alert-danger center sticky">';
@@ -811,7 +811,10 @@ function advisory_alert_message(): void
  *
  * @access private
  * @file core/Shared/Helpers/hook.php
+ * @throws ContainerExceptionInterface
  * @throws Exception
+ * @throws NotFoundExceptionInterface
+ * @throws ReflectionException
  */
 function admin_head(): void
 {
@@ -823,13 +826,18 @@ function admin_head(): void
      * Fires in head section of all admin screens.
      */
     __observer()->action->doAction('cms_admin_head');
+    cms_print_registered_assets('css');
+    cms_print_registered_assets('js', 'head');
 }
 
 /**
  * Fires the frontend cms_head action.
  *
  * @file core/Shared/Helpers/hook.php
+ * @throws ContainerExceptionInterface
  * @throws Exception
+ * @throws NotFoundExceptionInterface
+ * @throws ReflectionException
  */
 function cms_head(): void
 {
@@ -841,6 +849,8 @@ function cms_head(): void
      * Prints scripts and/or data in the head of the front end.
      */
     __observer()->action->doAction('cms_head');
+    cms_print_registered_assets('css');
+    cms_print_registered_assets('js', 'head');
 }
 
 /**
@@ -848,7 +858,10 @@ function cms_head(): void
  *
  * @access private
  * @file core/Shared/Helpers/hook.php
+ * @throws ContainerExceptionInterface
  * @throws Exception
+ * @throws NotFoundExceptionInterface
+ * @throws ReflectionException
  */
 function admin_footer(): void
 {
@@ -860,13 +873,17 @@ function admin_footer(): void
      * Prints scripts and/or data before the ending body tag of the backend.
      */
     __observer()->action->doAction('cms_admin_footer');
+    cms_print_registered_assets('js', 'footer');
 }
 
 /**
  * Fires the cms_footer action via the admin.
  *
  * @file core/Shared/Helpers/hook.php
+ * @throws ContainerExceptionInterface
  * @throws Exception
+ * @throws NotFoundExceptionInterface
+ * @throws ReflectionException
  */
 function cms_footer(): void
 {
@@ -879,26 +896,35 @@ function cms_footer(): void
      * of the front end.
      */
     __observer()->action->doAction('cms_footer');
+    cms_print_registered_assets('js', 'footer');
 }
 
 /**
  * @access private
- * @throws Exception
+ * @return void
+ * @throws ContainerExceptionInterface
+ * @throws NotFoundExceptionInterface
+ * @throws ReflectionException
  */
 function admin_enqueue_head(): void
 {
-    cms_enqueue_js(config: 'default', asset: 'jquery-ui');
+    cms_enqueue_js(config: 'default', asset: 'jquery-ui', location: 'head');
     cms_enqueue_js(
         config: 'default',
-        asset: '//cdnjs.cloudflare.com/ajax/libs/jQuery-slimScroll/1.3.8/jquery.slimscroll.min.js'
+        asset: '//cdnjs.cloudflare.com/ajax/libs/jQuery-slimScroll/1.3.8/jquery.slimscroll.min.js',
+        location: 'head'
     );
 
     cms_enqueue_css(config: 'default', asset: 'admin-styles.css');
 }
 
 /**
+ *
  * @access private
- * @throws Exception
+ * @return void
+ * @throws ContainerExceptionInterface
+ * @throws NotFoundExceptionInterface
+ * @throws ReflectionException
  */
 function admin_enqueue_footer(): void
 {
