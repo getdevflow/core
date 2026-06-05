@@ -2617,7 +2617,7 @@ function the_body(string|Content|ContentId $content): string
     }
 
     $contentBody = get_content_body($content);
-    $contentBody = __observer()->filter->applyFilter('the.body', $contentBody);
+    $contentBody = __observer()->filter->applyFilter('the.body', $contentBody, $content);
     $contentBody = str_replace(']]>', ']]&gt;', $contentBody);
     return $contentBody;
 }
@@ -2653,8 +2653,9 @@ function the_attribute(string|Content|ContentId $content, string $key): string
      * @file core/Shared/Helpers/content.php
      * @param mixed  $theAttribute Content attribute value.
      * @param string $key          Content attribute key.
+     * @param string $content      Content id.
      */
-    return __observer()->filter->applyFilter('the.attribute', $theAttribute, $key);
+    return __observer()->filter->applyFilter('the.attribute', $theAttribute, $key, $content);
 }
 
 /**
@@ -2687,8 +2688,9 @@ function the_title(string|Content|ContentId $content): string
      *
      * @file core/Shared/Helpers/content.php
      * @param mixed  $theTitle Content title.
+     * @param string $content  Content id.
      */
-    return __observer()->filter->applyFilter('the.title', $theTitle);
+    return __observer()->filter->applyFilter('the.title', $theTitle, $content);
 }
 
 /**
