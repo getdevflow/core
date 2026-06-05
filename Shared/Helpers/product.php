@@ -241,7 +241,7 @@ function get_product_body(string $productId): string
      *
      * @file core/Shared/Helpers/product.php
      * @param string $body The product's body content.
-     * @param string $productId Product id or product object.
+     * @param string $productId Product id.
      */
     return __observer()->filter->applyFilter('get.product.body', $body, $productId);
 }
