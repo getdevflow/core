@@ -18,8 +18,10 @@ use ReflectionException;
 use Vihzhuo\Contracts\PageContract;
 use Vihzhuo\Repositories\PageRepository;
 
+use function App\Shared\Helpers\add_page_attribute;
 use function App\Shared\Helpers\admin_url;
 use function App\Shared\Helpers\current_user_can;
+use function App\Shared\Helpers\update_page_attribute;
 use function Codefy\Framework\Helpers\config;
 use function Codefy\Framework\Helpers\trans;
 use function Codefy\Framework\Helpers\view;
@@ -117,14 +119,26 @@ final class WebsiteManagerController extends BaseController
     }
 
     /**
+     * @param ServerRequest $request
+     * @return ResponseInterface
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
+     * @throws TypeException
      * @throws \Exception
      */
     private function handleCreate(ServerRequest $request): ResponseInterface
     {
         if ($request->getMethod() === 'POST') {
+            $body = (array) $request->getParsedBody();
             $pageRepository = new PageRepository();
-            $page = $pageRepository->create((array) $request->getParsedBody());
+            $page = $pageRepository->create($body);
             if ($page) {
+                if (isset($body['page_field'])) {
+                    foreach ($body['page_field'] as $key => $value) {
+                        add_page_attribute($page->getId(), $key, $value);
+                    }
+                }
                 /** @var string $message */
                 $message = phpb_trans(key: 'website-manager.page-created');
                 Devflow::$PHP->flash->success($message);
@@ -137,14 +151,27 @@ final class WebsiteManagerController extends BaseController
     }
 
     /**
+     * @param PageContract $page
+     * @param ServerRequest $request
+     * @return ResponseInterface
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
+     * @throws TypeException
      * @throws \Exception
      */
     private function handleEdit(PageContract $page, ServerRequest $request): ResponseInterface
     {
         if ($request->getMethod() === 'POST') {
+            $body = (array) $request->getParsedBody();
             $pageRepository = new PageRepository();
-            $success = $pageRepository->update($page, (array) $request->getParsedBody());
+            $success = $pageRepository->update($page, $body);
             if ($success) {
+                if (isset($body['page_field'])) {
+                    foreach ($body['page_field'] as $key => $value) {
+                        update_page_attribute($page->getId(), $key, $value);
+                    }
+                }
                 /** @var string $message */
                 $message = phpb_trans(key: 'website-manager.page-updated');
                 Devflow::$PHP->flash->success($message);
