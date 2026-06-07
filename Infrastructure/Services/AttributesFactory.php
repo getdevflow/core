@@ -54,6 +54,23 @@ final class AttributesFactory
     }
 
     /**
+     * @throws NotFoundExceptionInterface
+     * @throws ContainerExceptionInterface
+     * @throws ReflectionException
+     * @throws TypeException
+     */
+    public static function page(): AttributeManager
+    {
+        $dfdb = dfdb();
+
+        return new AttributeManager(
+            type: 'page',
+            repository: new PdoAttributeDataRepository($dfdb),
+            cache: SimpleCacheObjectCacheFactory::make(namespace: $dfdb->prefix . 'page_attribute')
+        );
+    }
+
+    /**
      * @return UserAttributeManager
      * @throws ContainerExceptionInterface
      * @throws NotFoundExceptionInterface

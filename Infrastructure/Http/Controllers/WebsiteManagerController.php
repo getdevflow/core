@@ -64,7 +64,7 @@ final class WebsiteManagerController extends BaseController
 
             /** @var string $pageId */
             $pageId = $request->getQueryParams()['page'] ?? null;
-            $pageRepository = new PageRepository;
+            $pageRepository = new PageRepository();
             $page = $pageRepository->findWithId($pageId);
             if (! ($page instanceof PageContract)) {
                 return $this->redirect(phpb_url('website_manager'));
@@ -122,7 +122,7 @@ final class WebsiteManagerController extends BaseController
     private function handleCreate(ServerRequest $request): ResponseInterface
     {
         if ($request->getMethod() === 'POST') {
-            $pageRepository = new PageRepository;
+            $pageRepository = new PageRepository();
             $page = $pageRepository->create((array) $request->getParsedBody());
             if ($page) {
                 /** @var string $message */
@@ -142,7 +142,7 @@ final class WebsiteManagerController extends BaseController
     private function handleEdit(PageContract $page, ServerRequest $request): ResponseInterface
     {
         if ($request->getMethod() === 'POST') {
-            $pageRepository = new PageRepository;
+            $pageRepository = new PageRepository();
             $success = $pageRepository->update($page, (array) $request->getParsedBody());
             if ($success) {
                 /** @var string $message */
@@ -158,7 +158,7 @@ final class WebsiteManagerController extends BaseController
 
     private function handleDestroy(PageContract $page): ResponseInterface
     {
-        $pageRepository = new PageRepository;
+        $pageRepository = new PageRepository();
         $pageRepository->destroy($page->getId());
         /** @var string $message */
         $message = phpb_trans(key: 'website-manager.page-deleted');
