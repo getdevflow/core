@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Shared\Helpers;
 
+use App\Application\Devflow;
+use App\Domain\Page\Model\Page;
 use App\Infrastructure\Services\Attribute\AttributeBag;
 use App\Infrastructure\Services\AttributesFactory;
 use Psr\Container\ContainerExceptionInterface;
@@ -11,6 +13,28 @@ use Psr\Container\NotFoundExceptionInterface;
 use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
 use ReflectionException;
+
+use function Qubus\Support\Helpers\is_false__;
+
+/**
+ * @param int $id
+ * @return Page|false
+ * @throws Exception
+ * @throws ReflectionException
+ * @throws \Psr\SimpleCache\InvalidArgumentException
+ */
+function get_page(int $id): Page|false
+{
+    /** @var Page $page */
+    $page = Devflow::$PHP->make(name: Page::class);
+    $pageData = $page->find($id);
+
+    if (is_false__($pageData)) {
+        return false;
+    }
+
+    return $pageData;
+}
 
 /**
  * Retrieve content attribute field for a content.
