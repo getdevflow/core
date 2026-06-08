@@ -10,6 +10,7 @@ use App\Infrastructure\Services\Attribute\AttributeBag;
 use App\Infrastructure\Services\AttributesFactory;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
+use Psr\SimpleCache\InvalidArgumentException;
 use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
 use ReflectionException;
@@ -17,17 +18,18 @@ use ReflectionException;
 use function Qubus\Support\Helpers\is_false__;
 
 /**
- * @param int $id
+ * @param string $field
+ * @param mixed $value
  * @return Page|false
  * @throws Exception
  * @throws ReflectionException
- * @throws \Psr\SimpleCache\InvalidArgumentException
+ * @throws InvalidArgumentException
  */
-function get_page(int $id): Page|false
+function get_page_by(string $field, mixed $value): Page|false
 {
     /** @var Page $page */
     $page = Devflow::$PHP->make(name: Page::class);
-    $pageData = $page->find($id);
+    $pageData = $page->findBy($field, $value);
 
     if (is_false__($pageData)) {
         return false;
