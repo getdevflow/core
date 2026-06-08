@@ -30,6 +30,7 @@ final class Page
     public ?string $title = null;
     public ?string $description = null;
     public ?string $route = null;
+    public ?string $relativeUrl = null;
     public ?string $show = null;
     public ?int $position = null;
     public ?string $type = null;
@@ -117,6 +118,7 @@ final class Page
         $this->title = $this->clean($data['title']);
         $this->description = $this->clean($data['description']);
         $this->route = $this->clean($data['route']);
+        $this->relativeUrl = $this->clean($data['route']);
         $this->show = $this->clean($data['show']);
         $this->position = $this->clean($data['position']);
         $this->type = $this->clean($data['type']);
@@ -140,6 +142,7 @@ final class Page
             'title' => $data['title'] ?? $data['meta_title'] ?? null,
             'description' => $data['description'] ?? $data['meta_description'] ?? null,
             'route' => $data['route'] ?? null,
+            'relativeUrl' => $data['route'] ?? null,
             'show' => $data['show'] ?? $data['show_in_nav'] ?? null,
             'position' => $data['position'] ?? $data['nav_position'] ?? null,
             'type' => $data['type'] ?? $data['nav_type'] ?? null,
@@ -305,6 +308,7 @@ final class Page
             'title' => $this->title,
             'description' => $this->description,
             'route' => $this->route,
+            'relativeUrl' => $this->route,
             'show' => $this->show,
             'position' => $this->position,
             'type' => $this->type,
