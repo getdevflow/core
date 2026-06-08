@@ -13,8 +13,10 @@ use Psr\Container\NotFoundExceptionInterface;
 use Psr\SimpleCache\InvalidArgumentException;
 use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
+use Qubus\Expressive\Database;
 use ReflectionException;
 
+use function is_array;
 use function Qubus\Support\Helpers\is_false__;
 
 /**
@@ -36,6 +38,44 @@ function get_page_by(string $field, mixed $value): Page|false
     }
 
     return $pageData;
+}
+
+/**
+ * @return array{object: Page}|false array
+ * @throws Exception
+ * @throws InvalidArgumentException
+ * @throws ReflectionException
+ */
+function get_pages(): array|false
+{
+    $dfdb = dfdb();
+    /** @var Page $page */
+    $page = Devflow::$PHP->make(name: Page::class);
+    $pages = [];
+    
+    $locale = get_option(key: 'site_locale');
+    $sql = $dfdb->getRow(
+        $dfdb->prepare(
+            "SELECT p.id, p.name, p.show_in_nav, p.nav_position, p.nav_type, p.data,
+            t.locale, t.meta_title, t.meta_description, t.route 
+            FROM {$dfdb->prefix}pages p
+            LEFT JOIN {$dfdb->prefix}page_translations t 
+            ON t.page_id = p.id
+            WHERE t.locale = ?",
+            [$locale]
+        ),
+        Database::ARRAY_A
+    );
+
+    if (! is_array($sql) || $sql === []) {
+        return false;
+    }
+
+    foreach ($sql as $data) {
+        $pages[] = $page->create($data);
+    }
+
+    return $pages;
 }
 
 /**
