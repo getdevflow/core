@@ -51,9 +51,18 @@ final class Page
      * @throws Exception
      * @throws ReflectionException
      */
-    public function find(int $id): Page|false
+    public function findBy(string $field, mixed $value): Page|false
     {
+        if ($value === '') {
+            return false;
+        }
+
         $locale = get_option(key: 'site_locale');
+        $dbField = match ($field) {
+            'id' => 'p.id',
+            'slug', => 't.route',
+            default => null,
+        };
 
         $data = $this->dfdb->getRow(
             $this->dfdb->prepare(
@@ -62,9 +71,9 @@ final class Page
                 FROM {$this->dfdb->prefix}pages p
                 LEFT JOIN {$this->dfdb->prefix}page_translations t 
                 ON t.page_id = p.id
-                WHERE p.id = ? 
+                WHERE {$dbField} = ? 
                 AND t.locale = ?",
-                [$id, $locale]
+                [$value, $locale]
             ),
             Database::ARRAY_A
         );
