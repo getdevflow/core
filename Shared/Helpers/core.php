@@ -1601,21 +1601,21 @@ function help_block(
     $headingId = 'help-' . uniqid();
 
     $html = sprintf(
-        '<aside class="help-block %s" aria-labelledby="%s">',
+        '<aside class="accessible-help-block %s" aria-labelledby="%s">',
         esc_html($class),
         esc_html($headingId)
     );
 
     $html .= sprintf(
-        '<div class="help-block__icon" aria-hidden="true">%s</div>',
+        '<div class="accessible-help-block__icon" aria-hidden="true">%s</div>',
         esc_html($icon)
     );
 
-    $html .= '<div class="help-block__content">';
+    $html .= '<div class="accessible-help-block__content">';
 
     if($title !== '') {
         $html .= sprintf(
-            '<h3 id="%s" class="help-block__title">%s</h3>',
+            '<h3 id="%s" class="accessible-help-block__title">%s</h3>',
             esc_html($headingId),
             esc_html($title)
         );
@@ -1628,7 +1628,7 @@ function help_block(
 
     if ($linkUrl !== null && $linkText !== null) {
         $html .= sprintf(
-            '<a href="%s" class="help-block__link">%s</a>',
+            '<a href="%s" class="accessible-help-block__link">%s</a>',
             esc_url($linkUrl),
             esc_html($linkText)
         );
