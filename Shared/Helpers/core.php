@@ -75,6 +75,8 @@ use function preg_replace;
 use function preg_replace_callback;
 use function preg_split;
 use function Qubus\Security\Helpers\__observer;
+use function Qubus\Security\Helpers\esc_html;
+use function Qubus\Security\Helpers\esc_url;
 use function Qubus\Security\Helpers\purify_html;
 use function Qubus\Support\Helpers\remove_trailing_slash;
 use function realpath;
@@ -1574,5 +1576,61 @@ function show_update_message(): void
             FileLoggerFactory::error($e->getMessage(), ['Core Functions' => 'show_update_message']);
             return;
         }
+    }
+
+    /**
+     * @param string $title
+     * @param string $message
+     * @param string|null $linkUrl
+     * @param string|null $linkText
+     * @param string $icon
+     * @param string $class
+     * @return string
+     */
+    function help_block(
+        string $title,
+        string $message,
+        ?string $linkUrl = null,
+        ?string $linkText = null,
+        string $icon = '💡',
+        string $class = ''
+    ): string {
+        $headingId = 'help-' . uniqid();
+
+        $html = sprintf(
+            '<aside class="help-block %s" aria-labelledby="%s">',
+            esc_html($class),
+            esc_html($headingId)
+        );
+
+        $html .= sprintf(
+            '<div class="help-block__icon" aria-hidden="true">%s</div>',
+            esc_html($icon)
+        );
+
+        $html .= '<div class="help-block__content">';
+
+        $html .= sprintf(
+            '<h3 id="%s" class="help-block__title">%s</h3>',
+            esc_html($headingId),
+            esc_html($title)
+        );
+
+        $html .= sprintf(
+            '<p>%s</p>',
+            esc_html($message)
+        );
+
+        if ($linkUrl !== null && $linkText !== null) {
+            $html .= sprintf(
+                '<a href="%s" class="help-block__link">%s</a>',
+                esc_url($linkUrl),
+                esc_html($linkText)
+            );
+        }
+
+        $html .= '</div></aside>';
+
+        return $html;
     }
 }
