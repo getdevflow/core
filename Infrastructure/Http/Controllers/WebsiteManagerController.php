@@ -11,6 +11,7 @@ use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\SimpleCache\InvalidArgumentException;
+use Qubus\EventDispatcher\ActionFilter\Action;
 use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
 use Qubus\Http\ServerRequest;
@@ -139,6 +140,9 @@ final class WebsiteManagerController extends BaseController
                         add_page_attribute($page->getId(), $key, $value);
                     }
                 }
+
+                Action::getInstance()->doAction('create_page', $page);
+
                 /** @var string $message */
                 $message = phpb_trans(key: 'website-manager.page-created');
                 Devflow::$PHP->flash->success($message);
@@ -172,6 +176,9 @@ final class WebsiteManagerController extends BaseController
                         update_page_attribute($page->getId(), $key, $value);
                     }
                 }
+
+                Action::getInstance()->doAction('update_page', $page);
+
                 /** @var string $message */
                 $message = phpb_trans(key: 'website-manager.page-updated');
                 Devflow::$PHP->flash->success($message);
@@ -183,6 +190,12 @@ final class WebsiteManagerController extends BaseController
         return $this->renderPageSettings($page);
     }
 
+    /**
+     * @param PageContract $page
+     * @return ResponseInterface
+     * @throws Exception
+     * @throws ReflectionException
+     */
     private function handleDestroy(PageContract $page): ResponseInterface
     {
         $pageRepository = new PageRepository();
@@ -190,6 +203,8 @@ final class WebsiteManagerController extends BaseController
         /** @var string $message */
         $message = phpb_trans(key: 'website-manager.page-deleted');
         Devflow::$PHP->flash->success($message);
+
+        Action::getInstance()->doAction('deleted_page', $page);
 
         return $this->redirect(phpb_url('website_manager'));
     }

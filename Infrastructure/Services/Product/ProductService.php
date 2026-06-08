@@ -37,6 +37,7 @@ use function Codefy\Framework\Helpers\abort;
 use function Codefy\Framework\Helpers\command;
 use function Codefy\Framework\Helpers\logger;
 use function Codefy\Framework\Helpers\trans;
+use function Qubus\Security\Helpers\__observer;
 use function Qubus\Support\Helpers\is_false__;
 
 final readonly class ProductService
@@ -98,6 +99,13 @@ final readonly class ProductService
 
             $this->event->dispatch(new ProductCreated($product->toArray(), get_current_user_id()));
 
+            /**
+             * Action hook triggered after product is created.
+             *
+             * @param array $product Product object.
+             */
+            __observer()->action->doAction('create_product', $product);
+
             Devflow::$PHP->flash->success(
                 message: trans('Product added successfully.'),
             );
@@ -133,6 +141,14 @@ final readonly class ProductService
             $product = get_product_by_id($data->toDtoArray()['id']->toNative());
 
             $this->event->dispatch(new ProductUpdated($product->toArray(), get_current_user_id()));
+
+            /**
+             * Action hook triggered after existing product has been updated.
+             *
+             * @param string $productId Product id.
+             * @param array  $product   Product object.
+             */
+            __observer()->action->doAction('update_product', $data->toDtoArray()['id']->toNative(), $product);
 
             Devflow::$PHP->flash->success(Devflow::$PHP->flash->notice(num: 200));
         } catch (
@@ -215,6 +231,13 @@ final readonly class ProductService
             ProductCachePsr16::clean($product->toArray());
 
             $this->event->dispatch(new ProductDeleted($productId, get_current_user_id()));
+
+            /**
+             * Action hook fires immediately after a product is deleted from the product document.
+             *
+             * @param string $productId Product id.
+             */
+            __observer()->action->doAction('deleted_product', $productId);
 
             Devflow::$PHP->flash->success(
                 message: trans('Removal was successful.')
