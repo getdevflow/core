@@ -57,7 +57,7 @@ final class Page
         $data = $this->dfdb->getRow(
             $this->dfdb->prepare(
                 "SELECT p.id, p.name, p.show_in_nav, p.nav_position, p.nav_type, p.data,
-                t.locale, t.meta_title, t.meta_description, t.route,
+                t.locale, t.meta_title, t.meta_description, t.route 
                 FROM {$this->dfdb->prefix}pages p
                 LEFT JOIN {$this->dfdb->prefix}page_translations t 
                 ON t.page_id = p.id
