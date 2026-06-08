@@ -64,7 +64,7 @@ final class AttributesFactory
         $dfdb = dfdb();
 
         return new AttributeManager(
-            type: 'page',
+            type: 'pages',
             repository: new PdoAttributeDataRepository($dfdb),
             cache: SimpleCacheObjectCacheFactory::make(namespace: $dfdb->prefix . 'page_attribute')
         );

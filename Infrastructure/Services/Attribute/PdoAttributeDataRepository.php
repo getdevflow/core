@@ -27,12 +27,26 @@ final readonly class PdoAttributeDataRepository implements AttributeRepository
      */
     private function table(string $type): string
     {
-        $tableName = $this->dfdb->prefix . $type;
-        if (empty($tableName)) {
-            return '';
-        }
+        return match ($type) {
+            'page', 'pages' => $this->dfdb->prefix . 'pages',
+            default => $this->dfdb->prefix . $type,
+        };
+    }
 
-        return $tableName;
+    private function attributeColumn(string $type): string
+    {
+        return match ($type) {
+            'page', 'pages' => 'page_attribute',
+            default => $type . '_attribute',
+        };
+    }
+
+    private function idColumn(string $type): string
+    {
+        return match ($type) {
+            'page', 'pages' => 'id',
+            default => $type . '_id',
+        };
     }
 
     /**
@@ -47,13 +61,14 @@ final readonly class PdoAttributeDataRepository implements AttributeRepository
     public function getAttribute(string $type, string $id): AttributeBag
     {
         $table = $this->table($type);
+        $attributeColumn = $this->attributeColumn($type);
         $stmt = $this->dfdb->getConnection()->pdo->prepare(
             sprintf(
-                "SELECT %s_attribute
-                 FROM %s
-                 WHERE %s = :id
-                 LIMIT 1",
-                $type,
+                "SELECT %s
+                FROM %s
+                WHERE %s = :id
+                LIMIT 1",
+                $attributeColumn,
                 $table,
                 $this->idColumn($type)
             )
@@ -85,13 +100,14 @@ final readonly class PdoAttributeDataRepository implements AttributeRepository
     public function saveAttribute(string $type, string $id, AttributeBag $attribute): void
     {
         $table = $this->table($type);
+        $attributeColumn = $this->attributeColumn($type);
         $stmt = $this->dfdb->getConnection()->pdo->prepare(
             sprintf(
                 "UPDATE %s
-                 SET %s_attribute = :attribute
-                 WHERE %s = :id",
+                SET %s = :attribute
+                WHERE %s = :id",
                 $table,
-                $type,
+                $attributeColumn,
                 $this->idColumn($type)
             )
         );
@@ -112,16 +128,17 @@ final readonly class PdoAttributeDataRepository implements AttributeRepository
     public function patchAttribute(string $type, string $id, callable $callback): AttributeBag
     {
         $table = $this->table($type);
+        $attributeColumn = $this->attributeColumn($type);
         $this->dfdb->getConnection()->pdo->beginTransaction();
 
         try {
             $stmt = $this->dfdb->getConnection()->pdo->prepare(
                 sprintf(
-                    "SELECT %s_attribute
+                    "SELECT %s
                     FROM %s
                     WHERE %s = :id
                     LIMIT 1",
-                    $type,
+                    $attributeColumn,
                     $table,
                     $this->idColumn($type)
                 )
@@ -145,10 +162,10 @@ final readonly class PdoAttributeDataRepository implements AttributeRepository
             $update = $this->dfdb->getConnection()->pdo->prepare(
                 sprintf(
                     "UPDATE %s
-                    SET %s_attribute = :attribute
+                    SET %s = :attribute
                     WHERE %s = :id",
                     $table,
-                    $type,
+                    $attributeColumn,
                     $this->idColumn($type)
                 )
             );
@@ -165,13 +182,5 @@ final readonly class PdoAttributeDataRepository implements AttributeRepository
             $this->dfdb->getConnection()->pdo->rollBack();
             throw $e;
         }
-    }
-
-    private function idColumn(string $type): string
-    {
-        return match ($type) {
-            'page' => 'id',
-            default => $type . '_id',
-        };
     }
 }
