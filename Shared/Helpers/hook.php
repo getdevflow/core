@@ -883,6 +883,29 @@ function admin_footer(): void
 }
 
 /**
+ * Fires the cms_body_open action via the frontend.
+ *
+ * @file core/Shared/Helpers/hook.php
+ * @throws ContainerExceptionInterface
+ * @throws Exception
+ * @throws NotFoundExceptionInterface
+ * @throws ReflectionException
+ */
+function cms_body_open(): void
+{
+    /**
+     * Registers & enqueues JavaScript to be printed in frontend
+     * after opening body tag.
+     */
+    __observer()->action->doAction('enqueue_body_js');
+    /**
+     * Prints scripts and/or data after the opening body tag of the frontend.
+     */
+    __observer()->action->doAction('cms_body_open');
+    cms_print_registered_assets('js', 'body');
+}
+
+/**
  * Fires the cms_footer action via the admin.
  *
  * @file core/Shared/Helpers/hook.php

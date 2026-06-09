@@ -1042,6 +1042,7 @@ function cms_register_asset(
             'css' => [],
             'js' => [
                 'head' => [],
+                'body' => [],
                 'footer' => [],
             ],
         ];
@@ -1086,6 +1087,7 @@ function cms_print_registered_assets(string $type, string $location = 'default')
             'css' => [],
             'js' => [
                 'head' => [],
+                'body' => [],
                 'footer' => [],
             ],
         ];
