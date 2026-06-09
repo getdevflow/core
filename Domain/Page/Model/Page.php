@@ -24,7 +24,7 @@ final class Page
 {
     use CleanAware;
 
-    public ?int $id = null;
+    public string|int|null $id = null;
     public ?string $locale = null;
     public ?string $name = null;
     public ?string $title = null;
