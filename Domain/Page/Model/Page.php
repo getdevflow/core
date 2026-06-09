@@ -121,17 +121,17 @@ final class Page
     {
         $data = $this->normalizeData($data);
 
-        $this->id = $this->clean($data['id']);
-        $this->locale = $this->clean($data['locale']);
-        $this->name = $this->clean($data['name']);
-        $this->title = $this->clean($data['title']);
-        $this->description = $this->clean($data['description']);
-        $this->route = $this->clean($data['route']);
-        $this->relativeUrl = $this->clean($data['route']);
-        $this->show = $this->clean($data['show']);
-        $this->position = $this->clean($data['position']);
-        $this->type = $this->clean($data['type']);
-        $this->data = purify_html($data['data']);
+        $this->id = $this->clean($data['id'] ?? '');
+        $this->locale = $this->clean($data['locale'] ?? '');
+        $this->name = $this->clean($data['name'] ?? '');
+        $this->title = $this->clean($data['title'] ?? '');
+        $this->description = $this->clean($data['description'] ?? '');
+        $this->route = $this->clean($data['route'] ?? '');
+        $this->relativeUrl = $this->clean($data['route'] ?? '');
+        $this->show = $this->clean($data['show'] ?? '');
+        $this->position = $this->clean($data['position'] ?? '');
+        $this->type = $this->clean($data['type'] ?? '');
+        $this->data = purify_html($data['data'] ?? '');
 
         return $this;
     }
