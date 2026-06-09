@@ -32,7 +32,7 @@ final class Page
     public ?string $route = null;
     public ?string $relativeUrl = null;
     public ?string $show = null;
-    public ?int $position = null;
+    public string|int|null $position = null;
     public ?string $type = null;
     public ?string $data = null;
     /**
