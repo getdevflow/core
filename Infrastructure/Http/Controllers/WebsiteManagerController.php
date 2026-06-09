@@ -42,6 +42,7 @@ final class WebsiteManagerController extends BaseController
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
      * @throws TypeException
+     * @throws \Exception
      */
     public function index(): ResponseInterface
     {
