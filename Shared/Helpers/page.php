@@ -20,27 +20,6 @@ use function is_array;
 use function Qubus\Support\Helpers\is_false__;
 
 /**
- * @param string $field
- * @param mixed $value
- * @return Page|false
- * @throws Exception
- * @throws ReflectionException
- * @throws InvalidArgumentException
- */
-function get_page_by(string $field, mixed $value): Page|false
-{
-    /** @var Page $page */
-    $page = Devflow::$PHP->make(name: Page::class);
-    $pageData = $page->findBy($field, $value);
-
-    if (is_false__($pageData)) {
-        return false;
-    }
-
-    return $pageData;
-}
-
-/**
  * @return array{object: Page}|false array
  * @throws Exception
  * @throws InvalidArgumentException
@@ -52,9 +31,9 @@ function get_pages(): array|false
     /** @var Page $page */
     $page = Devflow::$PHP->make(name: Page::class);
     $pages = [];
-    
+
     $locale = get_option(key: 'site_locale');
-    $sql = $dfdb->getRow(
+    $sql = $dfdb->getResults(
         $dfdb->prepare(
             "SELECT p.id, p.name, p.show_in_nav, p.nav_position, p.nav_type, p.data,
             t.locale, t.meta_title, t.meta_description, t.route 
@@ -76,6 +55,27 @@ function get_pages(): array|false
     }
 
     return $pages;
+}
+
+/**
+ * @param string $field
+ * @param mixed $value
+ * @return Page|false
+ * @throws Exception
+ * @throws ReflectionException
+ * @throws InvalidArgumentException
+ */
+function get_page_by(string $field, mixed $value): Page|false
+{
+    /** @var Page $page */
+    $page = Devflow::$PHP->make(name: Page::class);
+    $pageData = $page->findBy($field, $value);
+
+    if (is_false__($pageData)) {
+        return false;
+    }
+
+    return $pageData;
 }
 
 /**
