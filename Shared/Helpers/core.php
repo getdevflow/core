@@ -1619,13 +1619,13 @@ function help_block(
         $html .= sprintf(
             '<h3 id="%s" class="accessible-help-block__title">%s</h3>',
             esc_html($headingId),
-            esc_html($title)
+            purify_html($title)
         );
     }
 
     $html .= sprintf(
         '<p>%s</p>',
-        esc_html($message)
+        purify_html($message)
     );
 
     if ($linkUrl !== null && $linkText !== null) {
