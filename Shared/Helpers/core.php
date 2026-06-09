@@ -1615,7 +1615,7 @@ function help_block(
 
     $html .= '<div class="accessible-help-block__content">';
 
-    if($title !== '') {
+    if ($title !== '') {
         $html .= sprintf(
             '<h3 id="%s" class="accessible-help-block__title">%s</h3>',
             esc_html($headingId),
