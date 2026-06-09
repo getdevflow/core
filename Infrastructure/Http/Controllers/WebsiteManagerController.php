@@ -12,6 +12,7 @@ use Psr\Container\NotFoundExceptionInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\SimpleCache\InvalidArgumentException;
 use Qubus\EventDispatcher\ActionFilter\Action;
+use Qubus\EventDispatcher\ActionFilter\Filter;
 use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
 use Qubus\Http\ServerRequest;
@@ -34,19 +35,26 @@ final class WebsiteManagerController extends BaseController
     private string $pageSettingsTemplate = 'framework::backend/admin/manager/page-settings';
 
     /**
-     * @param ServerRequest $request
      * @return ResponseInterface
-     * @throws TypeException
      * @throws ContainerExceptionInterface
-     * @throws NotFoundExceptionInterface
-     * @throws InvalidArgumentException
      * @throws Exception
+     * @throws InvalidArgumentException
+     * @throws NotFoundExceptionInterface
      * @throws ReflectionException
-     * @throws \Exception
+     * @throws TypeException
      */
     public function index(): ResponseInterface
     {
         if (false === current_user_can(perm: 'vihzhuo:manage')) {
+            Devflow::$PHP->flash->error(
+                message: trans('Access denied.')
+            );
+
+            return $this->redirect(admin_url());
+        }
+
+        $filter = Filter::getInstance()->applyFilter('pagebuilder.support', false);
+        if (!$filter) {
             Devflow::$PHP->flash->error(
                 message: trans('Access denied.')
             );
@@ -86,6 +94,15 @@ final class WebsiteManagerController extends BaseController
             return $this->redirect(admin_url());
         }
 
+        $filter = Filter::getInstance()->applyFilter('pagebuilder.support', false);
+        if (!$filter) {
+            Devflow::$PHP->flash->error(
+                message: trans('Access denied.')
+            );
+
+            return $this->redirect(admin_url());
+        }
+
         $this->vihzhuoInstance();
 
         if ($request->getMethod() === 'POST') {
@@ -122,6 +139,15 @@ final class WebsiteManagerController extends BaseController
     {
         if (false === current_user_can(perm: 'vihzhuo:manage')) {
             Devflow::$PHP->flash->error(message: trans('Access denied.'));
+            return $this->redirect(admin_url());
+        }
+
+        $filter = Filter::getInstance()->applyFilter('pagebuilder.support', false);
+        if (!$filter) {
+            Devflow::$PHP->flash->error(
+                message: trans('Access denied.')
+            );
+
             return $this->redirect(admin_url());
         }
 
@@ -174,6 +200,15 @@ final class WebsiteManagerController extends BaseController
     {
         if (false === current_user_can(perm: 'vihzhuo:manage')) {
             Devflow::$PHP->flash->error(message: trans('Access denied.'));
+            return $this->redirect(admin_url());
+        }
+
+        $filter = Filter::getInstance()->applyFilter('pagebuilder.support', false);
+        if (!$filter) {
+            Devflow::$PHP->flash->error(
+                message: trans('Access denied.')
+            );
+
             return $this->redirect(admin_url());
         }
 
