@@ -45,7 +45,8 @@
       "Shared/Helpers/site.php",
       "Shared/Helpers/content-type.php",
       "Shared/Helpers/menu.php",
-      "Shared/Helpers/security.php"
+      "Shared/Helpers/security.php",
+      "Shared/Helpers/page.php"
     ]
   },
   "prefer-stable": true,

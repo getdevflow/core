@@ -9,6 +9,7 @@ use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Psr\SimpleCache\CacheInterface;
 use Psr\SimpleCache\InvalidArgumentException;
+use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
 use ReflectionException;
 
@@ -26,9 +27,13 @@ final readonly class AttributeManager
     }
 
     /**
+     * @param string $type
+     * @param string $namespace
+     * @return AttributeManager
+     * @throws ContainerExceptionInterface
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
-     * @throws ContainerExceptionInterface
+     * @throws TypeException
      */
     public static function factory(string $type, string $namespace = 'attributes'): self
     {
@@ -42,17 +47,37 @@ final readonly class AttributeManager
      * @param string $key Attribute key.
      * @param mixed $default Value to return if no result is found.
      * @return mixed Value.
+     * @throws ContainerExceptionInterface
+     * @throws Exception
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
      */
     public function get(string $id, string $key, mixed $default = null): mixed
     {
         return $this->load($id)->getPath($key, $default);
     }
 
+    /**
+     * @param string $id
+     * @return string
+     * @throws ContainerExceptionInterface
+     * @throws Exception
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
+     */
     public function all(string $id): string
     {
         return $this->load($id)->toJson();
     }
 
+    /**
+     * @param string $id
+     * @return AttributeBag
+     * @throws ContainerExceptionInterface
+     * @throws Exception
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
+     */
     public function bag(string $id): AttributeBag
     {
         return $this->load($id);
@@ -157,6 +182,15 @@ final readonly class AttributeManager
         return $result;
     }
 
+    /**
+     * @param string $id
+     * @param string $key
+     * @return bool
+     * @throws ContainerExceptionInterface
+     * @throws Exception
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
+     */
     public function exists(string $id, string $key): bool
     {
         return !empty($this->get($id, $key));

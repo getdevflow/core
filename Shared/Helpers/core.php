@@ -75,6 +75,8 @@ use function preg_replace;
 use function preg_replace_callback;
 use function preg_split;
 use function Qubus\Security\Helpers\__observer;
+use function Qubus\Security\Helpers\esc_html;
+use function Qubus\Security\Helpers\esc_url;
 use function Qubus\Security\Helpers\purify_html;
 use function Qubus\Support\Helpers\remove_trailing_slash;
 use function realpath;
@@ -93,6 +95,7 @@ use function strtotime;
 use function substr;
 use function trim;
 use function ucfirst;
+use function uniqid;
 use function unlink;
 use function urldecode;
 
@@ -1039,6 +1042,7 @@ function cms_register_asset(
             'css' => [],
             'js' => [
                 'head' => [],
+                'body' => [],
                 'footer' => [],
             ],
         ];
@@ -1083,6 +1087,7 @@ function cms_print_registered_assets(string $type, string $location = 'default')
             'css' => [],
             'js' => [
                 'head' => [],
+                'body' => [],
                 'footer' => [],
             ],
         ];
@@ -1575,4 +1580,63 @@ function show_update_message(): void
             return;
         }
     }
+}
+
+/**
+ * @param string $title
+ * @param string $message
+ * @param string|null $linkUrl
+ * @param string|null $linkText
+ * @param string $icon
+ * @param string $class
+ * @return string
+ * @throws Exception
+ */
+function help_block(
+    string $title,
+    string $message,
+    ?string $linkUrl = null,
+    ?string $linkText = null,
+    string $icon = '💡',
+    string $class = ''
+): string {
+    $headingId = 'help-' . uniqid();
+
+    $html = sprintf(
+        '<aside class="accessible-help-block %s" aria-labelledby="%s">',
+        esc_html($class),
+        esc_html($headingId)
+    );
+
+    $html .= sprintf(
+        '<div class="accessible-help-block__icon" aria-hidden="true">%s</div>',
+        esc_html($icon)
+    );
+
+    $html .= '<div class="accessible-help-block__content">';
+
+    if ($title !== '') {
+        $html .= sprintf(
+            '<h3 id="%s" class="accessible-help-block__title">%s</h3>',
+            esc_html($headingId),
+            purify_html($title)
+        );
+    }
+
+    $html .= sprintf(
+        '<p>%s</p>',
+        purify_html($message)
+    );
+
+    if ($linkUrl !== null && $linkText !== null) {
+        $html .= sprintf(
+            '<a href="%s" class="accessible-help-block__link">%s</a>',
+            esc_url($linkUrl),
+            esc_html($linkText)
+        );
+    }
+
+    $html .= '</div></aside>';
+
+    return $html;
 }

@@ -41,6 +41,7 @@ use function Codefy\Framework\Helpers\abort;
 use function Codefy\Framework\Helpers\command;
 use function Codefy\Framework\Helpers\logger;
 use function Codefy\Framework\Helpers\trans;
+use function Qubus\Security\Helpers\__observer;
 use function Qubus\Support\Helpers\is_false__;
 use function sprintf;
 
@@ -119,6 +120,13 @@ final readonly class ContentService
 
             $this->event->dispatch(new ContentCreated($content->toArray()));
 
+            /**
+             * Action hook triggered after content is created.
+             *
+             * @param array $content Content object.
+             */
+            __observer()->action->doAction('create_content', $content);
+
             Devflow::$PHP->flash->success(
                 message: trans('Content added successfully.'),
             );
@@ -153,6 +161,14 @@ final readonly class ContentService
             $content = get_content_by_id($data->toDtoArray()['id']->toNative());
 
             $this->event->dispatch(new ContentUpdated($content->toArray()));
+
+            /**
+             * Action hook triggered after existing content has been updated.
+             *
+             * @param string $contentId Content id.
+             * @param array  $content   Content object.
+             */
+            __observer()->action->doAction('update_content', $data->toDtoArray()['id']->toNative(), $content);
 
             Devflow::$PHP->flash->success(Devflow::$PHP->flash->notice(num: 200));
         } catch (
@@ -268,6 +284,13 @@ final readonly class ContentService
             ContentCachePsr16::clean($content->toArray());
 
             $this->event->dispatch(new ContentDeleted($contentId));
+
+            /**
+             * Action hook fires immediately after a content is deleted from the database.
+             *
+             * @param string $contentId Content id.
+             */
+            __observer()->action->doAction('deleted_content', $contentId);
 
             Devflow::$PHP->flash->success(
                 message: trans('Removal was successful.')

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Services;
 
+use App\Infrastructure\Services\Trait\PathInfoAware;
 use Qubus\Expressive\Database;
 use Qubus\View\Renderer;
 
@@ -11,6 +12,8 @@ use function sprintf;
 
 abstract class Plugin implements Extension
 {
+    use PathInfoAware;
+
     public function __construct(protected Options $option, protected Database $dfdb, protected Renderer $view)
     {
     }
