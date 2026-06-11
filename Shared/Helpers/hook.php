@@ -400,6 +400,14 @@ function cms_editor(?string $selector = null): void
             plugins: ["<?= implode(',', $mcePlugins); ?>"],
             toolbar: "pagebreak",
             pagebreak_separator: "<!--pagebreak-->",
+            rel_list: [
+                {title: 'None', value: ''},
+                {title: 'nofollow', value: 'nofollow'},
+                {title: 'sponsored', value: 'sponsored'},
+                {title: 'ugc', value: 'ugc'},
+                {title: 'nofollow sponsored', value: 'nofollow sponsored'},
+                {title: 'nofollow ugc', value: 'nofollow ugc'}
+            ],
             link_list: [
     <?php
     foreach (tinymce_link_list() as $link) :
