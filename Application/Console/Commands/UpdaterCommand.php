@@ -13,28 +13,10 @@ use RuntimeException;
 use Symfony\Component\Console\Exception\ExceptionInterface;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Process\Process;
-use ZipArchive;
 
-use function App\Shared\Helpers\remote_file_exists;
 use function App\Shared\Helpers\updater_server_url;
-use function Codefy\Framework\Helpers\base_path;
-use function curl_close;
-use function curl_exec;
-use function curl_getinfo;
-use function curl_init;
-use function curl_setopt;
-use function fclose;
-use function fopen;
 use function function_exists;
 use function sprintf;
-use function unlink;
-use function version_compare;
-
-use const CURLINFO_HTTP_CODE;
-use const CURLOPT_FILE;
-use const CURLOPT_FOLLOWLOCATION;
-use const CURLOPT_NOBODY;
-use const CURLOPT_URL;
 
 final class UpdaterCommand extends ConsoleCommand
 {
@@ -62,115 +44,59 @@ EOT
     /**
      * @throws InvalidArgumentException
      * @throws Exception
-     */
-    protected function getCurrentRelease(): string
-    {
-        $updater = new Updater();
-        $updater->setCurrentVersion(Devflow::release());
-        $updater->setUpdateUrl(updateUrl: updater_server_url() . '/update-check');
-
-        if ($updater->checkUpdate() !== false) {
-            if ($updater->newVersionAvailable()) {
-                return $updater->latestVersion;
-            }
-        }
-
-        return Devflow::release();
-    }
-
-    protected function checkExternalFile($url): mixed
-    {
-        $ch = curl_init($url);
-        curl_setopt($ch, CURLOPT_NOBODY, true);
-        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true); // this will follow redirects
-        curl_exec($ch);
-        $retCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-
-        return $retCode;
-    }
-
-    protected function getDownload($release, $url): void
-    {
-        $fh = fopen($release, 'w');
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_FILE, $fh);
-        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true); // this will follow redirects
-        curl_exec($ch);
-        curl_close($ch);
-        fclose($fh);
-    }
-
-    /**
-     * @throws InvalidArgumentException
-     * @throws Exception
      * @throws ExceptionInterface
      */
     public function handle(): int
     {
-        $release = $this->getArgument(key: 'release');
+        $updater = new Updater();
+        $updater->setCurrentVersion(Devflow::release());
+        $updater->setUpdateUrl(updater_server_url() . '/update-check');
 
-        if ($release === null || $release === '') {
-            $releaseValue = $this->getCurrentRelease();
-        } else {
-            $releaseValue = $release;
+        $check = $updater->checkUpdate();
+
+        if ($check === false) {
+            $this->terminalError('Update server cannot be reached. Please try again later.');
+            return self::FAILURE;
         }
 
-        $zip = new ZipArchive();
-        $file = sprintf(updater_server_url() . '/release/%s.zip', $releaseValue);
-
-        if (version_compare(Devflow::release(), $releaseValue, '<')) {
-            $remoteUpdateCheck = remote_file_exists(updater_server_url() . '/update-check/update.json');
-            $zipFile = sprintf('%s.zip', $releaseValue);
-            if ($remoteUpdateCheck && $this->checkExternalFile($file) === 200) {
-                //Download file to the server
-                $this->terminalInfo('Downloading . . . . . . . . . . . . .');
-                $this->getDownload($zipFile, $file);
-
-                //Unzip the file to update
-                $this->terminalInfo('Unzipping . . . . . . . . . . . . .');
-                $x = $zip->open($zipFile);
-
-                if ($x === true) {
-                    //Extract file in root.
-                    $zip->extractTo(base_path());
-                    $zip->close();
-
-                    //Remove download after completion.
-                    unlink($zipFile);
-                }
-                // Check for composer updates
-                $this->terminalInfo('Checking for composer updates . . . . . . . . . .');
-                $this->runComposer([
-                    'composer',
-                    'update',
-                ]);
-
-                $this->terminalInfo('Checking for migrations to run');
-                $this->call('migrate');
-
-                $this->terminalInfo('Checking for site migrations to run');
-                $this->call('site:migrate');
-
-                // Updates complete
-                $this->terminalComment('Updates complete!');
-            } elseif ($remoteUpdateCheck && $this->checkExternalFile($file) !== 200) {
-                // Check for composer updates
-                $this->terminalInfo('Checking for composer updates . . . . . . . . . .');
-                $this->runComposer([
-                    'composer',
-                    'update',
-                ]);
-
-                // Updates complete
-                $this->terminalComment('Updates complete!');
-            } else {
-                $this->terminalError('Update server cannot be reached. Please try again later.');
-            }
-        } else {
+        if (!$updater->newVersionAvailable()) {
             $this->terminalComment('No updates needed.');
+            return self::SUCCESS;
         }
+
+        $versions = $updater->getVersionsToUpdate();
+
+        $this->terminalInfo(sprintf(
+            'Applying updates: %s',
+            implode(', ', $versions)
+        ));
+
+        $updater->onEachUpdateFinish(function (string $version, bool $simulate): void {
+            $this->terminalComment(sprintf('Updated to %s', $version));
+        });
+
+        $result = $updater->update(
+            simulateInstall: false,
+            deleteDownload: true
+        );
+
+        if ($result !== true) {
+            $this->terminalError(sprintf('Update failed with status: %s', (string) $result));
+            return self::FAILURE;
+        }
+
+        $this->terminalInfo('Checking for composer updates . . . . . . . . . .');
+        if ($this->runComposer(['composer', 'update']) !== self::SUCCESS) {
+            return self::FAILURE;
+        }
+
+        $this->terminalInfo('Checking for migrations to run');
+        $this->call('migrate');
+
+        $this->terminalInfo('Checking for site migrations to run');
+        $this->call('site:migrate');
+
+        $this->terminalComment('Updates complete!');
 
         return self::SUCCESS;
     }
