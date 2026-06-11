@@ -67,15 +67,6 @@ final class CmsHelperServiceProvider extends CodefyServiceProvider
          */
         __observer()->action->doAction('admin_menu');
         /**
-         * Registers & enqueues JavaScript to be printed in frontend footer section.
-         */
-        __observer()->action->doAction('enqueue_js');
-        /**
-         * Prints scripts and/or data before the ending body tag
-         * of the front end.
-         */
-        __observer()->action->doAction('cms_footer');
-        /**
          * Default actions and filters.
          */
         __observer()->action->addAction('cms_admin_head', 'App\Shared\Helpers\admin_enqueue_head', 5);
