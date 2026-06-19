@@ -7,6 +7,7 @@ namespace App\Shared\Helpers;
 use App\Application\Devflow;
 use App\Domain\User\Model\User;
 use App\Infrastructure\Persistence\Cache\UserCachePsr16;
+use Qubus\EventDispatcher\ActionFilter\Filter;
 use Qubus\Expressive\Database;
 use App\Infrastructure\Services\NativePhpCookies;
 use Codefy\Framework\Auth\Rbac\Rbac;
@@ -442,10 +443,35 @@ function get_secure_cookie_data(string $key): false|array|object
     return false;
 }
 
+
 /**
+ * Retrieve a list of system defined user roles.
+ *
+ * @file core/Shared/Helpers/user.php
+ * @param string|null $active
+ * @return void
+ * @throws Exception
+ * @throws ReflectionException
+ * @throws TypeException
+ */
+function get_system_roles(?string $active = null): void
+{
+    $roles = Filter::getInstance()->applyFilter('system.roles', config()->array(key: 'rbac.roles'));
+
+    foreach ($roles as $role => $permission) {
+        echo '<option value="' . esc_html($role) . '"' . selected($active, esc_html($role), false) . '>' .
+            esc_html($role) .
+            '</option>';
+    }
+}
+
+/**
+ * @return array
+ * @throws Exception
+ * @throws ReflectionException
  * @throws TypeException
  */
 function get_user_roles(): array
 {
-    return config()->array(key: 'rbac.roles');
+    return Filter::getInstance()->applyFilter('user.roles', config()->array(key: 'rbac.roles'));
 }
