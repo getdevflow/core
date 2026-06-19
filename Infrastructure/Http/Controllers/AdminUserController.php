@@ -95,11 +95,11 @@ final class AdminUserController extends BaseController
             return $this->redirect(admin_url());
         }
 
-        if (strlen($request->get('pass')) < config()->integer(key: 'auth.password_length')) {
+        if (strlen($request->get('pass')) < config()->integer(key: 'auth.password_min_length')) {
             Devflow::$PHP->flash->error(
                 message: sprintf(
                     trans(string: 'Passwords cannot be less than %s characters.'),
-                    config()->integer(key: 'auth.password_length')
+                    config()->integer(key: 'auth.password_min_length')
                 ),
             );
             $this->redirect($request->getHeaderLine(name: 'Referer'));
