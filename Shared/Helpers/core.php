@@ -1116,7 +1116,7 @@ function cms_print_registered_assets(string $type, string $location = 'default')
  *
  *      cms_enqueue_css('default', '//cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css')
  *      cms_enqueue_css('plugin', ['fontawesome','select2-css'], false, plugin_basename( dirname(__FILE__) ))
- *      cms_enqueue_css('theme', 'theme-slug/assets/css/style.css')
+ *      cms_enqueue_css('theme', 'theme-slug/css/style.css')
  *
  * @file core/Shared/Helpers/core.php
  * @param string $config Set whether to use `default` config or `plugin` config.
@@ -1146,7 +1146,7 @@ function cms_enqueue_css(
  *
  *      cms_enqueue_js('default', 'jquery-ui')
  *      cms_enqueue_js('plugin', 'select2-js', false, plugin_basename( dirname(__FILE__) ))
- *      cms_enqueue_js('theme', 'theme-slug/assets/js/config.js')
+ *      cms_enqueue_js('theme', 'theme-slug/js/config.js')
  *
  * @file core/Shared/Helpers/core.php
  * @param string $config Set whether to use `default`, `plugin`  or `theme` config.
