@@ -984,6 +984,7 @@ function admin_enqueue_footer(): void
     );
     cms_enqueue_js(config: 'default', asset: 'demo.js');
     cms_enqueue_js(config: 'default', asset: 'datatables-js');
+    cms_enqueue_js(config: 'default', asset: 'admin-content-notifications.js');
 }
 
 /**
