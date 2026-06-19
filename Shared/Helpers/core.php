@@ -1652,3 +1652,34 @@ function old(string $key, mixed $default = ''): mixed
 {
     return form_state()->old($key, $default);
 }
+
+function has_old(string $key): bool
+{
+    return form_state()->hasOld($key);
+}
+
+function form_error(string $key): string
+{
+    return form_state()->error($key);
+}
+
+function has_form_error(string $key): bool
+{
+    return form_state()->hasError($key);
+}
+
+function field_error(string $key): string
+{
+    $error = form_error($key);
+
+    if ($error === '') {
+        return '';
+    }
+
+    return '<p class="help-block text-danger">' . esc_html(string: $error) . '</p>';
+}
+
+function invalid_class(string $key, string $class = 'has-error'): string
+{
+    return has_form_error($key) ? $class : '';
+}
