@@ -12,6 +12,7 @@ use App\Domain\Content\Validator\UpdateContentValidator;
 use App\Domain\ContentType\Model\ContentType;
 use App\Infrastructure\Services\Content\ContentService;
 use App\Infrastructure\Services\Content\Pipes\CastSidebarAttributeToInt;
+use App\Infrastructure\Services\Content\Pipes\InitializeContentWorkflow;
 use App\Infrastructure\Services\Content\Pipes\UniqueContentSlug;
 use App\Shared\Pipes\CastShowInAttributesToInt;
 use App\Shared\Pipes\CheckForScheduledStatus;
@@ -19,7 +20,6 @@ use App\Shared\Pipes\CompressUrls;
 use App\Shared\Pipes\FormatCreatedDateTime;
 use App\Shared\Pipes\FormatPublishedDateTime;
 use App\Shared\Pipes\OptimizeFeaturedImage;
-use Application\Service\Forms\ContentForm;
 use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
 use Codefy\CommandBus\Exceptions\UnresolvableCommandHandlerException;
 use Codefy\Framework\Http\BaseController;
@@ -75,6 +75,7 @@ final class AdminContentController extends BaseController
                 OptimizeFeaturedImage::class,
                 CastSidebarAttributeToInt::class,
                 CastShowInAttributesToInt::class,
+                InitializeContentWorkflow::class,
                 CompressUrls::class,
             ])
             ->thenReturn();
@@ -123,7 +124,6 @@ final class AdminContentController extends BaseController
                 'title' => sprintf(trans_html('Create %s Content'), $type->title),
                 'type' => $type,
                 'request' => $request->getParsedBody(),
-                'form' => new ContentForm()->buildForm($request->getParsedBody(), $type->slug, null),
             ]
         );
     }
@@ -151,6 +151,7 @@ final class AdminContentController extends BaseController
                 OptimizeFeaturedImage::class,
                 CastSidebarAttributeToInt::class,
                 CastShowInAttributesToInt::class,
+                InitializeContentWorkflow::class,
                 CompressUrls::class,
             ])
             ->thenReturn();
@@ -195,7 +196,6 @@ final class AdminContentController extends BaseController
                 'title' => $content->title,
                 'content' => $content,
                 'type' => get_content_type_by('slug', $content->type),
-                'form' => new ContentForm()->buildForm($content->toArray(), $content->type, $content->id),
             ]
         );
     }

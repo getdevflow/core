@@ -134,7 +134,6 @@ final class AdminProductController extends BaseController
             data: [
                 'title' => trans('Create Product'),
                 'request' => $request->getParsedBody(),
-                'form' => new ProductForm()->buildForm($request->getParsedBody(), null),
             ]
         );
     }
@@ -211,7 +210,6 @@ final class AdminProductController extends BaseController
                 data: [
                     'title' => $product->title,
                     'product' => $product,
-                    'form' => new ProductForm()->buildForm($request->getParsedBody(), $product->id),
                 ]
             );
         } catch (

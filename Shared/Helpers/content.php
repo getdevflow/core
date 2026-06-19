@@ -2743,3 +2743,112 @@ function publish_scheduled_content(): void
         );
     }
 }
+
+/**
+ * @param string $status
+ * @return bool
+ * @throws ContainerExceptionInterface
+ * @throws Exception
+ * @throws InvalidArgumentException
+ * @throws NotFoundExceptionInterface
+ * @throws ReflectionException
+ * @throws TypeException
+ */
+function user_can_set_content_status(string $status): bool
+{
+    $caps = content_status_capabilities();
+
+    if (! array_key_exists($status, $caps)) {
+        return false;
+    }
+
+    $cap = $caps[$status];
+
+    return $cap === null || current_user_can(perm: $cap);
+}
+
+/**
+ * @param string|null $publishedGmt
+ * @return bool
+ * @throws ContainerExceptionInterface
+ * @throws Exception
+ * @throws InvalidArgumentException
+ * @throws NotFoundExceptionInterface
+ * @throws ReflectionException
+ * @throws TypeException
+ */
+function user_can_schedule_content_for(?string $publishedGmt): bool
+{
+    if (false === current_user_can(perm: 'schedule:content')) {
+        return false;
+    }
+
+    if ($publishedGmt === null || $publishedGmt === '') {
+        return false;
+    }
+
+    return strtotime($publishedGmt) > time();
+}
+
+/**
+ * @param string $fromStatus
+ * @param string $toStatus
+ * @param string|null $publishedGmt
+ * @return bool
+ * @throws ContainerExceptionInterface
+ * @throws Exception
+ * @throws InvalidArgumentException
+ * @throws NotFoundExceptionInterface
+ * @throws ReflectionException
+ * @throws TypeException
+ */
+function content_status_transition_allowed(
+    string $fromStatus,
+    string $toStatus,
+    ?string $publishedGmt = null
+): bool {
+    if (! user_can_set_content_status($toStatus)) {
+        return false;
+    }
+
+    $transitions = __observer()->filter->applyFilter('content.status.transitions', [
+        'new' => ['draft', 'pending', 'scheduled', 'published'],
+        'draft' => ['draft', 'pending', 'scheduled', 'published', 'archived'],
+        'pending' => ['pending', 'draft', 'scheduled', 'published', 'archived'],
+        'scheduled' => ['scheduled', 'draft', 'published', 'archived'],
+        'published' => ['published', 'archived'],
+        'archived' => ['archived', 'draft'],
+    ]);
+
+    if (! isset($transitions[$fromStatus]) || ! in_array($toStatus, $transitions[$fromStatus], true)) {
+        return false;
+    }
+
+    if ($toStatus === 'scheduled') {
+        return user_can_schedule_content_for($publishedGmt);
+    }
+
+    return true;
+}
+
+/**
+ * @param string $toStatus
+ * @param string|null $publishedGmt
+ * @return bool
+ * @throws ContainerExceptionInterface
+ * @throws Exception
+ * @throws InvalidArgumentException
+ * @throws NotFoundExceptionInterface
+ * @throws ReflectionException
+ * @throws TypeException
+ */
+function content_status_create_allowed(
+    string $toStatus,
+    ?string $publishedGmt = null
+): bool {
+    return content_status_transition_allowed(
+        fromStatus: 'new',
+        toStatus: $toStatus,
+        publishedGmt: $publishedGmt
+    );
+}
