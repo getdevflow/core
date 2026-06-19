@@ -35,9 +35,11 @@ use Qubus\Http\ServerRequest;
 use ReflectionException;
 
 use function App\Shared\Helpers\admin_url;
+use function App\Shared\Helpers\cms_enqueue_js;
 use function App\Shared\Helpers\current_user_can;
 use function App\Shared\Helpers\get_all_content_with_filters;
 use function App\Shared\Helpers\get_content_type_by;
+use function App\Shared\Helpers\site_url;
 use function Codefy\Framework\Helpers\abort;
 use function Codefy\Framework\Helpers\trans;
 use function Codefy\Framework\Helpers\trans_html;
@@ -189,6 +191,8 @@ final class AdminContentController extends BaseController
         }
 
         $content = $service->findById($contentId);
+
+        cms_enqueue_js(config: 'default', asset: site_url('static/assets/js/admin-content-workflow.js'));
 
         return view(
             template: 'framework::backend/admin/content/view',
