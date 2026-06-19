@@ -6,6 +6,7 @@ namespace App\Shared\Helpers;
 
 use App\Application\Devflow;
 use App\Infrastructure\Services\Updater;
+use App\Shared\Http\FormState;
 use App\Shared\Services\Assets\AppAssets;
 use App\Shared\Services\Assets\PluginAssets;
 use App\Shared\Services\Assets\ThemeAssets;
@@ -41,6 +42,7 @@ use function array_slice;
 use function array_unique;
 use function array_values;
 use function asort;
+use function Codefy\Framework\Helpers\app;
 use function Codefy\Framework\Helpers\config;
 use function Codefy\Framework\Helpers\public_path;
 use function Codefy\Framework\Helpers\resource_path;
@@ -1639,4 +1641,14 @@ function help_block(
     $html .= '</div></aside>';
 
     return $html;
+}
+
+function form_state(): FormState
+{
+    return app(FormState::class);
+}
+
+function old(string $key, mixed $default = ''): mixed
+{
+    return form_state()->old($key, $default);
 }
