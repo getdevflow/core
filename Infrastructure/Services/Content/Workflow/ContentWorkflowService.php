@@ -4,10 +4,17 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Services\Content\Workflow;
 
+use Exception;
 use JsonException;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
+use Psr\SimpleCache\InvalidArgumentException;
+use Qubus\Exception\Data\TypeException;
 use Qubus\Expressive\Database;
 use Qubus\Support\DateTime\QubusDateTimeImmutable;
 use Qubus\ValueObjects\Identity\Ulid;
+use ReflectionException;
+use RuntimeException;
 
 use function App\Shared\Helpers\current_user_can;
 
@@ -18,7 +25,12 @@ final readonly class ContentWorkflowService
     }
 
     /**
-     * @throws JsonException
+     * @param string $contentId
+     * @param string $userId
+     * @param array $reviewers
+     * @param string $message
+     * @return array
+     * @throws Exception
      */
     public function requestReview(string $contentId, string $userId, array $reviewers, string $message = ''): array
     {
@@ -64,7 +76,11 @@ final readonly class ContentWorkflowService
     }
 
     /**
-     * @throws JsonException
+     * @param string $contentId
+     * @param string $userId
+     * @param string $message
+     * @return array
+     * @throws Exception
      */
     public function approve(string $contentId, string $userId, string $message = ''): array
     {
@@ -100,7 +116,11 @@ final readonly class ContentWorkflowService
     }
 
     /**
-     * @throws JsonException
+     * @param string $contentId
+     * @param string $userId
+     * @param string $message
+     * @return array
+     * @throws Exception
      */
     public function requestChanges(string $contentId, string $userId, string $message = ''): array
     {
@@ -134,7 +154,11 @@ final readonly class ContentWorkflowService
     }
 
     /**
-     * @throws JsonException
+     * @param string $contentId
+     * @param string $userId
+     * @param string $message
+     * @return array
+     * @throws Exception
      */
     public function publish(string $contentId, string $userId, string $message = ''): array
     {
@@ -177,9 +201,14 @@ final readonly class ContentWorkflowService
         string $userId,
         string $body,
         ?string $parentId = null,
-        ?array $selection = null
+        ?array $selection = null,
+        string $type = 'editorial'
     ): array {
-        $this->assertCan('update:content');
+        $this->assertCan('comment:content');
+
+        if (trim($body) === '') {
+            throw new RuntimeException('Comment cannot be empty.');
+        }
 
         $commentId = Ulid::generateAsString();
 
@@ -190,7 +219,7 @@ final readonly class ContentWorkflowService
             'user_id' => $userId,
             'comment_body' => $body,
             'comment_status' => 'open',
-            'comment_type' => 'editorial',
+            'comment_type' => $type,
             'selection_json' => $selection !== null ? json_encode($selection, JSON_THROW_ON_ERROR) : null,
             'created_at' => $this->now(),
             'updated_at' => null,
@@ -199,9 +228,13 @@ final readonly class ContentWorkflowService
         $activityId = $this->log(
             contentId: $contentId,
             userId: $userId,
-            type: 'comment_added',
+            type: $parentId === null ? 'comment_added' : 'comment_replied',
             message: $body,
-            metadata: ['comment_id' => $commentId]
+            metadata: [
+                'comment_id' => $commentId,
+                'parent_id' => $parentId,
+                'comment_type' => $type,
+            ]
         );
 
         return [
@@ -210,6 +243,11 @@ final readonly class ContentWorkflowService
         ];
     }
 
+    /**
+     * @param string $contentId
+     * @return array
+     * @throws Exception
+     */
     public function publishScheduled(string $contentId): array
     {
         return $this->dfdb->transactional(function () use ($contentId): array {
@@ -262,11 +300,15 @@ final readonly class ContentWorkflowService
 
     public function comments(string $contentId): array
     {
-        return $this->dfdb
+        $this->assertCan('view:content_comments');
+
+        $rows = $this->dfdb
             ->table($this->dfdb->prefix . 'content_comment')
             ->where('content_id', $contentId)
             ->orderBy('created_at', 'DESC')
             ->find(callback: static fn(array $rows): array => $rows);
+
+        return $this->nestComments($rows);
     }
 
     public function revisions(string $contentId, int $limit = 25): array
@@ -313,13 +355,228 @@ final readonly class ContentWorkflowService
     private function updateContent(string $contentId, string $status, array $attribute): void
     {
         $this->dfdb
-            ->table($this->dfdb->prefix . 'content')
+            ->table('content')
             ->where('content_id', $contentId)
             ->update([
                 'content_status' => $status,
                 'content_attribute' => json_encode($attribute, JSON_THROW_ON_ERROR),
                 'content_modified_gmt' => gmdate('Y-m-d H:i:s'),
             ]);
+    }
+
+    /**
+     * @param string $commentId
+     * @param string $userId
+     * @param string $body
+     * @return array
+     * @throws JsonException
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
+     * @throws InvalidArgumentException
+     * @throws TypeException
+     * @throws \Qubus\Exception\Exception
+     * @throws ReflectionException
+     */
+    public function updateComment(string $commentId, string $userId, string $body): array
+    {
+        if (trim($body) === '') {
+            throw new RuntimeException('Comment cannot be empty.');
+        }
+
+        $comment = $this->commentById($commentId);
+
+        if (
+                (string) $comment['user_id'] !== $userId &&
+                false === current_user_can(perm: 'edit:content_comments')
+        ) {
+            throw new RuntimeException('Access denied.');
+        }
+
+        $updatedAt = $this->now();
+
+        $this->dfdb
+            ->table($this->dfdb->prefix . 'content_comment')
+            ->where('comment_id', $commentId)
+            ->update([
+                'comment_body' => $body,
+                'updated_at' => $updatedAt,
+            ]);
+
+        $this->log(
+            contentId: (string) $comment['content_id'],
+            userId: $userId,
+            type: 'comment_updated',
+            message: $body,
+            metadata: ['comment_id' => $commentId]
+        );
+
+        return [
+            'comment_id' => $commentId,
+            'body' => $body,
+            'updated_at' => $updatedAt,
+        ];
+    }
+
+    /**
+     * @param string $contentId
+     * @param string $userId
+     * @param string $parentId
+     * @param string $body
+     * @return array
+     * @throws JsonException
+     */
+    public function replyToComment(
+        string $contentId,
+        string $userId,
+        string $parentId,
+        string $body
+    ): array {
+        $this->assertCan('reply:content_comments');
+
+        $parent = $this->commentById($parentId);
+
+        if ((string) $parent['content_id'] !== $contentId) {
+            throw new RuntimeException('Parent comment does not belong to this content.');
+        }
+
+        return $this->comment(
+            contentId: $contentId,
+            userId: $userId,
+            body: $body,
+            parentId: $parentId,
+            selection: null,
+            type: 'reply'
+        );
+    }
+
+    /**
+     * @param string $commentId
+     * @param string $userId
+     * @return void
+     * @throws JsonException
+     */
+    public function resolveComment(string $commentId, string $userId): void
+    {
+        $this->assertCan('resolve:content_comments');
+
+        $comment = $this->commentById($commentId);
+
+        $this->dfdb
+            ->table($this->dfdb->prefix . 'content_comment')
+            ->where('comment_id', $commentId)
+            ->update([
+                'comment_status' => 'resolved',
+                'updated_at' => $this->now(),
+            ]);
+
+        $this->log(
+            contentId: (string) $comment['content_id'],
+            userId: $userId,
+            type: 'comment_resolved',
+            metadata: ['comment_id' => $commentId]
+        );
+    }
+
+    /**
+     * @param string $commentId
+     * @param string $userId
+     * @return void
+     * @throws JsonException
+     */
+    public function reopenComment(string $commentId, string $userId): void
+    {
+        $this->assertCan('resolve:content_comments');
+
+        $comment = $this->commentById($commentId);
+
+        $this->dfdb
+            ->table($this->dfdb->prefix . 'content_comment')
+            ->where('comment_id', $commentId)
+            ->update([
+                'comment_status' => 'open',
+                'updated_at' => $this->now(),
+            ]);
+
+        $this->log(
+            contentId: (string) $comment['content_id'],
+            userId: $userId,
+            type: 'comment_reopened',
+            metadata: ['comment_id' => $commentId]
+        );
+    }
+
+    /**
+     * @param string $commentId
+     * @param string $userId
+     * @return void
+     * @throws ContainerExceptionInterface
+     * @throws InvalidArgumentException
+     * @throws JsonException
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
+     * @throws TypeException
+     * @throws \Qubus\Exception\Exception
+     */
+    public function deleteComment(string $commentId, string $userId): void
+    {
+        $comment = $this->commentById($commentId);
+
+        if (
+                (string) $comment['user_id'] !== $userId &&
+                false === current_user_can(perm: 'delete:content_comments')
+        ) {
+            throw new RuntimeException('Access denied.');
+        }
+
+        $this->dfdb
+            ->table($this->dfdb->prefix . 'content_comment')
+            ->where('comment_id', $commentId)
+            ->delete();
+
+        $this->log(
+            contentId: (string) $comment['content_id'],
+            userId: $userId,
+            type: 'comment_deleted',
+            metadata: ['comment_id' => $commentId]
+        );
+    }
+
+    private function commentById(string $commentId): array
+    {
+        $row = $this->dfdb
+            ->table($this->dfdb->prefix . 'content_comment')
+            ->where('comment_id', $commentId)
+            ->findOne();
+
+        if ($row === false) {
+            throw new RuntimeException('Comment not found.');
+        }
+
+        return $row->toArray();
+    }
+
+    private function nestComments(array $rows): array
+    {
+        $comments = [];
+        $tree = [];
+
+        foreach ($rows as $row) {
+            $row['replies'] = [];
+            $comments[$row['comment_id']] = $row;
+        }
+
+        foreach ($comments as $id => &$comment) {
+            if (! empty($comment['parent_id']) && isset($comments[$comment['parent_id']])) {
+                $comments[$comment['parent_id']]['replies'][] = &$comment;
+                continue;
+            }
+
+            $tree[] = &$comment;
+        }
+
+        unset($comment);
+
+        return $tree;
     }
 
     /**
@@ -375,6 +632,16 @@ final readonly class ContentWorkflowService
         }
     }
 
+    /**
+     * @param string $permission
+     * @return void
+     * @throws ContainerExceptionInterface
+     * @throws InvalidArgumentException
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
+     * @throws TypeException
+     * @throws \Qubus\Exception\Exception
+     */
     private function assertCan(string $permission): void
     {
         if (false === current_user_can(perm: $permission)) {
