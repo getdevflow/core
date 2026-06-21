@@ -48,7 +48,6 @@ use function Codefy\Framework\Helpers\public_path;
 use function Codefy\Framework\Helpers\resource_path;
 use function Codefy\Framework\Helpers\trans;
 use function count;
-use function curl_close;
 use function curl_exec;
 use function curl_getinfo;
 use function curl_init;
@@ -229,7 +228,6 @@ function remote_file_exists(string $url): bool
             $ret = true;
         }
     }
-    curl_close(handle: $curl);
 
     return $ret;
 }

@@ -25,7 +25,6 @@ use function clearstatcache;
 use function Codefy\Framework\Helpers\base_path;
 use function Codefy\Framework\Helpers\storage_path;
 use function count;
-use function curl_close;
 use function curl_error;
 use function curl_exec;
 use function curl_init;
@@ -533,7 +532,6 @@ final class Updater
                 curl_error($curl)
             ));
         }
-        curl_close($curl);
 
         return ($success === true) ? $update : false;
     }
