@@ -33,7 +33,14 @@ class DestroyContentTypeValidator extends HttpInputValidator implements HasDto
      */
     public function authorize(): bool
     {
-        return current_user_can(perm: 'manage:content') && current_user_can(perm: 'delete:content');
+        if (
+                false === current_user_can(perm: 'manage:content') ||
+                false === current_user_can(perm: 'delete:content')
+        ) {
+            return false;
+        }
+
+        return true;
     }
 
     /**

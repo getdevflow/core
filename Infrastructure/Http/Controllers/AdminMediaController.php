@@ -130,7 +130,7 @@ final class AdminMediaController extends BaseController
      */
     public function elFinder(): string|ResponseInterface
     {
-        if (!is_user_logged_in()) {
+        if (current_user_can(perm: 'manage:media') === false) {
             Devflow::$PHP->flash->error(
                 message: trans('Access denied.')
             );

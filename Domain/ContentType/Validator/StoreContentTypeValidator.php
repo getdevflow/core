@@ -33,7 +33,14 @@ class StoreContentTypeValidator extends HttpInputValidator implements HasDto
      */
     public function authorize(): bool
     {
-        return current_user_can(perm: 'manage:content') && current_user_can(perm: 'create:content');
+        if (
+                false === current_user_can(perm: 'manage:content') ||
+                false === current_user_can(perm: 'create:content')
+        ) {
+            return false;
+        }
+
+        return true;
     }
 
     /**

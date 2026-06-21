@@ -56,7 +56,10 @@ final class AdminOptionsController extends BaseController
      */
     public function options(ServerRequest $request): ResponseInterface
     {
-        if (!current_user_can(perm: 'manage:options')) {
+        if (
+                false === current_user_can(perm: 'manage:options') ||
+                false === current_user_can(perm: 'change:options')
+        ) {
             Devflow::$PHP->flash->{'error'}(
                 message: trans('Access denied'),
             );
@@ -94,10 +97,13 @@ final class AdminOptionsController extends BaseController
      * @throws SessionException
      * @throws TypeException
      */
-    public function generalOptions(ServerRequest $request): string|ResponseInterface
+    public function settingsUpdate(ServerRequest $request): string|ResponseInterface
     {
-        if (!current_user_can(perm: 'manage:options')) {
-            Devflow::$PHP->flash->error(
+        if (
+                false === current_user_can(perm: 'manage:settings') ||
+                false === current_user_can(perm: 'change:settings')
+        ) {
+            Devflow::$PHP->flash->{'error'}(
                 message: trans('Access denied'),
             );
             return $this->redirect(admin_url());
@@ -105,8 +111,9 @@ final class AdminOptionsController extends BaseController
 
         try {
             $options = [
-            'sitename', 'site_description', 'charset', 'admin_email', 'site_locale',
-            'cookieexpire', 'cookiepath', 'site_timezone', 'api_key'
+                'sitename', 'site_description', 'charset', 'admin_email', 'site_locale',
+                'cookieexpire', 'cookiepath', 'site_timezone', 'api_key', 'content_per_page',
+                'charset', 'date_format', 'time_format'
             ];
 
             foreach ($options as $optionName) {
@@ -162,13 +169,13 @@ final class AdminOptionsController extends BaseController
                     $e->getMessage()
                 ),
                 [
-                    'Route' => '/admin/general/'
+                    'Route' => '/admin/settings/'
                 ]
             );
 
             Devflow::$PHP->flash->error(
                 message: trans(
-                    'General options exception occurred and was logged.',
+                    'System settings exception occurred and was logged.',
                 )
             );
         }
@@ -187,9 +194,9 @@ final class AdminOptionsController extends BaseController
      * @throws TypeException
      * @throws \Exception
      */
-    public function generalView(): ResponseInterface
+    public function settingsView(): ResponseInterface
     {
-        if (!current_user_can(perm: 'manage:options')) {
+        if (!current_user_can(perm: 'manage:settings')) {
             Devflow::$PHP->flash->error(
                 message: trans('Access denied'),
             );
@@ -197,103 +204,8 @@ final class AdminOptionsController extends BaseController
         }
 
         return view(
-            template: 'framework::backend/general',
-            data: ['title' => trans('General Options')]
-        );
-    }
-
-    /**
-     * @param ServerRequest $request
-     * @return string|ResponseInterface
-     * @throws CommandPropertyNotFoundException
-     * @throws ContainerExceptionInterface
-     * @throws Exception
-     * @throws InvalidArgumentException
-     * @throws NotFoundExceptionInterface
-     * @throws ReflectionException
-     * @throws SessionException
-     * @throws TypeException
-     * @throws UnresolvableQueryHandlerException
-     */
-    public function readingOptions(ServerRequest $request): string|ResponseInterface
-    {
-        if (!current_user_can(perm: 'manage:options')) {
-            Devflow::$PHP->flash->error(
-                message: trans('Access denied'),
-            );
-            return $this->redirect(admin_url());
-        }
-
-        try {
-            $options = [
-                'content_per_page', 'charset', 'date_format', 'time_format'
-            ];
-
-            foreach ($options as $optionName) {
-                if (!isset($request->getParsedBody()[$optionName])) {
-                    continue;
-                }
-
-                $value = $request->getParsedBody()[$optionName];
-                update_option($optionName, $value);
-            }
-
-            Devflow::$PHP->flash->{'success'}(
-                Devflow::$PHP->flash->notice(num: 200),
-            );
-        } catch (
-            InvalidArgumentException |
-            TypeException |
-            Exception |
-            ReflectionException |
-            NotFoundExceptionInterface |
-            ContainerExceptionInterface $e
-        ) {
-            logger(
-                'error',
-                sprintf(
-                    'SQLSTATE[%s]: %s',
-                    $e->getCode(),
-                    $e->getMessage()
-                ),
-                [
-                    'Route' => '/admin/general/'
-                ]
-            );
-
-            Devflow::$PHP->flash->error(
-                message: trans(
-                    'Reading options exception occurred and was logged.',
-                )
-            );
-        }
-
-        return $this->redirect($request->getHeaderLine('Referer'));
-    }
-
-    /**
-     * @return ResponseInterface
-     * @throws ContainerExceptionInterface
-     * @throws Exception
-     * @throws InvalidArgumentException
-     * @throws NotFoundExceptionInterface
-     * @throws ReflectionException
-     * @throws SessionException
-     * @throws TypeException
-     * @throws \Exception
-     */
-    public function readingView(): ResponseInterface
-    {
-        if (!current_user_can(perm: 'manage:options')) {
-            Devflow::$PHP->flash->error(
-                message: trans('Access denied'),
-            );
-            return $this->redirect(admin_url());
-        }
-
-        return view(
-            template: 'framework::backend/reading',
-            data: ['title' => trans('Reading Options')]
+            template: 'framework::backend/settings',
+            data: ['title' => trans('System Settings')]
         );
     }
 }

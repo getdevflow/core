@@ -14,6 +14,12 @@ use function App\Shared\Helpers\get_current_user_id;
 
 final class AdminContentNotificationController extends BaseController
 {
+    /**
+     * @param ContentNotificationService $notifications
+     * @return ResponseInterface
+     * @throws \Qubus\Exception\Exception
+     * @throws \ReflectionException
+     */
     public function unread(ContentNotificationService $notifications): ResponseInterface
     {
         return new JsonResponse([
@@ -22,6 +28,13 @@ final class AdminContentNotificationController extends BaseController
         ]);
     }
 
+    /**
+     * @param ServerRequest $request
+     * @param ContentNotificationService $notifications
+     * @return ResponseInterface
+     * @throws \Qubus\Exception\Exception
+     * @throws \ReflectionException
+     */
     public function markRead(
         ServerRequest $request,
         ContentNotificationService $notifications
@@ -34,6 +47,12 @@ final class AdminContentNotificationController extends BaseController
         return new JsonResponse(['success' => true]);
     }
 
+    /**
+     * @param ContentNotificationService $notifications
+     * @return ResponseInterface
+     * @throws \Qubus\Exception\Exception
+     * @throws \ReflectionException
+     */
     public function markAllRead(ContentNotificationService $notifications): ResponseInterface
     {
         $notifications->markAllRead(get_current_user_id());

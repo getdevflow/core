@@ -280,7 +280,10 @@ final class AdminSiteController extends BaseController
      */
     public function siteUsers(): ResponseInterface
     {
-        if (false === current_user_can(perm: 'manage:sites')) {
+        if (
+                false === current_user_can(perm: 'manage:sites') ||
+                false === current_user_can(perm: 'manage:users')
+        ) {
             Devflow::$PHP->flash->error(
                 message: trans('Access denied.')
             );
@@ -325,7 +328,10 @@ final class AdminSiteController extends BaseController
      */
     public function siteUserAssign(ServerRequest $request): ResponseInterface
     {
-        if (false === current_user_can(perm: 'manage:sites')) {
+        if (
+                false === current_user_can(perm: 'manage:sites') ||
+                false === current_user_can(perm: 'manage:users')
+        ) {
             Devflow::$PHP->flash->error(
                 message: trans('Access denied.')
             );
@@ -379,7 +385,7 @@ final class AdminSiteController extends BaseController
     public function siteUsersDelete(ServerRequest $request, string $userId): ResponseInterface
     {
         if (
-            false === current_user_can(perm: 'delete:users') &&
+            false === current_user_can(perm: 'delete:users') ||
             false === current_user_can(perm: 'manage:sites')
         ) {
             Devflow::$PHP->flash->error(

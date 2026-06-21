@@ -77,7 +77,7 @@ final class AdminPluginController extends BaseController
             Devflow::$PHP->flash->error(
                 message: trans('Access denied.')
             );
-            return $this->redirect(admin_url());
+            return $this->redirect($request->getHeaderLine('Referer'));
         }
 
         try {
@@ -109,7 +109,7 @@ final class AdminPluginController extends BaseController
         if (false === current_user_can(perm: 'deactivate:plugins')) {
             Devflow::$PHP->flash->error(message: trans('Access denied.'));
 
-            return $this->redirect(admin_url());
+            return $this->redirect($request->getHeaderLine('Referer'));
         }
 
         try {

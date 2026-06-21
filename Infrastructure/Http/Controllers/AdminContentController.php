@@ -221,7 +221,7 @@ final class AdminContentController extends BaseController
      */
     public function contentViewByType(string $contentTypeSlug): ResponseInterface
     {
-        if (false === current_user_can(perm: 'update:content')) {
+        if (false === current_user_can(perm: 'manage:content')) {
             Devflow::$PHP->flash->error(
                 message: trans('Access denied.')
             );

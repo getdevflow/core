@@ -41,6 +41,13 @@ final readonly class UpdatesController
      */
     public function index(): ResponseInterface
     {
+        if (false === current_user_can(perm: 'core:updates')) {
+            Devflow::$PHP->flash->error(
+                message: trans('Access denied.')
+            );
+            return redirect(admin_url());
+        }
+
         if (!is_main_site()) {
             Devflow::$PHP->flash->error(
                 message: trans('Access denied.')
@@ -54,23 +61,89 @@ final readonly class UpdatesController
         ]);
     }
 
+    /**
+     * @param ServerRequest $request
+     * @return ResponseInterface
+     * @throws ContainerExceptionInterface
+     * @throws InvalidArgumentException
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
+     * @throws TypeException
+     * @throws \Qubus\Exception\Exception
+     */
     public function updatePlugin(ServerRequest $request): ResponseInterface
     {
+        if (false === current_user_can(perm: 'core:updates')) {
+            Devflow::$PHP->flash->error(
+                message: trans('Access denied.')
+            );
+            return redirect(admin_url());
+        }
+
         return $this->updatePackage($request, 'devflow-plugin');
     }
 
+    /**
+     * @param ServerRequest $request
+     * @return ResponseInterface
+     * @throws ContainerExceptionInterface
+     * @throws InvalidArgumentException
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
+     * @throws TypeException
+     * @throws \Qubus\Exception\Exception
+     */
     public function updateTheme(ServerRequest $request): ResponseInterface
     {
+        if (false === current_user_can(perm: 'core:updates')) {
+            Devflow::$PHP->flash->error(
+                message: trans('Access denied.')
+            );
+            return redirect(admin_url());
+        }
+
         return $this->updatePackage($request, 'devflow-theme');
     }
 
+    /**
+     * @return ResponseInterface
+     * @throws ContainerExceptionInterface
+     * @throws InvalidArgumentException
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
+     * @throws TypeException
+     * @throws \Qubus\Exception\Exception
+     */
     public function updateAllPlugins(): ResponseInterface
     {
+        if (false === current_user_can(perm: 'core:updates')) {
+            Devflow::$PHP->flash->error(
+                message: trans('Access denied.')
+            );
+            return redirect(admin_url());
+        }
+
         return $this->updateAll('devflow-plugin');
     }
 
+    /**
+     * @return ResponseInterface
+     * @throws ContainerExceptionInterface
+     * @throws InvalidArgumentException
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
+     * @throws TypeException
+     * @throws \Qubus\Exception\Exception
+     */
     public function updateAllThemes(): ResponseInterface
     {
+        if (false === current_user_can(perm: 'core:updates')) {
+            Devflow::$PHP->flash->error(
+                message: trans('Access denied.')
+            );
+            return redirect(admin_url());
+        }
+
         return $this->updateAll('devflow-theme');
     }
 
