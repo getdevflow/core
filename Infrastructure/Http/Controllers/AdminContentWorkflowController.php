@@ -17,6 +17,7 @@ use Psr\Container\NotFoundExceptionInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\SimpleCache\InvalidArgumentException;
 use Qubus\Exception\Data\TypeException;
+use Qubus\Exception\Exception;
 use Qubus\Http\ServerRequest;
 use ReflectionException;
 
@@ -53,6 +54,52 @@ final class AdminContentWorkflowController extends BaseController
                 reviewers: (array) ($body['reviewers'] ?? []),
                 message: (string) ($body['message'] ?? '')
             ),
+        ]);
+    }
+
+    /**
+     * @param ServerRequest $request
+     * @param ContentWorkflowService $workflow
+     * @param string $contentId
+     * @return ResponseInterface
+     * @throws ContainerExceptionInterface
+     * @throws Exception
+     * @throws InvalidArgumentException
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
+     * @throws TypeException
+     */
+    public function assignReviewers(
+        ServerRequest $request,
+        ContentWorkflowService $workflow,
+        string $contentId
+    ): ResponseInterface {
+        $body = $request->getParsedBody();
+
+        return new JsonResponse([
+            'success' => true,
+            'workflow' => $workflow->assignReviewers(
+                contentId: $contentId,
+                userId: get_current_user_id(),
+                reviewers: (array) ($body['reviewers'] ?? [])
+            ),
+            'message' => trans_html('Reviewers updated.'),
+        ]);
+    }
+
+    public function completeReview(
+        ServerRequest $request,
+        ContentWorkflowService $workflow,
+        string $contentId
+    ): ResponseInterface {
+        return new JsonResponse([
+            'success' => true,
+            'workflow' => $workflow->completeReview(
+                contentId: $contentId,
+                userId: get_current_user_id(),
+                message: (string) (($request->getParsedBody()['message'] ?? ''))
+            ),
+            'message' => trans_html('Review marked complete.'),
         ]);
     }
 
@@ -311,6 +358,14 @@ final class AdminContentWorkflowController extends BaseController
         return new JsonResponse(['success' => true]);
     }
 
+    public function commentSummary(ContentWorkflowService $workflow, string $contentId): ResponseInterface
+    {
+        return new JsonResponse([
+            'success' => true,
+            'summary' => $workflow->commentSummary($contentId),
+        ]);
+    }
+
     /**
      * @param ServerRequest $request
      * @param ContentWorkflowService $workflow
@@ -442,6 +497,7 @@ final class AdminContentWorkflowController extends BaseController
     }
 
     /**
+     * @param ServerRequest $request
      * @param ContentWorkflowService $workflow
      * @param string $contentId
      * @return ResponseInterface
@@ -450,14 +506,20 @@ final class AdminContentWorkflowController extends BaseController
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
      * @throws TypeException
-     * @throws \Qubus\Exception\Exception
+     * @throws Exception
      */
-    public function comments(ContentWorkflowService $workflow, string $contentId): ResponseInterface
-    {
+    public function comments(
+        ServerRequest $request,
+        ContentWorkflowService $workflow,
+        string $contentId
+    ): ResponseInterface {
         return new JsonResponse([
             'success' => true,
             'permissions' => $this->permissions(),
-            'comments' => $workflow->comments($contentId),
+            'comments' => $workflow->comments(
+                contentId: $contentId,
+                status: (string) ($request->getQueryParams()['status'] ?? 'open')
+            ),
         ]);
     }
 }

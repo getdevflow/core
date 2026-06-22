@@ -2859,6 +2859,7 @@ function content_status_create_allowed(
 function content_workflow_activity_label(string $type): string
 {
     return match ($type) {
+        'reviewers_assigned' => 'updated reviewer assignments',
         'review_requested' => 'requested review',
         'review_withdrawn' => 'withdrew the review request',
         'approved' => 'approved the content',
@@ -2872,6 +2873,65 @@ function content_workflow_activity_label(string $type): string
         'comment_reopened' => 'reopened a comment',
         'comment_deleted' => 'deleted a comment',
         'revision_restored' => 'restored a revision as draft',
+        'review_completed' => 'completed review',
+        'review_ready' => 'marked content ready for approval',
         default => str_replace('_', ' ', $type),
+    };
+}
+
+function content_workflow_notification_title(string $type): string
+{
+    return match ($type) {
+        'review_requested' => 'Review requested',
+        'review_withdrawn' => 'Review request withdrawn',
+        'approved' => 'Content approved',
+        'changes_requested' => 'Changes requested',
+        'published' => 'Content published',
+        'scheduled_published' => 'Scheduled content published',
+        'comment_added' => 'New editorial comment',
+        'comment_replied' => 'New comment reply',
+        'comment_resolved' => 'Comment resolved',
+        'revision_restored' => 'Revision restored',
+        default => str_replace('_', ' ', $type),
+    };
+}
+
+function content_workflow_stage_label(string $stage): string
+{
+    return match ($stage) {
+        'draft' => 'Draft',
+        'in_review' => 'In Review',
+        'changes_requested' => 'Changes Requested',
+        'approved' => 'Approved',
+        'scheduled' => 'Scheduled',
+        'published' => 'Published',
+        'archived' => 'Archived',
+        default => ucwords(str_replace('_', ' ', $stage)),
+    };
+}
+
+function content_workflow_stage_badge_class(string $stage): string
+{
+    return match ($stage) {
+        'draft' => 'label-default',
+        'in_review' => 'label-warning',
+        'changes_requested' => 'label-danger',
+        'approved' => 'label-success',
+        'scheduled' => 'label-info',
+        'published' => 'label-primary',
+        'archived' => 'label-default',
+        default => 'label-default',
+    };
+}
+
+function content_workflow_stage_from_status(string $status, ?string $currentStage = null): string
+{
+    return match ($status) {
+        'draft' => $currentStage === 'changes_requested' ? 'changes_requested' : 'draft',
+        'pending' => $currentStage === 'approved' ? 'approved' : 'in_review',
+        'scheduled' => 'scheduled',
+        'published' => 'published',
+        'archived' => 'archived',
+        default => $currentStage ?? 'draft',
     };
 }

@@ -26,9 +26,11 @@ final readonly class ContentNotificationService
             ->find(callback: static fn(array $rows): array => $rows);
 
         return array_map(static function (array $row): array {
-            $row['url'] = admin_url(
-                path: 'content-type/' . get_content_by_id($row['content_id'])->type . '/' . $row['content_id'] . '/#content-activity-box'
-            );
+            $content = get_content_by_id((string) $row['content_id']);
+
+            $row['url'] = ! empty($content->id)
+                ? admin_url(path: 'content-type/' . $content->type . '/' . $content->id . '/#content-activity-box')
+                : admin_url();
 
             return $row;
         }, $rows);

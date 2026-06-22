@@ -13,7 +13,9 @@ use App\Domain\ContentType\Model\ContentType;
 use App\Infrastructure\Services\Content\ContentService;
 use App\Infrastructure\Services\Content\Pipes\CastSidebarAttributeToInt;
 use App\Infrastructure\Services\Content\Pipes\InitializeContentWorkflow;
+use App\Infrastructure\Services\Content\Pipes\SyncContentWorkflowStage;
 use App\Infrastructure\Services\Content\Pipes\UniqueContentSlug;
+use App\Infrastructure\Services\Content\Workflow\ContentWorkflowService;
 use App\Shared\Pipes\CastShowInAttributesToInt;
 use App\Shared\Pipes\CheckForScheduledStatus;
 use App\Shared\Pipes\CompressUrls;
@@ -150,11 +152,12 @@ final class AdminContentController extends BaseController
             ->through([
                 FormatPublishedDateTime::class,
                 UniqueContentSlug::class,
+                InitializeContentWorkflow::class,
                 CheckForScheduledStatus::class,
+                SyncContentWorkflowStage::class,
                 OptimizeFeaturedImage::class,
                 CastSidebarAttributeToInt::class,
                 CastShowInAttributesToInt::class,
-                InitializeContentWorkflow::class,
                 CompressUrls::class,
             ])
             ->thenReturn();
@@ -170,6 +173,7 @@ final class AdminContentController extends BaseController
 
     /**
      * @param ContentService $service
+     * @param ContentWorkflowService $workflowService
      * @param string $contentId
      * @return ResponseInterface
      * @throws CommandPropertyNotFoundException
@@ -182,7 +186,7 @@ final class AdminContentController extends BaseController
      * @throws UnresolvableQueryHandlerException
      * @throws \Exception
      */
-    public function contentView(ContentService $service, string $contentId): ResponseInterface
+    public function contentView(ContentService $service, ContentWorkflowService $workflowService, string $contentId): ResponseInterface
     {
         if (false === current_user_can(perm: 'update:content')) {
             Devflow::$PHP->flash->error(
@@ -196,12 +200,17 @@ final class AdminContentController extends BaseController
         cms_enqueue_css(config: 'default', asset: site_url('static/assets/css/admin-content-workflow.css'));
         cms_enqueue_js(config: 'default', asset: site_url('static/assets/js/admin-content-workflow.js'));
 
+        $attribute = $content->attribute ?? [];
+        $workflowData = $attribute['workflow'] ?? [];
+
         return view(
             template: 'framework::backend/admin/content/view',
             data: [
                 'title' => $content->title,
                 'content' => $content,
                 'type' => get_content_type_by('slug', $content->type),
+                'reviewerCandidates' => $workflowService->reviewerCandidates(),
+                'workflowReviewers' => $workflowService->reviewerNames($workflowData['reviewers'] ?? []),
             ]
         );
     }
