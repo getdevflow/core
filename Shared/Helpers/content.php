@@ -2855,3 +2855,23 @@ function content_status_create_allowed(
         publishedGmt: $publishedGmt
     );
 }
+
+function content_workflow_activity_label(string $type): string
+{
+    return match ($type) {
+        'review_requested' => 'requested review',
+        'review_withdrawn' => 'withdrew the review request',
+        'approved' => 'approved the content',
+        'changes_requested' => 'requested changes',
+        'published' => 'published the content',
+        'scheduled_published' => 'published scheduled content',
+        'comment_added' => 'added a comment',
+        'comment_replied' => 'replied to a comment',
+        'comment_updated' => 'edited a comment',
+        'comment_resolved' => 'resolved a comment',
+        'comment_reopened' => 'reopened a comment',
+        'comment_deleted' => 'deleted a comment',
+        'revision_restored' => 'restored a revision as draft',
+        default => str_replace('_', ' ', $type),
+    };
+}

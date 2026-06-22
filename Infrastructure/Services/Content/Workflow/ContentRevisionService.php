@@ -17,11 +17,13 @@ use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
 use Qubus\Expressive\Database;
 use Qubus\Support\DateTime\QubusDateTimeImmutable;
+use Qubus\ValueObjects\Identity\Ulid;
 use Qubus\ValueObjects\StringLiteral\StringLiteral;
 use ReflectionException;
 use RuntimeException;
 
 use function App\Shared\Helpers\current_user_can;
+use function App\Shared\Helpers\get_current_user_id;
 use function array_filter;
 use function array_key_exists;
 use function array_map;
@@ -31,6 +33,9 @@ use function implode;
 use function is_array;
 use function is_string;
 use function json_decode;
+use function json_encode;
+
+use const JSON_THROW_ON_ERROR;
 
 final readonly class ContentRevisionService
 {
@@ -69,6 +74,7 @@ final readonly class ContentRevisionService
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
      * @throws TypeException
+     * @throws \Exception
      */
     public function restore(string $contentId, string $eventId): void
     {
@@ -91,6 +97,24 @@ final readonly class ContentRevisionService
                     'modifiedGmt' => QubusDateTimeImmutable::now('UTC'),
                 ])
             );
+
+            $this->dfdb->transactional(function () use ($contentId, $eventId, $data) {
+                $this->dfdb->table($this->dfdb->prefix . 'content_workflow_activity')->insert([
+                    'activity_id' => Ulid::generateAsString(),
+                    'content_id' => $contentId,
+                    'user_id' => get_current_user_id(),
+                    'activity_type' => 'revision_restored',
+                    'from_status' => null,
+                    'to_status' => 'draft',
+                    'message' => 'Revision restored as draft.',
+                    'metadata' => json_encode([
+                        'event_id' => $eventId,
+                        'restored_title' => $data['content_title'],
+                    ], JSON_THROW_ON_ERROR),
+                    'created_at' => QubusDateTimeImmutable::now('UTC')->toDateTimeString(),
+                ]);
+            });
+
             Devflow::$PHP->flash->success(Devflow::$PHP->flash->notice(200));
         } catch (UnresolvableCommandHandlerException | ReflectionException | CommandPropertyNotFoundException $e) {
             Devflow::$PHP->flash->error(Devflow::$PHP->flash->notice(204));

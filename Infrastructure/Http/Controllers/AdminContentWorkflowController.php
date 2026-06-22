@@ -22,6 +22,7 @@ use ReflectionException;
 
 use function App\Shared\Helpers\current_user_can;
 use function App\Shared\Helpers\get_current_user_id;
+use function Codefy\Framework\Helpers\trans_html;
 
 final class AdminContentWorkflowController extends BaseController
 {
@@ -52,6 +53,34 @@ final class AdminContentWorkflowController extends BaseController
                 reviewers: (array) ($body['reviewers'] ?? []),
                 message: (string) ($body['message'] ?? '')
             ),
+        ]);
+    }
+
+    /**
+     * @param ServerRequest $request
+     * @param ContentWorkflowService $workflow
+     * @param string $contentId
+     * @return ResponseInterface
+     * @throws ContainerExceptionInterface
+     * @throws InvalidArgumentException
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
+     * @throws TypeException
+     * @throws \Qubus\Exception\Exception
+     */
+    public function withdrawReview(
+        ServerRequest $request,
+        ContentWorkflowService $workflow,
+        string $contentId
+    ): ResponseInterface {
+        return new JsonResponse([
+            'success' => true,
+            'workflow' => $workflow->withdrawReview(
+                contentId: $contentId,
+                userId: get_current_user_id(),
+                message: (string) (($request->getParsedBody()['message'] ?? ''))
+            ),
+            'message' => trans_html('Review request withdrawn.'),
         ]);
     }
 

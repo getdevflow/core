@@ -22,6 +22,7 @@ use Qubus\ValueObjects\StringLiteral\StringLiteral;
 use ReflectionException;
 use RuntimeException;
 
+use function App\Shared\Helpers\content_workflow_activity_label;
 use function App\Shared\Helpers\current_user_can;
 use function Codefy\Framework\Helpers\command;
 use function Codefy\Framework\Helpers\logger;
@@ -333,14 +334,82 @@ final readonly class ContentWorkflowService
         });
     }
 
+    /**
+     * @param string $contentId
+     * @param string $userId
+     * @param string $message
+     * @return array
+     * @throws ContainerExceptionInterface
+     * @throws InvalidArgumentException
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
+     * @throws TypeException
+     * @throws \Qubus\Exception\Exception
+     * @throws Exception
+     */
+    public function withdrawReview(string $contentId, string $userId, string $message = ''): array
+    {
+        $this->assertCan('review:content');
+
+        return $this->dfdb->transactional(function () use ($contentId, $userId, $message): array {
+            $content = $this->content($contentId);
+            $attribute = $this->attribute($content['content_attribute'] ?? null);
+
+            if (($attribute['workflow']['stage'] ?? '') !== 'in_review') {
+                throw new RuntimeException('Only content in review can be withdrawn.');
+            }
+
+            $attribute['workflow'] = array_merge($attribute['workflow'] ?? [], [
+                'stage' => 'draft',
+            ]);
+
+            $this->updateContent($contentId, 'draft', $attribute);
+
+            $activityId = $this->log(
+                contentId: $contentId,
+                userId: $userId,
+                type: 'review_withdrawn',
+                fromStatus: (string) $content['content_status'],
+                toStatus: 'draft',
+                message: $message
+            );
+
+            return [
+                'activity_id' => $activityId,
+                'status' => 'draft',
+                'stage' => 'draft',
+            ];
+        });
+    }
+
+    /**
+     * @param string $contentId
+     * @param int $limit
+     * @return array
+     * @throws ContainerExceptionInterface
+     * @throws InvalidArgumentException
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
+     * @throws TypeException
+     * @throws \Qubus\Exception\Exception
+     */
     public function activity(string $contentId, int $limit = 25): array
     {
-        return $this->dfdb
+        $this->assertCan('view:content_activity');
+
+        $rows = $this->dfdb
             ->table($this->dfdb->prefix . 'content_workflow_activity')
             ->where('content_id', $contentId)
             ->orderBy('created_at', 'DESC')
             ->limit($limit)
             ->find(callback: static fn(array $rows): array => $rows);
+
+        return array_map(static function (array $row): array {
+            $row['label'] = content_workflow_activity_label((string) $row['activity_type']);
+            $row['metadata'] = json_decode((string) ($row['metadata'] ?? '{}'), true) ?: [];
+
+            return $row;
+        }, $rows);
     }
 
     /**
