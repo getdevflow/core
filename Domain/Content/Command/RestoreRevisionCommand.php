@@ -22,6 +22,8 @@ class RestoreRevisionCommand extends PropertyCommand
 
     public ArrayLiteral $attribute;
 
+    public StringLiteral $status;
+
     public DateTimeInterface $modified;
 
     public DateTimeInterface $modifiedGmt;

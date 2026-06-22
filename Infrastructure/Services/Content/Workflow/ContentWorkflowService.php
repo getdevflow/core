@@ -24,6 +24,7 @@ use RuntimeException;
 
 use function App\Shared\Helpers\current_user_can;
 use function Codefy\Framework\Helpers\command;
+use function Codefy\Framework\Helpers\logger;
 
 final readonly class ContentWorkflowService
 {
@@ -417,22 +418,23 @@ final readonly class ContentWorkflowService
      * @param string $contentId
      * @param string $status
      * @param array $attribute
-     * @throws ReflectionException
      * @throws TypeException
-     * @throws CommandPropertyNotFoundException
-     * @throws UnresolvableCommandHandlerException
      */
     private function updateContent(string $contentId, string $status, array $attribute): void
     {
-        command(
-            command: new ContentWorkflowUpdateCommand([
-                'id' => ContentId::fromString($contentId),
-                'attribute' => ArrayLiteral::fromNative($attribute),
-                'status' => StringLiteral::fromNative($status),
-                'modified' => QubusDateTimeImmutable::now(),
-                'modifiedGmt' => QubusDateTimeImmutable::now('GMT'),
-            ])
-        );
+        try {
+            command(
+                command: new ContentWorkflowUpdateCommand([
+                    'id' => ContentId::fromString($contentId),
+                    'attribute' => ArrayLiteral::fromNative($attribute),
+                    'status' => StringLiteral::fromNative($status),
+                    'modified' => QubusDateTimeImmutable::now(),
+                    'modifiedGmt' => QubusDateTimeImmutable::now('UTC'),
+                ])
+            );
+        } catch (UnresolvableCommandHandlerException | ReflectionException | CommandPropertyNotFoundException $e) {
+            logger('error', $e->getMessage());
+        }
     }
 
     /**
