@@ -113,9 +113,7 @@ final readonly class PdoUserAttributeDataRepository implements UserAttributeRepo
      */
     public function patch(string $siteId, string $userId, callable $callback): UserAttributeBag
     {
-        $this->dfdb->getConnection()->pdo->beginTransaction();
-
-        try {
+        return $this->dfdb->transactional(function () use ($siteId, $userId, $callback): UserAttributeBag {
             $stmt = $this->dfdb->getConnection()->pdo->prepare(
                 "SELECT user_attribute
                  FROM {$this->dfdb->basePrefix}site_user 
@@ -129,9 +127,7 @@ final readonly class PdoUserAttributeDataRepository implements UserAttributeRepo
             $json = $stmt->fetchColumn();
 
             if ($json === false) {
-                throw new \RuntimeException(
-                    trans('User attribute not found')
-                );
+                throw new \RuntimeException(trans('User attribute not found'));
             }
 
             $current = UserAttributeBag::fromJson($siteId, $userId, is_string($json) ? $json : null);
@@ -156,13 +152,8 @@ final readonly class PdoUserAttributeDataRepository implements UserAttributeRepo
                 'user_attribute' => $updated->withCompressedUrls()->toJson(),
             ]);
 
-            $this->dfdb->getConnection()->pdo->commit();
-
             return $updated;
-        } catch (\Throwable $e) {
-            $this->dfdb->getConnection()->pdo->rollBack();
-            throw $e;
-        }
+        });
     }
 
     /**

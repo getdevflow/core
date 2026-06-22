@@ -127,11 +127,10 @@ final readonly class PdoAttributeDataRepository implements AttributeRepository
      */
     public function patchAttribute(string $type, string $id, callable $callback): AttributeBag
     {
-        $table = $this->table($type);
-        $attributeColumn = $this->attributeColumn($type);
-        $this->dfdb->getConnection()->pdo->beginTransaction();
+        return $this->dfdb->transactional(function () use ($type, $id, $callback): AttributeBag {
+            $table = $this->table($type);
+            $attributeColumn = $this->attributeColumn($type);
 
-        try {
             $stmt = $this->dfdb->getConnection()->pdo->prepare(
                 sprintf(
                     "SELECT %s
@@ -175,12 +174,7 @@ final readonly class PdoAttributeDataRepository implements AttributeRepository
                 'attribute' => $updated->withCompressedUrls()->toJson(),
             ]);
 
-            $this->dfdb->getConnection()->pdo->commit();
-
             return $updated;
-        } catch (\Throwable $e) {
-            $this->dfdb->getConnection()->pdo->rollBack();
-            throw $e;
-        }
+        });
     }
 }
