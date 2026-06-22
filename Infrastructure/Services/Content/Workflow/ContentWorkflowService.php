@@ -430,7 +430,7 @@ final readonly class ContentWorkflowService
                 'attribute' => ArrayLiteral::fromNative($attribute),
                 'status' => StringLiteral::fromNative($status),
                 'modified' => QubusDateTimeImmutable::now(),
-                'modifiedGmt' => $this->now(),
+                'modifiedGmt' => QubusDateTimeImmutable::now('GMT'),
             ])
         );
     }
