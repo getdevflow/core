@@ -104,10 +104,12 @@ final class AdminDashboardController extends BaseController
      */
     public function flushCache(ServerRequest $request): ResponseInterface
     {
-        if (false === current_user_can(perm: 'manage:settings')) {
+        if (false === current_user_can(perm: 'flush:cache')) {
             Devflow::$PHP->flash->error(
                 message: trans('Access denied.')
             );
+
+            return $this->redirect($request->getHeaderLine('Referer'));
         }
 
         $globalNamespaces = ['auto_updater','useremail','userlogin','users','usertoken','sites','sitekey','siteslug'];

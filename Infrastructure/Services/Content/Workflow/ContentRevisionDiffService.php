@@ -51,7 +51,7 @@ final readonly class ContentRevisionDiffService
     {
         $event = $this->dfdb
             ->table($this->dfdb->prefix . 'event_store')
-            ->where('aggregate_id', $contentId)
+            ->where('aggregate_id', $contentId)->and()
             ->where('event_id', $eventId)
             ->findOne();
 
@@ -61,7 +61,17 @@ final readonly class ContentRevisionDiffService
 
         $previous = $this->dfdb
             ->table($this->dfdb->prefix . 'event_store')
-            ->where('aggregate_id', $contentId)
+            ->where('aggregate_id', $contentId)->and()
+            ->whereNotIn(
+                'event_type',
+                [
+                    'content-parent-was-removed',
+                    'content-published-was-changed',
+                    'content-published-gmt-was-changed',
+                    'content-modified-was-changed',
+                    'content-modified-gmt-was-changed'
+                ]
+            )->and()
             ->where('aggregate_playhead < ?', $event->aggregate_playhead)
             ->orderBy('aggregate_playhead', 'DESC')
             ->limit(1)

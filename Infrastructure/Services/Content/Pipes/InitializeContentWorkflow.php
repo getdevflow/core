@@ -6,6 +6,8 @@ namespace App\Infrastructure\Services\Content\Pipes;
 
 use Psr\Http\Message\ServerRequestInterface;
 
+use function array_merge;
+
 final class InitializeContentWorkflow
 {
     public function __invoke(ServerRequestInterface $request, callable $next): ServerRequestInterface
@@ -23,6 +25,8 @@ final class InitializeContentWorkflow
             'approval_required' => false,
             'reviewers' => [],
         ];
+
+        $body = array_merge($body, ['content_field' => $body['content_field']]);
 
         return $next($request->withParsedBody($body));
     }

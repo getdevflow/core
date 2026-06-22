@@ -45,8 +45,8 @@ class StoreContentValidator extends HttpInputValidator implements HasDto
         return content_status_create_allowed(
             toStatus: (string) ($this->all()['status'] ?? 'draft'),
             publishedGmt: (string) (
-                $this->all()['publishedGmt']
-                ?? $this->all()['published']
+                $this->all()['published']
+                ?? $this->all()['publishedGmt']
                 ?? ''
             )
         );

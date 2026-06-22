@@ -4,6 +4,11 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Services\Content\Workflow;
 
+use App\Domain\Content\Command\ContentWorkflowUpdateCommand;
+use App\Domain\Content\ValueObject\ContentId;
+use App\Shared\ValueObject\ArrayLiteral;
+use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
+use Codefy\CommandBus\Exceptions\UnresolvableCommandHandlerException;
 use Exception;
 use JsonException;
 use Psr\Container\ContainerExceptionInterface;
@@ -13,10 +18,12 @@ use Qubus\Exception\Data\TypeException;
 use Qubus\Expressive\Database;
 use Qubus\Support\DateTime\QubusDateTimeImmutable;
 use Qubus\ValueObjects\Identity\Ulid;
+use Qubus\ValueObjects\StringLiteral\StringLiteral;
 use ReflectionException;
 use RuntimeException;
 
 use function App\Shared\Helpers\current_user_can;
+use function Codefy\Framework\Helpers\command;
 
 final readonly class ContentWorkflowService
 {
@@ -30,6 +37,12 @@ final readonly class ContentWorkflowService
      * @param array $reviewers
      * @param string $message
      * @return array
+     * @throws ContainerExceptionInterface
+     * @throws InvalidArgumentException
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
+     * @throws TypeException
+     * @throws \Qubus\Exception\Exception
      * @throws Exception
      */
     public function requestReview(string $contentId, string $userId, array $reviewers, string $message = ''): array
@@ -80,6 +93,12 @@ final readonly class ContentWorkflowService
      * @param string $userId
      * @param string $message
      * @return array
+     * @throws ContainerExceptionInterface
+     * @throws InvalidArgumentException
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
+     * @throws TypeException
+     * @throws \Qubus\Exception\Exception
      * @throws Exception
      */
     public function approve(string $contentId, string $userId, string $message = ''): array
@@ -120,6 +139,12 @@ final readonly class ContentWorkflowService
      * @param string $userId
      * @param string $message
      * @return array
+     * @throws ContainerExceptionInterface
+     * @throws InvalidArgumentException
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
+     * @throws TypeException
+     * @throws \Qubus\Exception\Exception
      * @throws Exception
      */
     public function requestChanges(string $contentId, string $userId, string $message = ''): array
@@ -158,6 +183,12 @@ final readonly class ContentWorkflowService
      * @param string $userId
      * @param string $message
      * @return array
+     * @throws ContainerExceptionInterface
+     * @throws InvalidArgumentException
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
+     * @throws TypeException
+     * @throws \Qubus\Exception\Exception
      * @throws Exception
      */
     public function publish(string $contentId, string $userId, string $message = ''): array
@@ -194,7 +225,20 @@ final readonly class ContentWorkflowService
     }
 
     /**
+     * @param string $contentId
+     * @param string $userId
+     * @param string $body
+     * @param string|null $parentId
+     * @param array|null $selection
+     * @param string $type
+     * @return array
+     * @throws ContainerExceptionInterface
+     * @throws InvalidArgumentException
      * @throws JsonException
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
+     * @throws TypeException
+     * @throws \Qubus\Exception\Exception
      */
     public function comment(
         string $contentId,
@@ -298,6 +342,16 @@ final readonly class ContentWorkflowService
             ->find(callback: static fn(array $rows): array => $rows);
     }
 
+    /**
+     * @param string $contentId
+     * @return array
+     * @throws ContainerExceptionInterface
+     * @throws InvalidArgumentException
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
+     * @throws TypeException
+     * @throws \Qubus\Exception\Exception
+     */
     public function comments(string $contentId): array
     {
         $this->assertCan('view:content_comments');
@@ -315,7 +369,17 @@ final readonly class ContentWorkflowService
     {
         return $this->dfdb
             ->table($this->dfdb->prefix . 'event_store')
-            ->where('aggregate_id', $contentId)
+            ->where('aggregate_id', $contentId)->and()
+            ->whereNotIn(
+                'event_type',
+                [
+                    'content-parent-was-removed',
+                    'content-published-was-changed',
+                    'content-published-gmt-was-changed',
+                    'content-modified-was-changed',
+                    'content-modified-gmt-was-changed'
+                ]
+            )
             ->orderBy('aggregate_playhead', 'DESC')
             ->limit($limit)
             ->find(callback: static fn(array $rows): array => $rows);
@@ -350,18 +414,25 @@ final readonly class ContentWorkflowService
     }
 
     /**
-     * @throws JsonException
+     * @param string $contentId
+     * @param string $status
+     * @param array $attribute
+     * @throws ReflectionException
+     * @throws TypeException
+     * @throws CommandPropertyNotFoundException
+     * @throws UnresolvableCommandHandlerException
      */
     private function updateContent(string $contentId, string $status, array $attribute): void
     {
-        $this->dfdb
-            ->table('content')
-            ->where('content_id', $contentId)
-            ->update([
-                'content_status' => $status,
-                'content_attribute' => json_encode($attribute, JSON_THROW_ON_ERROR),
-                'content_modified_gmt' => gmdate('Y-m-d H:i:s'),
-            ]);
+        command(
+            command: new ContentWorkflowUpdateCommand([
+                'id' => ContentId::fromString($contentId),
+                'attribute' => ArrayLiteral::fromNative($attribute),
+                'status' => StringLiteral::fromNative($status),
+                'modified' => QubusDateTimeImmutable::now(),
+                'modifiedGmt' => $this->now(),
+            ])
+        );
     }
 
     /**
@@ -423,7 +494,13 @@ final readonly class ContentWorkflowService
      * @param string $parentId
      * @param string $body
      * @return array
+     * @throws ContainerExceptionInterface
+     * @throws InvalidArgumentException
      * @throws JsonException
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
+     * @throws TypeException
+     * @throws \Qubus\Exception\Exception
      */
     public function replyToComment(
         string $contentId,
@@ -453,7 +530,13 @@ final readonly class ContentWorkflowService
      * @param string $commentId
      * @param string $userId
      * @return void
+     * @throws ContainerExceptionInterface
+     * @throws InvalidArgumentException
      * @throws JsonException
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
+     * @throws TypeException
+     * @throws \Qubus\Exception\Exception
      */
     public function resolveComment(string $commentId, string $userId): void
     {
@@ -481,7 +564,13 @@ final readonly class ContentWorkflowService
      * @param string $commentId
      * @param string $userId
      * @return void
+     * @throws ContainerExceptionInterface
+     * @throws InvalidArgumentException
      * @throws JsonException
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
+     * @throws TypeException
+     * @throws \Qubus\Exception\Exception
      */
     public function reopenComment(string $commentId, string $userId): void
     {

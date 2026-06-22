@@ -34,6 +34,7 @@ use Psr\Container\NotFoundExceptionInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\SimpleCache\InvalidArgumentException;
 use Qubus\Error\Error;
+use Qubus\EventDispatcher\ActionFilter\Filter;
 use Qubus\EventDispatcher\EventDispatcher;
 use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
@@ -47,6 +48,7 @@ use function Codefy\Framework\Helpers\ask;
 use function Codefy\Framework\Helpers\command;
 use function Codefy\Framework\Helpers\logger;
 use function Codefy\Framework\Helpers\trans_html;
+use function in_array;
 use function is_array;
 use function preg_split;
 use function Qubus\Security\Helpers\__observer;
@@ -2811,7 +2813,15 @@ function content_status_transition_allowed(
         return false;
     }
 
-    $transitions = __observer()->filter->applyFilter('content.status.transitions', [
+    if ($toStatus === 'scheduled') {
+        return user_can_schedule_content_for($publishedGmt);
+    }
+
+    if (is_super_admin()) {
+        return true;
+    }
+
+    $transitions = Filter::getInstance()->applyFilter('content.status.transitions', [
         'new' => ['draft', 'pending', 'scheduled', 'published'],
         'draft' => ['draft', 'pending', 'scheduled', 'published', 'archived'],
         'pending' => ['pending', 'draft', 'scheduled', 'published', 'archived'],
@@ -2820,15 +2830,8 @@ function content_status_transition_allowed(
         'archived' => ['archived', 'draft'],
     ]);
 
-    if (! isset($transitions[$fromStatus]) || ! in_array($toStatus, $transitions[$fromStatus], true)) {
-        return false;
-    }
-
-    if ($toStatus === 'scheduled') {
-        return user_can_schedule_content_for($publishedGmt);
-    }
-
-    return true;
+    return isset($transitions[$fromStatus])
+        && in_array($toStatus, $transitions[$fromStatus], true);
 }
 
 /**

@@ -53,8 +53,8 @@ class UpdateContentValidator extends HttpInputValidator implements HasDto
             fromStatus: (string) $content->status,
             toStatus: (string) ($this->all()['status'] ?? 'draft'),
             publishedGmt: (string) (
-                $this->all()['publishedGmt']
-                ?? $this->all()['published']
+                $this->all()['published']
+                ?? $this->all()['publishedGmt']
                 ?? ''
             )
         );

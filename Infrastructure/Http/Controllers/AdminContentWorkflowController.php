@@ -7,11 +7,18 @@ namespace App\Infrastructure\Http\Controllers;
 use App\Infrastructure\Services\Content\Workflow\ContentRevisionDiffService;
 use App\Infrastructure\Services\Content\Workflow\ContentRevisionService;
 use App\Infrastructure\Services\Content\Workflow\ContentWorkflowService;
+use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
+use Codefy\CommandBus\Exceptions\UnresolvableCommandHandlerException;
 use Codefy\Framework\Http\BaseController;
-use Exception;
+use JsonException;
 use Laminas\Diactoros\Response\JsonResponse;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
 use Psr\Http\Message\ResponseInterface;
+use Psr\SimpleCache\InvalidArgumentException;
+use Qubus\Exception\Data\TypeException;
 use Qubus\Http\ServerRequest;
+use ReflectionException;
 
 use function App\Shared\Helpers\current_user_can;
 use function App\Shared\Helpers\get_current_user_id;
@@ -23,9 +30,12 @@ final class AdminContentWorkflowController extends BaseController
      * @param ContentWorkflowService $workflow
      * @param string $contentId
      * @return ResponseInterface
+     * @throws ContainerExceptionInterface
+     * @throws InvalidArgumentException
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
+     * @throws TypeException
      * @throws \Qubus\Exception\Exception
-     * @throws \ReflectionException
-     * @throws Exception
      */
     public function requestReview(
         ServerRequest $request,
@@ -50,9 +60,12 @@ final class AdminContentWorkflowController extends BaseController
      * @param ContentWorkflowService $workflow
      * @param string $contentId
      * @return ResponseInterface
+     * @throws ContainerExceptionInterface
+     * @throws InvalidArgumentException
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
+     * @throws TypeException
      * @throws \Qubus\Exception\Exception
-     * @throws \ReflectionException
-     * @throws Exception
      */
     public function approve(
         ServerRequest $request,
@@ -74,9 +87,12 @@ final class AdminContentWorkflowController extends BaseController
      * @param ContentWorkflowService $workflow
      * @param string $contentId
      * @return ResponseInterface
+     * @throws ContainerExceptionInterface
+     * @throws InvalidArgumentException
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
+     * @throws TypeException
      * @throws \Qubus\Exception\Exception
-     * @throws \ReflectionException
-     * @throws Exception
      */
     public function requestChanges(
         ServerRequest $request,
@@ -98,9 +114,12 @@ final class AdminContentWorkflowController extends BaseController
      * @param ContentWorkflowService $workflow
      * @param string $contentId
      * @return ResponseInterface
+     * @throws ContainerExceptionInterface
+     * @throws InvalidArgumentException
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
+     * @throws TypeException
      * @throws \Qubus\Exception\Exception
-     * @throws \ReflectionException
-     * @throws Exception
      */
     public function publish(
         ServerRequest $request,
@@ -122,9 +141,13 @@ final class AdminContentWorkflowController extends BaseController
      * @param ContentWorkflowService $workflow
      * @param string $contentId
      * @return ResponseInterface
-     * @throws \JsonException
+     * @throws ContainerExceptionInterface
+     * @throws InvalidArgumentException
+     * @throws JsonException
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
+     * @throws TypeException
      * @throws \Qubus\Exception\Exception
-     * @throws \ReflectionException
      */
     public function comment(
         ServerRequest $request,
@@ -181,9 +204,13 @@ final class AdminContentWorkflowController extends BaseController
      * @param ContentWorkflowService $workflow
      * @param string $contentId
      * @return ResponseInterface
-     * @throws \JsonException
+     * @throws ContainerExceptionInterface
+     * @throws InvalidArgumentException
+     * @throws JsonException
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
+     * @throws TypeException
      * @throws \Qubus\Exception\Exception
-     * @throws \ReflectionException
      */
     public function replyComment(
         ServerRequest $request,
@@ -208,9 +235,13 @@ final class AdminContentWorkflowController extends BaseController
      * @param ContentWorkflowService $workflow
      * @param string $contentId
      * @return ResponseInterface
-     * @throws \JsonException
+     * @throws ContainerExceptionInterface
+     * @throws InvalidArgumentException
+     * @throws JsonException
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
+     * @throws TypeException
      * @throws \Qubus\Exception\Exception
-     * @throws \ReflectionException
      */
     public function resolveComment(
         ServerRequest $request,
@@ -230,9 +261,13 @@ final class AdminContentWorkflowController extends BaseController
      * @param ContentWorkflowService $workflow
      * @param string $contentId
      * @return ResponseInterface
-     * @throws \JsonException
+     * @throws ContainerExceptionInterface
+     * @throws InvalidArgumentException
+     * @throws JsonException
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
+     * @throws TypeException
      * @throws \Qubus\Exception\Exception
-     * @throws \ReflectionException
      */
     public function reopenComment(
         ServerRequest $request,
@@ -328,7 +363,15 @@ final class AdminContentWorkflowController extends BaseController
      * @param ContentRevisionService $revisions
      * @param string $contentId
      * @return ResponseInterface
-     * @throws \JsonException
+     * @throws CommandPropertyNotFoundException
+     * @throws UnresolvableCommandHandlerException
+     * @throws JsonException
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
+     * @throws InvalidArgumentException
+     * @throws TypeException
+     * @throws \Qubus\Exception\Exception
+     * @throws ReflectionException
      */
     public function restoreRevision(
         ServerRequest $request,
@@ -369,6 +412,17 @@ final class AdminContentWorkflowController extends BaseController
         ]);
     }
 
+    /**
+     * @param ContentWorkflowService $workflow
+     * @param string $contentId
+     * @return ResponseInterface
+     * @throws ContainerExceptionInterface
+     * @throws InvalidArgumentException
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
+     * @throws TypeException
+     * @throws \Qubus\Exception\Exception
+     */
     public function comments(ContentWorkflowService $workflow, string $contentId): ResponseInterface
     {
         return new JsonResponse([
