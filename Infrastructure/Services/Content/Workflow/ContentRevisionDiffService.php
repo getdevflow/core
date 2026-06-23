@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Services\Content\Workflow;
 
+use App\Infrastructure\Services\Trait\RevisionEventTypeAware;
 use JsonException;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
@@ -18,12 +19,7 @@ use function App\Shared\Helpers\current_user_can;
 
 final readonly class ContentRevisionDiffService
 {
-    private const array REVISION_EVENT_TYPES = [
-        'content-was-created',
-        'content-title-was-changed',
-        'content-slug-was-changed',
-        'content-body-was-changed',
-    ];
+    use RevisionEventTypeAware;
 
     public function __construct(private Database $dfdb)
     {

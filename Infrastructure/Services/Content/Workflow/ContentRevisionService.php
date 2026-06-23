@@ -9,6 +9,7 @@ use App\Domain\Content\Command\RestoreRevisionCommand;
 use App\Domain\Content\Model\Content;
 use App\Domain\Content\ValueObject\ContentId;
 use App\Infrastructure\Persistence\Cache\ContentCachePsr16;
+use App\Infrastructure\Services\Trait\RevisionEventTypeAware;
 use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
 use Codefy\CommandBus\Exceptions\UnresolvableCommandHandlerException;
 use Psr\Container\ContainerExceptionInterface;
@@ -40,12 +41,7 @@ use const JSON_THROW_ON_ERROR;
 
 final readonly class ContentRevisionService
 {
-    private const array REVISION_EVENT_TYPES = [
-        'content-was-created',
-        'content-title-was-changed',
-        'content-slug-was-changed',
-        'content-body-was-changed',
-    ];
+    use RevisionEventTypeAware;
 
     public function __construct(private Database $dfdb)
     {
@@ -71,10 +67,7 @@ final readonly class ContentRevisionService
         $rows = $this->dfdb
             ->table($this->dfdb->prefix . 'event_store')
             ->where('aggregate_id', $contentId)->and()
-            ->whereIn(
-                'event_type',
-                self::REVISION_EVENT_TYPES
-            )
+            ->whereIn('event_type', self::REVISION_EVENT_TYPES)
             ->orderBy('aggregate_playhead', 'DESC')
             ->limit($limit)
             ->find(callback: static fn(array $rows): array => $rows);

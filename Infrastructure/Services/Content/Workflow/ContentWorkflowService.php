@@ -6,6 +6,7 @@ namespace App\Infrastructure\Services\Content\Workflow;
 
 use App\Domain\Content\Command\ContentWorkflowUpdateCommand;
 use App\Domain\Content\ValueObject\ContentId;
+use App\Infrastructure\Services\Trait\RevisionEventTypeAware;
 use App\Shared\ValueObject\ArrayLiteral;
 use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
 use Codefy\CommandBus\Exceptions\UnresolvableCommandHandlerException;
@@ -34,6 +35,8 @@ use function Qubus\Support\Helpers\is_false__;
 
 final readonly class ContentWorkflowService
 {
+    use RevisionEventTypeAware;
+
     public function __construct(private Database $dfdb)
     {
     }
@@ -773,16 +776,7 @@ final readonly class ContentWorkflowService
         return $this->dfdb
             ->table($this->dfdb->prefix . 'event_store')
             ->where('aggregate_id', $contentId)->and()
-            ->whereNotIn(
-                'event_type',
-                [
-                    'content-parent-was-removed',
-                    'content-published-was-changed',
-                    'content-published-gmt-was-changed',
-                    'content-modified-was-changed',
-                    'content-modified-gmt-was-changed'
-                ]
-            )
+            ->whereIn('event_type', self::REVISION_EVENT_TYPES)
             ->orderBy('aggregate_playhead', 'DESC')
             ->limit($limit)
             ->find(callback: static fn(array $rows): array => $rows);
