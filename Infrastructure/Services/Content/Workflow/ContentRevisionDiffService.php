@@ -16,6 +16,7 @@ use ReflectionException;
 use RuntimeException;
 
 use function App\Shared\Helpers\current_user_can;
+use function Qubus\Security\Helpers\purify_html;
 
 final readonly class ContentRevisionDiffService
 {
@@ -157,7 +158,7 @@ final readonly class ContentRevisionDiffService
         ];
 
         foreach ($events as $event) {
-            $payload = json_decode((string) $event['payload'], true, 512, JSON_THROW_ON_ERROR);
+            $payload = json_decode(purify_html($event['payload']), true, 512, JSON_THROW_ON_ERROR);
 
             if (! is_array($payload)) {
                 continue;

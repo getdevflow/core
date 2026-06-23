@@ -37,6 +37,8 @@ use function is_array;
 use function json_decode;
 use function json_encode;
 
+use function Qubus\Security\Helpers\purify_html;
+
 use const JSON_THROW_ON_ERROR;
 
 final readonly class ContentRevisionService
@@ -182,7 +184,7 @@ final readonly class ContentRevisionService
         ];
 
         foreach ($events as $event) {
-            $payload = json_decode((string) $event['payload'], true);
+            $payload = json_decode(purify_html($event['payload']), true);
 
             if (! is_array($payload)) {
                 continue;

@@ -31,6 +31,8 @@ use function Codefy\Framework\Helpers\command;
 use function Codefy\Framework\Helpers\logger;
 use function Codefy\Framework\Helpers\trans_html;
 use function json_decode;
+use function Qubus\Security\Helpers\esc_html;
+use function Qubus\Security\Helpers\purify_html;
 use function Qubus\Support\Helpers\is_false__;
 
 final readonly class ContentWorkflowService
@@ -693,10 +695,10 @@ final readonly class ContentWorkflowService
             ->find(callback: static fn(array $rows): array => $rows);
 
         return array_map(static function (array $row): array {
-            $firstName = trim((string) ($row['user_fname'] ?? ''));
-            $lastName = trim((string) ($row['user_lname'] ?? ''));
-            $login = trim((string) ($row['user_login'] ?? ''));
-            $email = trim((string) ($row['user_email'] ?? ''));
+            $firstName = $row['user_fname'] ? esc_html($row['user_fname']) : '';
+            $lastName = $row['user_lname'] ? esc_html($row['user_lname']) : '';
+            $login = $row['user_login'] ? esc_html($row['user_login']) : '';
+            $email = $row['user_email'] ? esc_html($row['user_email']) : '';
 
             $actor = trim($firstName . ' ' . $lastName);
 
@@ -708,13 +710,13 @@ final readonly class ContentWorkflowService
                 $actor = trans_html('System');
             }
 
-            $metadata = json_decode((string) ($row['metadata'] ?? '{}'), true);
+            $metadata = json_decode($row['metadata'] ? purify_html($row['metadata']) : '{}', true);
 
             if (! is_array($metadata)) {
                 $metadata = [];
             }
 
-            $action = content_workflow_activity_label((string) $row['activity_type']);
+            $action = content_workflow_activity_label(esc_html($row['activity_type']));
 
             $row['actor'] = $actor;
             $row['action'] = $action;

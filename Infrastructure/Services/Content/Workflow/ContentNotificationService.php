@@ -8,6 +8,9 @@ use Qubus\Expressive\Database;
 
 use function App\Shared\Helpers\admin_url;
 use function App\Shared\Helpers\get_content_by_id;
+use function gmdate;
+use function Qubus\Security\Helpers\esc_html;
+use function sprintf;
 
 final readonly class ContentNotificationService
 {
@@ -36,10 +39,10 @@ final readonly class ContentNotificationService
             ->find(callback: static fn(array $rows): array => $rows);
 
         return array_map(static function (array $row): array {
-            $content = get_content_by_id((string) $row['content_id']);
-            $baseUrl = admin_url(path: 'content-type/' . $content->type . '/' . $content->id . '/');
+            $content = get_content_by_id(esc_html($row['content_id']));
+            $baseUrl = admin_url(path: sprintf('content-type/%s/%s/', $content->type, $content->id));
 
-            $url = match ($row['notification_type']) {
+            $url = match (esc_html($row['notification_type'])) {
                 'comment_added',
                 'comment_replied',
                 'comment_resolved'
@@ -60,27 +63,42 @@ final readonly class ContentNotificationService
         }, $rows);
     }
 
+    /**
+     * @param string $notificationId
+     * @param string $userId
+     * @return void
+     * @throws \Exception
+     */
     public function markRead(string $notificationId, string $userId): void
     {
-        $this->dfdb
-            ->table($this->dfdb->prefix . 'content_notification')
-            ->where('notification_id', $notificationId)
-            ->where('user_id', $userId)
-            ->update([
-                'is_read' => 1,
-                'read_at' => gmdate('Y-m-d H:i:s'),
-            ]);
+        $this->dfdb->transactional(function () use ($notificationId, $userId): void {
+            $this->dfdb
+                ->table($this->dfdb->prefix . 'content_notification')
+                ->where('notification_id', $notificationId)
+                ->where('user_id', $userId)
+                ->update([
+                    'is_read' => 1,
+                    'read_at' => gmdate('Y-m-d H:i:s'),
+                ]);
+        });
     }
 
+    /**
+     * @param string $userId
+     * @return void
+     * @throws \Exception
+     */
     public function markAllRead(string $userId): void
     {
-        $this->dfdb
-            ->table($this->dfdb->prefix . 'content_notification')
-            ->where('user_id', $userId)
-            ->where('is_read', 0)
-            ->update([
-                'is_read' => 1,
-                'read_at' => gmdate('Y-m-d H:i:s'),
-            ]);
+        $this->dfdb->transactional(function () use ($userId): void {
+            $this->dfdb
+                ->table($this->dfdb->prefix . 'content_notification')
+                ->where('user_id', $userId)
+                ->where('is_read', 0)
+                ->update([
+                    'is_read' => 1,
+                    'read_at' => gmdate('Y-m-d H:i:s'),
+                ]);
+        });
     }
 }
