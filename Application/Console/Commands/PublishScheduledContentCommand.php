@@ -74,6 +74,10 @@ final class PublishScheduledContentCommand extends ConsoleCommand
             ->limit(50)
             ->find(callback: static fn(array $rows): array => $rows);
 
+        if ($rows === []) {
+            return;
+        }
+
         foreach ($rows as $row) {
             try {
                 $this->workflow->publishScheduled(
