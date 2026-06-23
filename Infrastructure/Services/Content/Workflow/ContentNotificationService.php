@@ -15,6 +15,16 @@ final readonly class ContentNotificationService
     {
     }
 
+    /**
+     * @param string $userId
+     * @param int $limit
+     * @return array
+     * @throws \Psr\Container\ContainerExceptionInterface
+     * @throws \Psr\Container\NotFoundExceptionInterface
+     * @throws \Psr\SimpleCache\InvalidArgumentException
+     * @throws \Qubus\Exception\Exception
+     * @throws \ReflectionException
+     */
     public function unread(string $userId, int $limit = 15): array
     {
         $rows = $this->dfdb
@@ -27,9 +37,23 @@ final readonly class ContentNotificationService
 
         return array_map(static function (array $row): array {
             $content = get_content_by_id((string) $row['content_id']);
+            $baseUrl = admin_url(path: 'content-type/' . $content->type . '/' . $content->id . '/');
+
+            $url = match ($row['notification_type']) {
+                'comment_added',
+                'comment_replied',
+                'comment_resolved'
+                => $baseUrl . '#editorial-comments-box',
+
+                'revision_restored'
+                => $baseUrl . '#content-revisions-box',
+
+                default
+                => $baseUrl . '#content-workflow-box',
+            };
 
             $row['url'] = ! empty($content->id)
-                ? admin_url(path: 'content-type/' . $content->type . '/' . $content->id . '/#content-activity-box')
+                ? $url
                 : admin_url();
 
             return $row;
