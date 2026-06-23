@@ -41,6 +41,11 @@ class DevflowCmfInstallCommand extends ConsoleCommand
             return self::FAILURE;
         }
 
+        $this->terminalInfo(string: 'Checking for site migrations to run');
+        if ($this->call('site:migrate') !== self::SUCCESS) {
+            return self::FAILURE;
+        }
+
         if ($this->call('cms:install') !== self::SUCCESS) {
             return self::FAILURE;
         }

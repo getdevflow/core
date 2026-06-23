@@ -15,9 +15,31 @@ final class SiteSchema
     }
 
     /**
+     * @return void
      * @throws Exception
      */
-    public function eventStore(): void
+    public function migrateUp(): void
+    {
+        $this->eventStore();
+        $this->content();
+        $this->option();
+        $this->plugin();
+        $this->product();
+        $this->elfinderFile();
+        $this->elfinderTrash();
+        $this->pages();
+        $this->uploads();
+        $this->pageTranslations();
+        $this->settings();
+        $this->contentComment();
+        $this->contentActivity();
+        $this->contentNotification();
+    }
+
+    /**
+     * @throws Exception
+     */
+    private function eventStore(): void
     {
         $this->dfdb->schema()->create(
             table: $this->prefix . 'event_store',
@@ -46,7 +68,7 @@ final class SiteSchema
     /**
      * @throws Exception
      */
-    public function content(): void
+    private function content(): void
     {
         $this->dfdb->schema()
             ->create(
@@ -105,7 +127,7 @@ final class SiteSchema
     /**
      * @throws Exception
      */
-    public function option(): void
+    private function option(): void
     {
         $this->dfdb->schema()
             ->create(table: $this->prefix . 'option', callback: function (CreateTable $table) {
@@ -121,7 +143,7 @@ final class SiteSchema
     /**
      * @throws Exception
      */
-    public function plugin(): void
+    private function plugin(): void
     {
         $this->dfdb->schema()
             ->create(
@@ -139,7 +161,7 @@ final class SiteSchema
     /**
      * @throws Exception
      */
-    public function product(): void
+    private function product(): void
     {
         $this->dfdb->schema()
             ->create(table: $this->prefix . 'product', callback: function (CreateTable $table) {
@@ -177,7 +199,7 @@ final class SiteSchema
     /**
      * @throws Exception
      */
-    public function elfinderFile(): void
+    private function elfinderFile(): void
     {
         $this->dfdb->schema()
             ->create(table: $this->prefix . 'elfinder_file', callback: function (CreateTable $table) {
@@ -203,7 +225,7 @@ final class SiteSchema
     /**
      * @throws Exception
      */
-    public function elfinderTrash(): void
+    private function elfinderTrash(): void
     {
         $this->dfdb->schema()
             ->create(table: $this->prefix . 'elfinder_trash', callback: function (CreateTable $table) {
@@ -229,7 +251,7 @@ final class SiteSchema
     /**
      * @throws Exception
      */
-    public function pages(): void
+    private function pages(): void
     {
         $this->dfdb->schema()
             ->create(table: $this->prefix . 'pages', callback: function (CreateTable $table) {
@@ -240,13 +262,14 @@ final class SiteSchema
                 $table->string(name: 'nav_type')->notNull();
                 $table->string(name: 'layout')->notNull();
                 $table->text(name: 'data')->size(value: 'big')->defaultValue(null);
+                $table->text(name: 'page_attribute')->size(value: 'big');
             });
     }
 
     /**
      * @throws Exception
      */
-    public function uploads(): void
+    private function uploads(): void
     {
         $this->dfdb->schema()
             ->create(table: $this->prefix . 'uploads', callback: function (CreateTable $table) {
@@ -261,7 +284,7 @@ final class SiteSchema
     /**
      * @throws Exception
      */
-    public function pageTranslations(): void
+    private function pageTranslations(): void
     {
         $this->dfdb->schema()
             ->create(table: $this->prefix . 'page_translations', callback: function (CreateTable $table) {
@@ -274,7 +297,7 @@ final class SiteSchema
                 $table->string(name: 'route')->notNull();
 
                 $table->unique(columns: ['page_id', 'locale'], name: $this->prefix . 'idx_page_translations');
-                $table->foreign(columns: 'page_id')
+                $table->foreign(columns: 'page_id', name: $this->prefix . 'fx_page_trans_pid')
                     ->references($this->prefix . 'pages', 'id')
                     ->onUpdate(action: 'cascade')
                     ->onDelete(action: 'cascade');
@@ -284,7 +307,7 @@ final class SiteSchema
     /**
      * @throws Exception
      */
-    public function settings(): void
+    private function settings(): void
     {
         $this->dfdb->schema()
             ->create(table: $this->prefix . 'settings', callback: function (CreateTable $table) {
@@ -293,5 +316,123 @@ final class SiteSchema
                 $table->text(name: 'value')->size(value: 'medium')->notNull();
                 $table->integer(name: 'is_array')->notNull();
             });
+    }
+
+    /**
+     * @return void
+     * @throws Exception
+     */
+    private function contentComment(): void
+    {
+        if (!$this->dfdb->schema()->hasTable(table: $this->prefix . 'content_comment')) {
+            $this->dfdb->schema()->create($this->prefix . 'content_comment', function (CreateTable $table) {
+                $table->string('comment_id', length: 36)
+                    ->primary()
+                    ->unique($this->prefix . 'contentCommentId');
+                $table->string('content_id', length: 36)->notNull()->index();
+                $table->string('user_id', length: 36)->index();
+                $table->string('parent_id', length: 36)->index();
+                $table->text('comment_body')->notNull();
+                $table->string('comment_status', length: 36)->notNull()->defaultValue('open');
+                $table->string('comment_type', length: 36)->notNull()->defaultValue('editorial');
+                $table->text('selection_json')->size('big');
+                $table->dateTime('created_at')->notNull();
+                $table->dateTime('updated_at');
+
+                $table->foreign(columns: 'content_id', name: $this->prefix . 'fx_content_comment_cid')
+                    ->references($this->prefix . 'content', 'content_id')
+                    ->onDelete(action: 'cascade')
+                    ->onUpdate(action: 'cascade');
+
+                $table->foreign(columns: 'user_id', name: $this->prefix . 'fx_content_comment_uid')
+                    ->references($this->dfdb->basePrefix . 'user', 'user_id')
+                    ->onDelete(action: 'set null')
+                    ->onUpdate(action: 'cascade');
+
+                $table->foreign(columns: 'parent_id', name: $this->prefix . 'fx_content_comment_pid')
+                    ->references($this->prefix . 'content_comment', 'comment_id')
+                    ->onDelete(action: 'cascade')
+                    ->onUpdate(action: 'cascade');
+            });
+        }
+    }
+
+    /**
+     * @return void
+     * @throws Exception
+     */
+    private function contentActivity(): void
+    {
+        if (!$this->dfdb->schema()->hasTable(table: $this->prefix . 'content_workflow_activity')) {
+            $this->dfdb->schema()->create(
+                    $this->prefix . 'content_workflow_activity',
+                    function (CreateTable $table) {
+                        $table->string('activity_id', length: 36)
+                            ->primary()
+                            ->unique($this->prefix . 'contentWorkflowActivityId');
+                        $table->string('content_id', length: 36)->notNull()->index();
+                        $table->string('user_id', length: 36)->index();
+                        $table->string('activity_type', length: 50)->notNull()->index();
+                        $table->string('from_status', length: 36);
+                        $table->string('to_status', length: 36);
+                        $table->text('message')->size('big');
+                        $table->text('metadata')->size('big');
+                        $table->dateTime('created_at')->notNull();
+
+                        $table->foreign(columns: 'content_id', name: $this->prefix . 'fx_content_wactivtity_cid')
+                            ->references($this->prefix . 'content', 'content_id')
+                            ->onDelete(action: 'cascade')
+                            ->onUpdate(action: 'cascade');
+
+                        $table->foreign(columns: 'user_id', name: $this->prefix . 'fx_content_wactivtity_uid')
+                            ->references($this->dfdb->basePrefix . 'user', 'user_id')
+                            ->onDelete(action: 'set null')
+                            ->onUpdate(action: 'cascade');
+                    }
+            );
+        }
+    }
+
+    /**
+     * @return void
+     * @throws Exception
+     */
+    private function contentNotification(): void
+    {
+        if (!$this->dfdb->schema()->hasTable(table: $this->prefix . 'content_notification')) {
+            $this->dfdb->schema()->create(
+                    $this->prefix . 'content_notification',
+                    function (CreateTable $table) {
+                        $table->string('notification_id', length: 36)
+                            ->primary()
+                            ->unique($this->prefix . 'contentNotificationId');
+                        $table->string('content_id', length: 36)->notNull()->index();
+                        $table->string('user_id', length: 36)->notNull()->index();
+                        $table->string('activity_id', length: 36)->index();
+                        $table->string('notification_type', length: 80)->notNull();
+                        $table->string('title', length: 191)->notNull();
+                        $table->text('body')->size('big');
+                        $table->integer('is_read')->notNull()->defaultValue(0);
+                        $table->dateTime('created_at')->notNull();
+                        $table->dateTime('read_at');
+                        $table->index(['user_id', 'is_read']);
+
+                        $table->foreign(columns: 'content_id', name: $this->prefix . 'fx_content_notification_cid')
+                            ->references($this->prefix . 'content', 'content_id')
+                            ->onDelete(action: 'cascade')
+                            ->onUpdate(action: 'cascade');
+
+                        $table->foreign(columns: 'user_id', name: $this->prefix . 'fx_content_notification_uid')
+                            ->references($this->dfdb->basePrefix . 'user', 'user_id')
+                            ->onDelete(action: 'cascade')
+                            ->onUpdate(action: 'cascade');
+
+                        $table->foreign(columns: 'activity_id', name: $this->prefix . 'fx_content_notification_aid')
+                            ->references($this->prefix . 'content_workflow_activity', 'activity_id')
+                            ->onDelete(action: 'set null')
+                            ->onUpdate(action: 'cascade');
+                    }
+            );
+        }
     }
 }
