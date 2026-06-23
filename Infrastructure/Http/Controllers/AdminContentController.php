@@ -76,11 +76,12 @@ final class AdminContentController extends BaseController
                 FormatPublishedDateTime::class,
                 FormatCreatedDateTime::class,
                 UniqueContentSlug::class,
+                InitializeContentWorkflow::class,
                 CheckForScheduledStatus::class,
+                SyncContentWorkflowStage::class,
                 OptimizeFeaturedImage::class,
                 CastSidebarAttributeToInt::class,
                 CastShowInAttributesToInt::class,
-                InitializeContentWorkflow::class,
                 CompressUrls::class,
             ])
             ->thenReturn();

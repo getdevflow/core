@@ -45,6 +45,10 @@ final readonly class ContentRevisionService
 
     public function revisions(string $contentId, int $limit = 25): array
     {
+        if (false === current_user_can(perm: 'view:content_revisions')) {
+            throw new RuntimeException('Access denied.');
+        }
+
         $rows = $this->dfdb
             ->table($this->dfdb->prefix . 'event_store')
             ->where('aggregate_id', $contentId)->and()

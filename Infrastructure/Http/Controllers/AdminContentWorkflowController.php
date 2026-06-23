@@ -231,17 +231,25 @@ final class AdminContentWorkflowController extends BaseController
         string $contentId
     ): ResponseInterface {
         $body = $request->getParsedBody();
+        $parentId = (string) ($body['parent_id'] ?? '');
 
         return new JsonResponse([
             'success' => true,
-            'comment' => $workflow->comment(
-                contentId: $contentId,
-                userId: get_current_user_id(),
-                body: (string) ($body['comment'] ?? ''),
-                parentId: $body['parent_id'] !== '' ? ($body['parent_id'] ?? null) : null,
-                selection: isset($body['selection']) && is_array($body['selection']) ? $body['selection'] : null,
-                type: (string) ($body['comment_type'] ?? 'editorial')
-            ),
+            'comment' => $parentId !== ''
+                ? $workflow->replyToComment(
+                    contentId: $contentId,
+                    userId: get_current_user_id(),
+                    parentId: $parentId,
+                    body: (string) ($body['comment'] ?? '')
+                )
+                : $workflow->comment(
+                    contentId: $contentId,
+                    userId: get_current_user_id(),
+                    body: (string) ($body['comment'] ?? ''),
+                    parentId: null,
+                    selection: isset($body['selection']) && is_array($body['selection']) ? $body['selection'] : null,
+                    type: 'editorial'
+                ),
         ]);
     }
 

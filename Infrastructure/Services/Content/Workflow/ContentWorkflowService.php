@@ -735,8 +735,24 @@ final readonly class ContentWorkflowService
         return $this->nestComments($rows);
     }
 
+    /**
+     * This may be duplication and probably should be
+     * removed since it is also defined in ContentRevisionService::class.
+     *
+     * @param string $contentId
+     * @param int $limit
+     * @return array
+     * @throws ContainerExceptionInterface
+     * @throws InvalidArgumentException
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
+     * @throws TypeException
+     * @throws \Qubus\Exception\Exception
+     */
     public function revisions(string $contentId, int $limit = 25): array
     {
+        $this->assertCan('view:content_revisions');
+
         return $this->dfdb
             ->table($this->dfdb->prefix . 'event_store')
             ->where('aggregate_id', $contentId)->and()
@@ -983,10 +999,7 @@ final readonly class ContentWorkflowService
     {
         $comment = $this->commentById($commentId);
 
-        if (
-                (string) $comment['user_id'] !== $userId &&
-                false === current_user_can(perm: 'delete:content_comments')
-        ) {
+        if (false === current_user_can(perm: 'delete:content_comments')) {
             throw new RuntimeException('Access denied.');
         }
 
@@ -1005,6 +1018,8 @@ final readonly class ContentWorkflowService
 
     public function commentSummary(string $contentId): array
     {
+        $this->assertCan('view:content_comments');
+
         $rows = $this->dfdb->raw(
             sprintf(
                 "SELECT 

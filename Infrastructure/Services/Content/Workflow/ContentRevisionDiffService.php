@@ -7,6 +7,10 @@ namespace App\Infrastructure\Services\Content\Workflow;
 use JsonException;
 use Qubus\Expressive\Database;
 
+use RuntimeException;
+
+use function App\Shared\Helpers\current_user_can;
+
 final readonly class ContentRevisionDiffService
 {
     public function __construct(private Database $dfdb)
@@ -18,6 +22,10 @@ final readonly class ContentRevisionDiffService
      */
     public function diff(string $contentId, string $eventId): array
     {
+        if (false === current_user_can(perm: 'view:content_revisions')) {
+            throw new RuntimeException('Access denied.');
+        }
+
         $current = $this->revisionPayload($contentId, $eventId);
         $previous = $this->previousRevisionPayload($contentId, $eventId);
 
