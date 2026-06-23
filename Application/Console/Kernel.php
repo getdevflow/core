@@ -26,6 +26,7 @@ final class Kernel extends ConsoleKernel
         \App\Application\Console\Commands\SiteMigrationCommand::class,
         \App\Application\Console\Commands\SecurityAuditCommand::class,
         \App\Application\Console\Commands\ExtensionCacheWarmCommand::class,
+        \App\Application\Console\Commands\PublishScheduledContentCommand::class,
     ];
 
     /**
@@ -38,7 +39,8 @@ final class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
-        $schedule->command('extension:cache:warm')->hourly();
+        $schedule->command(command: 'extension:cache:warm')->hourly();
+        $schedule->command(command: 'content:publish-scheduled')->everyMinute();
         Action::getInstance()->doAction('scheduler', $schedule);
     }
 

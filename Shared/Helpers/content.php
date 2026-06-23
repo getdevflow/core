@@ -28,6 +28,7 @@ use App\Shared\ValueObject\ArrayLiteral;
 use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
 use Codefy\CommandBus\Exceptions\UnresolvableCommandHandlerException;
 use Codefy\QueryBus\UnresolvableQueryHandlerException;
+use Deprecated;
 use PDOException;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
@@ -2706,6 +2707,7 @@ function the_title(string|Content|ContentId $content): string
  * @throws UnresolvableCommandHandlerException
  * @throws UnresolvableQueryHandlerException
  */
+#[Deprecated(message: 'Use the Codex command instead: php codex content:publish-scheduled', since: '2.4.0')]
 function publish_scheduled_content(): void
 {
     $contents = get_all_content();

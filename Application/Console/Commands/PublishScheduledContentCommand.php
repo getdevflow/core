@@ -12,15 +12,16 @@ use Qubus\Expressive\Database;
 use function App\Shared\Helpers\get_all_sites;
 use function App\Shared\Helpers\restore_current_site;
 use function App\Shared\Helpers\switch_to_site;
+use function date;
 
 final class PublishScheduledContentCommand extends ConsoleCommand
 {
     protected string $name = 'content:publish-scheduled';
 
     public function __construct(
-            protected Application $codefy,
-            private readonly Database $dfdb,
-            private readonly ContentWorkflowService $workflow
+        protected Application $codefy,
+        private readonly Database $dfdb,
+        private readonly ContentWorkflowService $workflow
     ) {
         parent::__construct($codefy);
     }
@@ -69,7 +70,7 @@ final class PublishScheduledContentCommand extends ConsoleCommand
         $rows = $this->dfdb
             ->table($tablePrefix . 'content')
             ->where('content_status', 'scheduled')
-            ->where('content_published_gmt <= ?', gmdate('Y-m-d H:i:s'))
+            ->where('content_published <= ?', date('Y-m-d H:i:s'))
             ->limit(50)
             ->find(callback: static fn(array $rows): array => $rows);
 
