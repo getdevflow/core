@@ -33,13 +33,13 @@ final readonly class ContentRevisionDiffService
      * @param string $contentId
      * @param string $eventId
      * @return array
-     * @throws JsonException
      * @throws ContainerExceptionInterface
-     * @throws NotFoundExceptionInterface
-     * @throws InvalidArgumentException
-     * @throws TypeException
      * @throws Exception
+     * @throws InvalidArgumentException
+     * @throws JsonException
+     * @throws NotFoundExceptionInterface
      * @throws ReflectionException
+     * @throws TypeException
      */
     public function diff(string $contentId, string $eventId): array
     {
@@ -113,16 +113,35 @@ final readonly class ContentRevisionDiffService
         return $event->toArray();
     }
 
+    /**
+     * @param string $contentId
+     * @param int $playhead
+     * @return array
+     * @throws JsonException
+     */
     private function snapshotAtPlayhead(string $contentId, int $playhead): array
     {
         return $this->snapshotForPlayhead($contentId, $playhead, inclusive: true);
     }
 
+    /**
+     * @param string $contentId
+     * @param int $playhead
+     * @return array
+     * @throws JsonException
+     */
     private function snapshotBeforePlayhead(string $contentId, int $playhead): array
     {
         return $this->snapshotForPlayhead($contentId, $playhead, inclusive: false);
     }
 
+    /**
+     * @param string $contentId
+     * @param int $playhead
+     * @param bool $inclusive
+     * @return array
+     * @throws JsonException
+     */
     private function snapshotForPlayhead(string $contentId, int $playhead, bool $inclusive): array
     {
         $operator = $inclusive ? '<= ?' : '< ?';
