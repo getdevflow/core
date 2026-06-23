@@ -10,7 +10,6 @@ use Codefy\CommandBus\Command;
 use Codefy\CommandBus\CommandHandler;
 use Codefy\Domain\Aggregate\AggregateNotFoundException;
 use Exception;
-use Qubus\ValueObjects\StringLiteral\StringLiteral;
 
 class RestoreRevisionCommandHandler implements CommandHandler
 {
@@ -31,8 +30,6 @@ class RestoreRevisionCommandHandler implements CommandHandler
         $content->changeContentTitle($command->title);
         $content->changeContentSlug($command->slug);
         $content->changeContentBody($command->body);
-        $content->changeContentStatus(new StringLiteral('draft'));
-        $content->changeContentAttribute($command->attribute);
         $content->changeContentModified($command->modified);
         $content->changeContentModifiedGmt($command->modifiedGmt);
 

@@ -334,6 +334,19 @@ final readonly class ContentWorkflowService
         });
     }
 
+    /**
+     * @param string $contentId
+     * @param string $userId
+     * @param string $message
+     * @return array
+     * @throws ContainerExceptionInterface
+     * @throws InvalidArgumentException
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
+     * @throws TypeException
+     * @throws \Qubus\Exception\Exception
+     * @throws Exception
+     */
     public function completeReview(string $contentId, string $userId, string $message = ''): array
     {
         $this->assertCan('review:content');
@@ -461,7 +474,7 @@ final readonly class ContentWorkflowService
             ->find(callback: static fn(array $rows): array => $rows);
     }
 
-    public function reviewerNames(array $reviewerIds): array
+    public function reviewerNames(array $reviewerIds, array $reviewerStatus = []): array
     {
         $reviewerIds = array_values(array_unique(array_filter($reviewerIds)));
 
@@ -475,18 +488,22 @@ final readonly class ContentWorkflowService
             ->whereIn('user_id', $reviewerIds)
             ->find(callback: static fn(array $rows): array => $rows);
 
-        return array_map(static function (array $row): array {
+        return array_map(static function (array $row) use ($reviewerStatus): array {
+            $id = (string) $row['user_id'];
+
             $name = trim(
                 (string) ($row['user_fname'] ?? '') . ' ' .
                 (string) ($row['user_lname'] ?? '')
             );
 
             return [
-                'id' => (string) $row['user_id'],
+                'id' => $id,
                 'name' => $name !== ''
                     ? $name
                     : (string) ($row['user_login'] ?? $row['user_email'] ?? 'Unknown User'),
                 'email' => (string) ($row['user_email'] ?? ''),
+                'status' => (string) ($reviewerStatus[$id]['status'] ?? 'pending'),
+                'completed_at' => $reviewerStatus[$id]['completed_at'] ?? null,
             ];
         }, $rows);
     }
@@ -1016,6 +1033,16 @@ final readonly class ContentWorkflowService
         );
     }
 
+    /**
+     * @param string $contentId
+     * @return int[]
+     * @throws ContainerExceptionInterface
+     * @throws InvalidArgumentException
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
+     * @throws TypeException
+     * @throws \Qubus\Exception\Exception
+     */
     public function commentSummary(string $contentId): array
     {
         $this->assertCan('view:content_comments');

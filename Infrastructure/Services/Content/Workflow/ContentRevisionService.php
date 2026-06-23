@@ -7,7 +7,6 @@ namespace App\Infrastructure\Services\Content\Workflow;
 use App\Application\Devflow;
 use App\Domain\Content\Command\RestoreRevisionCommand;
 use App\Domain\Content\ValueObject\ContentId;
-use App\Shared\ValueObject\ArrayLiteral;
 use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
 use Codefy\CommandBus\Exceptions\UnresolvableCommandHandlerException;
 use Psr\Container\ContainerExceptionInterface;
@@ -31,7 +30,6 @@ use function Codefy\Framework\Helpers\command;
 use function Codefy\Framework\Helpers\logger;
 use function implode;
 use function is_array;
-use function is_string;
 use function json_decode;
 use function json_encode;
 
@@ -39,10 +37,28 @@ use const JSON_THROW_ON_ERROR;
 
 final readonly class ContentRevisionService
 {
+    private const array REVISION_EVENT_TYPES = [
+        'content-was-created',
+        'content-title-was-changed',
+        'content-slug-was-changed',
+        'content-body-was-changed',
+    ];
+
     public function __construct(private Database $dfdb)
     {
     }
 
+    /**
+     * @param string $contentId
+     * @param int $limit
+     * @return array
+     * @throws ContainerExceptionInterface
+     * @throws Exception
+     * @throws InvalidArgumentException
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
+     * @throws TypeException
+     */
     public function revisions(string $contentId, int $limit = 25): array
     {
         if (false === current_user_can(perm: 'view:content_revisions')) {
@@ -52,15 +68,9 @@ final readonly class ContentRevisionService
         $rows = $this->dfdb
             ->table($this->dfdb->prefix . 'event_store')
             ->where('aggregate_id', $contentId)->and()
-            ->whereNotIn(
+            ->whereIn(
                 'event_type',
-                [
-                    'content-parent-was-removed',
-                    'content-published-was-changed',
-                    'content-published-gmt-was-changed',
-                    'content-modified-was-changed',
-                    'content-modified-gmt-was-changed'
-                ]
+                self::REVISION_EVENT_TYPES
             )
             ->orderBy('aggregate_playhead', 'DESC')
             ->limit($limit)
@@ -95,8 +105,6 @@ final readonly class ContentRevisionService
                     'title' => StringLiteral::fromNative($data['content_title']),
                     'slug' => StringLiteral::fromNative($data['content_slug']),
                     'body' => StringLiteral::fromNative($data['content_body']),
-                    'attribute' => ArrayLiteral::fromNative($data['content_attribute']),
-                    'status' => StringLiteral::fromNative('draft'),
                     'modified' => QubusDateTimeImmutable::now(),
                     'modifiedGmt' => QubusDateTimeImmutable::now('UTC'),
                 ])
@@ -121,8 +129,8 @@ final readonly class ContentRevisionService
 
             Devflow::$PHP->flash->success(Devflow::$PHP->flash->notice(200));
         } catch (UnresolvableCommandHandlerException | ReflectionException | CommandPropertyNotFoundException $e) {
-            Devflow::$PHP->flash->error(Devflow::$PHP->flash->notice(204));
             logger('error', $e->getMessage());
+            throw new RuntimeException('Revision restore failed.', previous: $e);
         }
     }
 
@@ -131,15 +139,18 @@ final readonly class ContentRevisionService
         $payload = json_decode((string) $row['payload'], true) ?: [];
         $metadata = json_decode((string) $row['metadata'], true) ?: [];
 
+        $revisionPayload = $this->normalizeRevisionPayload($payload);
+
         return [
             'event_id' => $row['event_id'],
             'event_type' => $row['event_type'],
             'playhead' => $row['aggregate_playhead'],
             'recorded_at' => $row['recorded_at'],
             'user_id' => $metadata['user_id'] ?? $metadata['userId'] ?? null,
-            'title' => $payload['title'] ?? $payload['content_title'] ?? $payload['content']['title'] ?? null,
-            'status' => $payload['status'] ?? $payload['content_status'] ?? $payload['content']['status'] ?? null,
-            'payload' => $payload,
+            'title' => $revisionPayload['content_title'] ?? null,
+            'slug' => $revisionPayload['content_slug'] ?? null,
+            'body' => $revisionPayload['content_body'] ?? null,
+            'payload' => $revisionPayload,
             'metadata' => $metadata,
         ];
     }
@@ -159,16 +170,7 @@ final readonly class ContentRevisionService
         $events = $this->dfdb
             ->table($this->dfdb->prefix . 'event_store')
             ->where('aggregate_id', $contentId)->and()
-            ->whereNotIn(
-                'event_type',
-                [
-                    'content-parent-was-removed',
-                    'content-published-was-changed',
-                    'content-published-gmt-was-changed',
-                    'content-modified-was-changed',
-                    'content-modified-gmt-was-changed'
-                ]
-            )->and()
+            ->whereIn('event_type', self::REVISION_EVENT_TYPES)->and()
             ->where('aggregate_playhead <= ?', $target->aggregate_playhead)
             ->orderBy('aggregate_playhead', 'DESC')
             ->find(callback: static fn(array $rows): array => $rows);
@@ -177,7 +179,6 @@ final readonly class ContentRevisionService
             'content_title' => null,
             'content_slug' => null,
             'content_body' => null,
-            'content_attribute' => null,
         ];
 
         foreach ($events as $event) {
@@ -198,8 +199,7 @@ final readonly class ContentRevisionService
             if (
                     $snapshot['content_title'] !== null &&
                     $snapshot['content_slug'] !== null &&
-                    $snapshot['content_body'] !== null &&
-                    $snapshot['content_attribute'] !== null
+                    $snapshot['content_body'] !== null
             ) {
                 break;
             }
@@ -212,20 +212,10 @@ final readonly class ContentRevisionService
     {
         $data = $payload['content'] ?? $payload;
 
-        $attribute = $data['attribute']
-            ?? $data['content_attribute']
-            ?? null;
-
-        if (is_string($attribute)) {
-            $decoded = json_decode($attribute, true);
-            $attribute = is_array($decoded) ? $decoded : [];
-        }
-
         return array_filter([
             'content_title' => $data['title'] ?? $data['content_title'] ?? null,
             'content_slug' => $data['slug'] ?? $data['content_slug'] ?? null,
             'content_body' => $data['body'] ?? $data['content_body'] ?? null,
-            'content_attribute' => $attribute,
         ], static fn($value): bool => $value !== null);
     }
 
@@ -233,7 +223,7 @@ final readonly class ContentRevisionService
     {
         $missing = [];
 
-        foreach (['content_title', 'content_slug', 'content_body', 'content_attribute'] as $field) {
+        foreach (['content_title', 'content_slug', 'content_body'] as $field) {
             if ($snapshot[$field] === null) {
                 $missing[] = $field;
             }
@@ -244,11 +234,6 @@ final readonly class ContentRevisionService
                 'Cannot restore this revision because the event history does not contain a complete snapshot. Missing: ' .
                 implode(', ', $missing)
             );
-        }
-
-        if (is_string($snapshot['content_attribute'])) {
-            $decoded = json_decode($snapshot['content_attribute'], true);
-            $snapshot['content_attribute'] = is_array($decoded) ? $decoded : [];
         }
 
         return $snapshot;

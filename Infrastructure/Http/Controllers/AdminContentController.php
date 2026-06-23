@@ -41,12 +41,14 @@ use function App\Shared\Helpers\cms_enqueue_css;
 use function App\Shared\Helpers\cms_enqueue_js;
 use function App\Shared\Helpers\current_user_can;
 use function App\Shared\Helpers\get_all_content_with_filters;
+use function App\Shared\Helpers\get_content_attribute;
 use function App\Shared\Helpers\get_content_type_by;
 use function App\Shared\Helpers\site_url;
 use function Codefy\Framework\Helpers\abort;
 use function Codefy\Framework\Helpers\trans;
 use function Codefy\Framework\Helpers\trans_html;
 use function Codefy\Framework\Helpers\view;
+use function is_array;
 use function Qubus\Support\Helpers\is_false__;
 use function sprintf;
 
@@ -187,8 +189,11 @@ final class AdminContentController extends BaseController
      * @throws UnresolvableQueryHandlerException
      * @throws \Exception
      */
-    public function contentView(ContentService $service, ContentWorkflowService $workflowService, string $contentId): ResponseInterface
-    {
+    public function contentView(
+        ContentService $service,
+        ContentWorkflowService $workflowService,
+        string $contentId
+    ): ResponseInterface {
         if (false === current_user_can(perm: 'update:content')) {
             Devflow::$PHP->flash->error(
                 message: trans('Access denied.')
@@ -201,8 +206,11 @@ final class AdminContentController extends BaseController
         cms_enqueue_css(config: 'default', asset: site_url('static/assets/css/admin-content-workflow.css'));
         cms_enqueue_js(config: 'default', asset: site_url('static/assets/js/admin-content-workflow.js'));
 
-        $attribute = $content->attribute ?? [];
-        $workflowData = $attribute['workflow'] ?? [];
+        $attribute = get_content_attribute($contentId, 'workflow', []);
+
+        $workflowData = is_array($attribute ?? null)
+            ? $attribute
+            : [];
 
         return view(
             template: 'framework::backend/admin/content/view',
@@ -211,7 +219,10 @@ final class AdminContentController extends BaseController
                 'content' => $content,
                 'type' => get_content_type_by('slug', $content->type),
                 'reviewerCandidates' => $workflowService->reviewerCandidates(),
-                'workflowReviewers' => $workflowService->reviewerNames($workflowData['reviewers'] ?? []),
+                'workflowReviewers' => $workflowService->reviewerNames(
+                    $workflowData['reviewers'] ?? [],
+                    $workflowData['reviewer_status'] ?? []
+                ),
             ]
         );
     }
