@@ -6,7 +6,9 @@ namespace App\Infrastructure\Services\Content\Workflow;
 
 use App\Application\Devflow;
 use App\Domain\Content\Command\RestoreRevisionCommand;
+use App\Domain\Content\Model\Content;
 use App\Domain\Content\ValueObject\ContentId;
+use App\Infrastructure\Persistence\Cache\ContentCachePsr16;
 use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
 use Codefy\CommandBus\Exceptions\UnresolvableCommandHandlerException;
 use Psr\Container\ContainerExceptionInterface;
@@ -22,6 +24,7 @@ use ReflectionException;
 use RuntimeException;
 
 use function App\Shared\Helpers\current_user_can;
+use function App\Shared\Helpers\get_content_by_id;
 use function App\Shared\Helpers\get_current_user_id;
 use function array_filter;
 use function array_key_exists;
@@ -126,6 +129,10 @@ final readonly class ContentRevisionService
                     'created_at' => QubusDateTimeImmutable::now('UTC')->toDateTimeString(),
                 ]);
             });
+
+            /** @var Content $content */
+            $content = get_content_by_id($contentId);
+            ContentCachePsr16::clean($content);
 
             Devflow::$PHP->flash->success(Devflow::$PHP->flash->notice(200));
         } catch (UnresolvableCommandHandlerException | ReflectionException | CommandPropertyNotFoundException $e) {
