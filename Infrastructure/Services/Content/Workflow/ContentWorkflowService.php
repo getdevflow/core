@@ -945,20 +945,26 @@ final readonly class ContentWorkflowService
         $this->assertCan('resolve:content_comments');
 
         $comment = $this->commentById($commentId);
+        $now = $this->now();
 
         $this->dfdb
             ->table($this->dfdb->prefix . 'content_comment')
             ->where('comment_id', $commentId)
             ->update([
                 'comment_status' => 'resolved',
-                'updated_at' => $this->now(),
+                'updated_at' => $now,
             ]);
+
+        $resolvedChildren = $this->resolveOpenChildComments($commentId, $now);
 
         $this->log(
             contentId: (string) $comment['content_id'],
             userId: $userId,
             type: 'comment_resolved',
-            metadata: ['comment_id' => $commentId]
+            metadata: [
+                'comment_id' => $commentId,
+                'resolved_children' => $resolvedChildren,
+            ]
         );
     }
 
@@ -1063,6 +1069,34 @@ final readonly class ContentWorkflowService
             'open' => (int) ($row['open_count'] ?? 0),
             'resolved' => (int) ($row['resolved_count'] ?? 0),
         ];
+    }
+
+    private function resolveOpenChildComments(string $parentId, string $resolvedAt): int
+    {
+        $children = $this->dfdb
+            ->table($this->dfdb->prefix . 'content_comment')
+            ->where('parent_id', $parentId)
+            ->where('comment_status', 'open')
+            ->find(callback: static fn(array $rows): array => $rows);
+
+        $resolved = 0;
+
+        foreach ($children as $child) {
+            $childId = (string) $child['comment_id'];
+
+            $this->dfdb
+                ->table($this->dfdb->prefix . 'content_comment')
+                ->where('comment_id', $childId)
+                ->update([
+                    'comment_status' => 'resolved',
+                    'updated_at' => $resolvedAt,
+                ]);
+
+            $resolved++;
+            $resolved += $this->resolveOpenChildComments($childId, $resolvedAt);
+        }
+
+        return $resolved;
     }
 
     private function commentById(string $commentId): array
