@@ -6,6 +6,7 @@ namespace App\Infrastructure\Services\Content\Workflow;
 
 use App\Domain\Content\Command\ContentWorkflowUpdateCommand;
 use App\Domain\Content\ValueObject\ContentId;
+use App\Infrastructure\Services\Content\Workflow\Queue\ContentWorkflowEmailNotification;
 use App\Infrastructure\Services\Trait\RevisionEventTypeAware;
 use App\Shared\ValueObject\ArrayLiteral;
 use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
@@ -23,17 +24,21 @@ use Qubus\ValueObjects\StringLiteral\StringLiteral;
 use ReflectionException;
 use RuntimeException;
 
+use function App\Shared\Helpers\admin_url;
 use function App\Shared\Helpers\content_workflow_activity_label;
 use function App\Shared\Helpers\current_user_can;
 use function App\Shared\Helpers\get_current_user_id;
+use function App\Shared\Helpers\get_option;
 use function App\Shared\Helpers\is_super_admin;
 use function Codefy\Framework\Helpers\command;
 use function Codefy\Framework\Helpers\logger;
+use function Codefy\Framework\Helpers\queue;
 use function Codefy\Framework\Helpers\trans_html;
 use function json_decode;
 use function Qubus\Security\Helpers\esc_html;
 use function Qubus\Security\Helpers\purify_html;
 use function Qubus\Support\Helpers\is_false__;
+use function trim;
 
 final readonly class ContentWorkflowService
 {
@@ -570,6 +575,14 @@ final readonly class ContentWorkflowService
             ]
         );
 
+        $this->notifyCommentUsers(
+            contentId: $contentId,
+            actorUserId: $userId,
+            activityId: $activityId,
+            body: $body,
+            parentId: $parentId
+        );
+
         return [
             'comment_id' => $commentId,
             'activity_id' => $activityId,
@@ -757,33 +770,6 @@ final readonly class ContentWorkflowService
         return $this->nestComments($rows);
     }
 
-    /**
-     * This may be duplication and probably should be
-     * removed since it is also defined in ContentRevisionService::class.
-     *
-     * @param string $contentId
-     * @param int $limit
-     * @return array
-     * @throws ContainerExceptionInterface
-     * @throws InvalidArgumentException
-     * @throws NotFoundExceptionInterface
-     * @throws ReflectionException
-     * @throws TypeException
-     * @throws \Qubus\Exception\Exception
-     */
-    public function revisions(string $contentId, int $limit = 25): array
-    {
-        $this->assertCan('view:content_revisions');
-
-        return $this->dfdb
-            ->table($this->dfdb->prefix . 'event_store')
-            ->where('aggregate_id', $contentId)->and()
-            ->whereIn('event_type', self::REVISION_EVENT_TYPES)
-            ->orderBy('aggregate_playhead', 'DESC')
-            ->limit($limit)
-            ->find(callback: static fn(array $rows): array => $rows);
-    }
-
     private function content(string $contentId): array
     {
         $row = $this->dfdb
@@ -801,7 +787,7 @@ final readonly class ContentWorkflowService
     /**
      * @throws JsonException
      */
-    private function attribute(?string $json): array
+    private function attribute(?string $json = null): array
     {
         if ($json === null || $json === '') {
             return [];
@@ -1174,7 +1160,13 @@ final readonly class ContentWorkflowService
         string $title,
         string $body = ''
     ): void {
-        foreach (array_unique($userIds) as $userId) {
+        $userIds = array_values(array_unique(array_filter($userIds)));
+
+        if ($userIds === []) {
+            return;
+        }
+
+        foreach ($userIds as $userId) {
             $this->dfdb->table($this->dfdb->prefix . 'content_notification')->insert([
                 'notification_id' => Ulid::generateAsString(),
                 'content_id' => $contentId,
@@ -1188,6 +1180,19 @@ final readonly class ContentWorkflowService
                 'read_at' => null,
             ]);
         }
+
+        $anchor = str_starts_with($type, 'comment_')
+            ? 'editorial-comments-box'
+            : 'content-workflow-box';
+
+        $this->queueEmailNotifications(
+            contentId: $contentId,
+            userIds: $userIds,
+            title: $title,
+            message: $body !== '' ? $body : $title,
+            type: str_starts_with($type, 'comment_') ? 'Editorial Comment' : 'Editorial Workflow',
+            anchor: $anchor
+        );
     }
 
     private function defaultEditorialUserIds(?string $excludeUserId = null): array
@@ -1308,5 +1313,138 @@ final readonly class ContentWorkflowService
     private function now(): string
     {
         return QubusDateTimeImmutable::now('GMT')->toDateTimeString();
+    }
+
+    /**
+     * @param string $contentId
+     * @param array $userIds
+     * @param string $title
+     * @param string $message
+     * @param string $type
+     * @param string $anchor
+     * @return void
+     * @throws InvalidArgumentException
+     * @throws ReflectionException
+     * @throws \Qubus\Exception\Exception
+     */
+    private function queueEmailNotifications(
+        string $contentId,
+        array $userIds,
+        string $title,
+        string $message,
+        string $type = 'Editorial Workflow',
+        string $anchor = 'content-workflow-box'
+    ): void {
+        $userIds = array_values(array_unique(array_filter($userIds)));
+
+        if ($userIds === []) {
+            return;
+        }
+
+        $content = $this->content($contentId);
+
+        $users = $this->dfdb
+            ->select('user_id, user_fname, user_lname, user_email, user_login')
+            ->table($this->dfdb->basePrefix . 'user')
+            ->whereIn('user_id', $userIds)
+            ->find(callback: static fn(array $rows): array => $rows);
+
+        $url = admin_url(
+            path: 'content-type/' .
+            (string) ($content['content_type'] ?? 'post') .
+            '/' .
+            $contentId .
+            '/#' .
+            $anchor
+        );
+
+        foreach ($users as $user) {
+            $email = (string) ($user['user_email'] ?? '');
+
+            if ($email === '') {
+                continue;
+            }
+
+            $name = trim(
+                (string) ($user['user_fname'] ?? '') . ' ' .
+                (string) ($user['user_lname'] ?? '')
+            );
+
+            if ($name === '') {
+                $name = (string) ($user['user_login'] ?? $email);
+            }
+
+            queue(
+                new ContentWorkflowEmailNotification([
+                    'email' => $email,
+                    'user' => $name,
+                    'sitename' => (string) get_option('sitename'),
+                    'notification_type' => $type,
+                    'notification_title' => $title,
+                    'notification_message' => '<p>' . purify_html($message) . '</p>',
+                    'action_url' => $url,
+                    'action_label' => trans_html('View Content'),
+                ])
+            )->createItem();
+        }
+    }
+
+    /**
+     * @param string $contentId
+     * @param string $actorUserId
+     * @param string|null $parentId
+     * @param string $activityId
+     * @param string $body
+     * @return void
+     * @throws JsonException
+     * @throws \Qubus\Exception\Exception
+     */
+    private function notifyCommentUsers(
+        string $contentId,
+        string $actorUserId,
+        string $activityId,
+        string $body,
+        ?string $parentId = null
+    ): void {
+        $content = $this->content($contentId);
+        $attribute = $this->attribute(
+            $content['content_attribute'] ?? null
+        );
+        $workflow = $attribute['workflow'] ?? [];
+
+        $userIds = [];
+
+        if (! empty($content['content_author'])) {
+            $userIds[] = (string) $content['content_author'];
+        }
+
+        foreach (($workflow['reviewers'] ?? []) as $reviewerId) {
+            $userIds[] = (string) $reviewerId;
+        }
+
+        if ($parentId !== null && $parentId !== '') {
+            $parent = $this->commentById($parentId);
+            $userIds[] = (string) $parent['user_id'];
+        }
+
+        $userIds = array_values(array_unique(array_filter(
+            $userIds,
+            static fn(string $id): bool => $id !== $actorUserId
+        )));
+
+        if ($userIds === []) {
+            return;
+        }
+
+        $isReply = $parentId !== null && $parentId !== '';
+
+        $this->notifyMany(
+            contentId: $contentId,
+            userIds: $userIds,
+            activityId: $activityId,
+            type: $isReply ? 'comment_replied' : 'comment_added',
+            title: $isReply ? trans_html('New editorial comment reply') : trans_html('New editorial comment'),
+            body: $body
+        );
     }
 }
