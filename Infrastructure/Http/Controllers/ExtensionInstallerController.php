@@ -111,7 +111,7 @@ final class ExtensionInstallerController
      */
     public function install(ServerRequest $request): ResponseInterface
     {
-        if (!current_user_can(perm: 'install:plugins') && !current_user_can(perm: 'install:themes')) {
+        if (!current_user_can(perm: 'install:extensions')) {
             return $this->jsonResponse([
                 'success' => false,
                 'message' => trans_html('Access denied.'),
@@ -211,7 +211,7 @@ final class ExtensionInstallerController
      */
     public function remove(ServerRequest $request): ResponseInterface
     {
-        if (!current_user_can(perm: 'install:plugins') && !current_user_can(perm: 'install:themes')) {
+        if (!current_user_can(perm: 'uninstall:extensions')) {
             return $this->jsonResponse([
                 'success' => false,
                 'message' => trans_html('Access denied.'),

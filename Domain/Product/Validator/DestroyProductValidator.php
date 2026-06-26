@@ -33,7 +33,14 @@ class DestroyProductValidator extends HttpInputValidator implements HasDto
      */
     public function authorize(): bool
     {
-        return current_user_can(perm: 'manage:products') && current_user_can(perm: 'delete:content');
+        if (
+                false === current_user_can(perm: 'manage:products') ||
+                false === current_user_can(perm: 'delete:product')
+        ) {
+            return false;
+        }
+
+        return true;
     }
 
     /**

@@ -6,6 +6,7 @@ namespace App\Shared\Helpers;
 
 use App\Application\Devflow;
 use App\Infrastructure\Services\Updater;
+use App\Shared\Http\FormState;
 use App\Shared\Services\Assets\AppAssets;
 use App\Shared\Services\Assets\PluginAssets;
 use App\Shared\Services\Assets\ThemeAssets;
@@ -41,12 +42,12 @@ use function array_slice;
 use function array_unique;
 use function array_values;
 use function asort;
+use function Codefy\Framework\Helpers\app;
 use function Codefy\Framework\Helpers\config;
 use function Codefy\Framework\Helpers\public_path;
 use function Codefy\Framework\Helpers\resource_path;
 use function Codefy\Framework\Helpers\trans;
 use function count;
-use function curl_close;
 use function curl_exec;
 use function curl_getinfo;
 use function curl_init;
@@ -227,7 +228,6 @@ function remote_file_exists(string $url): bool
             $ret = true;
         }
     }
-    curl_close(handle: $curl);
 
     return $ret;
 }
@@ -1116,7 +1116,7 @@ function cms_print_registered_assets(string $type, string $location = 'default')
  *
  *      cms_enqueue_css('default', '//cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css')
  *      cms_enqueue_css('plugin', ['fontawesome','select2-css'], false, plugin_basename( dirname(__FILE__) ))
- *      cms_enqueue_css('theme', 'theme-slug/assets/css/style.css')
+ *      cms_enqueue_css('theme', 'theme-slug/css/style.css')
  *
  * @file core/Shared/Helpers/core.php
  * @param string $config Set whether to use `default` config or `plugin` config.
@@ -1146,7 +1146,7 @@ function cms_enqueue_css(
  *
  *      cms_enqueue_js('default', 'jquery-ui')
  *      cms_enqueue_js('plugin', 'select2-js', false, plugin_basename( dirname(__FILE__) ))
- *      cms_enqueue_js('theme', 'theme-slug/assets/js/config.js')
+ *      cms_enqueue_js('theme', 'theme-slug/js/config.js')
  *
  * @file core/Shared/Helpers/core.php
  * @param string $config Set whether to use `default`, `plugin`  or `theme` config.
@@ -1639,4 +1639,45 @@ function help_block(
     $html .= '</div></aside>';
 
     return $html;
+}
+
+function form_state(): FormState
+{
+    return app(FormState::class);
+}
+
+function old(string $key, mixed $default = ''): mixed
+{
+    return form_state()->old($key, $default);
+}
+
+function has_old(string $key): bool
+{
+    return form_state()->hasOld($key);
+}
+
+function form_error(string $key): string
+{
+    return form_state()->error($key);
+}
+
+function has_form_error(string $key): bool
+{
+    return form_state()->hasError($key);
+}
+
+function field_error(string $key): string
+{
+    $error = form_error($key);
+
+    if ($error === '') {
+        return '';
+    }
+
+    return '<p class="help-block text-danger">' . esc_html(string: $error) . '</p>';
+}
+
+function invalid_class(string $key, string $class = 'has-error'): string
+{
+    return has_form_error($key) ? $class : '';
 }

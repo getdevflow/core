@@ -17,6 +17,7 @@ use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
 use ReflectionException;
 
+use function App\Shared\Helpers\user_can_set_product_status;
 use function App\Shared\Helpers\current_user_can;
 
 #[UseDto(StoreProductData::class)]
@@ -34,7 +35,16 @@ class StoreProductValidator extends HttpInputValidator implements HasDto
      */
     public function authorize(): bool
     {
-        return current_user_can(perm: 'manage:products') && current_user_can(perm: 'create:product');
+        if (
+                false === current_user_can(perm: 'manage:products') ||
+                false === current_user_can(perm: 'create:product')
+        ) {
+            return false;
+        }
+
+        return user_can_set_product_status(
+            status: (string) ($this->all()['status'] ?? 'draft')
+        );
     }
 
     /**

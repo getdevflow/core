@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Domain\Content\Validator;
 
 use App\Domain\Content\Dto\StoreContentData;
-use App\Domain\Content\Enum\ContentStatus;
 use Codefy\Framework\Dto\Attribute\UseDto;
 use Codefy\Framework\Dto\HasDto;
 use Codefy\Framework\Dto\Trait\DtoAware;
@@ -17,6 +16,8 @@ use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
 use ReflectionException;
 
+use function App\Shared\Helpers\content_status_capabilities;
+use function App\Shared\Helpers\content_status_create_allowed;
 use function App\Shared\Helpers\current_user_can;
 
 #[UseDto(StoreContentData::class)]
@@ -34,7 +35,21 @@ class StoreContentValidator extends HttpInputValidator implements HasDto
      */
     public function authorize(): bool
     {
-        return current_user_can(perm: 'manage:content') && current_user_can(perm: 'create:content');
+        if (
+                false === current_user_can(perm: 'manage:content') ||
+                false === current_user_can(perm: 'create:content')
+        ) {
+            return false;
+        }
+
+        return content_status_create_allowed(
+            toStatus: (string) ($this->all()['status'] ?? 'draft'),
+            publishedGmt: (string) (
+                $this->all()['published']
+                ?? $this->all()['publishedGmt']
+                ?? ''
+            )
+        );
     }
 
     /**
@@ -43,7 +58,7 @@ class StoreContentValidator extends HttpInputValidator implements HasDto
      */
     public function rules(): array
     {
-        $statuses = implode(separator: ',', array: ContentStatus::values());
+        $statuses = implode(separator: ',', array: array_keys(content_status_capabilities()));
 
         if('NULL' === $this->all()['parent']) {
             $parent = 'nullable|string';

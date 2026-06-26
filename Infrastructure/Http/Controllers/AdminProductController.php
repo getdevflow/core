@@ -18,7 +18,6 @@ use App\Shared\Pipes\CompressUrls;
 use App\Shared\Pipes\FormatCreatedDateTime;
 use App\Shared\Pipes\FormatPublishedDateTime;
 use App\Shared\Pipes\OptimizeFeaturedImage;
-use Application\Service\Forms\ProductForm;
 use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
 use Codefy\CommandBus\Exceptions\UnresolvableCommandHandlerException;
 use Codefy\Framework\Http\BaseController;
@@ -59,7 +58,7 @@ final class AdminProductController extends BaseController
      */
     public function products(ProductService $service): ResponseInterface
     {
-        if (false === current_user_can(perm: 'manage:product')) {
+        if (false === current_user_can(perm: 'manage:products')) {
             Devflow::$PHP->flash->error(
                 message: trans('Access denied.'),
             );
@@ -134,7 +133,6 @@ final class AdminProductController extends BaseController
             data: [
                 'title' => trans('Create Product'),
                 'request' => $request->getParsedBody(),
-                'form' => new ProductForm()->buildForm($request->getParsedBody(), null),
             ]
         );
     }
@@ -211,7 +209,6 @@ final class AdminProductController extends BaseController
                 data: [
                     'title' => $product->title,
                     'product' => $product,
-                    'form' => new ProductForm()->buildForm($request->getParsedBody(), $product->id),
                 ]
             );
         } catch (

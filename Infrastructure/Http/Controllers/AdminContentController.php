@@ -12,14 +12,16 @@ use App\Domain\Content\Validator\UpdateContentValidator;
 use App\Domain\ContentType\Model\ContentType;
 use App\Infrastructure\Services\Content\ContentService;
 use App\Infrastructure\Services\Content\Pipes\CastSidebarAttributeToInt;
+use App\Infrastructure\Services\Content\Pipes\InitializeContentWorkflow;
+use App\Infrastructure\Services\Content\Pipes\SyncContentWorkflowStage;
 use App\Infrastructure\Services\Content\Pipes\UniqueContentSlug;
+use App\Infrastructure\Services\Content\Workflow\ContentWorkflowService;
 use App\Shared\Pipes\CastShowInAttributesToInt;
 use App\Shared\Pipes\CheckForScheduledStatus;
 use App\Shared\Pipes\CompressUrls;
 use App\Shared\Pipes\FormatCreatedDateTime;
 use App\Shared\Pipes\FormatPublishedDateTime;
 use App\Shared\Pipes\OptimizeFeaturedImage;
-use Application\Service\Forms\ContentForm;
 use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
 use Codefy\CommandBus\Exceptions\UnresolvableCommandHandlerException;
 use Codefy\Framework\Http\BaseController;
@@ -35,13 +37,18 @@ use Qubus\Http\ServerRequest;
 use ReflectionException;
 
 use function App\Shared\Helpers\admin_url;
+use function App\Shared\Helpers\cms_enqueue_css;
+use function App\Shared\Helpers\cms_enqueue_js;
 use function App\Shared\Helpers\current_user_can;
 use function App\Shared\Helpers\get_all_content_with_filters;
+use function App\Shared\Helpers\get_content_attribute;
 use function App\Shared\Helpers\get_content_type_by;
+use function App\Shared\Helpers\site_url;
 use function Codefy\Framework\Helpers\abort;
 use function Codefy\Framework\Helpers\trans;
 use function Codefy\Framework\Helpers\trans_html;
 use function Codefy\Framework\Helpers\view;
+use function is_array;
 use function Qubus\Support\Helpers\is_false__;
 use function sprintf;
 
@@ -71,7 +78,9 @@ final class AdminContentController extends BaseController
                 FormatPublishedDateTime::class,
                 FormatCreatedDateTime::class,
                 UniqueContentSlug::class,
+                InitializeContentWorkflow::class,
                 CheckForScheduledStatus::class,
+                SyncContentWorkflowStage::class,
                 OptimizeFeaturedImage::class,
                 CastSidebarAttributeToInt::class,
                 CastShowInAttributesToInt::class,
@@ -123,7 +132,6 @@ final class AdminContentController extends BaseController
                 'title' => sprintf(trans_html('Create %s Content'), $type->title),
                 'type' => $type,
                 'request' => $request->getParsedBody(),
-                'form' => new ContentForm()->buildForm($request->getParsedBody(), $type->slug, null),
             ]
         );
     }
@@ -147,7 +155,9 @@ final class AdminContentController extends BaseController
             ->through([
                 FormatPublishedDateTime::class,
                 UniqueContentSlug::class,
+                InitializeContentWorkflow::class,
                 CheckForScheduledStatus::class,
+                SyncContentWorkflowStage::class,
                 OptimizeFeaturedImage::class,
                 CastSidebarAttributeToInt::class,
                 CastShowInAttributesToInt::class,
@@ -166,6 +176,7 @@ final class AdminContentController extends BaseController
 
     /**
      * @param ContentService $service
+     * @param ContentWorkflowService $workflowService
      * @param string $contentId
      * @return ResponseInterface
      * @throws CommandPropertyNotFoundException
@@ -178,8 +189,11 @@ final class AdminContentController extends BaseController
      * @throws UnresolvableQueryHandlerException
      * @throws \Exception
      */
-    public function contentView(ContentService $service, string $contentId): ResponseInterface
-    {
+    public function contentView(
+        ContentService $service,
+        ContentWorkflowService $workflowService,
+        string $contentId
+    ): ResponseInterface {
         if (false === current_user_can(perm: 'update:content')) {
             Devflow::$PHP->flash->error(
                 message: trans('Access denied.')
@@ -189,13 +203,26 @@ final class AdminContentController extends BaseController
 
         $content = $service->findById($contentId);
 
+        cms_enqueue_css(config: 'default', asset: site_url('static/assets/css/admin-content-workflow.css'));
+        cms_enqueue_js(config: 'default', asset: site_url('static/assets/js/admin-content-workflow.js'));
+
+        $attribute = get_content_attribute($contentId, 'workflow', []);
+
+        $workflowData = is_array($attribute ?? null)
+            ? $attribute
+            : [];
+
         return view(
             template: 'framework::backend/admin/content/view',
             data: [
                 'title' => $content->title,
                 'content' => $content,
                 'type' => get_content_type_by('slug', $content->type),
-                'form' => new ContentForm()->buildForm($content->toArray(), $content->type, $content->id),
+                'reviewerCandidates' => $workflowService->reviewerCandidates(),
+                'workflowReviewers' => $workflowService->reviewerNames(
+                    $workflowData['reviewers'] ?? [],
+                    $workflowData['reviewer_status'] ?? []
+                ),
             ]
         );
     }
@@ -215,7 +242,7 @@ final class AdminContentController extends BaseController
      */
     public function contentViewByType(string $contentTypeSlug): ResponseInterface
     {
-        if (false === current_user_can(perm: 'update:content')) {
+        if (false === current_user_can(perm: 'manage:content')) {
             Devflow::$PHP->flash->error(
                 message: trans('Access denied.')
             );

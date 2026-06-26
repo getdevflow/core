@@ -28,12 +28,14 @@ use App\Shared\ValueObject\ArrayLiteral;
 use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
 use Codefy\CommandBus\Exceptions\UnresolvableCommandHandlerException;
 use Codefy\QueryBus\UnresolvableQueryHandlerException;
+use Deprecated;
 use PDOException;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\SimpleCache\InvalidArgumentException;
 use Qubus\Error\Error;
+use Qubus\EventDispatcher\ActionFilter\Filter;
 use Qubus\EventDispatcher\EventDispatcher;
 use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
@@ -47,6 +49,7 @@ use function Codefy\Framework\Helpers\ask;
 use function Codefy\Framework\Helpers\command;
 use function Codefy\Framework\Helpers\logger;
 use function Codefy\Framework\Helpers\trans_html;
+use function in_array;
 use function is_array;
 use function preg_split;
 use function Qubus\Security\Helpers\__observer;
@@ -2704,6 +2707,7 @@ function the_title(string|Content|ContentId $content): string
  * @throws UnresolvableCommandHandlerException
  * @throws UnresolvableQueryHandlerException
  */
+#[Deprecated(message: 'Use the Codex command instead: php codex content:publish-scheduled', since: '2.4.0')]
 function publish_scheduled_content(): void
 {
     $contents = get_all_content();
@@ -2742,4 +2746,194 @@ function publish_scheduled_content(): void
             ]
         );
     }
+}
+
+/**
+ * @param string $status
+ * @return bool
+ * @throws ContainerExceptionInterface
+ * @throws Exception
+ * @throws InvalidArgumentException
+ * @throws NotFoundExceptionInterface
+ * @throws ReflectionException
+ * @throws TypeException
+ */
+function user_can_set_content_status(string $status): bool
+{
+    $caps = content_status_capabilities();
+
+    if (! array_key_exists($status, $caps)) {
+        return false;
+    }
+
+    $cap = $caps[$status];
+
+    return $cap === null || current_user_can(perm: $cap);
+}
+
+/**
+ * @param string|null $publishedGmt
+ * @return bool
+ * @throws ContainerExceptionInterface
+ * @throws Exception
+ * @throws InvalidArgumentException
+ * @throws NotFoundExceptionInterface
+ * @throws ReflectionException
+ * @throws TypeException
+ */
+function user_can_schedule_content_for(?string $publishedGmt): bool
+{
+    if (false === current_user_can(perm: 'schedule:content')) {
+        return false;
+    }
+
+    if ($publishedGmt === null || $publishedGmt === '') {
+        return false;
+    }
+
+    return strtotime($publishedGmt) > time();
+}
+
+/**
+ * @param string $fromStatus
+ * @param string $toStatus
+ * @param string|null $publishedGmt
+ * @return bool
+ * @throws ContainerExceptionInterface
+ * @throws Exception
+ * @throws InvalidArgumentException
+ * @throws NotFoundExceptionInterface
+ * @throws ReflectionException
+ * @throws TypeException
+ */
+function content_status_transition_allowed(
+    string $fromStatus,
+    string $toStatus,
+    ?string $publishedGmt = null
+): bool {
+    if (! user_can_set_content_status($toStatus)) {
+        return false;
+    }
+
+    if ($toStatus === 'scheduled') {
+        return user_can_schedule_content_for($publishedGmt);
+    }
+
+    if (is_super_admin()) {
+        return true;
+    }
+
+    $transitions = Filter::getInstance()->applyFilter('content.status.transitions', [
+        'new' => ['draft', 'pending', 'scheduled', 'published'],
+        'draft' => ['draft', 'pending', 'scheduled', 'published', 'archived'],
+        'pending' => ['pending', 'draft', 'scheduled', 'published', 'archived'],
+        'scheduled' => ['scheduled', 'draft', 'published', 'archived'],
+        'published' => ['published', 'archived'],
+        'archived' => ['archived', 'draft'],
+    ]);
+
+    return isset($transitions[$fromStatus])
+        && in_array($toStatus, $transitions[$fromStatus], true);
+}
+
+/**
+ * @param string $toStatus
+ * @param string|null $publishedGmt
+ * @return bool
+ * @throws ContainerExceptionInterface
+ * @throws Exception
+ * @throws InvalidArgumentException
+ * @throws NotFoundExceptionInterface
+ * @throws ReflectionException
+ * @throws TypeException
+ */
+function content_status_create_allowed(
+    string $toStatus,
+    ?string $publishedGmt = null
+): bool {
+    return content_status_transition_allowed(
+        fromStatus: 'new',
+        toStatus: $toStatus,
+        publishedGmt: $publishedGmt
+    );
+}
+
+function content_workflow_activity_label(string $type): string
+{
+    return match ($type) {
+        'reviewers_assigned' => 'updated reviewer assignments',
+        'review_requested' => 'requested review',
+        'review_withdrawn' => 'withdrew the review request',
+        'approved' => 'approved the content',
+        'changes_requested' => 'requested changes',
+        'published' => 'published the content',
+        'scheduled_published' => 'published scheduled content',
+        'comment_added' => 'added a comment',
+        'comment_replied' => 'replied to a comment',
+        'comment_updated' => 'edited a comment',
+        'comment_resolved' => 'resolved a comment',
+        'comment_reopened' => 'reopened a comment',
+        'comment_deleted' => 'deleted a comment',
+        'revision_restored' => 'restored a revision as draft',
+        'review_completed' => 'completed review',
+        'review_ready' => 'marked content ready for approval',
+        default => str_replace('_', ' ', $type),
+    };
+}
+
+function content_workflow_notification_title(string $type): string
+{
+    return match ($type) {
+        'review_requested' => 'Review requested',
+        'review_withdrawn' => 'Review request withdrawn',
+        'approved' => 'Content approved',
+        'changes_requested' => 'Changes requested',
+        'published' => 'Content published',
+        'scheduled_published' => 'Scheduled content published',
+        'comment_added' => 'New editorial comment',
+        'comment_replied' => 'New comment reply',
+        'comment_resolved' => 'Comment resolved',
+        'revision_restored' => 'Revision restored',
+        default => str_replace('_', ' ', $type),
+    };
+}
+
+function content_workflow_stage_label(string $stage): string
+{
+    return match ($stage) {
+        'draft' => 'Draft',
+        'in_review' => 'In Review',
+        'changes_requested' => 'Changes Requested',
+        'approved' => 'Approved',
+        'scheduled' => 'Scheduled',
+        'published' => 'Published',
+        'archived' => 'Archived',
+        default => ucwords(str_replace('_', ' ', $stage)),
+    };
+}
+
+function content_workflow_stage_badge_class(string $stage): string
+{
+    return match ($stage) {
+        'draft' => 'label-default',
+        'in_review' => 'label-warning',
+        'changes_requested' => 'label-danger',
+        'approved' => 'label-success',
+        'scheduled' => 'label-info',
+        'published' => 'label-primary',
+        'archived' => 'label-default',
+        default => 'label-default',
+    };
+}
+
+function content_workflow_stage_from_status(string $status, ?string $currentStage = null): string
+{
+    return match ($status) {
+        'draft' => $currentStage === 'changes_requested' ? 'changes_requested' : 'draft',
+        'pending' => $currentStage === 'approved' ? 'approved' : 'in_review',
+        'scheduled' => 'scheduled',
+        'published' => 'published',
+        'archived' => 'archived',
+        default => $currentStage ?? 'draft',
+    };
 }

@@ -1325,17 +1325,7 @@ function new_site_schema(Site $site, bool $update): bool|string
     $sitePrefix = $site->key;
 
     $schema = new SiteSchema($dfdb, $sitePrefix);
-    $schema->eventStore();
-    $schema->content();
-    $schema->option();
-    $schema->plugin();
-    $schema->product();
-    $schema->elfinderFile();
-    $schema->elfinderTrash();
-    $schema->pages();
-    $schema->uploads();
-    $schema->pageTranslations();
-    $schema->settings();
+    $schema->migrateUp();
 
     $insertData = file_get_contents(resource_path(path: 'tpl/option_table_insert.tpl'));
     $insertData = str_replace('{ulid_1}', Ulid::generateAsString(), $insertData);

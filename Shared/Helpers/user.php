@@ -372,26 +372,6 @@ function email_exists(string $email): false|string
 }
 
 /**
- * Retrieve a list of system defined user roles.
- *
- * @file core/Shared/Helpers/user.php
- * @param string|null $active
- * @return void
- * @throws TypeException
- * @throws Exception
- */
-function get_system_roles(?string $active = null): void
-{
-    $roles = config()->array(key: 'rbac.roles');
-
-    foreach ($roles as $role => $permission) {
-        echo '<option value="' . esc_html($role) . '"' . selected($active, esc_html($role), false) . '>' .
-        esc_html($role) .
-        '</option>';
-    }
-}
-
-/**
  * Retrieve a list of all users as dropdown options.
  *
  * @file core/Shared/Helpers/user.php

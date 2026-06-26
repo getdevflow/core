@@ -99,11 +99,12 @@ final class AdminThemeController extends BaseController
      */
     public function activate(ServerRequest $request): ResponseInterface
     {
-        if (false === is_user_logged_in()) {
+        if (false === current_user_can(perm: 'activate:themes')) {
             Devflow::$PHP->flash->error(
                 message: trans('Access denied.')
             );
-            return $this->redirect(admin_url());
+
+            return $this->redirect($request->getHeaderLine('Referer'));
         }
 
         try {
@@ -134,10 +135,12 @@ final class AdminThemeController extends BaseController
      */
     public function deactivate(ServerRequest $request): ResponseInterface
     {
-        if (false === is_user_logged_in()) {
-            Devflow::$PHP->flash->error(message: trans('Access denied.'));
+        if (false === current_user_can(perm: 'deactivate:themes')) {
+            Devflow::$PHP->flash->error(
+                message: trans('Access denied.')
+            );
 
-            return $this->redirect(admin_url());
+            return $this->redirect($request->getHeaderLine('Referer'));
         }
 
         try {

@@ -984,4 +984,35 @@ function admin_enqueue_footer(): void
     );
     cms_enqueue_js(config: 'default', asset: 'demo.js');
     cms_enqueue_js(config: 'default', asset: 'datatables-js');
+    cms_enqueue_js(config: 'default', asset: 'admin-content-notifications.js');
+}
+
+/**
+ * @return array
+ * @throws Exception
+ */
+function content_status_capabilities(): array
+{
+    return __observer()->filter->applyFilter('content.status.capabilities', [
+        'published' => 'publish:content',
+        'scheduled' => 'schedule:content',
+        'archived' => 'archive:content',
+        'pending' => 'review:content',
+        'draft' => null,
+    ]);
+}
+
+/**
+ * @return array
+ * @throws Exception
+ */
+function product_status_capabilities(): array
+{
+    return __observer()->filter->applyFilter('product.status.capabilities', [
+        'published' => 'publish:product',
+        'scheduled' => 'schedule:product',
+        'archived' => 'archive:product',
+        'pending' => 'review:product',
+        'draft' => null,
+    ]);
 }

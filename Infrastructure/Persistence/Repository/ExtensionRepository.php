@@ -21,6 +21,8 @@ use function is_array;
 use function json_decode;
 use function sprintf;
 
+use const JSON_THROW_ON_ERROR;
+
 
 final class ExtensionRepository
 {
@@ -126,9 +128,12 @@ final class ExtensionRepository
             $kind
         );
 
-        $json = $this->fetchJson($url);
-
-        $decoded = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
+        try {
+            $json = $this->fetchJson($url);
+            $decoded = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
+        } catch (\Throwable) {
+            return [];
+        }
 
         $results = match (true) {
             isset($decoded['packages']) && is_array($decoded['packages']) => $decoded['packages'],

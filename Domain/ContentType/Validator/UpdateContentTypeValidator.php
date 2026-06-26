@@ -33,7 +33,14 @@ class UpdateContentTypeValidator extends HttpInputValidator implements HasDto
      */
     public function authorize(): bool
     {
-        return current_user_can(perm: 'manage:content') && current_user_can(perm: 'update:content');
+        if (
+                false === current_user_can(perm: 'manage:content') ||
+                false === current_user_can(perm: 'update:content')
+        ) {
+            return false;
+        }
+
+        return true;
     }
 
     /**

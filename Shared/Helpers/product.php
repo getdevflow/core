@@ -43,6 +43,7 @@ use Qubus\ValueObjects\Number\IntegerNumber;
 use Qubus\ValueObjects\StringLiteral\StringLiteral;
 use ReflectionException;
 
+use function array_key_exists;
 use function array_map;
 use function Codefy\Framework\Helpers\ask;
 use function Codefy\Framework\Helpers\command;
@@ -2234,4 +2235,27 @@ function publish_scheduled_product(): void
             ]
         );
     }
+}
+
+/**
+ * @param string $status
+ * @return bool
+ * @throws ContainerExceptionInterface
+ * @throws Exception
+ * @throws InvalidArgumentException
+ * @throws NotFoundExceptionInterface
+ * @throws ReflectionException
+ * @throws TypeException
+ */
+function user_can_set_product_status(string $status): bool
+{
+    $caps = product_status_capabilities();
+
+    if (! array_key_exists($status, $caps)) {
+        return false;
+    }
+
+    $cap = $caps[$status];
+
+    return $cap === null || current_user_can(perm: $cap);
 }
