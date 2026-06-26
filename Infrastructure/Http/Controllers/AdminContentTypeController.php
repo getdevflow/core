@@ -62,7 +62,7 @@ final class AdminContentTypeController extends BaseController
      */
     public function contentTypes(ServerRequest $request, ContentTypeService $service): ResponseInterface
     {
-        if (false === current_user_can(perm: 'manage:content')) {
+        if (false === current_user_can(perm: 'create:content')) {
             Devflow::$PHP->flash->error(
                 message: trans('Access denied.')
             );
