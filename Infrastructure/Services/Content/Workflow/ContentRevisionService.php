@@ -32,12 +32,13 @@ use function array_key_exists;
 use function array_map;
 use function Codefy\Framework\Helpers\command;
 use function Codefy\Framework\Helpers\logger;
+use function Codefy\Framework\Helpers\trans_html;
 use function implode;
 use function is_array;
 use function json_decode;
 use function json_encode;
-
 use function Qubus\Security\Helpers\purify_html;
+use function sprintf;
 
 use const JSON_THROW_ON_ERROR;
 
@@ -63,7 +64,7 @@ final readonly class ContentRevisionService
     public function revisions(string $contentId, int $limit = 25): array
     {
         if (false === current_user_can(perm: 'view:content_revisions')) {
-            throw new RuntimeException('Access denied.');
+            throw new RuntimeException(trans_html('Access denied.'));
         }
 
         $rows = $this->dfdb
@@ -91,7 +92,7 @@ final readonly class ContentRevisionService
     public function restore(string $contentId, string $eventId): void
     {
         if (false === current_user_can(perm: 'restore:content_revisions')) {
-            throw new \RuntimeException('Access denied.');
+            throw new \RuntimeException(trans_html('Access denied.'));
         }
 
         $data = $this->snapshotForRevision($contentId, $eventId);
@@ -116,7 +117,7 @@ final readonly class ContentRevisionService
                     'activity_type' => 'revision_restored',
                     'from_status' => null,
                     'to_status' => 'draft',
-                    'message' => 'Revision restored as draft.',
+                    'message' => trans_html('Revision restored as draft.'),
                     'metadata' => json_encode([
                         'event_id' => $eventId,
                         'restored_title' => $data['content_title'],
@@ -132,7 +133,7 @@ final readonly class ContentRevisionService
             Devflow::$PHP->flash->success(Devflow::$PHP->flash->notice(200));
         } catch (UnresolvableCommandHandlerException | ReflectionException | CommandPropertyNotFoundException $e) {
             logger('error', $e->getMessage());
-            throw new RuntimeException('Revision restore failed.', previous: $e);
+            throw new RuntimeException(trans_html('Revision restore failed.'), previous: $e);
         }
     }
 
@@ -157,6 +158,12 @@ final readonly class ContentRevisionService
         ];
     }
 
+    /**
+     * @param string $contentId
+     * @param string $eventId
+     * @return array
+     * @throws Exception
+     */
     private function snapshotForRevision(string $contentId, string $eventId): array
     {
         $target = $this->dfdb
@@ -166,7 +173,7 @@ final readonly class ContentRevisionService
             ->findOne();
 
         if ($target === false) {
-            throw new RuntimeException('Revision not found.');
+            throw new RuntimeException(trans_html('Revision not found.'));
         }
 
         $events = $this->dfdb
@@ -221,6 +228,11 @@ final readonly class ContentRevisionService
         ], static fn($value): bool => $value !== null);
     }
 
+    /**
+     * @param array $snapshot
+     * @return array
+     * @throws Exception
+     */
     private function assertCompleteSnapshot(array $snapshot): array
     {
         $missing = [];
@@ -233,8 +245,12 @@ final readonly class ContentRevisionService
 
         if ($missing !== []) {
             throw new RuntimeException(
-                'Cannot restore this revision because the event history does not contain a complete snapshot. Missing: ' .
-                implode(', ', $missing)
+                sprintf(
+                    trans_html(
+                        'Cannot restore this revision because the event history does not contain a complete snapshot. Missing: %s'
+                    ),
+                    implode(', ', $missing)
+                )
             );
         }
 

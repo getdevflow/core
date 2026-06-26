@@ -16,6 +16,7 @@ use ReflectionException;
 use RuntimeException;
 
 use function App\Shared\Helpers\current_user_can;
+use function Codefy\Framework\Helpers\trans_html;
 use function Qubus\Security\Helpers\purify_html;
 
 final readonly class ContentRevisionDiffService
@@ -41,7 +42,7 @@ final readonly class ContentRevisionDiffService
     public function diff(string $contentId, string $eventId): array
     {
         if (false === current_user_can(perm: 'view:content_revisions')) {
-            throw new RuntimeException('Access denied.');
+            throw new RuntimeException(trans_html('Access denied.'));
         }
 
         $target = $this->revisionEvent($contentId, $eventId);
@@ -94,6 +95,12 @@ final readonly class ContentRevisionDiffService
         return $changes;
     }
 
+    /**
+     * @param string $contentId
+     * @param string $eventId
+     * @return array
+     * @throws Exception
+     */
     private function revisionEvent(string $contentId, string $eventId): array
     {
         $event = $this->dfdb
@@ -104,7 +111,7 @@ final readonly class ContentRevisionDiffService
             ->findOne();
 
         if ($event === false) {
-            throw new RuntimeException('Revision not found.');
+            throw new RuntimeException(trans_html('Revision not found.'));
         }
 
         return $event->toArray();

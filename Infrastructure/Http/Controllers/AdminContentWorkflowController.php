@@ -7,8 +7,6 @@ namespace App\Infrastructure\Http\Controllers;
 use App\Infrastructure\Services\Content\Workflow\ContentRevisionDiffService;
 use App\Infrastructure\Services\Content\Workflow\ContentRevisionService;
 use App\Infrastructure\Services\Content\Workflow\ContentWorkflowService;
-use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
-use Codefy\CommandBus\Exceptions\UnresolvableCommandHandlerException;
 use Codefy\Framework\Http\BaseController;
 use JsonException;
 use Laminas\Diactoros\Response\JsonResponse;
@@ -87,6 +85,18 @@ final class AdminContentWorkflowController extends BaseController
         ]);
     }
 
+    /**
+     * @param ServerRequest $request
+     * @param ContentWorkflowService $workflow
+     * @param string $contentId
+     * @return ResponseInterface
+     * @throws ContainerExceptionInterface
+     * @throws Exception
+     * @throws InvalidArgumentException
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
+     * @throws TypeException
+     */
     public function completeReview(
         ServerRequest $request,
         ContentWorkflowService $workflow,
@@ -366,6 +376,17 @@ final class AdminContentWorkflowController extends BaseController
         return new JsonResponse(['success' => true]);
     }
 
+    /**
+     * @param ContentWorkflowService $workflow
+     * @param string $contentId
+     * @return ResponseInterface
+     * @throws ContainerExceptionInterface
+     * @throws Exception
+     * @throws InvalidArgumentException
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
+     * @throws TypeException
+     */
     public function commentSummary(ContentWorkflowService $workflow, string $contentId): ResponseInterface
     {
         return new JsonResponse([
@@ -422,6 +443,17 @@ final class AdminContentWorkflowController extends BaseController
         ];
     }
 
+    /**
+     * @param ContentWorkflowService $workflow
+     * @param string $contentId
+     * @return ResponseInterface
+     * @throws ContainerExceptionInterface
+     * @throws Exception
+     * @throws InvalidArgumentException
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
+     * @throws TypeException
+     */
     public function activity(ContentWorkflowService $workflow, string $contentId): ResponseInterface
     {
         return new JsonResponse([
@@ -455,15 +487,12 @@ final class AdminContentWorkflowController extends BaseController
      * @param ContentRevisionService $revisions
      * @param string $contentId
      * @return ResponseInterface
-     * @throws CommandPropertyNotFoundException
-     * @throws UnresolvableCommandHandlerException
-     * @throws JsonException
      * @throws ContainerExceptionInterface
-     * @throws NotFoundExceptionInterface
+     * @throws Exception
      * @throws InvalidArgumentException
-     * @throws TypeException
-     * @throws \Qubus\Exception\Exception
+     * @throws NotFoundExceptionInterface
      * @throws ReflectionException
+     * @throws TypeException
      */
     public function restoreRevision(
         ServerRequest $request,
@@ -479,7 +508,7 @@ final class AdminContentWorkflowController extends BaseController
 
         return new JsonResponse([
             'success' => true,
-            'message' => 'Revision restored as draft.',
+            'message' => trans_html('Revision restored as draft.'),
         ]);
     }
 
@@ -488,7 +517,13 @@ final class AdminContentWorkflowController extends BaseController
      * @param ContentRevisionDiffService $diff
      * @param string $contentId
      * @return ResponseInterface
-     * @throws \JsonException
+     * @throws ContainerExceptionInterface
+     * @throws Exception
+     * @throws InvalidArgumentException
+     * @throws JsonException
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
+     * @throws TypeException
      */
     public function revisionDiff(
         ServerRequest $request,

@@ -109,8 +109,8 @@ final readonly class ContentWorkflowService
                 userIds: $reviewers,
                 activityId: $activityId,
                 type: 'review_requested',
-                title: 'Content ready for review',
-                body: $message !== '' ? $message : 'A content item is ready for review.'
+                title: trans_html('Content ready for review'),
+                body: $message !== '' ? $message : trans_html('A content item is ready for review.')
             );
 
             return [
@@ -180,8 +180,8 @@ final readonly class ContentWorkflowService
                     userIds: $reviewers,
                     activityId: $activityId,
                     type: 'reviewers_assigned',
-                    title: 'Review assignment updated',
-                    body: 'You have been assigned to review content.'
+                    title: trans_html('Review assignment updated'),
+                    body: trans_html('You have been assigned to review content.')
                 );
             }
 
@@ -372,7 +372,7 @@ final readonly class ContentWorkflowService
             $reviewers = $workflow['reviewers'] ?? [];
 
             if (! in_array($userId, $reviewers, true) && false === current_user_can(perm: 'approve:content')) {
-                throw new RuntimeException('You are not assigned as a reviewer.');
+                throw new RuntimeException(trans_html('You are not assigned as a reviewer.'));
             }
 
             $reviewerStatus = $workflow['reviewer_status'] ?? [];
@@ -412,7 +412,7 @@ final readonly class ContentWorkflowService
                     contentId: $contentId,
                     userId: $userId,
                     type: 'review_ready',
-                    message: 'All assigned reviewers have completed their review.',
+                    message: trans_html('All assigned reviewers have completed their review.'),
                     metadata: [
                         'reviewers' => $reviewers,
                     ]
@@ -425,8 +425,8 @@ final readonly class ContentWorkflowService
                     userIds: $approvers,
                     activityId: $readyActivityId,
                     type: 'review_ready',
-                    title: 'Content ready for approval',
-                    body: 'All assigned reviewers have completed their review.'
+                    title: trans_html('Content ready for approval'),
+                    body: trans_html('All assigned reviewers have completed their review.')
                 );
             }
 
@@ -545,7 +545,7 @@ final readonly class ContentWorkflowService
         $this->assertCan('comment:content');
 
         if (trim($body) === '') {
-            throw new RuntimeException('Comment cannot be empty.');
+            throw new RuntimeException(trans_html('Comment cannot be empty.'));
         }
 
         $commentId = Ulid::generateAsString();
@@ -600,11 +600,11 @@ final readonly class ContentWorkflowService
             $content = $this->content($contentId);
 
             if ($content['content_status'] !== 'scheduled') {
-                throw new \RuntimeException('Content is not scheduled.');
+                throw new \RuntimeException(trans_html('Content is not scheduled.'));
             }
 
             if (strtotime((string) $content['content_published_gmt']) > time()) {
-                throw new \RuntimeException('Scheduled publish date has not passed.');
+                throw new \RuntimeException(trans_html('Scheduled publish date has not passed.'));
             }
 
             $attribute = $this->attribute($content['content_attribute'] ?? null);
@@ -623,7 +623,7 @@ final readonly class ContentWorkflowService
                 type: 'scheduled_published',
                 fromStatus: 'scheduled',
                 toStatus: 'published',
-                message: 'Scheduled content was published automatically.'
+                message: trans_html('Scheduled content was published automatically.')
             );
 
             return [
@@ -770,6 +770,11 @@ final readonly class ContentWorkflowService
         return $this->nestComments($rows);
     }
 
+    /**
+     * @param string $contentId
+     * @return array
+     * @throws \Qubus\Exception\Exception
+     */
     private function content(string $contentId): array
     {
         $row = $this->dfdb
@@ -778,7 +783,7 @@ final readonly class ContentWorkflowService
             ->findOne();
 
         if ($row === false) {
-            throw new \RuntimeException('Content not found.');
+            throw new \RuntimeException(trans_html('Content not found.'));
         }
 
         return $row->toArray();
@@ -803,6 +808,7 @@ final readonly class ContentWorkflowService
      * @param string $status
      * @param array $attribute
      * @throws TypeException
+     * @throws \Qubus\Exception\Exception
      */
     private function updateContent(string $contentId, string $status, array $attribute): void
     {
@@ -819,7 +825,7 @@ final readonly class ContentWorkflowService
         } catch (UnresolvableCommandHandlerException | ReflectionException | CommandPropertyNotFoundException $e) {
             logger('error', $e->getMessage());
 
-            throw new RuntimeException('Content workflow update failed.', previous: $e);
+            throw new RuntimeException(trans_html('Content workflow update failed.'), previous: $e);
         }
     }
 
@@ -839,7 +845,7 @@ final readonly class ContentWorkflowService
     public function updateComment(string $commentId, string $userId, string $body): array
     {
         if (trim($body) === '') {
-            throw new RuntimeException('Comment cannot be empty.');
+            throw new RuntimeException(trans_html('Comment cannot be empty.'));
         }
 
         $comment = $this->commentById($commentId);
@@ -848,7 +854,7 @@ final readonly class ContentWorkflowService
                 (string) $comment['user_id'] !== $userId &&
                 false === current_user_can(perm: 'edit:content_comments')
         ) {
-            throw new RuntimeException('Access denied.');
+            throw new RuntimeException(trans_html('Access denied.'));
         }
 
         $updatedAt = $this->now();
@@ -901,7 +907,7 @@ final readonly class ContentWorkflowService
         $parent = $this->commentById($parentId);
 
         if ((string) $parent['content_id'] !== $contentId) {
-            throw new RuntimeException('Parent comment does not belong to this content.');
+            throw new RuntimeException(trans_html('Parent comment does not belong to this content.'));
         }
 
         return $this->comment(
@@ -1005,7 +1011,7 @@ final readonly class ContentWorkflowService
         $comment = $this->commentById($commentId);
 
         if (false === current_user_can(perm: 'delete:content_comments')) {
-            throw new RuntimeException('Access denied.');
+            throw new RuntimeException(trans_html('Access denied.'));
         }
 
         $this->dfdb
@@ -1093,7 +1099,7 @@ final readonly class ContentWorkflowService
             ->findOne();
 
         if ($row === false) {
-            throw new RuntimeException('Comment not found.');
+            throw new RuntimeException(trans_html('Comment not found.'));
         }
 
         return $row->toArray();
@@ -1152,6 +1158,11 @@ final readonly class ContentWorkflowService
         return $activityId;
     }
 
+    /**
+     * @throws ReflectionException
+     * @throws InvalidArgumentException
+     * @throws \Qubus\Exception\Exception
+     */
     private function notifyMany(
         string $contentId,
         array $userIds,
@@ -1190,7 +1201,7 @@ final readonly class ContentWorkflowService
             userIds: $userIds,
             title: $title,
             message: $body !== '' ? $body : $title,
-            type: str_starts_with($type, 'comment_') ? 'Editorial Comment' : 'Editorial Workflow',
+            type: str_starts_with($type, 'comment_') ? trans_html('Editorial Comment') : trans_html('Editorial Workflow'),
             anchor: $anchor
         );
     }
@@ -1265,6 +1276,12 @@ final readonly class ContentWorkflowService
         return true;
     }
 
+    /**
+     * @param array $workflow
+     * @param array|string $allowedStages
+     * @return void
+     * @throws \Qubus\Exception\Exception
+     */
     private function assertWorkflowStage(array $workflow, array|string $allowedStages): void
     {
         $allowedStages = (array) $allowedStages;
@@ -1272,13 +1289,19 @@ final readonly class ContentWorkflowService
 
         if (! in_array($currentStage, $allowedStages, true)) {
             throw new RuntimeException(sprintf(
-                'Invalid workflow stage. Expected one of [%s], current stage is [%s].',
+                trans_html('Invalid workflow stage. Expected one of [%s], current stage is [%s].'),
                 implode(', ', $allowedStages),
                 $currentStage !== '' ? $currentStage : 'none'
             ));
         }
     }
 
+    /**
+     * @param array $content
+     * @param array|string $allowedStatuses
+     * @return void
+     * @throws \Qubus\Exception\Exception
+     */
     private function assertContentStatus(array $content, array|string $allowedStatuses): void
     {
         $allowedStatuses = (array) $allowedStatuses;
@@ -1286,7 +1309,7 @@ final readonly class ContentWorkflowService
 
         if (! in_array($currentStatus, $allowedStatuses, true)) {
             throw new RuntimeException(sprintf(
-                'Invalid content status. Expected one of [%s], current status is [%s].',
+                trans_html('Invalid content status. Expected one of [%s], current status is [%s].'),
                 implode(', ', $allowedStatuses),
                 $currentStatus !== '' ? $currentStatus : 'none'
             ));
@@ -1306,7 +1329,7 @@ final readonly class ContentWorkflowService
     private function assertCan(string $permission): void
     {
         if (false === current_user_can(perm: $permission)) {
-            throw new \RuntimeException('Access denied.');
+            throw new \RuntimeException(trans_html('Access denied.'));
         }
     }
 
@@ -1353,10 +1376,9 @@ final readonly class ContentWorkflowService
             path: 'content-type/' .
             (string) ($content['content_type'] ?? 'post') .
             '/' .
-            $contentId .
-            '/#' .
-            $anchor
-        );
+            $contentId
+        ) . '/#' .
+        $anchor;
 
         foreach ($users as $user) {
             $email = (string) ($user['user_email'] ?? '');
@@ -1376,8 +1398,8 @@ final readonly class ContentWorkflowService
 
             queue(
                 new ContentWorkflowEmailNotification([
-                    'email' => $email,
-                    'user' => $name,
+                    'email' => esc_html($email),
+                    'user' => esc_html($name),
                     'sitename' => (string) get_option('sitename'),
                     'notification_type' => $type,
                     'notification_title' => $title,
@@ -1392,11 +1414,13 @@ final readonly class ContentWorkflowService
     /**
      * @param string $contentId
      * @param string $actorUserId
-     * @param string|null $parentId
      * @param string $activityId
      * @param string $body
+     * @param string|null $parentId
      * @return void
+     * @throws InvalidArgumentException
      * @throws JsonException
+     * @throws ReflectionException
      * @throws \Qubus\Exception\Exception
      */
     private function notifyCommentUsers(
