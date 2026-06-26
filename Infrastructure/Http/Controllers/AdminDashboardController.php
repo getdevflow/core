@@ -75,7 +75,7 @@ final class AdminDashboardController extends BaseController
      */
     public function snapshot(): ResponseInterface|string
     {
-        if (false === current_user_can(perm: 'manage:settings')) {
+        if (false === current_user_can(perm: 'change:settings')) {
             Devflow::$PHP->flash->error(
                 message: trans('Access denied.')
             );
