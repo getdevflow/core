@@ -468,7 +468,7 @@ final class AdminUserController extends BaseController
      */
     public function userResetPassword(ServerRequest $request, string $userId): ResponseInterface
     {
-        if (false === current_user_can(perm: 'update:users')) {
+        if (false === current_user_can(perm: 'update:users') || false === current_user_can(perm: 'reset:password')) {
             Devflow::$PHP->flash->error(
                 message: trans('Access denied.')
             );
