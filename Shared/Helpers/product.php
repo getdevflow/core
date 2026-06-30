@@ -2220,7 +2220,13 @@ function publish_scheduled_product(): void
                 command($command);
             }
 
-            $event->dispatch(new ProductUpdated($product));
+            $event->dispatch(
+                new ProductUpdated(
+                    product: $product,
+                    actorId: get_current_user_id(),
+                    context: [__CLASS__, __METHOD__],
+                )
+            );
         }
     } catch (PDOException $ex) {
         logger(
