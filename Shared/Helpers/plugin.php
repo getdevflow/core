@@ -298,7 +298,7 @@ function plugin_info(string $pluginsDir = ''): array
  */
 function global_plugin_info(): array
 {
-    $path = config()->string(key: 'cms.global_plugin_dir', default: '');
+    $path = config()->string(key: 'cms.global_plugin_dir', default: base_path(path: 'Cms/Infrastructure/Plugin'));
 
     if (! is_dir($path)) {
         return [];
