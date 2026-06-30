@@ -30,7 +30,6 @@ use function App\Shared\Helpers\deactivate_theme;
 use function App\Shared\Helpers\get_option;
 use function App\Shared\Helpers\is_main_site;
 use function App\Shared\Helpers\is_super_admin;
-use function App\Shared\Helpers\is_user_logged_in;
 use function App\Shared\Helpers\set_theme_available_for_subsites;
 use function Codefy\Framework\Helpers\logger;
 use function Codefy\Framework\Helpers\trans;
