@@ -196,7 +196,7 @@ final class AdminOptionsController extends BaseController
      */
     public function settingsView(): ResponseInterface
     {
-        if (!current_user_can(perm: 'manage:settings')) {
+        if (!current_user_can(perm: 'change:settings')) {
             Devflow::$PHP->flash->error(
                 message: trans('Access denied'),
             );
