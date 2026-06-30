@@ -27,6 +27,7 @@ use function App\Shared\Helpers\cms_enqueue_css;
 use function App\Shared\Helpers\cms_enqueue_js;
 use function App\Shared\Helpers\current_user_can;
 use function App\Shared\Helpers\deactivate_theme;
+use function App\Shared\Helpers\get_option;
 use function App\Shared\Helpers\is_main_site;
 use function App\Shared\Helpers\is_super_admin;
 use function App\Shared\Helpers\is_user_logged_in;
@@ -36,6 +37,7 @@ use function Codefy\Framework\Helpers\trans;
 use function Codefy\Framework\Helpers\view;
 use function in_array;
 use function is_string;
+use function strtoupper;
 
 final class AdminThemeController extends BaseController
 {
@@ -108,7 +110,7 @@ final class AdminThemeController extends BaseController
         }
 
         try {
-            activate_theme($request->getQueryParams()['id']);
+            activate_theme($request->getParsedBody()['theme_id']);
 
             Devflow::$PHP->flash->success(trans('Theme activated.'));
         } catch (\Exception $e) {
@@ -141,6 +143,17 @@ final class AdminThemeController extends BaseController
             );
 
             return $this->redirect($request->getHeaderLine('Referer'));
+        }
+
+        if (
+                strtoupper($request->getMethod()) !== 'POST'
+                && $request->getParsedBody()['theme_id'] !== get_option(key: 'site_theme')
+        ) {
+            Devflow::$PHP->flash->error(
+                message: trans('Access denied.')
+            );
+
+            return $this->redirect(admin_url('theme/'));
         }
 
         try {
