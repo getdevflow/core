@@ -298,13 +298,13 @@ function plugin_info(string $pluginsDir = ''): array
  */
 function global_plugin_info(): array
 {
-    $path = config()->string(key: 'cms.global_plugin_dir');
+    $path = config()->string(key: 'cms.global_plugin_dir', default: '');
 
     if (! is_dir($path)) {
         return [];
     }
 
-    $plugins = plugin_info($path ?? '');
+    $plugins = plugin_info($path);
 
     usort(
         $plugins,
