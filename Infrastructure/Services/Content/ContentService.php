@@ -36,6 +36,7 @@ use ReflectionException;
 use function App\Shared\Helpers\admin_url;
 use function App\Shared\Helpers\get_content_by_id;
 use function App\Shared\Helpers\get_content_type_by;
+use function App\Shared\Helpers\get_current_user_id;
 use function App\Shared\Helpers\is_content_parent;
 use function Codefy\Framework\Helpers\abort;
 use function Codefy\Framework\Helpers\command;
@@ -118,7 +119,13 @@ final readonly class ContentService
             /** @var Content $content */
             $content = get_content_by_id($data->toDtoArray()['id']->toNative());
 
-            $this->event->dispatch(new ContentCreated($content->toArray()));
+            $this->event->dispatch(
+                new ContentCreated(
+                    content: $content->toArray(),
+                    actorId: get_current_user_id(),
+                    context: [__CLASS__, __METHOD__]
+                )
+            );
 
             /**
              * Action hook triggered after content is created.
@@ -160,7 +167,13 @@ final readonly class ContentService
             /** @var Content $content */
             $content = get_content_by_id($data->toDtoArray()['id']->toNative());
 
-            $this->event->dispatch(new ContentUpdated($content->toArray()));
+            $this->event->dispatch(
+                new ContentUpdated(
+                    content: $content->toArray(),
+                    actorId: get_current_user_id(),
+                    context: [__CLASS__, __METHOD__],
+                )
+            );
 
             /**
              * Action hook triggered after existing content has been updated.
@@ -206,7 +219,13 @@ final readonly class ContentService
             /** @var Content $content */
             $content = get_content_by_id($data->toDtoArray()['id']->toNative());
 
-            $this->event->dispatch(new ContentUpdated($content->toArray()));
+            $this->event->dispatch(
+                new ContentUpdated(
+                    content: $content->toArray(),
+                    actorId: get_current_user_id(),
+                    context: [__CLASS__, __METHOD__],
+                )
+            );
 
             Devflow::$PHP->flash->success(
                 message: trans('Removal of featured image was successful.')
@@ -283,7 +302,13 @@ final readonly class ContentService
 
             ContentCachePsr16::clean($content->toArray());
 
-            $this->event->dispatch(new ContentDeleted($contentId));
+            $this->event->dispatch(
+                new ContentDeleted(
+                    contentId: $contentId,
+                    actorId: get_current_user_id(),
+                    context: [__CLASS__, __METHOD__],
+                )
+            );
 
             /**
              * Action hook fires immediately after a content is deleted from the database.
