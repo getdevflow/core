@@ -23,6 +23,7 @@ use ReflectionException;
 use function class_exists;
 use function Codefy\Framework\Helpers\app;
 use function Codefy\Framework\Helpers\base_path;
+use function Codefy\Framework\Helpers\config;
 use function Codefy\Framework\Helpers\logger;
 use function Codefy\Framework\Helpers\public_path;
 use function dirname;
@@ -292,6 +293,29 @@ function plugin_info(string $pluginsDir = ''): array
 }
 
 /**
+ * @return array
+ * @throws TypeException
+ */
+function global_plugin_info(): array
+{
+    $path = config()->string(key: 'cms.global_plugin_dir');
+
+    if (! is_dir($path)) {
+        return [];
+    }
+
+    $plugins = plugin_info($path ?? '');
+
+    usort(
+        $plugins,
+        static fn (array $a, array $b): int =>
+        strcasecmp((string) ($a['name'] ?? ''), (string) ($b['name'] ?? ''))
+    );
+
+    return $plugins;
+}
+
+/**
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  * @throws ContainerExceptionInterface
@@ -384,4 +408,29 @@ function load_site_plugins(): void
     }
 
     __observer()->action->doAction('site_plugins_loaded', $siteId);
+}
+
+/**
+ * @return void
+ * @throws TypeException
+ * @throws \Qubus\Exception\Exception
+ */
+function load_global_plugins(): void
+{
+    foreach (global_plugin_info() as $plugin) {
+        $class = (string) ($plugin['className'] ?? '');
+
+        if ($class === '' || ! class_exists($class)) {
+            continue;
+        }
+
+        Devflow::$PHP->execute([$class, 'handle']);
+
+        /**
+         * Fires once a single global plugin has loaded.
+         *
+         * @param $string $class Class name of the global plugin that was loaded.
+         */
+        __observer()->action->doAction('global_plugin_loaded', $class);
+    }
 }
