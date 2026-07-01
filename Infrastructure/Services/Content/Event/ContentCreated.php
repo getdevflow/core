@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Services\Content\Event;
 
+use Qubus\Support\DateTime\QubusDateTimeImmutable;
+
 final readonly class ContentCreated
 {
     /**
@@ -28,6 +30,9 @@ final readonly class ContentCreated
      */
     public function __construct(
         public array $content,
+        public string|null $actorId = null,
+        public array $context = [],
+        public QubusDateTimeImmutable $occurredAt = new QubusDateTimeImmutable(time: 'now'),
     ) {
     }
 }

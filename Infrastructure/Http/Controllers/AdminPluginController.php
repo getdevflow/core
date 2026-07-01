@@ -81,7 +81,7 @@ final class AdminPluginController extends BaseController
         }
 
         try {
-            activate_plugin($request->getQueryParams()['id']);
+            activate_plugin($request->getParsedBody()['plugin_id']);
 
             Devflow::$PHP->flash->success(trans('Plugin activated.'));
         } catch (\Exception $e) {
@@ -113,7 +113,7 @@ final class AdminPluginController extends BaseController
         }
 
         try {
-            deactivate_plugin($request->getQueryParams()['id']);
+            deactivate_plugin($request->getParsedBody()['plugin_id']);
 
             Devflow::$PHP->flash->success(trans('Plugin deactivated.'));
         } catch (\Exception $e) {

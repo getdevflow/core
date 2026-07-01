@@ -97,7 +97,13 @@ final readonly class ProductService
             /** @var Product $product */
             $product = get_product_by_id($data->toDtoArray()['id']->toNative());
 
-            $this->event->dispatch(new ProductCreated($product->toArray(), get_current_user_id()));
+            $this->event->dispatch(
+                new ProductCreated(
+                    product: $product->toArray(),
+                    actorId: get_current_user_id(),
+                    context: [__CLASS__, __METHOD__]
+                )
+            );
 
             /**
              * Action hook triggered after product is created.
@@ -140,7 +146,13 @@ final readonly class ProductService
             /** @var Product $product */
             $product = get_product_by_id($data->toDtoArray()['id']->toNative());
 
-            $this->event->dispatch(new ProductUpdated($product->toArray(), get_current_user_id()));
+            $this->event->dispatch(
+                new ProductUpdated(
+                    product: $product->toArray(),
+                    actorId: get_current_user_id(),
+                    context: [__CLASS__, __METHOD__]
+                )
+            );
 
             /**
              * Action hook triggered after existing product has been updated.
@@ -186,7 +198,13 @@ final readonly class ProductService
             /** @var Product $product */
             $product = get_product_by_id($data->toDtoArray()['id']->toNative());
 
-            $this->event->dispatch(new ProductUpdated($product->toArray(), get_current_user_id()));
+            $this->event->dispatch(
+                new ProductUpdated(
+                    product: $product->toArray(),
+                    actorId: get_current_user_id(),
+                    context: [__CLASS__, __METHOD__]
+                )
+            );
 
             Devflow::$PHP->flash->success(
                 message: trans('Removal of featured image was successful.')
@@ -230,7 +248,13 @@ final readonly class ProductService
 
             ProductCachePsr16::clean($product->toArray());
 
-            $this->event->dispatch(new ProductDeleted($productId, get_current_user_id()));
+            $this->event->dispatch(
+                new ProductDeleted(
+                    productId: $productId,
+                    actorId: get_current_user_id(),
+                    context: [__CLASS__, __METHOD__]
+                )
+            );
 
             /**
              * Action hook fires immediately after a product is deleted from the product document.

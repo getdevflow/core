@@ -608,7 +608,7 @@ function get_auth_screen_logo(): string
      * @var string $logo The auth logo.
      */
     $logo = __observer()->filter->applyFilter('auth.logo', $authLogo);
-    return '<img src="' . $logo . '" alt="auth-logo" title="auth-logo">';
+    return '<a href="'.site_url().'"><img src="' . $logo . '" alt="auth-logo" title="auth-logo"></a>';
 }
 
 /**
