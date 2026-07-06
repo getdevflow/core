@@ -12,6 +12,8 @@ use Psr\Http\Server\RequestHandlerInterface;
 use Qubus\Exception\Exception;
 use Qubus\Expressive\Database;
 
+use function strtolower;
+
 final readonly class CurrentSiteMiddleware implements MiddlewareInterface
 {
     public function __construct(private Database $dfdb)
@@ -25,8 +27,9 @@ final readonly class CurrentSiteMiddleware implements MiddlewareInterface
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
         $host = strtolower($request->getUri()->getHost());
+        $request = $request->withAttribute('site', false);
 
-        $results = $this->dfdb->getResults(
+        $results = $this->dfdb->getRow(
             $this->dfdb->prepare(
                 "SELECT * FROM {$this->dfdb->basePrefix}site WHERE site_domain = ? OR site_mapping = ?",
                 [
@@ -37,13 +40,9 @@ final readonly class CurrentSiteMiddleware implements MiddlewareInterface
             Database::ARRAY_A
         );
 
-        if ($results !== false) {
-            $site = new Site($this->dfdb);
-            $site->create($results);
-
+        if ($results !== null) {
+            $site = new Site($this->dfdb)->create($results);
             $request = $request->withAttribute('site', $site);
-        } else {
-            $request = $request->withAttribute('site', false);
         }
 
         return $handler->handle($request);

@@ -23,7 +23,7 @@ class ArchivedSiteMiddleware implements MiddlewareInterface
         $site = $request->getAttribute('site');
 
         if ($site === false) {
-            return view(template: 'framework::error/404');
+            return view(template: 'framework::error/404')->withStatus(404);
         }
 
         if ($site->status !== 'archive') {
