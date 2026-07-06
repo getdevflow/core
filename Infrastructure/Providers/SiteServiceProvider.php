@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Providers;
 
+use App\Domain\Site\Model\Site;
 use App\Shared\Services\Registry;
 use Codefy\Framework\Support\CodefyServiceProvider;
 use PDOException;
@@ -11,6 +12,7 @@ use Psr\Http\Message\RequestInterface;
 use Qubus\Exception\Exception;
 use ReflectionException;
 
+use function App\Shared\Helpers\get_site_by;
 use function Codefy\Framework\Helpers\logger;
 use function date_default_timezone_set;
 use function file_exists;
@@ -31,6 +33,7 @@ final class SiteServiceProvider extends CodefyServiceProvider
         date_default_timezone_set($this->codefy->configContainer->string(key: 'app.timezone', default: 'UTC'));
 
         $this->registerSiteKey();
+        $this->registerCurrentSite();
     }
 
     /**
@@ -39,7 +42,7 @@ final class SiteServiceProvider extends CodefyServiceProvider
      */
     private function registerSiteKey(): void
     {
-        if(!file_exists($this->codefy->storagePath() . '/install.lock')) {
+        if (!file_exists($this->codefy->storagePath() . '/install.lock')) {
             return;
         }
 
@@ -59,7 +62,7 @@ final class SiteServiceProvider extends CodefyServiceProvider
             $currentSiteKey = $sth->fetchColumn();
 
             if (false === $currentSiteKey) {
-                $siteKey = $prefix;
+                $siteKey = null;
             } else {
                 $siteKey = esc_html($currentSiteKey);
             }
@@ -68,10 +71,17 @@ final class SiteServiceProvider extends CodefyServiceProvider
              */
             Registry::getInstance()->set('siteKey', $siteKey);
         } catch (PDOException $ex) {
-           logger(
+            logger(
                 level: 'error',
                 message: sprintf('CURRENT_SITEKEY[%s]: %s', $ex->getCode(), $ex->getMessage())
             );
         }
+    }
+
+    private function registerCurrentSite(): void
+    {
+        $this->codefy->singleton('current-site', function (): Site|false {
+            return get_site_by(field: 'key', value: Registry::getInstance()->get('siteKey') ?? '');
+        });
     }
 }
