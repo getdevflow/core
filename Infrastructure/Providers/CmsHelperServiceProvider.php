@@ -73,7 +73,6 @@ final class CmsHelperServiceProvider extends CodefyServiceProvider
          */
         __observer()->action->addAction('cms_admin_head', 'App\Shared\Helpers\admin_enqueue_head', 5);
         __observer()->action->addAction('cms_admin_footer', 'App\Shared\Helpers\admin_enqueue_footer', 5);
-        __observer()->action->addAction('login_form_top', 'App\Shared\Helpers\cms_login_form_show_message', 5);
         __observer()->action->addAction('admin_notices', 'App\Shared\Helpers\advisory_alert_message', 5);
         __observer()->action->addAction('admin_notices', 'App\Shared\Helpers\cms_dev_mode', 5);
         __observer()->action->addAction('admin_notices', 'App\Shared\Helpers\show_update_message', 5);
@@ -89,10 +88,8 @@ final class CmsHelperServiceProvider extends CodefyServiceProvider
             5,
             2
         );
-        __observer()->action->addAction('before_router_login', 'App\Shared\Helpers\does_site_exist', 6);
         __observer()->action->addAction('enqueue_cms_editor', 'App\Shared\Helpers\cms_editor', 5);
         __observer()->action->addAction('flush_cache', 'App\Shared\Helpers\populate_options_cache', 5);
-        __observer()->action->addAction('maintenance_mode', 'App\Shared\Helpers\cms_maintenance_mode', 1);
         __observer()->filter->addFilter('the.body', [Parsecode::getInstance(), 'autop']);
         __observer()->filter->addFilter('the.body', [Parsecode::getInstance(), 'unAutop']);
         __observer()->filter->addFilter('the.body', [Parsecode::getInstance(), 'doParsecode'], 5);
