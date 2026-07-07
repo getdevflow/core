@@ -34,7 +34,7 @@ use function App\Shared\Helpers\site_url;
 use function Codefy\Framework\Helpers\config;
 use function Codefy\Framework\Helpers\logger;
 use function Codefy\Framework\Helpers\queue;
-use function Codefy\Framework\Helpers\trans;
+use function Codefy\Framework\Helpers\trans_html;
 use function Codefy\Framework\Helpers\view;
 use function Qubus\Error\Helpers\is_error;
 use function Qubus\Security\Helpers\__observer;
@@ -46,6 +46,7 @@ final class AdminAuthController extends BaseController
     /**
      * @param ServerRequest $request
      * @return ResponseInterface
+     * @throws Exception
      */
     public function auth(ServerRequest $request): ResponseInterface
     {
@@ -80,7 +81,8 @@ final class AdminAuthController extends BaseController
             Exception |
             ReflectionException $e
         ) {
-            Devflow::$PHP->flash->error($e->getMessage());
+            logger('error', $e->getMessage());
+            Devflow::$PHP->flash->error(trans_html('Login exception occurred and was logged.'));
         }
 
         return $this->redirect($request->getHeaderLine(name: 'Referer'));
@@ -107,7 +109,7 @@ final class AdminAuthController extends BaseController
         return view(
             template: 'framework::backend/auth/index',
             data: [
-                'title' => trans('Login'),
+                'title' => trans_html('Login'),
                 'url' => site_url($this->router->url(name: 'admin.auth')),
             ]
         );
@@ -144,7 +146,7 @@ final class AdminAuthController extends BaseController
 
         if (false === current_user_can(perm: 'access:admin')) {
             Devflow::$PHP->flash->error(
-                message: trans('You are already logged out.')
+                message: trans_html('You are already logged out.')
             );
             return $this->redirect($redirectLink);
         }
@@ -178,7 +180,7 @@ final class AdminAuthController extends BaseController
             $currentUser = get_user_by('email', $request->getParsedBody()['email']);
             if (is_false__($currentUser)) {
                 Devflow::$PHP->flash->error(
-                    message: trans('Request error.')
+                    message: trans_html('Request error.')
                 );
 
                 return $this->redirect($request->getHeaderLine(name: 'Referer'));
@@ -189,7 +191,7 @@ final class AdminAuthController extends BaseController
 
                 if (is_error($password)) {
                     Devflow::$PHP->flash->error(
-                        message: trans('Request error.')
+                        message: trans_html('Request error.')
                     );
                 } else {
                     queue(
@@ -206,7 +208,7 @@ final class AdminAuthController extends BaseController
                     UserCachePsr16::clean($currentUser);
 
                     Devflow::$PHP->flash->success(
-                        message: trans(
+                        message: trans_html(
                             'A new password was sent to your email. May take a few minutes to arrive, so please be patient',
                         )
                     );
@@ -217,7 +219,7 @@ final class AdminAuthController extends BaseController
         } catch (\Exception | NotFoundExceptionInterface | ContainerExceptionInterface $e) {
             logger('error', $e->getMessage());
             Devflow::$PHP->flash->error(
-                trans('Password reset exception occurred and was logged.')
+                trans_html('Password reset exception occurred and was logged.')
             );
         }
 

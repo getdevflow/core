@@ -13,6 +13,7 @@ use Psr\Container\NotFoundExceptionInterface;
 use Psr\Log\LoggerInterface;
 use Psr\SimpleCache\CacheInterface;
 use Psr\SimpleCache\InvalidArgumentException;
+use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
 use ReflectionException;
 use RuntimeException;
@@ -126,9 +127,10 @@ final class Updater
      * @param string|null $tempDir
      * @param string|null $installDir
      * @param int $maxExecutionTime
-     * @throws ReflectionException
      * @throws ContainerExceptionInterface
      * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
+     * @throws TypeException
      */
     public function __construct(?string $tempDir = null, ?string $installDir = null, int $maxExecutionTime = 60)
     {

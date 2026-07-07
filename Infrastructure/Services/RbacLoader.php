@@ -56,12 +56,12 @@ final readonly class RbacLoader
                     }
                 }
             }
-        }
 
-        $parent?->addChild($role);
+            $parent?->addChild($role);
 
-        if (!empty($config['roles'])) {
-            $this->addRoles(rolesConfig: $config['roles'], parent: $role);
+            if (!empty($config['roles'])) {
+                $this->addRoles(rolesConfig: $config['roles'], parent: $role);
+            }
         }
     }
 

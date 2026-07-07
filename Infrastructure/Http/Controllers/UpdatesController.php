@@ -19,7 +19,6 @@ use Throwable;
 use function App\Shared\Helpers\admin_url;
 use function App\Shared\Helpers\current_user_can;
 use function App\Shared\Helpers\is_main_site;
-use function Codefy\Framework\Helpers\trans;
 use function Codefy\Framework\Helpers\trans_html;
 use function Codefy\Framework\Helpers\view;
 use function Qubus\Routing\Helpers\redirect;
@@ -43,20 +42,21 @@ final readonly class UpdatesController
     {
         if (false === current_user_can(perm: 'core:updates')) {
             Devflow::$PHP->flash->error(
-                message: trans('Access denied.')
+                message: trans_html('Access denied.')
             );
             return redirect(admin_url());
         }
 
         if (!is_main_site()) {
             Devflow::$PHP->flash->error(
-                message: trans('Access denied.')
+                message: trans_html('Access denied.')
             );
 
             return redirect(admin_url());
         }
 
         return view('framework::backend/updates', [
+            'title' => trans_html('Updates'),
             'updates' => $this->updates->overview(),
         ]);
     }
@@ -75,7 +75,7 @@ final readonly class UpdatesController
     {
         if (false === current_user_can(perm: 'core:updates')) {
             Devflow::$PHP->flash->error(
-                message: trans('Access denied.')
+                message: trans_html('Access denied.')
             );
             return redirect(admin_url());
         }
@@ -97,7 +97,7 @@ final readonly class UpdatesController
     {
         if (false === current_user_can(perm: 'core:updates')) {
             Devflow::$PHP->flash->error(
-                message: trans('Access denied.')
+                message: trans_html('Access denied.')
             );
             return redirect(admin_url());
         }
@@ -118,7 +118,7 @@ final readonly class UpdatesController
     {
         if (false === current_user_can(perm: 'core:updates')) {
             Devflow::$PHP->flash->error(
-                message: trans('Access denied.')
+                message: trans_html('Access denied.')
             );
             return redirect(admin_url());
         }
@@ -139,7 +139,7 @@ final readonly class UpdatesController
     {
         if (false === current_user_can(perm: 'core:updates')) {
             Devflow::$PHP->flash->error(
-                message: trans('Access denied.')
+                message: trans_html('Access denied.')
             );
             return redirect(admin_url());
         }

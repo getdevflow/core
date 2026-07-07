@@ -10,6 +10,7 @@ use Qubus\Exception\Exception;
 use Qubus\Expressive\Database;
 use ReflectionException;
 
+use function Codefy\Framework\Helpers\trans_html;
 use function is_string;
 use function sprintf;
 
@@ -155,7 +156,7 @@ final readonly class PdoAttributeDataRepository implements AttributeRepository
             $updated = $callback($current);
 
             if (!$updated instanceof AttributeBag) {
-                throw new \RuntimeException('Attribute patch callback must return an AttributeBag.');
+                throw new \RuntimeException(trans_html('Attribute patch callback must return an AttributeBag.'));
             }
 
             $update = $this->dfdb->getConnection()->pdo->prepare(

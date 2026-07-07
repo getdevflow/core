@@ -38,9 +38,10 @@ use function App\Shared\Helpers\admin_url;
 use function App\Shared\Helpers\current_user_can;
 use function App\Shared\Helpers\get_product_by_id;
 use function Codefy\Framework\Helpers\logger;
-use function Codefy\Framework\Helpers\trans;
+use function Codefy\Framework\Helpers\trans_html;
 use function Codefy\Framework\Helpers\view;
 use function Qubus\Support\Helpers\is_false__;
+use function sprintf;
 
 final class AdminProductController extends BaseController
 {
@@ -60,7 +61,7 @@ final class AdminProductController extends BaseController
     {
         if (false === current_user_can(perm: 'manage:products')) {
             Devflow::$PHP->flash->error(
-                message: trans('Access denied.'),
+                message: trans_html('Access denied.'),
             );
             return $this->redirect(admin_url());
         }
@@ -70,7 +71,7 @@ final class AdminProductController extends BaseController
         return view(
             template: 'framework::backend/admin/product/index',
             data: [
-                'title' => trans(string: 'Products'),
+                'title' => trans_html(string: 'Products'),
                 'products' => $products,
             ]
         );
@@ -104,7 +105,7 @@ final class AdminProductController extends BaseController
             )
         );
 
-        return $this->redirect(admin_url(path: "product/{$id}/"));
+        return $this->redirect(admin_url(path: sprintf("product/%s/", $id)));
     }
 
     /**
@@ -123,7 +124,7 @@ final class AdminProductController extends BaseController
     {
         if (false === current_user_can(perm: 'create:product')) {
             Devflow::$PHP->flash->error(
-                message: trans('Access denied.')
+                message: trans_html('Access denied.')
             );
             return $this->redirect(admin_url());
         }
@@ -131,7 +132,7 @@ final class AdminProductController extends BaseController
         return view(
             template: 'framework::backend/admin/product/create',
             data: [
-                'title' => trans('Create Product'),
+                'title' => trans_html('Create Product'),
                 'request' => $request->getParsedBody(),
             ]
         );
@@ -168,7 +169,7 @@ final class AdminProductController extends BaseController
             )
         );
 
-        return $this->redirect(admin_url(path: "product/{$productId}/"));
+        return $this->redirect(admin_url(path: sprintf("product/%s/", $productId)));
     }
 
     /**
@@ -188,7 +189,7 @@ final class AdminProductController extends BaseController
     {
         if (false === current_user_can(perm: 'update:product')) {
             Devflow::$PHP->flash->error(
-                message: trans('Access denied.')
+                message: trans_html('Access denied.')
             );
             return $this->redirect(admin_url());
         }
@@ -199,7 +200,7 @@ final class AdminProductController extends BaseController
 
             if (empty($product->id) || is_false__($product)) {
                 return JsonResponseFactory::create(
-                    data: trans('The product does not exist.'),
+                    data: trans_html('The product does not exist.'),
                     status: 404
                 );
             }
@@ -220,7 +221,7 @@ final class AdminProductController extends BaseController
             logger('error', $e->getMessage());
         }
 
-        return JsonResponseFactory::create(data: trans('The product does not exist.'), status: 404);
+        return JsonResponseFactory::create(data: trans_html('The product does not exist.'), status: 404);
     }
 
     /**

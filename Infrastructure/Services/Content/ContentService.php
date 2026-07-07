@@ -41,7 +41,7 @@ use function App\Shared\Helpers\is_content_parent;
 use function Codefy\Framework\Helpers\abort;
 use function Codefy\Framework\Helpers\command;
 use function Codefy\Framework\Helpers\logger;
-use function Codefy\Framework\Helpers\trans;
+use function Codefy\Framework\Helpers\trans_html;
 use function Qubus\Security\Helpers\__observer;
 use function Qubus\Support\Helpers\is_false__;
 use function sprintf;
@@ -69,9 +69,7 @@ final readonly class ContentService
             abort(
                 code: 404,
                 uri: admin_url(),
-                message: trans(
-                    sprintf('The content type slug `%s` does not exist.', $type),
-                )
+                message: sprintf(trans_html('The content type slug `%s` does not exist.'), $type),
             );
         }
 
@@ -95,7 +93,7 @@ final readonly class ContentService
             abort(
                 code: 404,
                 uri: admin_url(),
-                message: trans('The content does not exist.')
+                message: trans_html('The content does not exist.')
             );
         }
 
@@ -135,7 +133,7 @@ final readonly class ContentService
             __observer()->action->doAction('create_content', $content);
 
             Devflow::$PHP->flash->success(
-                message: trans('Content added successfully.'),
+                message: trans_html('Content added successfully.'),
             );
         } catch (
             ContainerExceptionInterface |
@@ -148,13 +146,18 @@ final readonly class ContentService
             logger(level: 'error', message: $e->getMessage(), context: ['ContentService' => 'createContent']);
 
             Devflow::$PHP->flash->error(
-                message: trans('Could not create content. Please try again later.'),
+                message: trans_html('Could not create content. Please try again later.'),
             );
         }
 
         return $data->validated()['id'];
     }
 
+    /**
+     * @param UpdateContentValidator $data
+     * @return void
+     * @throws \Qubus\Exception\Exception
+     */
     public function updateContent(UpdateContentValidator $data): void
     {
         try {
@@ -196,7 +199,7 @@ final readonly class ContentService
             logger('error', $e->getMessage());
 
             Devflow::$PHP->flash->error(
-                message: trans('Change exception occurred and was logged.')
+                message: trans_html('Change exception occurred and was logged.')
             );
         }
     }
@@ -228,7 +231,7 @@ final readonly class ContentService
             );
 
             Devflow::$PHP->flash->success(
-                message: trans('Removal of featured image was successful.')
+                message: trans_html('Removal of featured image was successful.')
             );
         } catch (
             CommandPropertyNotFoundException |
@@ -238,7 +241,7 @@ final readonly class ContentService
             logger(level: 'error', message: $e->getMessage(), context: ['ContentService' => 'removeFeaturedImage']);
 
             Devflow::$PHP->flash->error(
-                message: trans('Removal exception occurred and was logged.')
+                message: trans_html('Removal exception occurred and was logged.')
             );
         }
     }
@@ -287,7 +290,7 @@ final readonly class ContentService
                     );
 
                     Devflow::$PHP->flash->error(
-                        message: trans('A deletion exception occurred and was logged.')
+                        message: trans_html('A deletion exception occurred and was logged.')
                     );
                 }
             }
@@ -318,7 +321,7 @@ final readonly class ContentService
             __observer()->action->doAction('deleted_content', $contentId);
 
             Devflow::$PHP->flash->success(
-                message: trans('Removal was successful.')
+                message: trans_html('Removal was successful.')
             );
         } catch (
             CommandPropertyNotFoundException |
@@ -328,7 +331,7 @@ final readonly class ContentService
             logger('error', $e->getMessage());
 
             Devflow::$PHP->flash->error(
-                message: trans('A deletion exception occurred and was logged.')
+                message: trans_html('A deletion exception occurred and was logged.')
             );
         }
     }

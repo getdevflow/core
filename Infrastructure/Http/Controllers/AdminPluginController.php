@@ -28,7 +28,7 @@ use function App\Shared\Helpers\is_main_site;
 use function App\Shared\Helpers\is_super_admin;
 use function App\Shared\Helpers\set_plugin_available_for_subsites;
 use function Codefy\Framework\Helpers\logger;
-use function Codefy\Framework\Helpers\trans;
+use function Codefy\Framework\Helpers\trans_html;
 use function Codefy\Framework\Helpers\view;
 use function is_string;
 
@@ -49,7 +49,7 @@ final class AdminPluginController extends BaseController
     {
         if (false === current_user_can(perm: 'manage:plugins')) {
             Devflow::$PHP->flash->error(
-                message: trans('Access denied.')
+                message: trans_html('Access denied.')
             );
 
             return $this->redirect(admin_url());
@@ -57,7 +57,7 @@ final class AdminPluginController extends BaseController
 
         return view(
             template: 'framework::backend/admin/plugin/index',
-            data: ['title' => trans('Plugins')]
+            data: ['title' => trans_html('Plugins')]
         );
     }
 
@@ -75,7 +75,7 @@ final class AdminPluginController extends BaseController
     {
         if (false === current_user_can(perm: 'activate:plugins')) {
             Devflow::$PHP->flash->error(
-                message: trans('Access denied.')
+                message: trans_html('Access denied.')
             );
             return $this->redirect($request->getHeaderLine('Referer'));
         }
@@ -83,11 +83,11 @@ final class AdminPluginController extends BaseController
         try {
             activate_plugin($request->getParsedBody()['plugin_id']);
 
-            Devflow::$PHP->flash->success(trans('Plugin activated.'));
+            Devflow::$PHP->flash->success(trans_html('Plugin activated.'));
         } catch (\Exception $e) {
             logger('error', $e->getMessage());
             Devflow::$PHP->flash->error(
-                message: trans('Plugin activation exception occurred and was logged.')
+                message: trans_html('Plugin activation exception occurred and was logged.')
             );
         }
 
@@ -107,7 +107,7 @@ final class AdminPluginController extends BaseController
     public function deactivate(ServerRequest $request): ResponseInterface
     {
         if (false === current_user_can(perm: 'deactivate:plugins')) {
-            Devflow::$PHP->flash->error(message: trans('Access denied.'));
+            Devflow::$PHP->flash->error(message: trans_html('Access denied.'));
 
             return $this->redirect($request->getHeaderLine('Referer'));
         }
@@ -115,12 +115,12 @@ final class AdminPluginController extends BaseController
         try {
             deactivate_plugin($request->getParsedBody()['plugin_id']);
 
-            Devflow::$PHP->flash->success(trans('Plugin deactivated.'));
+            Devflow::$PHP->flash->success(trans_html('Plugin deactivated.'));
         } catch (\Exception $e) {
             logger('error', $e->getMessage());
 
             Devflow::$PHP->flash->error(
-                message: trans('Plugin deactivation exception occurred and was logged.')
+                message: trans_html('Plugin deactivation exception occurred and was logged.')
             );
         }
 
@@ -143,7 +143,7 @@ final class AdminPluginController extends BaseController
             return JsonResponseFactory::create(
                 [
                     'success' => false,
-                    'message' => 'Unauthorized.',
+                    'message' => trans_html('Unauthorized.'),
                 ],
                 403
             );
@@ -156,7 +156,7 @@ final class AdminPluginController extends BaseController
             return JsonResponseFactory::create(
                 [
                     'success' => false,
-                    'message' => 'Invalid plugin.',
+                    'message' => trans_html('Invalid plugin.'),
                 ],
                 422
             );
@@ -166,7 +166,7 @@ final class AdminPluginController extends BaseController
             return JsonResponseFactory::create(
                 [
                     'success' => false,
-                    'message' => 'Plugin cannot be removed because it is activated on one or more sites.',
+                    'message' => trans_html('Plugin cannot be removed because it is activated on one or more sites.'),
                 ],
                 403
             );

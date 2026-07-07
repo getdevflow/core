@@ -14,6 +14,7 @@ use RuntimeException;
 use function App\Shared\Helpers\cms_compress_attribute_urls;
 use function App\Shared\Helpers\cms_expand_attribute_urls;
 use function array_map;
+use function Codefy\Framework\Helpers\trans_html;
 use function is_array;
 use function is_string;
 use function Qubus\Security\Helpers\purify_html;
@@ -45,6 +46,13 @@ final class UserAttributeBag
         return new self($siteId, $userId, []);
     }
 
+    /**
+     * @param string $siteId
+     * @param string $userId
+     * @param string|null $json
+     * @return self
+     * @throws Exception
+     */
     public static function fromJson(string $siteId, string $userId, ?string $json = null): self
     {
         if ($json === null || trim($json) === '') {
@@ -54,11 +62,11 @@ final class UserAttributeBag
         try {
             $decoded = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
         } catch (JsonException $e) {
-            throw new RuntimeException('Unable to decode site user attributes JSON.', 0, $e);
+            throw new RuntimeException(trans_html('Unable to decode site user attributes JSON.'), 0, $e);
         }
 
         if (!is_array($decoded)) {
-            throw new RuntimeException('Site user attributes JSON must decode to an array/object.');
+            throw new RuntimeException(trans_html('Site user attributes JSON must decode to an array/object.'));
         }
 
         return new self($siteId, $userId, $decoded);
@@ -228,12 +236,16 @@ final class UserAttributeBag
         return $this->items;
     }
 
+    /**
+     * @return string
+     * @throws Exception
+     */
     public function toJson(): string
     {
         try {
             return json_encode($this->items, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
         } catch (JsonException $e) {
-            throw new RuntimeException('Unable to encode site user attribute JSON.', 0, $e);
+            throw new RuntimeException(trans_html('Unable to encode site user attribute JSON.'), 0, $e);
         }
     }
 

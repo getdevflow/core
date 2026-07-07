@@ -12,7 +12,7 @@ use Psr\Http\Message\ResponseInterface;
 use Qubus\Http\Factories\JsonResponseFactory;
 use Qubus\Http\ServerRequest;
 
-use function Codefy\Framework\Helpers\trans;
+use function Codefy\Framework\Helpers\trans_html;
 use function Qubus\Support\Helpers\is_false__;
 use function sprintf;
 
@@ -32,7 +32,7 @@ final class ApiController extends BaseController
                 ->pdo
                 ->exec(sprintf('SELECT * FROM %s', Devflow::db()->prefix . $table));
         } catch (PDOException $e) {
-            return JsonResponseFactory::create(trans('Database table does not exist.'), 404);
+            return JsonResponseFactory::create(trans_html('Database table does not exist.'), 404);
         }
 
         $query = Devflow::db()
@@ -63,7 +63,7 @@ final class ApiController extends BaseController
         });
 
         if (is_false__($data)) {
-            return JsonResponseFactory::create(trans('No data.'), 404);
+            return JsonResponseFactory::create(trans_html('No data.'), 404);
         }
 
         return JsonResponseFactory::create($data);
@@ -86,14 +86,14 @@ final class ApiController extends BaseController
                 ->exec(sprintf('SELECT * FROM %s', Devflow::db()->prefix . $table));
         } catch (PDOException $e) {
             return JsonResponseFactory::create(
-                trans('Database table does not exist.'),
+                trans_html('Database table does not exist.'),
                 404
             );
         }
 
         $query = Devflow::db()
-                ->table(Devflow::db()->prefix . $table)
-                ->where($field, $value);
+            ->table(Devflow::db()->prefix . $table)
+            ->where($field, $value);
 
         if (isset($request->getQueryParams()['by']) === true) {
             if (isset($request->getQueryParams()['order']) !== true) {
@@ -120,7 +120,7 @@ final class ApiController extends BaseController
         });
 
         if (is_false__($data)) {
-            return JsonResponseFactory::create(trans('No data.'), 404);
+            return JsonResponseFactory::create(trans_html('No data.'), 404);
         }
 
         return JsonResponseFactory::create($data);

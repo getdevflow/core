@@ -32,7 +32,7 @@ use function App\Shared\Helpers\is_main_site;
 use function App\Shared\Helpers\is_super_admin;
 use function App\Shared\Helpers\set_theme_available_for_subsites;
 use function Codefy\Framework\Helpers\logger;
-use function Codefy\Framework\Helpers\trans;
+use function Codefy\Framework\Helpers\trans_html;
 use function Codefy\Framework\Helpers\view;
 use function in_array;
 use function is_string;
@@ -54,7 +54,7 @@ final class AdminThemeController extends BaseController
     {
         if (false === current_user_can(perm: 'manage:themes')) {
             Devflow::$PHP->flash->error(
-                message: trans('Access denied.')
+                message: trans_html('Access denied.')
             );
 
             return $this->redirect(admin_url());
@@ -84,7 +84,7 @@ final class AdminThemeController extends BaseController
 
         return view(
             template: 'framework::backend/admin/theme/index',
-            data: ['title' => trans('Themes')]
+            data: ['title' => trans_html('Themes')]
         );
     }
 
@@ -102,7 +102,7 @@ final class AdminThemeController extends BaseController
     {
         if (false === current_user_can(perm: 'activate:themes')) {
             Devflow::$PHP->flash->error(
-                message: trans('Access denied.')
+                message: trans_html('Access denied.')
             );
 
             return $this->redirect($request->getHeaderLine('Referer'));
@@ -111,11 +111,11 @@ final class AdminThemeController extends BaseController
         try {
             activate_theme($request->getParsedBody()['theme_id']);
 
-            Devflow::$PHP->flash->success(trans('Theme activated.'));
+            Devflow::$PHP->flash->success(trans_html('Theme activated.'));
         } catch (\Exception $e) {
             logger(level: 'error', message: $e->getMessage());
             Devflow::$PHP->flash->error(
-                message: trans('Theme activation exception occurred and was logged.')
+                message: trans_html('Theme activation exception occurred and was logged.')
             );
         }
 
@@ -138,7 +138,7 @@ final class AdminThemeController extends BaseController
     {
         if (false === current_user_can(perm: 'deactivate:themes')) {
             Devflow::$PHP->flash->error(
-                message: trans('Access denied.')
+                message: trans_html('Access denied.')
             );
 
             return $this->redirect($request->getHeaderLine('Referer'));
@@ -149,7 +149,7 @@ final class AdminThemeController extends BaseController
                 && $request->getParsedBody()['theme_id'] !== get_option(key: 'site_theme')
         ) {
             Devflow::$PHP->flash->error(
-                message: trans('Access denied.')
+                message: trans_html('Access denied.')
             );
 
             return $this->redirect(admin_url('theme/'));
@@ -158,11 +158,11 @@ final class AdminThemeController extends BaseController
         try {
             deactivate_theme();
 
-            Devflow::$PHP->flash->success(trans('Theme deactivated.'));
+            Devflow::$PHP->flash->success(trans_html('Theme deactivated.'));
         } catch (\Exception $e) {
             logger(level: 'error', message: $e->getMessage());
             Devflow::$PHP->flash->error(
-                message: trans('Theme deactivation exception occurred and was logged.')
+                message: trans_html('Theme deactivation exception occurred and was logged.')
             );
         }
 
@@ -187,7 +187,7 @@ final class AdminThemeController extends BaseController
             return JsonResponseFactory::create(
                 [
                     'success' => false,
-                    'message' => 'Unauthorized.',
+                    'message' => trans_html('Unauthorized.'),
                 ],
                 403
             );
@@ -200,7 +200,7 @@ final class AdminThemeController extends BaseController
             return JsonResponseFactory::create(
                 [
                     'success' => false,
-                    'message' => 'Invalid theme.',
+                    'message' => trans_html('Invalid theme.'),
                 ],
                 422
             );
@@ -210,7 +210,7 @@ final class AdminThemeController extends BaseController
             return JsonResponseFactory::create(
                 [
                     'success' => false,
-                    'message' => 'Theme cannot be removed because it is activated on one or more sites.',
+                    'message' => trans_html('Theme cannot be removed because it is activated on one or more sites.'),
                 ],
                 403
             );

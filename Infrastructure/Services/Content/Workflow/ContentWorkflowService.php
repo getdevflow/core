@@ -1091,6 +1091,11 @@ final readonly class ContentWorkflowService
         return $resolved;
     }
 
+    /**
+     * @param string $commentId
+     * @return array
+     * @throws \Qubus\Exception\Exception
+     */
     private function commentById(string $commentId): array
     {
         $row = $this->dfdb

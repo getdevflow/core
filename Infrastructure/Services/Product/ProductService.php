@@ -36,7 +36,7 @@ use function App\Shared\Helpers\get_products;
 use function Codefy\Framework\Helpers\abort;
 use function Codefy\Framework\Helpers\command;
 use function Codefy\Framework\Helpers\logger;
-use function Codefy\Framework\Helpers\trans;
+use function Codefy\Framework\Helpers\trans_html;
 use function Qubus\Security\Helpers\__observer;
 use function Qubus\Support\Helpers\is_false__;
 
@@ -73,7 +73,7 @@ final readonly class ProductService
             abort(
                 code: 404,
                 uri: admin_url(),
-                message: trans('The product does not exist.')
+                message: trans_html('The product does not exist.')
             );
         }
 
@@ -113,7 +113,7 @@ final readonly class ProductService
             __observer()->action->doAction('create_product', $product);
 
             Devflow::$PHP->flash->success(
-                message: trans('Product added successfully.'),
+                message: trans_html('Product added successfully.'),
             );
         } catch (
             ContainerExceptionInterface |
@@ -127,13 +127,18 @@ final readonly class ProductService
             logger(level: 'error', message: $e->getMessage(), context: ['ProductService' => 'createProduct']);
 
             Devflow::$PHP->flash->error(
-                message: trans('Could not create product. Please try again later.'),
+                message: trans_html('Could not create product. Please try again later.'),
             );
         }
 
         return $data->validated()['id'];
     }
 
+    /**
+     * @param UpdateProductValidator $data
+     * @return void
+     * @throws \Qubus\Exception\Exception
+     */
     public function updateProduct(UpdateProductValidator $data): void
     {
         try {
@@ -175,7 +180,7 @@ final readonly class ProductService
             logger('error', $e->getMessage());
 
             Devflow::$PHP->flash->error(
-                message: trans('Change exception occurred and was logged.')
+                message: trans_html('Change exception occurred and was logged.')
             );
         }
     }
@@ -207,7 +212,7 @@ final readonly class ProductService
             );
 
             Devflow::$PHP->flash->success(
-                message: trans('Removal of featured image was successful.')
+                message: trans_html('Removal of featured image was successful.')
             );
         } catch (
             CommandPropertyNotFoundException |
@@ -217,7 +222,7 @@ final readonly class ProductService
             logger(level: 'error', message: $e->getMessage(), context: ['ProductService' => 'removeFeaturedImage']);
 
             Devflow::$PHP->flash->error(
-                message: trans('Removal exception occurred and was logged.')
+                message: trans_html('Removal exception occurred and was logged.')
             );
         }
     }
@@ -264,7 +269,7 @@ final readonly class ProductService
             __observer()->action->doAction('deleted_product', $productId);
 
             Devflow::$PHP->flash->success(
-                message: trans('Removal was successful.')
+                message: trans_html('Removal was successful.')
             );
         } catch (
             CommandPropertyNotFoundException |
@@ -274,7 +279,7 @@ final readonly class ProductService
             logger('error', $e->getMessage());
 
             Devflow::$PHP->flash->error(
-                message: trans('A deletion exception occurred and was logged.')
+                message: trans_html('A deletion exception occurred and was logged.')
             );
         }
     }

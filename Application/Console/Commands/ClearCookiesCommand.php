@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Application\Console\Commands;
 
-use Codefy\Framework\Application;
 use Codefy\Framework\Console\ConsoleCommand;
 use Codefy\QueryBus\UnresolvableQueryHandlerException;
 use Defuse\Crypto\Exception\EnvironmentIsBrokenException;
@@ -24,11 +23,6 @@ class ClearCookiesCommand extends ConsoleCommand
     protected string $name = 'cookies:clear';
 
     protected string $description = 'Delete old cookie files.';
-
-    public function __construct(protected Application $codefy)
-    {
-        parent::__construct(codefy: $codefy);
-    }
 
     /**
      * @return int

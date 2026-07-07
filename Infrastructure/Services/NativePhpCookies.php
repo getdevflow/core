@@ -21,6 +21,7 @@ final class NativePhpCookies
      *
      * @param int $length
      * @return string
+     * @throws TypeException
      */
     public function token(int $length = 20): string
     {
@@ -133,6 +134,9 @@ final class NativePhpCookies
      * Generates a hardened cookie string with digest.
      *
      * @param mixed $data Cookie value: e.g. random token or hash
+     * @param mixed $expires
+     * @return string
+     * @throws TypeException
      */
     public function buildCookie(mixed $data, mixed $expires): string
     {
@@ -175,6 +179,7 @@ final class NativePhpCookies
      *
      * @param string $key String from the client
      * @return bool
+     * @throws TypeException
      */
     public function verifySecureCookie(string $key): bool
     {
