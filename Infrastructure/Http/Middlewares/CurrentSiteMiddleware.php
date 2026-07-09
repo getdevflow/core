@@ -12,6 +12,7 @@ use Psr\Http\Server\RequestHandlerInterface;
 use Qubus\Exception\Exception;
 use Qubus\Expressive\Database;
 
+use function is_array;
 use function strtolower;
 
 final readonly class CurrentSiteMiddleware implements MiddlewareInterface
@@ -27,7 +28,6 @@ final readonly class CurrentSiteMiddleware implements MiddlewareInterface
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
         $host = strtolower($request->getUri()->getHost());
-        $request = $request->withAttribute('site', false);
 
         $results = $this->dfdb->getRow(
             $this->dfdb->prepare(
@@ -40,7 +40,7 @@ final readonly class CurrentSiteMiddleware implements MiddlewareInterface
             Database::ARRAY_A
         );
 
-        if ($results !== null) {
+        if (is_array($results) && $results !== []) {
             $site = new Site($this->dfdb)->create($results);
             $request = $request->withAttribute('site', $site);
         }

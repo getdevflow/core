@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Http\Middlewares;
 
+use App\Domain\Site\Model\Site;
 use Exception;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -21,9 +22,14 @@ class ArchivedSiteMiddleware implements MiddlewareInterface
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
         $site = $request->getAttribute('site');
+        $path = $request->getUri()->getPath();
 
-        if ($site === false) {
+        if (! $site instanceof Site) {
             return view(template: 'framework::error/404')->withStatus(404);
+        }
+
+        if (str_contains($path, '/admin/')) {
+            return $handler->handle($request);
         }
 
         if ($site->status !== 'archive') {
