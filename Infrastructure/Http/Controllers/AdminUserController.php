@@ -13,10 +13,12 @@ use App\Domain\User\ValueObject\UserId;
 use App\Infrastructure\Persistence\Cache\UserCachePsr16;
 use App\Infrastructure\Services\NativePhpCookies;
 use App\Infrastructure\Services\Queue\ResetPasswordNotification;
+use App\Infrastructure\Services\User\Pipes\CastUserAttributesToInt;
 use App\Infrastructure\Services\User\UserService;
 use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
 use Codefy\CommandBus\Exceptions\UnresolvableCommandHandlerException;
 use Codefy\Framework\Http\BaseController;
+use Codefy\Framework\Pipeline\Pipeline;
 use Codefy\QueryBus\UnresolvableQueryHandlerException;
 use Defuse\Crypto\Crypto;
 use Defuse\Crypto\Exception\EnvironmentIsBrokenException;
@@ -397,6 +399,11 @@ final class AdminUserController extends BaseController
     public function userProfile(ServerRequest $request, UserService $service): ResponseInterface
     {
         if ($request->getMethod() === 'POST') {
+            $request = Devflow::$PHP->make(name: Pipeline::class)
+                ->send($request)
+                ->through([CastUserAttributesToInt::class])
+                ->thenReturn();
+
             $update = $service->updateProfile(UpdateUserProfileValidator::make($request));
             if (is_error($update)) {
                 Devflow::$PHP->flash->error($update->getMessage());
