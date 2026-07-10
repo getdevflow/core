@@ -11,7 +11,7 @@ use Codefy\Framework\Dto\Trait\DtoAware;
 use Codefy\Framework\Validation\HttpInputValidator;
 
 use function App\Shared\Helpers\current_user_can;
-use function array_keys;
+use function array_values;
 use function Codefy\Framework\Helpers\config;
 use function Codefy\Framework\Helpers\get_system_roles;
 use function implode;
@@ -45,7 +45,7 @@ class UpdateUserProfileValidator extends HttpInputValidator implements HasDto
      */
     public function rules(): array
     {
-        $roles = implode(separator: ',', array: array_keys(get_system_roles()));
+        $roles = implode(separator: ',', array: array_values(get_system_roles()));
         $statuses = 'A,I,S,B';
 
         return [
