@@ -598,6 +598,13 @@ final readonly class ContentWorkflowService
     {
         return $this->dfdb->transactional(function () use ($contentId): array {
             $content = $this->content($contentId);
+            $authorId = trim((string) ($content['content_author'] ?? ''));
+
+            if ($authorId === '') {
+                throw new \RuntimeException(
+                    sprintf('Scheduled content %s has no valid author.', $contentId)
+                );
+            }
 
             if ($content['content_status'] !== 'scheduled') {
                 throw new \RuntimeException(trans_html('Content is not scheduled.'));
@@ -619,11 +626,15 @@ final readonly class ContentWorkflowService
 
             $activityId = $this->log(
                 contentId: $contentId,
-                userId: 'system',
+                userId: $authorId,
                 type: 'scheduled_published',
                 fromStatus: 'scheduled',
                 toStatus: 'published',
-                message: trans_html('Scheduled content was published automatically.')
+                message: trans_html('Scheduled content was published automatically.'),
+                metadata: [
+                    'triggered_by' => 'system',
+                    'scheduled_job' => true,
+                ]
             );
 
             return [
