@@ -13,6 +13,7 @@ use ReflectionException;
 use function App\Shared\Helpers\cms_compress_attribute_urls;
 use function App\Shared\Helpers\cms_expand_attribute_urls;
 use function array_key_exists;
+use function Codefy\Framework\Helpers\trans_html;
 use function is_array;
 use function Qubus\Security\Helpers\purify_html;
 
@@ -36,6 +37,11 @@ final class AttributeBag
         return new self($items);
     }
 
+    /**
+     * @param string|null $json
+     * @return self
+     * @throws Exception
+     */
     public static function fromJson(?string $json = null): self
     {
         if ($json === null || $json === '') {
@@ -45,11 +51,11 @@ final class AttributeBag
         try {
             $decoded = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
         } catch (JsonException $e) {
-            throw new \RuntimeException('Unable to decode attribute JSON.', 0, $e);
+            throw new \RuntimeException(trans_html('Unable to decode attribute JSON.'), 0, $e);
         }
 
         if (!is_array($decoded)) {
-            throw new \RuntimeException('Attribute JSON must decode an object/array.');
+            throw new \RuntimeException(trans_html('Attribute JSON must decode an object/array.'));
         }
 
         return new self($decoded);
@@ -215,12 +221,16 @@ final class AttributeBag
         return $this->items;
     }
 
+    /**
+     * @return string
+     * @throws Exception
+     */
     public function toJson(): string
     {
         try {
             return json_encode($this->items, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
         } catch (JsonException $e) {
-            throw new \RuntimeException('Unable to encode attribute JSON.', 0, $e);
+            throw new \RuntimeException(trans_html('Unable to encode attribute JSON.'), 0, $e);
         }
     }
 

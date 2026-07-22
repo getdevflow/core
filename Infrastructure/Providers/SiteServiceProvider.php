@@ -39,7 +39,7 @@ final class SiteServiceProvider extends CodefyServiceProvider
      */
     private function registerSiteKey(): void
     {
-        if(!file_exists($this->codefy->storagePath() . '/install.lock')) {
+        if (!file_exists($this->codefy->storagePath() . '/install.lock')) {
             return;
         }
 
@@ -68,7 +68,7 @@ final class SiteServiceProvider extends CodefyServiceProvider
              */
             Registry::getInstance()->set('siteKey', $siteKey);
         } catch (PDOException $ex) {
-           logger(
+            logger(
                 level: 'error',
                 message: sprintf('CURRENT_SITEKEY[%s]: %s', $ex->getCode(), $ex->getMessage())
             );

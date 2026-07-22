@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Application\Console\Commands;
 
-use Codefy\Framework\Application;
 use Codefy\Framework\Console\ConsoleCommand;
 use Defuse\Crypto\Exception\EnvironmentIsBrokenException;
 use Defuse\Crypto\Key;
@@ -14,11 +13,6 @@ class GenerateEncryptionKeyCommand extends ConsoleCommand
     protected string $name = 'generate:key';
 
     protected string $description = 'Generates a random encryption key.';
-
-    public function __construct(protected Application $codefy)
-    {
-        parent::__construct(codefy: $codefy);
-    }
 
     /**
      * @throws EnvironmentIsBrokenException

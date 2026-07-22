@@ -11,6 +11,7 @@ use Qubus\Config\ConfigContainer;
 use Qubus\Exception\Exception;
 use Qubus\Expressive\Connection;
 use Qubus\Http\Session\SessionEntity;
+use Qubus\Support\DateTime\QubusDateTimeImmutable;
 
 use function sprintf;
 
@@ -56,6 +57,8 @@ class AuthenticationRepository implements AuthUserRepository
         $passwordHash = ($result->{$fields['password']} ?? '');
 
         if (Password::verify(password: $password ?? '', hash: $passwordHash)) {
+            $this->passwordRehash($table, $fields['identity'], $credential, $passwordHash, $password);
+
             $user = new UserSession();
             $user
                 ->withToken($result->user_token);
@@ -88,5 +91,39 @@ class AuthenticationRepository implements AuthUserRepository
         $stmt->execute();
 
         return $stmt->fetchObject();
+    }
+
+    /**
+     * @param string $table
+     * @param string $identity
+     * @param string $credential
+     * @param string $hash
+     * @param string $password
+     * @return void
+     * @throws Exception
+     */
+    private function passwordRehash(
+        string $table,
+        string $identity,
+        string $credential,
+        string $hash,
+        string $password
+    ): void {
+        if (Password::needsRehash($hash)) {
+            $newHash = Password::hash($password);
+
+            $sql = sprintf(
+                "UPDATE %s SET user_pass = :password, user_modified = :modified WHERE %s = :identity",
+                $table,
+                $identity
+            );
+            $stmt = $this->connection->pdo->prepare($sql);
+            $data = [
+                'password' => $newHash,
+                'modified' => QubusDateTimeImmutable::now(),
+                'identity' => $credential,
+            ];
+            $stmt->execute($data);
+        }
     }
 }

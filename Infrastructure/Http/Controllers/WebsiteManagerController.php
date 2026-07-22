@@ -24,7 +24,7 @@ use function App\Shared\Helpers\admin_url;
 use function App\Shared\Helpers\current_user_can;
 use function App\Shared\Helpers\update_page_attribute;
 use function Codefy\Framework\Helpers\config;
-use function Codefy\Framework\Helpers\trans;
+use function Codefy\Framework\Helpers\trans_html;
 use function Codefy\Framework\Helpers\view;
 use function phpb_trans;
 use function sprintf;
@@ -48,7 +48,7 @@ final class WebsiteManagerController extends BaseController
     {
         if (false === current_user_can(perm: 'vihzhuo:manage')) {
             Devflow::$PHP->flash->error(
-                message: trans('Access denied.')
+                message: trans_html('Access denied.')
             );
 
             return $this->redirect(admin_url());
@@ -57,7 +57,7 @@ final class WebsiteManagerController extends BaseController
         $filter = Filter::getInstance()->applyFilter('pagebuilder.support', false);
         if (!$filter) {
             Devflow::$PHP->flash->error(
-                message: trans('Access denied.')
+                message: trans_html('Access denied.')
             );
 
             return $this->redirect(admin_url());
@@ -71,7 +71,7 @@ final class WebsiteManagerController extends BaseController
         return view(
             template: $this->managerIndexTemplate,
             data: [
-                'title' => trans('Website Manager'),
+                'title' => trans_html('Website Manager'),
                 'pages' => $pages,
             ]
         );
@@ -91,14 +91,14 @@ final class WebsiteManagerController extends BaseController
     public function create(ServerRequest $request): ResponseInterface
     {
         if (false === current_user_can(perm: 'vihzhuo:manage')) {
-            Devflow::$PHP->flash->error(message: trans('Access denied.'));
+            Devflow::$PHP->flash->error(message: trans_html('Access denied.'));
             return $this->redirect(admin_url());
         }
 
         $filter = Filter::getInstance()->applyFilter('pagebuilder.support', false);
         if (!$filter) {
             Devflow::$PHP->flash->error(
-                message: trans('Access denied.')
+                message: trans_html('Access denied.')
             );
 
             return $this->redirect(admin_url());
@@ -139,14 +139,14 @@ final class WebsiteManagerController extends BaseController
     public function edit(ServerRequest $request, int $pageId): ResponseInterface
     {
         if (false === current_user_can(perm: 'vihzhuo:manage')) {
-            Devflow::$PHP->flash->error(message: trans('Access denied.'));
+            Devflow::$PHP->flash->error(message: trans_html('Access denied.'));
             return $this->redirect(admin_url());
         }
 
         $filter = Filter::getInstance()->applyFilter('pagebuilder.support', false);
         if (!$filter) {
             Devflow::$PHP->flash->error(
-                message: trans('Access denied.')
+                message: trans_html('Access denied.')
             );
 
             return $this->redirect(admin_url());
@@ -200,14 +200,14 @@ final class WebsiteManagerController extends BaseController
     public function destroy(ServerRequest $request, int $pageId): ResponseInterface
     {
         if (false === current_user_can(perm: 'vihzhuo:manage')) {
-            Devflow::$PHP->flash->error(message: trans('Access denied.'));
+            Devflow::$PHP->flash->error(message: trans_html('Access denied.'));
             return $this->redirect(admin_url());
         }
 
         $filter = Filter::getInstance()->applyFilter('pagebuilder.support', false);
         if (!$filter) {
             Devflow::$PHP->flash->error(
-                message: trans('Access denied.')
+                message: trans_html('Access denied.')
             );
 
             return $this->redirect(admin_url());
@@ -255,7 +255,7 @@ final class WebsiteManagerController extends BaseController
         return view(
             template: $this->pageSettingsTemplate,
             data: [
-                'title' => trans('Website Manager'),
+                'title' => trans_html('Website Manager'),
                 'page' => $page,
                 'action' => $action,
                 'theme' => $theme,

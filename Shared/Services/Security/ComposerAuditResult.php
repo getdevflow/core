@@ -30,13 +30,13 @@ final readonly class ComposerAuditResult
     public function toArray(): array
     {
         return [
-                'status' => $this->status,
-                'checked_at' => $this->checkedAt,
-                'advisory_count' => $this->advisoryCount,
-                'packages' => $this->packages,
-                'message' => $this->message,
-                'fingerprint' => $this->fingerprint,
-                'exit_code' => $this->exitCode,
+            'status' => $this->status,
+            'checked_at' => $this->checkedAt,
+            'advisory_count' => $this->advisoryCount,
+            'packages' => $this->packages,
+            'message' => $this->message,
+            'fingerprint' => $this->fingerprint,
+            'exit_code' => $this->exitCode,
         ];
     }
 

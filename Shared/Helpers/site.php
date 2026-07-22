@@ -58,6 +58,7 @@ use function Codefy\Framework\Helpers\public_path;
 use function Codefy\Framework\Helpers\resource_path;
 use function Codefy\Framework\Helpers\trans;
 use function Codefy\Framework\Helpers\trans_html;
+use function Codefy\Framework\Helpers\view;
 use function crc32;
 use function date;
 use function file_get_contents;
@@ -1414,45 +1415,6 @@ function cms_site_status_label(string $status): string
      * Filters the label result.
      */
     return __observer()->filter->applyFilter('site.status.label', $label[$status], $status);
-}
-
-/**
- * Checks if site exists or is archived.
- *
- * @access private
- *
- * @file core/Shared/Helpers/site.php
- * @return ResponseInterface
- * @throws Exception
- * @throws \Exception
- */
-function does_site_exist(): \Psr\Http\Message\ResponseInterface
-{
-    $dfdb = dfdb();
-
-    $baseUrl = site_url();
-    $sitePath = str_replace('index.php', '', app(ServerRequestInterface::class)['PHP_SELF']);
-    $siteDomain = str_replace(['http://', 'https://', $sitePath], '', $baseUrl);
-
-    $site = $dfdb->getCol(
-        $dfdb->prepare(
-            "SELECT site_status FROM {$dfdb->basePrefix}site WHERE site_domain = ? AND site_path = ?",
-            [
-                $siteDomain,
-                $sitePath
-            ]
-        )
-    );
-
-    if (is_null__($site)) {
-        return JsonResponseFactory::create(data: 'Not found.', status: 404);
-    }
-
-    if (esc_html($site['site_status']) === 'archive') {
-        return JsonResponseFactory::create(data: 'Site unavailable.', status: 503);
-    }
-
-    return JsonResponseFactory::create(data: 'Not found.', status: 404);
 }
 
 /**

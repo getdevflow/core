@@ -8,6 +8,7 @@ use App\Application\Devflow;
 use Codefy\Framework\Support\ArgsParser;
 use Codefy\Framework\Support\StringParser;
 use Qubus\EventDispatcher\ActionFilter\Filter;
+use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
 use ReflectionException;
 
@@ -63,7 +64,12 @@ class Utils
         return ArgsParser::parse($args, $defaults, $deep);
     }
 
-    public static function getPathInfo(string $relative)
+    /**
+     * @param string $relative
+     * @return mixed|string
+     * @throws \Qubus\Exception\Data\TypeException
+     */
+    public static function getPathInfo(string $relative): mixed
     {
         $base = basename(config(key: 'app.path'));
         if (str_starts_with($_SERVER['REQUEST_URI'], Devflow::$PHP::DS . $base . $relative)) {
@@ -79,6 +85,7 @@ class Utils
      * e.g. `/admin/`
      *
      * @return bool True if an admin screen, otherwise false.
+     * @throws TypeException
      */
     public static function isAdmin(): bool
     {
@@ -94,6 +101,7 @@ class Utils
      * e.g. `/login/`
      *
      * @return bool True if login screen, otherwise false.
+     * @throws TypeException
      */
     public static function isLogin(): bool
     {

@@ -20,9 +20,10 @@ use ReflectionException;
 
 use function App\Shared\Helpers\admin_url;
 use function App\Shared\Helpers\current_user_can;
+use function App\Shared\Helpers\get_option;
 use function App\Shared\Helpers\get_theme;
 use function Codefy\Framework\Helpers\config;
-use function Codefy\Framework\Helpers\trans;
+use function Codefy\Framework\Helpers\trans_html;
 use function Codefy\Framework\Helpers\view;
 use function Qubus\Support\Helpers\is_null__;
 
@@ -59,7 +60,7 @@ final class PageBuilderController extends BaseController
     {
         if (false === current_user_can(perm: 'vihzhuo:manage')) {
             Devflow::$PHP->flash->error(
-                message: trans('Access denied.')
+                message: trans_html('Access denied.')
             );
 
             return $this->redirect(admin_url());
@@ -79,12 +80,16 @@ final class PageBuilderController extends BaseController
         $builder = $this->builder();
         $hasPageReturned = $builder->handlePublicRequest();
 
-        if(empty(get_theme()) || Devflow::$PHP->configContainer->boolean(key: 'vihzhuo.enable') === false) {
+        if (get_option(key: 'maintenance_mode') === 1) {
+            return view(template: 'framework::maintenance');
+        }
+
+        if (empty(get_theme()) || Devflow::$PHP->configContainer->boolean(key: 'vihzhuo.enable') === false) {
             return $this->redirect(admin_url());
         }
 
         if ($request->getUri()->getPath() === '/' && ! $hasPageReturned) {
-            return view(template: 'framework::welcome');
+            return view(template: 'framework::welcome', data: ['title' => trans_html('Page Builder Welcome Page')]);
         }
 
         if (is_null__($hasPageReturned)) {

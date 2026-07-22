@@ -20,7 +20,7 @@ use function App\Shared\Helpers\cms_update_content;
 use function App\Shared\Helpers\get_all_content_with_filters;
 use function App\Shared\Helpers\get_content_by_id;
 use function array_merge;
-use function Codefy\Framework\Helpers\trans;
+use function Codefy\Framework\Helpers\trans_html;
 use function is_object;
 use function is_string;
 use function Qubus\Error\Helpers\is_error;
@@ -64,7 +64,7 @@ final class ContentRestController extends BaseController
             );
 
             if (empty($content)) {
-                return JsonResponseFactory::create(trans('No data.'), 404);
+                return JsonResponseFactory::create(trans_html('No data.'), 404);
             }
         } catch (Exception $e) {
             return JsonResponseFactory::create($e->getMessage(), 400);
@@ -88,7 +88,7 @@ final class ContentRestController extends BaseController
             $content = get_content_by_id($id);
 
             if (is_false__($content)) {
-                return JsonResponseFactory::create(trans('No data.'), 404);
+                return JsonResponseFactory::create(trans_html('No data.'), 404);
             }
         } catch (NotFoundExceptionInterface $e) {
             return JsonResponseFactory::create($e->getMessage(), 400);
@@ -113,7 +113,7 @@ final class ContentRestController extends BaseController
                 return JsonResponseFactory::create($create->getMessage(), 400);
             }
             if (is_null__($create)) {
-                return JsonResponseFactory::create(trans('No data.'), 404);
+                return JsonResponseFactory::create(trans_html('No data.'), 404);
             }
         } catch (Exception $e) {
             return JsonResponseFactory::create($e->getMessage(), 400);
@@ -140,7 +140,7 @@ final class ContentRestController extends BaseController
             }
 
             if (is_null__($update)) {
-                return JsonResponseFactory::create(trans('No data.'), 404);
+                return JsonResponseFactory::create(trans_html('No data.'), 404);
             }
         } catch (Exception $e) {
             return JsonResponseFactory::create($e->getMessage(), 400);
@@ -162,16 +162,16 @@ final class ContentRestController extends BaseController
         try {
             $delete = cms_delete_content($id);
             if (is_false__($delete)) {
-                return JsonResponseFactory::create(trans('No data.'));
+                return JsonResponseFactory::create(trans_html('No data.'));
             }
 
             if (is_object($delete) && $delete->id === $id) {
-                return JsonResponseFactory::create(trans('Resource deleted.'));
+                return JsonResponseFactory::create(trans_html('Resource deleted.'));
             }
         } catch (Exception $e) {
             return JsonResponseFactory::create($e->getMessage(), 400);
         }
 
-        return JsonResponseFactory::create(trans('Bad request.'));
+        return JsonResponseFactory::create(trans_html('Bad request.'));
     }
 }

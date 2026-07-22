@@ -34,7 +34,7 @@ use function App\Shared\Helpers\get_user_timezone;
 use function App\Shared\Helpers\update_option;
 use function Codefy\Framework\Helpers\command;
 use function Codefy\Framework\Helpers\logger;
-use function Codefy\Framework\Helpers\trans;
+use function Codefy\Framework\Helpers\trans_html;
 use function Codefy\Framework\Helpers\view;
 use function Qubus\Support\Helpers\is_false__;
 use function sprintf;
@@ -61,7 +61,7 @@ final class AdminOptionsController extends BaseController
                 false === current_user_can(perm: 'change:options')
         ) {
             Devflow::$PHP->flash->{'error'}(
-                message: trans('Access denied'),
+                message: trans_html('Access denied'),
             );
             return $this->redirect(admin_url());
         }
@@ -104,7 +104,7 @@ final class AdminOptionsController extends BaseController
                 false === current_user_can(perm: 'change:settings')
         ) {
             Devflow::$PHP->flash->{'error'}(
-                message: trans('Access denied'),
+                message: trans_html('Access denied'),
             );
             return $this->redirect(admin_url());
         }
@@ -113,7 +113,7 @@ final class AdminOptionsController extends BaseController
             $options = [
                 'sitename', 'site_description', 'charset', 'admin_email', 'site_locale',
                 'cookieexpire', 'cookiepath', 'site_timezone', 'api_key', 'content_per_page',
-                'charset', 'date_format', 'time_format'
+                'charset', 'date_format', 'time_format', 'maintenance_mode',
             ];
 
             foreach ($options as $optionName) {
@@ -174,7 +174,7 @@ final class AdminOptionsController extends BaseController
             );
 
             Devflow::$PHP->flash->error(
-                message: trans(
+                message: trans_html(
                     'System settings exception occurred and was logged.',
                 )
             );
@@ -198,14 +198,14 @@ final class AdminOptionsController extends BaseController
     {
         if (!current_user_can(perm: 'change:settings')) {
             Devflow::$PHP->flash->error(
-                message: trans('Access denied'),
+                message: trans_html('Access denied'),
             );
             return $this->redirect(admin_url());
         }
 
         return view(
             template: 'framework::backend/settings',
-            data: ['title' => trans('System Settings')]
+            data: ['title' => trans_html('System Settings')]
         );
     }
 }

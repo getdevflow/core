@@ -111,7 +111,6 @@ final class ExtensionRepository
      * @param string $kind
      * @return array
      * @throws InvalidArgumentException
-     * @throws JsonException
      */
     private function available(string $kind): array
     {

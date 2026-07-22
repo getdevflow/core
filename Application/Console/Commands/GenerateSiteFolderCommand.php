@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Application\Console\Commands;
 
 use App\Domain\Site\Model\Site;
-use Codefy\Framework\Application;
 use Codefy\Framework\Console\ConsoleCommand;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
@@ -27,11 +26,6 @@ class GenerateSiteFolderCommand extends ConsoleCommand
     protected string $name = 'generate:site:folder';
 
     protected string $description = 'Generates site media folder based on site id.';
-
-    public function __construct(protected Application $codefy)
-    {
-        parent::__construct(codefy: $codefy);
-    }
 
     protected function configure(): void
     {

@@ -45,7 +45,6 @@ use function App\Shared\Helpers\get_content_attribute;
 use function App\Shared\Helpers\get_content_type_by;
 use function App\Shared\Helpers\site_url;
 use function Codefy\Framework\Helpers\abort;
-use function Codefy\Framework\Helpers\trans;
 use function Codefy\Framework\Helpers\trans_html;
 use function Codefy\Framework\Helpers\view;
 use function is_array;
@@ -94,7 +93,7 @@ final class AdminContentController extends BaseController
             )
         );
 
-        return $this->redirect(admin_url(path: "content-type/{$contentTypeSlug}/{$id}/"));
+        return $this->redirect(admin_url(path: sprintf("content-type/%s/%s/", $contentTypeSlug, $id)));
     }
 
     /**
@@ -119,7 +118,7 @@ final class AdminContentController extends BaseController
     ): ResponseInterface {
         if (false === current_user_can(perm: 'create:content')) {
             Devflow::$PHP->flash->error(
-                message: trans('Access denied.')
+                message: trans_html('Access denied.')
             );
             return $this->redirect(admin_url());
         }
@@ -171,7 +170,7 @@ final class AdminContentController extends BaseController
             )
         );
 
-        return $this->redirect(admin_url(path: "content-type/{$type}/{$contentId}/"));
+        return $this->redirect(admin_url(path: sprintf("content-type/%s/%s/", $type, $contentId)));
     }
 
     /**
@@ -196,7 +195,7 @@ final class AdminContentController extends BaseController
     ): ResponseInterface {
         if (false === current_user_can(perm: 'update:content')) {
             Devflow::$PHP->flash->error(
-                message: trans('Access denied.')
+                message: trans_html('Access denied.')
             );
             return $this->redirect(admin_url());
         }
@@ -244,7 +243,7 @@ final class AdminContentController extends BaseController
     {
         if (false === current_user_can(perm: 'manage:content')) {
             Devflow::$PHP->flash->error(
-                message: trans('Access denied.')
+                message: trans_html('Access denied.')
             );
             return $this->redirect(admin_url());
         }
@@ -255,7 +254,7 @@ final class AdminContentController extends BaseController
             abort(
                 code: 404,
                 uri: admin_url(),
-                message: trans('Content not found.')
+                message: trans_html('Content not found.')
             );
         }
 
@@ -326,6 +325,6 @@ final class AdminContentController extends BaseController
             )
         );
 
-        return $this->redirect(admin_url("content-type/{$contentTypeSlug}/"));
+        return $this->redirect(admin_url(sprintf("content-type/%s/", $contentTypeSlug)));
     }
 }

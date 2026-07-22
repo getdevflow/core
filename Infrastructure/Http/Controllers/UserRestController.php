@@ -21,7 +21,7 @@ use function App\Shared\Helpers\get_current_site_id;
 use function App\Shared\Helpers\get_user_by;
 use function App\Shared\Helpers\remove_user_from_site;
 use function array_merge;
-use function Codefy\Framework\Helpers\trans;
+use function Codefy\Framework\Helpers\trans_html;
 use function Qubus\Error\Helpers\is_error;
 use function Qubus\Support\Helpers\is_false__;
 use function Qubus\Support\Helpers\is_null__;
@@ -38,7 +38,7 @@ final class UserRestController extends BaseController
             $users = get_all_users();
 
             if (empty($users)) {
-                return JsonResponseFactory::create(trans('No data.'), 404);
+                return JsonResponseFactory::create(trans_html('No data.'), 404);
             }
         } catch (Exception $e) {
             return JsonResponseFactory::create($e->getMessage(), 400);
@@ -62,7 +62,7 @@ final class UserRestController extends BaseController
             $user = get_user_by('id', $id);
 
             if (is_false__($user)) {
-                return JsonResponseFactory::create(trans('No data.'), 404);
+                return JsonResponseFactory::create(trans_html('No data.'), 404);
             }
         } catch (NotFoundExceptionInterface $e) {
             return JsonResponseFactory::create($e->getMessage(), 400);
@@ -85,7 +85,7 @@ final class UserRestController extends BaseController
                 return JsonResponseFactory::create($create->getMessage(), 400);
             }
             if (is_null__($create)) {
-                return JsonResponseFactory::create(trans('No data.'), 404);
+                return JsonResponseFactory::create(trans_html('No data.'), 404);
             }
         } catch (Exception $e) {
             return JsonResponseFactory::create($e->getMessage(), 400);
@@ -110,7 +110,7 @@ final class UserRestController extends BaseController
             }
 
             if (is_null__($update)) {
-                return JsonResponseFactory::create(trans('No data.'), 404);
+                return JsonResponseFactory::create(trans_html('No data.'), 404);
             }
         } catch (Exception $e) {
             return JsonResponseFactory::create($e->getMessage(), 400);
@@ -139,9 +139,9 @@ final class UserRestController extends BaseController
                 ]
             );
         } catch (Exception $e) {
-            return JsonResponseFactory::create(trans('Bad request.'));
+            return JsonResponseFactory::create(trans_html('Bad request.'));
         }
 
-        return JsonResponseFactory::create(trans('User removed from site.'));
+        return JsonResponseFactory::create(trans_html('User removed from site.'));
     }
 }

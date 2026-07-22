@@ -26,7 +26,7 @@ use function App\Shared\Helpers\admin_url;
 use function App\Shared\Helpers\current_user_can;
 use function App\Shared\Helpers\get_content_type_by;
 use function Codefy\Framework\Helpers\abort;
-use function Codefy\Framework\Helpers\trans;
+use function Codefy\Framework\Helpers\trans_html;
 use function Codefy\Framework\Helpers\view;
 use function Qubus\Support\Helpers\is_false__;
 
@@ -64,7 +64,7 @@ final class AdminContentTypeController extends BaseController
     {
         if (false === current_user_can(perm: 'create:content')) {
             Devflow::$PHP->flash->error(
-                message: trans('Access denied.')
+                message: trans_html('Access denied.')
             );
             return $this->redirect(admin_url());
         }
@@ -74,7 +74,7 @@ final class AdminContentTypeController extends BaseController
         return view(
             template: 'framework::backend/admin/content-type/content-type',
             data: [
-                'title' => trans('Content Types'),
+                'title' => trans_html('Content Types'),
                 'types' => $contentTypes,
                 'request' => $request->getParsedBody(),
             ]
@@ -116,7 +116,7 @@ final class AdminContentTypeController extends BaseController
     {
         if (false === current_user_can(perm: 'update:content')) {
             Devflow::$PHP->flash->error(
-                message: trans('Access denied.')
+                message: trans_html('Access denied.')
             );
             return $this->redirect(admin_url());
         }
@@ -128,7 +128,7 @@ final class AdminContentTypeController extends BaseController
             abort(
                 code: 404,
                 uri: admin_url('content-type'),
-                message: trans('The content type does not exist.')
+                message: trans_html('The content type does not exist.')
             );
         }
 
@@ -136,7 +136,7 @@ final class AdminContentTypeController extends BaseController
             abort(
                 code: 404,
                 uri: admin_url('content-type'),
-                message: trans('The content type does not exist.')
+                message: trans_html('The content type does not exist.')
             );
         }
 

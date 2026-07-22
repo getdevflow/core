@@ -13,7 +13,7 @@ final class TransactionUlid extends Ulid implements ValueObject
     /**
      * @throws TypeException
      */
-    public static function fromString(?string $ulid): self
+    public static function fromString(?string $ulid = null): self
     {
         return new self($ulid);
     }

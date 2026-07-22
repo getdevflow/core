@@ -444,6 +444,7 @@ function update_user_attribute(string $userId, string $key, mixed $value, ?strin
  * @param string $key
  * @return UserAttributeBag
  * @throws ContainerExceptionInterface
+ * @throws Exception
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  * @throws TypeException
@@ -654,10 +655,6 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
     if (empty($userLogin)) {
         return new UserError(message: trans_html(
             string: 'Cannot create a user with an empty username.',
-        ));
-    } elseif (mb_strlen($userLogin) < 3) {
-        return new UserError(message: trans_html(
-            string: 'Username must be at least 3 characters long.',
         ));
     } elseif (mb_strlen($userLogin) > 60) {
         return new UserError(message: trans_html(

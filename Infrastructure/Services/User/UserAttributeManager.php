@@ -6,6 +6,7 @@ namespace App\Infrastructure\Services\User;
 
 use Psr\SimpleCache\CacheInterface;
 use Psr\SimpleCache\InvalidArgumentException;
+use Qubus\Exception\Exception;
 use Throwable;
 
 use function is_string;
@@ -20,16 +21,36 @@ final readonly class UserAttributeManager
     ) {
     }
 
+    /**
+     * @param string $siteId
+     * @param string $userId
+     * @param string $key
+     * @param mixed|null $default
+     * @return mixed
+     * @throws Exception
+     */
     public function get(string $siteId, string $userId, string $key, mixed $default = null): mixed
     {
         return $this->load($siteId, $userId)?->getPath($key, $default);
     }
 
+    /**
+     * @param string $siteId
+     * @param string $userId
+     * @return string
+     * @throws \Qubus\Exception\Exception
+     */
     public function all(string $siteId, string $userId): string
     {
         return $this->load($siteId, $userId)->toJson();
     }
 
+    /**
+     * @param string $siteId
+     * @param string $userId
+     * @return UserAttributeBag
+     * @throws Exception
+     */
     public function bag(string $siteId, string $userId): UserAttributeBag
     {
         return $this->load($siteId, $userId);
@@ -50,6 +71,11 @@ final readonly class UserAttributeManager
         return $this->repository->exists($siteId, $userId);
     }
 
+    /**
+     * @param UserAttributeBag $attribute
+     * @return void
+     * @throws Exception
+     */
     public function create(UserAttributeBag $attribute): void
     {
         $this->repository->create($attribute);
@@ -57,6 +83,12 @@ final readonly class UserAttributeManager
         $this->warmWith($attribute);
     }
 
+    /**
+     * @param string $siteId
+     * @param string $userId
+     * @return UserAttributeBag|null
+     * @throws Exception
+     */
     public function createIfMissing(string $siteId, string $userId): ?UserAttributeBag
     {
         $existing = $this->repository->exists($siteId, $userId);
@@ -73,6 +105,14 @@ final readonly class UserAttributeManager
         return null;
     }
 
+    /**
+     * @param string $siteId
+     * @param string $userId
+     * @param string $key
+     * @param mixed $value
+     * @return UserAttributeBag
+     * @throws Exception
+     */
     public function set(string $siteId, string $userId, string $key, mixed $value): UserAttributeBag
     {
         $updated = $this->repository->patch(
@@ -85,6 +125,13 @@ final readonly class UserAttributeManager
         return $updated;
     }
 
+    /**
+     * @param string $siteId
+     * @param string $userId
+     * @param string $key
+     * @return UserAttributeBag
+     * @throws Exception
+     */
     public function remove(string $siteId, string $userId, string $key): UserAttributeBag
     {
         $updated = $this->load($siteId, $userId)->removePath($key);
@@ -102,7 +149,11 @@ final readonly class UserAttributeManager
     }
 
     /**
+     * @param string $siteId
+     * @param string $userId
      * @param array<string, mixed> $values
+     * @return UserAttributeBag
+     * @throws Exception
      */
     public function merge(string $siteId, string $userId, array $values): UserAttributeBag
     {
@@ -115,7 +166,11 @@ final readonly class UserAttributeManager
     }
 
     /**
+     * @param string $siteId
+     * @param string $userId
      * @param array<string, mixed> $values
+     * @return UserAttributeBag
+     * @throws Exception
      */
     public function mergeRecursive(string $siteId, string $userId, array $values): UserAttributeBag
     {
@@ -132,6 +187,7 @@ final readonly class UserAttributeManager
      * @param string $userId
      * @param string $value
      * @return UserAttributeBag
+     * @throws Exception
      */
     public function replaceAll(string $siteId, string $userId, string $value): UserAttributeBag
     {
@@ -148,6 +204,12 @@ final readonly class UserAttributeManager
         return $attribute;
     }
 
+    /**
+     * @param string $siteId
+     * @param string $userId
+     * @return UserAttributeBag
+     * @throws Exception
+     */
     public function warm(string $siteId, string $userId): UserAttributeBag
     {
         $attribute = $this->repository->find($siteId, $userId);
@@ -159,6 +221,7 @@ final readonly class UserAttributeManager
     /**
      * @param list<array{site_id:string,user_id:string}> $pairs
      * @return array<string, UserAttributeBag>
+     * @throws Exception
      */
     public function warmMany(array $pairs): array
     {
@@ -180,6 +243,12 @@ final readonly class UserAttributeManager
         }
     }
 
+    /**
+     * @param string $siteId
+     * @param string $userId
+     * @return UserAttributeBag|null
+     * @throws Exception
+     */
     private function load(string $siteId, string $userId): ?UserAttributeBag
     {
         try {
@@ -198,6 +267,11 @@ final readonly class UserAttributeManager
         return $attributes;
     }
 
+    /**
+     * @param UserAttributeBag $attribute
+     * @return void
+     * @throws Exception
+     */
     private function warmWith(UserAttributeBag $attribute): void
     {
         try {

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Application\Console\Commands;
 
 use App\Shared\Services\EnvWriter;
-use Codefy\Framework\Application;
 use Codefy\Framework\Console\ConsoleCommand;
 use RuntimeException;
 
@@ -19,11 +18,6 @@ class DevflowCmfSetupCommand extends ConsoleCommand
     protected string $name = 'devflow:setup';
 
     protected string $description = 'Prepares Devflow environment keys and base configuration.';
-
-    public function __construct(protected Application $codefy)
-    {
-        parent::__construct(codefy: $codefy);
-    }
 
     /**
      * @throws ExceptionInterface

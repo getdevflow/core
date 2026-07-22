@@ -210,6 +210,7 @@ final class UpdateManager
     /**
      * @param string $command
      * @return array
+     * @throws Exception
      * @throws JsonException
      */
     private function composerJson(string $command): array

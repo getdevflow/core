@@ -38,7 +38,7 @@ use function App\Shared\Helpers\is_multisite;
 use function App\Shared\Helpers\sort_list;
 use function Codefy\Framework\Helpers\config;
 use function Codefy\Framework\Helpers\logger;
-use function Codefy\Framework\Helpers\trans;
+use function Codefy\Framework\Helpers\trans_html;
 use function Codefy\Framework\Helpers\view;
 use function Qubus\Error\Helpers\is_error;
 use function Qubus\Support\Helpers\is_false__;
@@ -61,14 +61,14 @@ final class AdminSiteController extends BaseController
     {
         if (false === current_user_can(perm: 'create:sites')) {
             Devflow::$PHP->flash->error(
-                message: trans('Access denied.')
+                message: trans_html('Access denied.')
             );
             return $this->redirect(admin_url());
         }
 
         if (!is_multisite()) {
             Devflow::$PHP->flash->error(
-                message: trans('Multisite is not enabled.')
+                message: trans_html('Multisite is not enabled.')
             );
             return $this->redirect(admin_url());
         }
@@ -77,7 +77,7 @@ final class AdminSiteController extends BaseController
             $id = cms_insert_site($request);
             if (is_error($id)) {
                 Devflow::$PHP->flash->error(
-                    message: trans('Insertion error occurred.')
+                    message: trans_html('Insertion error occurred.')
                 );
             }
 
@@ -93,7 +93,7 @@ final class AdminSiteController extends BaseController
         ) {
             logger(level: 'error', message: $e->getMessage());
             Devflow::$PHP->flash->error(
-                message: trans('Insertion exception occurred and was logged.')
+                message: trans_html('Insertion exception occurred and was logged.')
             );
         }
 
@@ -115,14 +115,14 @@ final class AdminSiteController extends BaseController
     {
         if (false === current_user_can(perm: 'manage:sites')) {
             Devflow::$PHP->flash->error(
-                message: trans('Access denied.')
+                message: trans_html('Access denied.')
             );
             return $this->redirect(admin_url());
         }
 
         if (!is_multisite()) {
             Devflow::$PHP->flash->error(
-                message: trans('Multisite is not enabled.')
+                message: trans_html('Multisite is not enabled.')
             );
             return $this->redirect(admin_url());
         }
@@ -135,7 +135,7 @@ final class AdminSiteController extends BaseController
             return view(
                 template: 'framework::backend/admin/site/index',
                 data: [
-                    'title' => trans('Sites'),
+                    'title' => trans_html('Sites'),
                     'sites' => $sites,
                     'request' => $request,
                     'connection' => $connection,
@@ -144,11 +144,11 @@ final class AdminSiteController extends BaseController
         } catch (UnresolvableQueryHandlerException | ReflectionException $e) {
             logger(level: 'error', message: $e->getMessage());
             Devflow::$PHP->flash->error(
-                message: trans('Exception occurred and was logged.')
+                message: trans_html('Exception occurred and was logged.')
             );
         }
 
-        return JsonResponseFactory::create(data: trans('Content types error.'), status: 404);
+        return JsonResponseFactory::create(data: trans_html('Content types error.'), status: 404);
     }
 
     /**
@@ -166,14 +166,14 @@ final class AdminSiteController extends BaseController
     {
         if (false === current_user_can(perm: 'update:sites')) {
             Devflow::$PHP->flash->error(
-                message: trans('Access denied.')
+                message: trans_html('Access denied.')
             );
             return $this->redirect(admin_url());
         }
 
         if (!is_multisite()) {
             Devflow::$PHP->flash->error(
-                message: trans('Multisite is not enabled.')
+                message: trans_html('Multisite is not enabled.')
             );
             return $this->redirect(admin_url());
         }
@@ -184,7 +184,7 @@ final class AdminSiteController extends BaseController
             $id = cms_update_site($dataArrayMerge);
             if (is_error($id)) {
                 Devflow::$PHP->flash->error(
-                    message: trans($id->getMessage())
+                    message: $id->getMessage()
                 );
                 return $this->redirect($request->getHeaderLine('Referer'));
             }
@@ -202,7 +202,7 @@ final class AdminSiteController extends BaseController
         ) {
             logger(level: 'error', message: $e->getMessage());
             Devflow::$PHP->flash->error(
-                message: trans('Change exception occurred and was logged.')
+                message: trans_html('Change exception occurred and was logged.')
             );
         }
 
@@ -224,14 +224,14 @@ final class AdminSiteController extends BaseController
     {
         if (false === current_user_can(perm: 'manage:sites')) {
             Devflow::$PHP->flash->error(
-                message: trans('Access denied.')
+                message: trans_html('Access denied.')
             );
             return $this->redirect(admin_url());
         }
 
         if (!is_multisite()) {
             Devflow::$PHP->flash->error(
-                message: trans('Multisite is not enabled.')
+                message: trans_html('Multisite is not enabled.')
             );
             return $this->redirect(admin_url());
         }
@@ -242,7 +242,7 @@ final class AdminSiteController extends BaseController
 
             if (is_false__($site)) {
                 return JsonResponseFactory::create(
-                    data: trans('The site does not exist.'),
+                    data: trans_html('The site does not exist.'),
                     status: 404
                 );
             }
@@ -262,7 +262,7 @@ final class AdminSiteController extends BaseController
         }
 
         return JsonResponseFactory::create(
-            data: trans('The site does not exist.'),
+            data: trans_html('The site does not exist.'),
             status: 404
         );
     }
@@ -285,21 +285,21 @@ final class AdminSiteController extends BaseController
                 false === current_user_can(perm: 'manage:users')
         ) {
             Devflow::$PHP->flash->error(
-                message: trans('Access denied.')
+                message: trans_html('Access denied.')
             );
             return $this->redirect(admin_url());
         }
 
         if (!is_multisite()) {
             Devflow::$PHP->flash->error(
-                message: trans('Multisite is not enabled.')
+                message: trans_html('Multisite is not enabled.')
             );
             return $this->redirect(admin_url());
         }
 
         if(!is_main_site(get_current_site_id())) {
             Devflow::$PHP->flash->error(
-                message: trans('The action is not allowed.')
+                message: trans_html('The action is not allowed.')
             );
             return $this->redirect(admin_url());
         }
@@ -310,7 +310,7 @@ final class AdminSiteController extends BaseController
         return view(
             template: 'framework::backend/admin/site/users',
             data: [
-                'title' => trans('Manage System Users'),
+                'title' => trans_html('Manage System Users'),
                 'users' => $users,
             ]
         );
@@ -333,25 +333,25 @@ final class AdminSiteController extends BaseController
                 false === current_user_can(perm: 'manage:users')
         ) {
             Devflow::$PHP->flash->error(
-                message: trans('Access denied.')
+                message: trans_html('Access denied.')
             );
             return $this->redirect(admin_url());
         }
         if (!is_multisite()) {
             Devflow::$PHP->flash->error(
-                message: trans('Multisite is not enabled.')
+                message: trans_html('Multisite is not enabled.')
             );
             return $this->redirect(admin_url());
         }
         if('null' === $request->get('site_id')) {
             Devflow::$PHP->flash->error(
-                message: trans('You cannot submit an empty site id.')
+                message: trans_html('You cannot submit an empty site id.')
             );
             return $this->redirect($request->getHeaderLine('Referer'));
         }
         if('null' === $request->get('user_role')) {
             Devflow::$PHP->flash->error(
-                message: trans('You cannot submit an empty user role.')
+                message: trans_html('You cannot submit an empty user role.')
             );
             return $this->redirect($request->getHeaderLine('Referer'));
         }
@@ -361,10 +361,10 @@ final class AdminSiteController extends BaseController
         $addUserToSite = add_user_to_site($request->get('user_id'), $request->get('site_id'), $request->get('user_role'));
         if(is_false__($addUserToSite)) {
             Devflow::$PHP->flash->error(
-                message: trans('An error occurred.')
+                message: trans_html('An error occurred.')
             );
         } else {
-            Devflow::$PHP->flash->success(Devflow::$PHP->flash->notice(num: 200));
+            Devflow::$PHP->flash->success(Devflow::$PHP->flash->notice(num: 201));
         }
 
         return $this->redirect($request->getHeaderLine('Referer'));
@@ -389,14 +389,14 @@ final class AdminSiteController extends BaseController
             false === current_user_can(perm: 'manage:sites')
         ) {
             Devflow::$PHP->flash->error(
-                message: trans('Access denied.')
+                message: trans_html('Access denied.')
             );
             return $this->redirect(admin_url('site/users/'));
         }
 
         if (!is_multisite()) {
             Devflow::$PHP->flash->error(
-                message: trans('Multisite is not enabled.')
+                message: trans_html('Multisite is not enabled.')
             );
             return $this->redirect(admin_url());
         }
@@ -431,7 +431,7 @@ final class AdminSiteController extends BaseController
         ) {
             logger(level: 'error', message: $e->getMessage());
             Devflow::$PHP->flash->error(
-                trans('Delete exception occurred and was logged.')
+                trans_html('Delete exception occurred and was logged.')
             );
         }
 
@@ -452,14 +452,14 @@ final class AdminSiteController extends BaseController
     {
         if (false === current_user_can(perm: 'delete:sites')) {
             Devflow::$PHP->flash->error(
-                message: trans('Access denied.')
+                message: trans_html('Access denied.')
             );
             return $this->redirect(admin_url());
         }
 
         if (!is_multisite()) {
             Devflow::$PHP->flash->error(
-                message: trans('Multisite is not enabled.')
+                message: trans_html('Multisite is not enabled.')
             );
             return $this->redirect(admin_url());
         }
@@ -467,7 +467,7 @@ final class AdminSiteController extends BaseController
         try {
             if (is_main_site($siteId)) {
                 Devflow::$PHP->flash->error(
-                    message: trans('This action is not allowed.')
+                    message: trans_html('This action is not allowed.')
                 );
                 return $this->redirect(admin_url('site/'));
             }
@@ -478,7 +478,7 @@ final class AdminSiteController extends BaseController
         ) {
             logger(level: 'error', message: $e->getMessage());
             Devflow::$PHP->flash->error(
-                trans('A site check exception occurred and was logged.')
+                trans_html('A site check exception occurred and was logged.')
             );
         }
 
@@ -501,7 +501,7 @@ final class AdminSiteController extends BaseController
         ) {
             logger(level: 'error', message: $e->getMessage());
             Devflow::$PHP->flash->error(
-                message: trans('A site deletion exception occurred and was logged.')
+                message: trans_html('A site deletion exception occurred and was logged.')
             );
         }
 

@@ -83,6 +83,13 @@ final readonly class AttributeManager
         return $this->load($id);
     }
 
+    /**
+     * @param string $id
+     * @param string $key
+     * @param mixed $value
+     * @return AttributeBag
+     * @throws Exception
+     */
     public function set(string $id, string $key, mixed $value): AttributeBag
     {
         $updated = $this->repository->patchAttribute(
@@ -96,6 +103,12 @@ final readonly class AttributeManager
         return $updated;
     }
 
+    /**
+     * @param string $id
+     * @param string $key
+     * @return AttributeBag
+     * @throws Exception
+     */
     public function remove(string $id, string $key): AttributeBag
     {
         $updated = $this->repository->patchAttribute(
@@ -110,7 +123,10 @@ final readonly class AttributeManager
     }
 
     /**
+     * @param string $id
      * @param array<string, mixed> $values
+     * @return AttributeBag
+     * @throws Exception
      */
     public function replaceAll(string $id, array $values): AttributeBag
     {
@@ -123,7 +139,10 @@ final readonly class AttributeManager
     }
 
     /**
+     * @param string $id
      * @param array<string, mixed> $values
+     * @return AttributeBag
+     * @throws Exception
      */
     public function merge(string $id, array $values): AttributeBag
     {
@@ -138,6 +157,12 @@ final readonly class AttributeManager
         return $updated;
     }
 
+    /**
+     * @param string $id
+     * @param array $values
+     * @return AttributeBag
+     * @throws Exception
+     */
     public function mergeRecursive(string $id, array $values): AttributeBag
     {
         $updated = $this->repository->patchAttribute(
@@ -159,6 +184,11 @@ final readonly class AttributeManager
         $this->cache->delete(md5($id));
     }
 
+    /**
+     * @param string $id
+     * @return AttributeBag
+     * @throws Exception
+     */
     public function warm(string $id): AttributeBag
     {
         $attribute = $this->repository->getAttribute($this->type, $id);
@@ -170,6 +200,7 @@ final readonly class AttributeManager
     /**
      * @param list<string> $ids
      * @return array<string, AttributeBag>
+     * @throws Exception
      */
     public function warmMany(array $ids): array
     {
@@ -225,6 +256,12 @@ final readonly class AttributeManager
         return $attribute;
     }
 
+    /**
+     * @param string $id
+     * @param AttributeBag $attribute
+     * @return void
+     * @throws Exception
+     */
     private function storeWarmCache(string $id, AttributeBag $attribute): void
     {
         try {

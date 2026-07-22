@@ -32,7 +32,7 @@ use function App\Shared\Helpers\get_all_content_types;
 use function App\Shared\Helpers\get_content_type_by;
 use function Codefy\Framework\Helpers\command;
 use function Codefy\Framework\Helpers\logger;
-use function Codefy\Framework\Helpers\trans;
+use function Codefy\Framework\Helpers\trans_html;
 
 final readonly class ContentTypeService
 {
@@ -40,6 +40,10 @@ final readonly class ContentTypeService
     {
     }
 
+    /**
+     * @return ContentType[]
+     * @throws Exception
+     */
     public function findContentTypes(): array
     {
         try {
@@ -47,13 +51,18 @@ final readonly class ContentTypeService
             $contentTypes = get_all_content_types();
         } catch (UnresolvableQueryHandlerException|ReflectionException $e) {
             Devflow::$PHP->flash->error(
-                message: trans('Error fetching content types.')
+                message: trans_html('Error fetching content types.')
             );
         }
 
         return $contentTypes;
     }
 
+    /**
+     * @param StoreContentTypeValidator $data
+     * @return void
+     * @throws Exception
+     */
     public function createContentType(StoreContentTypeValidator $data): void
     {
         try {
@@ -82,13 +91,15 @@ final readonly class ContentTypeService
             logger('error', $e->getMessage());
 
             Devflow::$PHP->flash->error(
-                message: trans('Insertion exception occurred and was logged.')
+                message: trans_html('Insertion exception occurred and was logged.')
             );
         }
     }
 
     /**
+     * @param UpdateContentTypeValidator $data
      * @throws ContainerExceptionInterface
+     * @throws Exception
      * @throws NotFoundExceptionInterface
      */
     public function updateContentType(UpdateContentTypeValidator $data): void
@@ -117,11 +128,16 @@ final readonly class ContentTypeService
             logger('error', $e->getMessage());
 
             Devflow::$PHP->flash->error(
-                message: trans('Change exception occurred and was logged.')
+                message: trans_html('Change exception occurred and was logged.')
             );
         }
     }
 
+    /**
+     * @param DestroyContentTypeValidator $data
+     * @return void
+     * @throws Exception
+     */
     public function deleteContentType(DestroyContentTypeValidator $data): void
     {
         /** @var string $contentTypeId */
@@ -141,7 +157,7 @@ final readonly class ContentTypeService
             logger('error', $e->getMessage());
 
             Devflow::$PHP->flash->error(
-                message: trans('Delete exception occurred and was logged.')
+                message: trans_html('Delete exception occurred and was logged.')
             );
         }
     }

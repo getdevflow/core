@@ -31,7 +31,7 @@ use function App\Shared\Helpers\global_option_cache;
 use function App\Shared\Helpers\is_main_site;
 use function App\Shared\Helpers\is_user_logged_in;
 use function Codefy\Framework\Helpers\base_path;
-use function Codefy\Framework\Helpers\trans;
+use function Codefy\Framework\Helpers\trans_html;
 use function Codefy\Framework\Helpers\view;
 use function preg_filter;
 
@@ -51,12 +51,12 @@ final class AdminDashboardController extends BaseController
     {
         if (!is_user_logged_in()) {
             Devflow::$PHP->flash->error(
-                message: trans('Access denied.')
+                message: trans_html('Access denied.')
             );
             return $this->redirect(Devflow::$PHP->configContainer->string(key: 'auth.redirect_guests_to'));
         }
 
-        return view(template: 'framework::backend/index', data: ['title' => 'Admin Dashboard']);
+        return view(template: 'framework::backend/index', data: ['title' => trans_html('Admin Dashboard')]);
     }
 
     /**
@@ -77,7 +77,7 @@ final class AdminDashboardController extends BaseController
     {
         if (false === current_user_can(perm: 'change:settings')) {
             Devflow::$PHP->flash->error(
-                message: trans('Access denied.')
+                message: trans_html('Access denied.')
             );
             return $this->redirect($this->router->url(name: 'admin.login'));
         }
@@ -86,7 +86,7 @@ final class AdminDashboardController extends BaseController
 
         return view(
             template: 'framework::backend/snapshot',
-            data: ['title' => trans('System Snapshot'), 'users' => count($users)]
+            data: ['title' => trans_html('System Snapshot'), 'users' => count($users)]
         );
     }
 
@@ -106,7 +106,7 @@ final class AdminDashboardController extends BaseController
     {
         if (false === current_user_can(perm: 'flush:cache')) {
             Devflow::$PHP->flash->error(
-                message: trans('Access denied.')
+                message: trans_html('Access denied.')
             );
 
             return $this->redirect($request->getHeaderLine('Referer'));
@@ -142,7 +142,7 @@ final class AdminDashboardController extends BaseController
             }
 
             Devflow::$PHP->flash->success(
-                trans(string: 'Cache flushed successfully.')
+                trans_html(string: 'Cache flushed successfully.')
             );
         }
 
@@ -168,12 +168,12 @@ final class AdminDashboardController extends BaseController
     {
         if (false === current_user_can(perm: 'manage:media')) {
             Devflow::$PHP->flash->error(
-                message: trans('Access denied.')
+                message: trans_html('Access denied.')
             );
 
             return $this->redirect(admin_url());
         }
 
-        return view(template: 'framework::backend/media', data: ['title' => 'Media Library']);
+        return view(template: 'framework::backend/media', data: ['title' => trans_html('Media Library')]);
     }
 }

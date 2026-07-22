@@ -11,7 +11,6 @@ use Qubus\Expressive\Database;
 use ReflectionException;
 use RuntimeException;
 
-use function Codefy\Framework\Helpers\trans;
 use function Codefy\Framework\Helpers\trans_html;
 use function is_string;
 use function sprintf;
@@ -127,7 +126,7 @@ final readonly class PdoUserAttributeDataRepository implements UserAttributeRepo
             $json = $stmt->fetchColumn();
 
             if ($json === false) {
-                throw new \RuntimeException(trans('User attribute not found'));
+                throw new \RuntimeException(trans_html('User attribute not found'));
             }
 
             $current = UserAttributeBag::fromJson($siteId, $userId, is_string($json) ? $json : null);
@@ -135,7 +134,7 @@ final readonly class PdoUserAttributeDataRepository implements UserAttributeRepo
 
             if (!$updated instanceof UserAttributeBag) {
                 throw new \RuntimeException(
-                    trans('Attribute patch callback must return an AttributeBag instance.')
+                    trans_html('Attribute patch callback must return an AttributeBag instance.')
                 );
             }
 

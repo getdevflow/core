@@ -29,7 +29,6 @@ use function App\Shared\Helpers\get_global_option;
 use function array_any;
 use function class_exists;
 use function Codefy\Framework\Helpers\base_path;
-use function Codefy\Framework\Helpers\trans;
 use function Codefy\Framework\Helpers\trans_html;
 use function Codefy\Framework\Helpers\view;
 use function function_exists;
@@ -57,7 +56,7 @@ final class ExtensionInstallerController
     public function plugins(): ResponseInterface
     {
         if (!current_user_can(perm: 'install:plugins')) {
-            Devflow::$PHP->flash->error(message: trans('Access denied.'));
+            Devflow::$PHP->flash->error(message: trans_html('Access denied.'));
 
             return redirect(admin_url('plugin'));
         }
@@ -67,6 +66,7 @@ final class ExtensionInstallerController
         );
 
         return view('framework::backend/admin/plugin/install', [
+            'title' => trans_html('Install Plugins'),
             'plugins' => $repository->plugins(),
         ]);
     }
@@ -94,6 +94,7 @@ final class ExtensionInstallerController
         );
 
         return view('framework::backend/admin/theme/install', [
+            'title' => trans_html('Install Themes'),
             'themes' => $repository->themes(),
         ]);
     }

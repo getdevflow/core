@@ -5,16 +5,20 @@ declare(strict_types=1);
 namespace App\Infrastructure\Http\Controllers;
 
 use App\Application\Devflow;
-use App\Domain\User\Model\User;
 use App\Domain\User\Query\FindUserByIdQuery;
+use App\Domain\User\Validator\StoreUserValidator;
+use App\Domain\User\Validator\UpdateUserProfileValidator;
+use App\Domain\User\Validator\UpdateUserValidator;
 use App\Domain\User\ValueObject\UserId;
 use App\Infrastructure\Persistence\Cache\UserCachePsr16;
 use App\Infrastructure\Services\NativePhpCookies;
-use App\Infrastructure\Services\Queue\NewAccountNotification;
 use App\Infrastructure\Services\Queue\ResetPasswordNotification;
+use App\Infrastructure\Services\User\Pipes\CastUserAttributesToInt;
+use App\Infrastructure\Services\User\UserService;
 use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
 use Codefy\CommandBus\Exceptions\UnresolvableCommandHandlerException;
 use Codefy\Framework\Http\BaseController;
+use Codefy\Framework\Pipeline\Pipeline;
 use Codefy\QueryBus\UnresolvableQueryHandlerException;
 use Defuse\Crypto\Crypto;
 use Defuse\Crypto\Exception\EnvironmentIsBrokenException;
@@ -24,11 +28,9 @@ use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\SimpleCache\InvalidArgumentException;
-use Qubus\EventDispatcher\ActionFilter\Action;
 use Qubus\Exception\Data\TypeException;
 use Qubus\Http\Cookies\CookiesResponse;
 use Qubus\Http\Cookies\Factory\CookieFactory;
-use Qubus\Http\Factories\JsonResponseFactory;
 use Qubus\Http\Response;
 use Qubus\Http\ServerRequest;
 use Qubus\Http\Session\SessionException;
@@ -36,41 +38,34 @@ use ReflectionException;
 
 use function App\Shared\Helpers\admin_url;
 use function App\Shared\Helpers\cms_delete_site_user;
-use function App\Shared\Helpers\cms_insert_user;
-use function App\Shared\Helpers\cms_update_user;
 use function App\Shared\Helpers\current_user_can;
 use function App\Shared\Helpers\get_current_site_id;
-use function App\Shared\Helpers\get_current_site_key;
 use function App\Shared\Helpers\get_current_user_id;
 use function App\Shared\Helpers\get_name;
 use function App\Shared\Helpers\get_option;
 use function App\Shared\Helpers\get_user_by;
 use function App\Shared\Helpers\get_user_value;
 use function App\Shared\Helpers\get_userdata;
-use function App\Shared\Helpers\get_users_by_site_key;
 use function App\Shared\Helpers\is_multisite;
 use function App\Shared\Helpers\is_user_logged_in;
 use function App\Shared\Helpers\login_url;
 use function App\Shared\Helpers\remove_user_from_site;
 use function App\Shared\Helpers\reset_password;
 use function App\Shared\Helpers\site_url;
-use function App\Shared\Helpers\sort_list;
-use function array_merge;
 use function Codefy\Framework\Helpers\ask;
 use function Codefy\Framework\Helpers\config;
 use function Codefy\Framework\Helpers\logger;
 use function Codefy\Framework\Helpers\queue;
 use function Codefy\Framework\Helpers\storage_path;
 use function Codefy\Framework\Helpers\trans;
+use function Codefy\Framework\Helpers\trans_html;
 use function Codefy\Framework\Helpers\view;
 use function file_exists;
-use function get_class;
 use function is_string;
 use function parse_str;
 use function Qubus\Error\Helpers\is_error;
 use function Qubus\Support\Helpers\is_false__;
 use function sprintf;
-use function strlen;
 use function time;
 use function unlink;
 
@@ -78,6 +73,7 @@ final class AdminUserController extends BaseController
 {
     /**
      * @param ServerRequest $request
+     * @param UserService $service
      * @return ResponseInterface
      * @throws ContainerExceptionInterface
      * @throws InvalidArgumentException
@@ -86,109 +82,24 @@ final class AdminUserController extends BaseController
      * @throws TypeException
      * @throws \Qubus\Exception\Exception
      */
-    public function userCreate(ServerRequest $request): ResponseInterface
+    public function userCreate(ServerRequest $request, UserService $service): ResponseInterface
     {
-        if (false === current_user_can(perm: 'create:users')) {
+        $id = $service->createUser(
+            StoreUserValidator::make(
+                $request
+            )
+        );
+
+        $request->withAttribute('USER_BODY', $request->getParsedBody());
+
+        if (is_error($id)) {
             Devflow::$PHP->flash->error(
-                message: trans('Access denied.'),
-            );
-            return $this->redirect(admin_url());
-        }
-
-        if (strlen($request->get('pass')) < config()->integer(key: 'auth.password_min_length')) {
-            Devflow::$PHP->flash->error(
-                message: sprintf(
-                    trans(string: 'Passwords cannot be less than %s characters.'),
-                    config()->integer(key: 'auth.password_min_length')
-                ),
-            );
-            $this->redirect($request->getHeaderLine(name: 'Referer'));
-        }
-
-        try {
-            /** @var User $user */
-            $user = get_user_by(field: 'email', value: $request->get('email'));
-
-            if (is_false__($user)) {
-                $update = false;
-                $userLogin = $request->get('login');
-                $extra = ['pass' => $request->get('pass')];
-            } else {
-                $update = true;
-                $userLogin = $user->login;
-                $extra = ['pass' => $request->get('pass'), 'login' => $userLogin];
-            }
-
-            if (empty($userLogin)) {
-                Devflow::$PHP->flash->error(
-                    message: trans('Username cannot be empty or null.'),
-                );
-                return $this->redirect($request->getHeaderLine(name: 'Referer'));
-            }
-        } catch (
-            NotFoundExceptionInterface |
-            ContainerExceptionInterface |
-            Exception $e
-        ) {
-            logger(level: 'error', message: $e->getMessage());
-            Devflow::$PHP->flash->error(
-                trans('User check exception occurred and was logged.')
+                message: $id->getMessage(),
             );
             return $this->redirect($request->getHeaderLine(name: 'Referer'));
         }
 
-        try {
-            $arrayMerge = array_merge($extra, $request->getParsedBody());
-            if ($update) {
-                $userId = cms_update_user($arrayMerge);
-            } else {
-                $userId = cms_insert_user($arrayMerge);
-            }
-
-            if (is_error($userId)) {
-                Devflow::$PHP->flash->error(
-                    message: $userId->getMessage(),
-                );
-                return $this->redirect($request->getHeaderLine(name: 'Referer'));
-            }
-
-            if ((int) $request->get('sendemail') === 1) {
-                queue(
-                    new NewAccountNotification([
-                        'login' => (string) $request->get('login'),
-                        'email' => (string) $request->get('email'),
-                        'pass' => (string) $request->get('pass'),
-                        'url' => sprintf(site_url('admin/%s/'), Devflow::$PHP->configContainer->string(key: 'auth.login_route')),
-                        'sitename' => (string) get_option(key: 'sitename'),
-                    ])
-                )
-                ->createItem();
-            }
-
-            Devflow::$PHP->flash->success(
-                message: Devflow::$PHP->flash->notice(num: 201),
-            );
-
-            $request->withAttribute('USER_BODY', $request->getParsedBody());
-
-            return $this->redirect(admin_url("user/$userId/"));
-        } catch (
-            CommandPropertyNotFoundException |
-            ContainerExceptionInterface |
-            TypeException |
-            Exception $e
-        ) {
-            logger(
-                level: 'error',
-                message: $e->getMessage(),
-                context: ['code' => $e->getCode(), 'exception' => get_class($e)]
-            );
-            Devflow::$PHP->flash->error(
-                message: trans('Insertion exception occurred and was logged.')
-            );
-        }
-
-        return $this->redirect($request->getHeaderLine(name: 'Referer'));
+        return $this->redirect(admin_url(sprintf("user/%s/", $id)));
     }
 
     /**
@@ -206,7 +117,7 @@ final class AdminUserController extends BaseController
     {
         if (false === current_user_can(perm: 'create:users')) {
             Devflow::$PHP->flash->error(
-                message: trans('Access denied.'),
+                message: trans_html('Access denied.'),
             );
             return $this->redirect(admin_url());
         }
@@ -214,13 +125,14 @@ final class AdminUserController extends BaseController
         return view(
             template: 'framework::backend/admin/user/create',
             data: [
-                'title' => trans('Create User'),
+                'title' => trans_html('Create User'),
                 'request' => $request->getAttribute('USER_BODY')
             ]
         );
     }
 
     /**
+     * @param UserService $service
      * @return ResponseInterface
      * @throws ContainerExceptionInterface
      * @throws InvalidArgumentException
@@ -230,39 +142,29 @@ final class AdminUserController extends BaseController
      * @throws \Qubus\Exception\Exception
      * @throws Exception
      */
-    public function users(): ResponseInterface
+    public function users(UserService $service): ResponseInterface
     {
         if (false === current_user_can(perm: 'manage:users')) {
             Devflow::$PHP->flash->error(
-                message: trans('Access denied.'),
+                message: trans_html('Access denied.'),
             );
             return $this->redirect(admin_url());
         }
 
-        try {
-            $results = get_users_by_site_key(get_current_site_key());
-            $users = sort_list($results, 'user_registered', 'DESC', true);
+        $users = $service->find();
 
-            return view(
-                template: 'framework::backend/admin/user/index',
-                data: [
-                    'title' => trans(string: 'Users'),
-                    'users' => $users,
-                ]
-            );
-        } catch (UnresolvableQueryHandlerException | ReflectionException $e) {
-            logger(level: 'error', message: $e->getMessage());
-            Devflow::$PHP->flash->error(
-                message: trans('Query exception occurred and was logged.')
-            );
-        }
-
-        return JsonResponseFactory::create(data: trans('Users error'), status: 404);
+        return view(
+            template: 'framework::backend/admin/user/index',
+            data: [
+                'title' => trans_html(string: 'Users'),
+                'users' => $users,
+            ]
+        );
     }
 
     /**
      * @param ServerRequest $request
-     * @param string $userId
+     * @param UserService $service
      * @return ResponseInterface
      * @throws ContainerExceptionInterface
      * @throws InvalidArgumentException
@@ -271,45 +173,19 @@ final class AdminUserController extends BaseController
      * @throws TypeException
      * @throws \Qubus\Exception\Exception
      */
-    public function userChange(ServerRequest $request, string $userId): ResponseInterface
+    public function userChange(ServerRequest $request, UserService $service): ResponseInterface
     {
-        if (false === current_user_can(perm: 'update:users')) {
+        $id = $service->updateUser(
+            UpdateUserValidator::make(
+                $request
+            )
+        );
+
+        if (is_error($id)) {
             Devflow::$PHP->flash->error(
-                message: trans('Permission denied.')
+                message: $id->getMessage()
             );
-            return $this->redirect(admin_url());
-        }
-
-        /**
-         * Action triggered before user record is updated.
-         */
-        Action::getInstance()->doAction('pre_update_user', $userId);
-
-        $dataArrayMerge = array_merge(['id' => $userId], $request->getParsedBody());
-
-        try {
-            $userId = cms_update_user($dataArrayMerge);
-
-            if (is_error($userId)) {
-                Devflow::$PHP->flash->error(
-                    message: $userId->getMessage(),
-                );
-                return $this->redirect($request->getHeaderLine(name: 'Referer'));
-            }
-
-            Devflow::$PHP->flash->success(
-                message: Devflow::$PHP->flash->notice(num: 200),
-            );
-        } catch (
-            CommandPropertyNotFoundException |
-            ContainerExceptionInterface |
-            TypeException |
-            Exception $e
-        ) {
-            logger(level: 'error', message: $e->getMessage());
-            Devflow::$PHP->flash->error(
-                message: trans('User change exception occurred and was logged.')
-            );
+            return $this->redirect($request->getHeaderLine(name: 'Referer'));
         }
 
         return $this->redirect($request->getHeaderLine(name: 'Referer'));
@@ -317,6 +193,7 @@ final class AdminUserController extends BaseController
 
     /**
      * @param string $userId
+     * @param UserService $service
      * @return ResponseInterface
      * @throws ContainerExceptionInterface
      * @throws InvalidArgumentException
@@ -326,42 +203,27 @@ final class AdminUserController extends BaseController
      * @throws \Qubus\Exception\Exception
      * @throws Exception
      */
-    public function userView(string $userId): ResponseInterface
+    public function userView(string $userId, UserService $service): ResponseInterface
     {
-        if (false === current_user_can(perm: 'update:content')) {
+        if (false === current_user_can(perm: 'update:users')) {
             Devflow::$PHP->flash->error(
-                message: trans('Access denied.')
+                message: trans_html('Access denied.')
             );
             return $this->redirect(admin_url());
         }
 
-        if($userId === get_current_user_id()){
+        if ($userId === get_current_user_id()) {
             return $this->redirect(admin_url('user/profile'));
         }
 
-        try {
-            /** @var User $user */
-            $user = get_user_by('id', $userId);
+        $user = $service->findById($userId);
 
-            return view(
-                template: 'framework::backend/admin/user/view',
-                data: [
-                    'title' => trans('View User'),
-                    'user' => $user,
-                ]
-            );
-        } catch (
-            ContainerExceptionInterface |
-            InvalidArgumentException |
-            TypeException |
-            ReflectionException $e
-        ) {
-            logger(level: 'error', message: $e->getMessage());
-        }
-
-        return JsonResponseFactory::create(
-            data: trans('The user does not exist.'),
-            status: 404
+        return view(
+            template: 'framework::backend/admin/user/view',
+            data: [
+                'title' => sprintf(trans_html('View %s'), $user->login),
+                'user' => $user,
+            ]
         );
     }
 
@@ -379,7 +241,7 @@ final class AdminUserController extends BaseController
     {
         if (false === current_user_can(perm: 'delete:users')) {
             Devflow::$PHP->flash->error(
-                message: trans('Access denied.')
+                message: trans_html('Access denied.')
             );
             return $this->redirect(admin_url());
         }
@@ -388,7 +250,7 @@ final class AdminUserController extends BaseController
             $oldUser = get_user_by(field: 'id', value: $request->getParsedBody()['user_id']);
             $assignId = (string) $request->getParsedBody()['assign_id'];
 
-            if(is_multisite()) {
+            if (is_multisite()) {
                 remove_user_from_site(
                     userId: $request->getParsedBody()['user_id'],
                     params: [
@@ -419,7 +281,7 @@ final class AdminUserController extends BaseController
         ) {
             logger('error', $e->getMessage());
             Devflow::$PHP->flash->error(
-                message: trans('A removal exception occurred and was logged.')
+                message: trans_html('A removal exception occurred and was logged.')
             );
         }
 
@@ -442,7 +304,7 @@ final class AdminUserController extends BaseController
     {
         if (!is_user_logged_in()) {
             Devflow::$PHP->flash->error(
-                message: trans('Access denied.')
+                message: trans_html('Access denied.')
             );
         }
 
@@ -470,7 +332,7 @@ final class AdminUserController extends BaseController
     {
         if (false === current_user_can(perm: 'update:users') || false === current_user_can(perm: 'reset:password')) {
             Devflow::$PHP->flash->error(
-                message: trans('Access denied.')
+                message: trans_html('Access denied.')
             );
             return $this->redirect($request->getHeaderLine(name: 'Referer'));
         }
@@ -478,7 +340,7 @@ final class AdminUserController extends BaseController
         try {
             $user = get_user_by(field: 'id', value: $userId);
             if (is_false__($user)) {
-                Devflow::$PHP->flash->error(trans('User not found.'));
+                Devflow::$PHP->flash->error(trans_html('User not found.'));
             }
 
             $password = reset_password($userId);
@@ -503,7 +365,7 @@ final class AdminUserController extends BaseController
             }
 
             Devflow::$PHP->flash->success(
-                trans(
+                trans_html(
                     "The password reset email has been queued for sending.",
                 )
             );
@@ -518,7 +380,7 @@ final class AdminUserController extends BaseController
         ) {
             logger(level: 'error', message: $e->getMessage());
             Devflow::$PHP->flash->error(
-                trans('Reset password exception occurred and was logged.')
+                trans_html('Reset password exception occurred and was logged.')
             );
         }
         return $this->redirect($request->getHeaderLine(name: 'Referer'));
@@ -526,6 +388,7 @@ final class AdminUserController extends BaseController
 
     /**
      * @param ServerRequest $request
+     * @param UserService $service
      * @return ResponseInterface
      * @throws ContainerExceptionInterface
      * @throws InvalidArgumentException
@@ -534,46 +397,25 @@ final class AdminUserController extends BaseController
      * @throws \Qubus\Exception\Exception
      * @throws Exception
      */
-    public function userProfile(ServerRequest $request): ResponseInterface
+    public function userProfile(ServerRequest $request, UserService $service): ResponseInterface
     {
-        if (!current_user_can(perm: 'manage:profile')) {
-            Devflow::$PHP->flash->error(
-                message: trans('Access denied.')
-            );
-
-            return $this->redirect(admin_url());
-        }
-
         if ($request->getMethod() === 'POST') {
-            try {
-                $userId = cms_update_user($request->getParsedBody());
+            $request = Devflow::$PHP->make(name: Pipeline::class)
+                ->send($request)
+                ->through([CastUserAttributesToInt::class])
+                ->thenReturn();
 
-                if (is_error($userId)) {
-                    Devflow::$PHP->flash->error(trans('An update error occurred.'));
-
-                    return $this->redirect(admin_url('user/profile/'));
-                }
-
-                Devflow::$PHP->flash->success(message: Devflow::$PHP->flash->notice(num: 200));
-            } catch (
-                CommandPropertyNotFoundException |
-                NotFoundExceptionInterface |
-                ContainerExceptionInterface |
-                TypeException |
-                \Qubus\Exception\Exception |
-                ReflectionException $e
-            ) {
-                logger(level: 'error', message: $e->getMessage());
-                Devflow::$PHP->flash->error(
-                    trans('An update exception occurred and was logged.')
-                );
+            $update = $service->updateProfile(UpdateUserProfileValidator::make($request));
+            if (is_error($update)) {
+                Devflow::$PHP->flash->error($update->getMessage());
             }
+            return $this->redirect(admin_url('user/profile/'));
         }
 
         return view(
             template: 'framework::backend/admin/user/profile',
             data: [
-                'title' => trans('User Profile'),
+                'title' => trans_html('User Profile'),
                 'user' => get_userdata(get_current_user_id())
             ]
         );
@@ -597,7 +439,7 @@ final class AdminUserController extends BaseController
     {
         if (false === current_user_can(perm: 'switch:user')) {
             Devflow::$PHP->flash->error(
-                message: trans('Access denied.')
+                message: trans_html('Access denied.')
             );
 
             return $this->redirect(admin_url());
@@ -656,11 +498,11 @@ final class AdminUserController extends BaseController
                     maxAge: (int) get_option(key: 'cookieexpire', default: 172800) + time()
                 )
             )
-            ->withHeader('Location', admin_url('user'))
+            ->withHeader('Location', admin_url())
             ->withStatus(302);
 
             Devflow::$PHP->flash->success(
-                message: trans('User switching was successful.')
+                message: trans_html('User switching was successful.')
             );
 
             return $response;
@@ -673,7 +515,7 @@ final class AdminUserController extends BaseController
         ) {
             logger(level: 'error', message: $e->getMessage());
             Devflow::$PHP->flash->error(
-                trans('User switching exception occurred and was logged.')
+                trans_html('User switching exception occurred and was logged.')
             );
         }
 
@@ -696,7 +538,7 @@ final class AdminUserController extends BaseController
     {
         if (!is_user_logged_in()) {
             Devflow::$PHP->flash->error(
-                message: trans('Access denied.')
+                message: trans_html('Access denied.')
             );
 
             return $this->redirect(login_url());
@@ -707,7 +549,7 @@ final class AdminUserController extends BaseController
 
             if ($cookies->get('USERCOOKIEID') === null || $cookies->get('USERCOOKIEID') === '') {
                 Devflow::$PHP->flash->error(
-                    message: trans('Cookie is not properly set for user switching.')
+                    message: trans_html('Cookie is not properly set for user switching.')
                 );
 
                 $this->redirect(admin_url());
@@ -769,7 +611,7 @@ final class AdminUserController extends BaseController
             ->withStatus(302);
 
             Devflow::$PHP->flash->success(
-                message: trans('Switching back to previous user session was successful.')
+                message: trans_html('Switching back to previous user session was successful.')
             );
 
             return $response;
@@ -782,7 +624,7 @@ final class AdminUserController extends BaseController
         ) {
             logger(level: 'error', message: $e->getMessage());
             Devflow::$PHP->flash->error(
-                trans('User switch back exception occurred and was logged.')
+                trans_html('User switch back exception occurred and was logged.')
             );
         }
 

@@ -29,6 +29,7 @@ use function Codefy\Framework\Helpers\gate;
 use function Codefy\Framework\Helpers\logger;
 use function Codefy\Framework\Helpers\storage_path;
 use function Codefy\Framework\Helpers\trans;
+use function Codefy\Framework\Helpers\trans_html;
 use function file_exists;
 use function filter_var;
 use function parse_str;
@@ -114,7 +115,7 @@ function is_user_logged_in(): bool
 
     $cookies = NativePhpCookies::factory();
 
-    if(false === $currentUser = cms_get_current_user()) {
+    if (false === $currentUser = cms_get_current_user()) {
         return false;
     }
 
@@ -176,7 +177,6 @@ function cms_authenticate(string $login, string $password, string $rememberme): 
         Devflow::$PHP->flash->error(
             trans_html(
                 'Sorry, there was an error.',
-                
             ),
         );
 
@@ -242,7 +242,6 @@ function cms_authenticate_user(string $login, string $password, string $remember
             Devflow::$PHP->flash->error(
                 trans(
                     '<strong>ERROR</strong>: The password field is empty.',
-                    
                 ),
             );
             return redirect($request->getHeaderLine(name: 'Referer'));
@@ -432,6 +431,7 @@ function login_form_show_message(): void
  * @file core/Shared/Helpers/auth.php
  * @param string $key COOKIE key.
  * @return false|array|object Cookie data or false.
+ * @throws TypeException
  */
 function get_secure_cookie_data(string $key): false|array|object
 {
