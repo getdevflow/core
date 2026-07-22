@@ -66,6 +66,7 @@ use function str_replace;
  *
  * @return array
  * @throws ReflectionException
+ * @throws TypeException
  * @throws UnresolvableQueryHandlerException
  */
 function get_content(): array
@@ -84,6 +85,7 @@ function get_content(): array
  * @return Content[] Array of published content or content by particular content type.
  * @throws CommandPropertyNotFoundException
  * @throws ReflectionException
+ * @throws TypeException
  * @throws UnresolvableQueryHandlerException
  */
 function get_all_content_with_filters(
@@ -499,6 +501,7 @@ function get_permalink(string $contentId): string
  * @return array Content.
  * @throws CommandPropertyNotFoundException
  * @throws ReflectionException
+ * @throws TypeException
  * @throws UnresolvableQueryHandlerException
  */
 function get_all_content(
@@ -539,6 +542,7 @@ function content_status_label(string $status): string
  * @param bool $default Optional. Default value.
  * @return mixed
  * @throws ContainerExceptionInterface
+ * @throws Exception
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  * @throws TypeException
@@ -559,6 +563,7 @@ function get_content_attribute(string $contentId, string $key, mixed $default = 
  * @param mixed $value Attribute value.
  * @return AttributeBag
  * @throws ContainerExceptionInterface
+ * @throws Exception
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  * @throws TypeException
@@ -580,6 +585,7 @@ function update_content_attribute(
  * @param mixed $value Attribute value. Must be serializable if non-scalar.
  * @return AttributeBag
  * @throws ContainerExceptionInterface
+ * @throws Exception
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  * @throws TypeException
@@ -597,6 +603,7 @@ function add_content_attribute(string $contentId, string $key, mixed $value): At
  * @param string $key Attribute name.
  * @return AttributeBag
  * @throws ContainerExceptionInterface
+ * @throws Exception
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  * @throws TypeException
@@ -2483,6 +2490,7 @@ function number_content_by_type(string $slug): int
  * @param string $contentId Content id.
  * @return void
  * @throws ReflectionException
+ * @throws TypeException
  * @throws UnresolvableQueryHandlerException
  */
 function get_content_parent_dropdown_list(?string $parentId = null, string $contentId = ''): void
@@ -2621,8 +2629,7 @@ function the_body(string|Content|ContentId $content): string
 
     $contentBody = get_content_body($content);
     $contentBody = __observer()->filter->applyFilter('the.body', $contentBody, $content);
-    $contentBody = str_replace(']]>', ']]&gt;', $contentBody);
-    return $contentBody;
+    return str_replace(']]>', ']]&gt;', $contentBody);
 }
 
 /**
@@ -2781,7 +2788,7 @@ function user_can_set_content_status(string $status): bool
  * @throws ReflectionException
  * @throws TypeException
  */
-function user_can_schedule_content_for(?string $publishedGmt): bool
+function user_can_schedule_content_for(?string $publishedGmt = null): bool
 {
     if (false === current_user_can(perm: 'schedule:content')) {
         return false;

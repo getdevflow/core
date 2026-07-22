@@ -13,7 +13,7 @@ final class UuidIdentity extends Uuid implements ValueObject
     /**
      * @throws TypeException
      */
-    public static function fromString(?string $uuid): self
+    public static function fromString(?string $uuid = null): self
     {
         return new self($uuid);
     }

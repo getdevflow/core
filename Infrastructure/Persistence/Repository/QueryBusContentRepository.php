@@ -6,6 +6,9 @@ namespace App\Infrastructure\Persistence\Repository;
 
 use App\Domain\Content\Query\Trait\PopulateContentQueryAware;
 use App\Domain\Content\Repository\ContentQueryRepository;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
+use Qubus\Exception\Data\TypeException;
 use Qubus\Expressive\Database;
 use App\Shared\Services\Sanitizer;
 use PDOException;
@@ -28,7 +31,13 @@ class QueryBusContentRepository implements ContentQueryRepository
     }
 
     /**
+     * @param string $id
+     * @return array|object
      * @throws Exception
+     * @throws ReflectionException
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
+     * @throws TypeException
      */
     public function findById(string $id): array|object
     {
@@ -50,7 +59,13 @@ class QueryBusContentRepository implements ContentQueryRepository
     }
 
     /**
+     * @param string $slug
+     * @return array|object
+     * @throws ContainerExceptionInterface
      * @throws Exception
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
+     * @throws TypeException
      */
     public function findBySlug(string $slug): array|object
     {
@@ -72,7 +87,13 @@ class QueryBusContentRepository implements ContentQueryRepository
     }
 
     /**
+     * @param string $status
+     * @return array
+     * @throws ContainerExceptionInterface
      * @throws Exception
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
+     * @throws TypeException
      */
     public function findByStatus(string $status): array
     {
@@ -95,7 +116,14 @@ class QueryBusContentRepository implements ContentQueryRepository
     }
 
     /**
+     * @param string $type
+     * @param string $id
+     * @return array|object
+     * @throws ContainerExceptionInterface
      * @throws Exception
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
+     * @throws TypeException
      */
     public function findByTypeAndId(string $type, string $id): array|object
     {
@@ -126,7 +154,13 @@ class QueryBusContentRepository implements ContentQueryRepository
     }
 
     /**
+     * @param string $type
+     * @return array|object
+     * @throws ContainerExceptionInterface
      * @throws Exception
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
+     * @throws TypeException
      */
     public function findByType(string $type): array|object
     {
@@ -148,8 +182,16 @@ class QueryBusContentRepository implements ContentQueryRepository
     }
 
     /**
+     * @param string|null $type
+     * @param int $limit
+     * @param int|null $offset
+     * @param string $status
+     * @return array
+     * @throws ContainerExceptionInterface
      * @throws Exception
+     * @throws NotFoundExceptionInterface
      * @throws ReflectionException
+     * @throws TypeException
      */
     public function findByFilters(
         ?string $type = null,

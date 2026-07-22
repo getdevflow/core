@@ -8,7 +8,6 @@ use App\Domain\Site\Query\Trait\PopulateSiteQueryAware;
 use App\Domain\Site\Repository\SitesQueryRepository;
 use Qubus\Expressive\Database;
 use Qubus\Exception\Exception;
-use ReflectionException;
 
 use function Qubus\Support\Helpers\convert_array_to_object;
 use function Qubus\Support\Helpers\is_null__;

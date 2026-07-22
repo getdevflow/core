@@ -36,7 +36,6 @@ use Qubus\Support\Collection\Collection;
 use Qubus\Support\DateTime\QubusDateTimeImmutable;
 use Qubus\Support\Inflector;
 use ReflectionException;
-
 use Throwable;
 
 use function Codefy\Framework\Helpers\app;

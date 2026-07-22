@@ -8,7 +8,6 @@ use App\Domain\ContentType\Query\Trait\PopulateContentTypeQueryAware;
 use App\Domain\ContentType\Repository\ContentTypeQueryRepository;
 use Qubus\Expressive\Database;
 use Qubus\Exception\Exception;
-use ReflectionException;
 
 use function is_array;
 use function Qubus\Support\Helpers\convert_array_to_object;

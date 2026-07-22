@@ -364,7 +364,7 @@ final class AdminSiteController extends BaseController
                 message: trans_html('An error occurred.')
             );
         } else {
-            Devflow::$PHP->flash->success(Devflow::$PHP->flash->notice(num: 200));
+            Devflow::$PHP->flash->success(Devflow::$PHP->flash->notice(num: 201));
         }
 
         return $this->redirect($request->getHeaderLine('Referer'));

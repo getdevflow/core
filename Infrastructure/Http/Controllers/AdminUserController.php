@@ -57,6 +57,7 @@ use function Codefy\Framework\Helpers\config;
 use function Codefy\Framework\Helpers\logger;
 use function Codefy\Framework\Helpers\queue;
 use function Codefy\Framework\Helpers\storage_path;
+use function Codefy\Framework\Helpers\trans;
 use function Codefy\Framework\Helpers\trans_html;
 use function Codefy\Framework\Helpers\view;
 use function file_exists;
@@ -346,7 +347,7 @@ final class AdminUserController extends BaseController
             if (is_string($password) && $password !== '') {
                 Devflow::$PHP->flash->success(
                     sprintf(
-                        trans_html('Password successfully updated for <strong>%s</strong>.'),
+                        trans('Password successfully updated for <strong>%s</strong>.'),
                         get_name($userId)
                     ),
                 );

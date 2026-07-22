@@ -6,6 +6,8 @@ namespace App\Infrastructure\Persistence\Repository;
 
 use App\Domain\Product\Query\Trait\PopulateProductQueryAware;
 use App\Domain\Product\Repository\ProductQueryRepository;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
 use Qubus\Expressive\Database;
 use App\Shared\Services\Sanitizer;
 use PDOException;
@@ -28,8 +30,12 @@ class QueryBusProductRepository implements ProductQueryRepository
     }
 
     /**
-     * @throws ReflectionException
+     * @param string $id
+     * @return array|object
      * @throws Exception
+     * @throws ReflectionException
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
      */
     public function findById(string $id): array|object
     {
@@ -51,8 +57,12 @@ class QueryBusProductRepository implements ProductQueryRepository
     }
 
     /**
-     * @throws ReflectionException
+     * @param string $sku
+     * @return array|object
+     * @throws ContainerExceptionInterface
      * @throws Exception
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
      */
     public function findBySku(string $sku): array|object
     {
@@ -74,8 +84,12 @@ class QueryBusProductRepository implements ProductQueryRepository
     }
 
     /**
-     * @throws ReflectionException
+     * @param string $slug
+     * @return array|object
+     * @throws ContainerExceptionInterface
      * @throws Exception
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
      */
     public function findBySlug(string $slug): array|object
     {
@@ -97,7 +111,14 @@ class QueryBusProductRepository implements ProductQueryRepository
     }
 
     /**
+     * @param string|null $sku
+     * @param int $limit
+     * @param int|null $offset
+     * @param string $status
+     * @return array
+     * @throws ContainerExceptionInterface
      * @throws Exception
+     * @throws NotFoundExceptionInterface
      * @throws ReflectionException
      */
     public function findByFilters(

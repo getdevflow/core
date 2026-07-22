@@ -6,7 +6,6 @@ namespace App\Domain\User\Dto;
 
 use App\Domain\User\ValueObject\UserId;
 use App\Domain\User\ValueObject\Username;
-use App\Domain\User\ValueObject\UserToken;
 use App\Shared\ValueObject\ArrayLiteral;
 use Codefy\Framework\Dto\DataTransformer;
 use Codefy\Framework\Validation\DataValidator;
@@ -24,7 +23,6 @@ final readonly class StoreUserData implements DataTransformer
         public ?StringLiteral $lname = null,
         public ?EmailAddress $email = null,
         public ?Username $login = null,
-        public ?UserToken $token = null,
         public ?StringLiteral $pass = null,
         public ?StringLiteral $status = null,
         public ?StringLiteral $role = null,
@@ -41,15 +39,15 @@ final readonly class StoreUserData implements DataTransformer
     public static function fromValidatedData(DataValidator $data): DataTransformer
     {
         $registered = QubusDateTimeImmutable::now();
+        $userId = empty($data->string(key: 'id')) ? new UserId() : UserId::fromString($data->string(key: 'id'));
 
         return new self(
-            id: UserId::fromString($data->string(key: 'id')),
+            id: $userId,
             fname: new StringLiteral($data->string(key: 'fname')),
             mname: new StringLiteral($data->string(key: 'mname', default: '')),
             lname: new StringLiteral($data->string(key: 'lname')),
             email: new EmailAddress($data->string(key: 'email')),
             login: new Username($data->string(key: 'login')),
-            token: UserToken::fromString($data->string(key: 'token')),
             pass: new StringLiteral($data->string(key: 'pass')),
             status: new StringLiteral($data->string(key: 'status')),
             role: new StringLiteral($data->string(key: 'role')),

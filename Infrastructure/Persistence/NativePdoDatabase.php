@@ -243,7 +243,7 @@ final class NativePdoDatabase extends QueryBuilder
      * @throws Exception
      * @throws TypeException
      */
-    public function forSite(?string $siteKey): self
+    public function forSite(?string $siteKey = null): self
     {
         $clone = clone $this;
         $clone->siteKey = $siteKey;

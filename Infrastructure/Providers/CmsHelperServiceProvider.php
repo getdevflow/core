@@ -92,7 +92,7 @@ final class CmsHelperServiceProvider extends CodefyServiceProvider
         __observer()->action->addAction('flush_cache', 'App\Shared\Helpers\populate_options_cache', 5);
         __observer()->filter->addFilter('the.body', [Parsecode::getInstance(), 'autop']);
         __observer()->filter->addFilter('the.body', [Parsecode::getInstance(), 'unAutop']);
-        __observer()->filter->addFilter('the.body', [Parsecode::getInstance(), 'doParsecode'], 5);
+        __observer()->filter->addFilter('the.body', [Parsecode::getInstance(), 'doParsecode'], 12);
         __observer()->filter->addFilter(
             'the.body',
             'App\Shared\Helpers\cms_encode_email',
