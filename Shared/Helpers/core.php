@@ -30,9 +30,8 @@ use Qubus\Exception\Exception;
 use Qubus\Exception\Http\Client\NotFoundException;
 use Qubus\Http\Request;
 use Qubus\Support\DateTime\QubusDateTime;
-use RandomLib\Factory;
+use Random\RandomException;
 use ReflectionException;
-use SecurityLib\Strength;
 use Spatie\ImageOptimizer\OptimizerChainFactory;
 
 use function array_diff_assoc;
@@ -636,7 +635,15 @@ function check_syntax(string $filename, bool $checkIncludes = true): Error
     $filename = realpath($filename);
 
     // Get the shell output from the syntax check command
-    $output = shell_exec('php -l "' . $filename . '"');
+    $output = shell_exec(
+        PHP_BINARY . ' -l ' . escapeshellarg($filename)
+    );
+
+    if ($output === null) {
+        throw new Exception(
+            'Unable to execute PHP syntax check.'
+        );
+    }
 
     // Try to find the parse error text and chop it off
     $syntaxError = preg_replace("/Errors parsing.*$/", "", $output, - 1, $count);
@@ -760,15 +767,23 @@ function get_age(string $birthdate = '0000-00-00'): string|int
  * @file core/Shared/Helpers/core.php
  * @param int $length
  * @return string
+ * @throws TypeException
+ * @throws RandomException
  */
 function generate_unique_key(int $length = 6): string
 {
+    if ($length < 1) {
+        throw new TypeException('Key length must be greater than zero.');
+    }
+
     $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
     $charactersLength = strlen($characters);
     $uniqueKey = '';
+
     for ($i = 0; $i < $length; $i++) {
-        $uniqueKey .= $characters[rand(0, $charactersLength - 1)];
+        $uniqueKey .= $characters[random_int(0, $charactersLength - 1)];
     }
+
     return $uniqueKey;
 }
 
@@ -1202,6 +1217,8 @@ function generate_random_username(int $length = 6): string
  *                                Default false.
  * @return string The system generated password.
  * @throws Exception
+ * @throws RandomException
+ * @throws TypeException
  */
 function generate_random_password(
     int $length = 12,
@@ -1218,7 +1235,16 @@ function generate_random_password(
         $chars .= '-_ []{}<>~`+=,.;:/?|';
     }
 
-    $password = new Factory()->getGenerator(new Strength(Strength::MEDIUM))->generateString($length, $chars);
+    if ($length < 1) {
+        throw new TypeException('Password length must be greater than zero.');
+    }
+
+    $charactersLength = strlen($chars);
+    $password = '';
+
+    for ($i = 0; $i < $length; $i++) {
+        $password .= $chars[random_int(0, $charactersLength - 1)];
+    }
 
     /**
      * Filters the system generated password.

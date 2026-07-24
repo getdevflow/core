@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Infrastructure\Services;
 
 use Qubus\Exception\Data\TypeException;
+use Random\RandomException;
 
 use function Codefy\Framework\Helpers\config;
 use function Codefy\Framework\Helpers\storage_path;
@@ -22,15 +23,22 @@ final class NativePhpCookies
      * @param int $length
      * @return string
      * @throws TypeException
+     * @throws RandomException
      */
     public function token(int $length = 20): string
     {
+        if ($length < 1) {
+            throw new TypeException('Token length must be greater than zero.');
+        }
+
         $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
         $charactersLength = strlen($characters);
         $randomString = '';
+
         for ($i = 0; $i < $length; $i++) {
-            $randomString .= $characters[rand(0, $charactersLength - 1)];
+            $randomString .= $characters[random_int(0, $charactersLength - 1)];
         }
+
         return hash(config(key: 'cookies.crypt'), $randomString);
     }
 
@@ -77,6 +85,7 @@ final class NativePhpCookies
      *
      * @param array $data
      * @return bool
+     * @throws RandomException
      * @throws TypeException
      */
     public function setSecureCookie(array $data): bool
@@ -104,8 +113,7 @@ final class NativePhpCookies
     {
         $file = storage_path('app/cookies/cookie.' . $this->getCookieVars($key, 'data'));
         if (file_exists($file)) {
-            $data = json_decode(file_get_contents($file));
-            return $data;
+            return json_decode(file_get_contents($file));
         }
         return false;
     }
