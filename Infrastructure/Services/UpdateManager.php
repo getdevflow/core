@@ -17,10 +17,31 @@ use RuntimeException;
 use Throwable;
 
 use function App\Shared\Helpers\updater_server_url;
+use function array_map;
 use function Codefy\Framework\Helpers\base_path;
 use function Codefy\Framework\Helpers\logger;
 use function Codefy\Framework\Helpers\trans_html;
+use function date;
+use function escapeshellarg;
+use function fclose;
+use function file_exists;
+use function file_get_contents;
+use function implode;
+use function is_array;
+use function is_resource;
+use function json_decode;
+use function proc_close;
+use function proc_get_status;
+use function proc_open;
+use function proc_terminate;
 use function sprintf;
+use function stream_get_contents;
+use function stream_set_blocking;
+use function time;
+use function trim;
+use function usleep;
+
+use const JSON_THROW_ON_ERROR;
 
 final class UpdateManager
 {
@@ -88,6 +109,16 @@ final class UpdateManager
     public function coreUpdate(): array
     {
         $updater = new Updater();
+
+        $publicKey = UpdateSigningKey::PUBLIC_KEY;
+
+        if ($publicKey === '') {
+            throw new RuntimeException(
+                'Devflow update signing public key is not configured.'
+            );
+        }
+
+        $updater->setSigningPublicKey($publicKey);
         $updater->setCurrentVersion(Devflow::release());
         $updater->setUpdateUrl(updater_server_url() . '/update-check');
 
@@ -103,6 +134,7 @@ final class UpdateManager
     /**
      * @param string $type
      * @return array
+     * @throws Exception
      * @throws JsonException
      */
     public function packageUpdates(string $type): array

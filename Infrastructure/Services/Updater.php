@@ -17,6 +17,7 @@ use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
 use ReflectionException;
 use RuntimeException;
+use SodiumException;
 use ZipArchive;
 
 use function App\Shared\Helpers\remote_file_exists;
@@ -32,7 +33,10 @@ use function curl_init;
 use function curl_setopt;
 use function dirname;
 use function fclose;
+use function file_exists;
 use function file_get_contents;
+use function hash_equals;
+use function hash_file;
 use function filter_var;
 use function fopen;
 use function function_exists;
@@ -42,18 +46,25 @@ use function ini_set;
 use function is_array;
 use function is_dir;
 use function is_file;
+use function is_string;
 use function json_decode;
 use function mkdir;
+use function preg_match;
 use function parse_ini_string;
 use function Qubus\Support\Helpers\add_trailing_slash;
 use function Qubus\Support\Helpers\is_writable;
 use function sprintf;
+use function sodium_base642bin;
+use function sodium_crypto_sign_verify_detached;
 use function str_replace;
 use function stream_context_create;
 use function strlen;
 use function strrchr;
+use function strtolower;
 use function substr;
 use function unlink;
+
+use function usort;
 
 use const CURLOPT_CONNECTTIMEOUT;
 use const CURLOPT_RETURNTRANSFER;
@@ -62,6 +73,9 @@ use const CURLOPT_SSL_VERIFYPEER;
 use const CURLOPT_TIMEOUT;
 use const CURLOPT_URL;
 use const FILTER_VALIDATE_URL;
+use const SODIUM_BASE64_VARIANT_ORIGINAL;
+use const SODIUM_CRYPTO_SIGN_BYTES;
+use const SODIUM_CRYPTO_SIGN_PUBLICKEYBYTES;
 
 final class Updater
 {
@@ -95,6 +109,16 @@ final class Updater
 
     private bool $sslVerifyHost = true;
 
+    /**
+     * Base64-encoded Ed25519 public key used to authenticate update packages.
+     *
+     * This must be set from a trusted, application-controlled source and must
+     * never be downloaded from the update server.
+     */
+    private ?string $signingPublicKey = null;
+
+    private array $verifiedPackages = [];
+
     protected string $updateUrl = 'https://example.com/updates/';
 
     protected string $updateFile = 'releases.json';
@@ -116,6 +140,8 @@ final class Updater
     public const int ERROR_INSTALL_DIR = 35;
 
     public const int ERROR_DOWNLOAD_UPDATE = 40;
+
+    public const int ERROR_VERIFY_UPDATE = 45;
 
     public const int ERROR_DELETE_TEMP_UPDATE = 50;
 
@@ -289,11 +315,11 @@ final class Updater
     private function useBasicAuth()
     {
         if ($this->username && $this->password) {
-            return stream_context_create(array(
-                'http' => array(
+            return stream_context_create([
+                'http' => [
                     'header' => "Authorization: Basic " . base64_encode("$this->username:$this->password")
-                )
-            ));
+                ]
+            ]);
         }
 
         return null;
@@ -342,7 +368,27 @@ final class Updater
      */
     public function setSslVerifyHost(bool $sslVerifyHost): Updater
     {
-        $this->sslVerifyHost = $sslVerifyHost;
+        if ($sslVerifyHost === false) {
+            throw new RuntimeException('TLS verification cannot be disabled for update requests.');
+        }
+
+        $this->sslVerifyHost = true;
+
+        return $this;
+    }
+
+    /**
+     * Set the trusted Ed25519 update-signing public key.
+     */
+    public function setSigningPublicKey(string $publicKey): Updater
+    {
+        $decoded = sodium_base642bin($publicKey, SODIUM_BASE64_VARIANT_ORIGINAL);
+
+        if (strlen($decoded) !== SODIUM_CRYPTO_SIGN_PUBLICKEYBYTES) {
+            throw new RuntimeException('Invalid Ed25519 update-signing public key.');
+        }
+
+        $this->signingPublicKey = $publicKey;
 
         return $this;
     }
@@ -458,10 +504,32 @@ final class Updater
                     $this->latestVersion = $parameter->version;
                 }
 
+                $sha256 = $parameter->sha256 ?? null;
+                $signature = $parameter->signature ?? null;
+
+                if (
+                        !is_string($sha256)
+                        || preg_match('/^[a-f0-9]{64}$/i', $sha256) !== 1
+                        || !is_string($signature)
+                        || $signature === ''
+                ) {
+                    $this->log->error(sprintf(
+                        'Release "%s" is missing valid SHA-256 or signature metadata.',
+                        $parameter->version
+                    ));
+
+                    throw new RuntimeException(sprintf(
+                        'Release "%s" cannot be trusted because its integrity metadata is invalid.',
+                        $parameter->version
+                    ));
+                }
+
                 $this->updates[] = [
-                    'version' => $parameter->version,
-                    'min_php' => $parameter->min_php,
-                    'url'     => $parameter->zip_url,
+                    'version'   => $parameter->version,
+                    'min_php'   => $parameter->min_php,
+                    'url'       => $parameter->zip_url,
+                    'sha256'    => strtolower($sha256),
+                    'signature' => $signature,
                 ];
             }
         }
@@ -519,8 +587,8 @@ final class Updater
         $curl = curl_init();
         curl_setopt($curl, CURLOPT_URL, $url);
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, $this->sslVerifyHost ? 2 : 0);
-        curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, $this->sslVerifyHost);
+        curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, 2);
+        curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, true);
         curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 5);
         curl_setopt($curl, CURLOPT_TIMEOUT, $timeout);
         $update = curl_exec($curl);
@@ -582,6 +650,91 @@ final class Updater
         }
 
         fclose($handle);
+
+        return true;
+    }
+
+    /**
+     * Verify the downloaded package before extraction or execution.
+     *
+     * Sign this canonical payload with the release private key:
+     * devflow-update-v1\n{version}\n{sha256}\n
+     *
+     * @param string $updateFile
+     * @param array{version:string, sha256:string, signature:string} $update
+     * @return bool
+     * @throws SodiumException
+     */
+    private function verifyUpdatePackage(string $updateFile, array $update): bool
+    {
+        if ($this->signingPublicKey === null) {
+            $this->log->critical('No trusted update-signing public key has been configured.');
+
+            return false;
+        }
+
+        $actualHash = hash_file('sha256', $updateFile);
+
+        if (!is_string($actualHash) || !hash_equals($update['sha256'], $actualHash)) {
+            $this->log->critical(sprintf(
+                'SHA-256 verification failed for update "%s".',
+                $update['version']
+            ));
+
+            return false;
+        }
+
+        try {
+            $publicKey = sodium_base642bin(
+                $this->signingPublicKey,
+                SODIUM_BASE64_VARIANT_ORIGINAL
+            );
+            $signature = sodium_base642bin(
+                $update['signature'],
+                SODIUM_BASE64_VARIANT_ORIGINAL
+            );
+        } catch (\SodiumException $exception) {
+            $this->log->critical(
+                'Could not decode update signature material.',
+                ['exception' => $exception]
+            );
+
+            return false;
+        }
+
+        if (strlen($signature) !== SODIUM_CRYPTO_SIGN_BYTES) {
+            $this->log->critical(sprintf(
+                'Invalid signature length for update "%s".',
+                $update['version']
+            ));
+
+            return false;
+        }
+
+        $payload = sprintf(
+            "devflow-update-v1\n%s\n%s\n",
+            $update['version'],
+            $actualHash
+        );
+
+        if (!sodium_crypto_sign_verify_detached($signature, $payload, $publicKey)) {
+            $this->log->critical(sprintf(
+                'Ed25519 signature verification failed for update "%s".',
+                $update['version']
+            ));
+
+            return false;
+        }
+
+        $this->verifiedPackages[$updateFile] = [
+            'version' => $update['version'],
+            'sha256' => $actualHash,
+        ];
+
+        $this->log->info(sprintf(
+            'Integrity and signature verification succeeded for update "%s".',
+            $update['version']
+        ));
 
         return true;
     }
@@ -701,82 +854,29 @@ final class Updater
      * @param string $version
      * @return int|bool
      */
-    protected function install(string $updateFile, bool $simulateInstall, string $version): int|bool
-    {
-        $this->log->notice(sprintf('Trying to install update "%s"', $updateFile));
+    protected function install(
+        string $updateFile,
+        bool $simulateInstall,
+        string $version
+    ): int|bool {
+        if (!$this->isVerifiedPackage($updateFile, $version)) {
+            $this->log->critical(sprintf(
+                'Refusing to install unverified update package "%s".',
+                $updateFile
+            ));
 
-        // Check if install should be simulated
-        if ($simulateInstall) {
-            if ($this->simulateInstall($updateFile)) {
-                $this->log->notice(sprintf('Simulation of update "%s" process succeeded', $version));
-
-                return true;
-            }
-
-            $this->log->critical(sprintf('Simulation of update  "%s" process failed!', $version));
-
-            return self::ERROR_SIMULATE;
+            return self::ERROR_VERIFY_UPDATE;
         }
 
-        clearstatcache();
-
-        // Install only if simulateInstall === false
-
-        // Check if zip file could be opened
-        $zip = new ZipArchive();
-        $resource = $zip->open($updateFile);
-        if ($resource !== true) {
-            $this->log->error(sprintf('Could not open zip file "%s", error: %d', $updateFile, $resource));
-
-            return false;
-        }
-
-        // Read every file from archive
-        for ($i = 0; $i < $zip->numFiles; $i++) {
-            $fileStats        = $zip->statIndex($i);
-            $filename         = str_replace(array('/', '\\'), Devflow::$PHP::DS, $fileStats['name']);
-            $foldername       = str_replace(
-                array('/', '\\'),
-                Devflow::$PHP::DS,
-                $this->installDir . dirname($filename)
+        try {
+            return $this->extractAndInstall(
+                $updateFile,
+                $simulateInstall,
+                $version
             );
-            $absoluteFilename = str_replace(array('/', '\\'), Devflow::$PHP::DS, $this->installDir . $filename);
-            $this->log->debug(sprintf('Updating file "%s"', $filename));
-
-            if (!is_dir($foldername) && !mkdir($foldername, $this->dirPermissions, true) && !is_dir($foldername)) {
-                $this->log->error(sprintf('Directory "%s" has to be writeable!', $foldername));
-
-                return false;
-            }
-
-            // Skip if entry is a directory
-            if ($filename[strlen($filename) - 1] === Devflow::$PHP::DS) {
-                continue;
-            }
-
-            // Extract file
-            if ($zip->extractTo($this->installDir, $fileStats['name']) === false) {
-                $this->log->error(sprintf('Could not read zip entry "%s"', $fileStats['name']));
-                continue;
-            }
-
-            //If file is an update script, include
-            if ($filename === $this->updateScriptName) {
-                $this->log->debug(sprintf('Try to include update script "%s"', $absoluteFilename));
-                require($absoluteFilename);
-
-                $this->log->info(sprintf('Update script "%s" included!', $absoluteFilename));
-                if (!unlink($absoluteFilename)) {
-                    $this->log->warning(sprintf('Could not delete update script "%s"!', $absoluteFilename));
-                }
-            }
+        } finally {
+            unset($this->verifiedPackages[$updateFile]);
         }
-
-        $zip->close();
-
-        $this->log->notice(sprintf('Update "%s" successfully installed', $version));
-
-        return true;
     }
 
     /**
@@ -786,8 +886,8 @@ final class Updater
      * @param bool $deleteDownload Delete download after update (Default: true)
      * @return int|bool
      * @throws Exception
-     * @throws Exception
      * @throws InvalidArgumentException
+     * @throws SodiumException
      */
     public function update(bool $simulateInstall = true, bool $deleteDownload = true): bool|int
     {
@@ -853,6 +953,18 @@ final class Updater
                 $this->log->info(sprintf('Latest update already downloaded to "%s"', $updateFile));
             }
 
+            // Authenticate the package before simulation, extraction, or execution.
+            if (!$this->verifyUpdatePackage($updateFile, $update)) {
+                if (is_file($updateFile) && !unlink($updateFile)) {
+                    $this->log->warning(sprintf(
+                        'Could not delete untrusted update file "%s".',
+                        $updateFile
+                    ));
+                }
+
+                return self::ERROR_VERIFY_UPDATE;
+            }
+
             // Install update
             $result = $this->install($updateFile, $simulateInstall, $update['version']);
             if ($result === true) {
@@ -886,7 +998,7 @@ final class Updater
                     }
                 }
 
-                return false;
+                return $result;
             }
         }
 
@@ -946,5 +1058,190 @@ final class Updater
         foreach ($this->onAllUpdateFinishCallbacks as $callback) {
             $callback($updatedVersions);
         }
+    }
+
+    private function isVerifiedPackage(
+        string $updateFile,
+        string $version
+    ): bool {
+        $verified = $this->verifiedPackages[$updateFile] ?? null;
+
+        if (!is_array($verified)) {
+            return false;
+        }
+
+        if (($verified['version'] ?? null) !== $version) {
+            return false;
+        }
+
+        $actualHash = hash_file('sha256', $updateFile);
+
+        return is_string($actualHash) && hash_equals($verified['sha256'], $actualHash);
+    }
+
+    private function extractAndInstall(
+            string $updateFile,
+            bool $simulateInstall,
+            string $version
+    ): int|bool {
+        $this->log->notice(sprintf(
+            'Trying to install update "%s"',
+            $updateFile
+        ));
+
+        if ($simulateInstall) {
+            if ($this->simulateInstall($updateFile)) {
+                $this->log->notice(sprintf(
+                    'Simulation of update "%s" process succeeded',
+                    $version
+                ));
+
+                return true;
+            }
+
+            $this->log->critical(sprintf(
+                'Simulation of update "%s" process failed.',
+                $version
+            ));
+
+            return self::ERROR_SIMULATE;
+        }
+
+        clearstatcache();
+
+        $zip = new ZipArchive();
+        $resource = $zip->open($updateFile);
+
+        if ($resource !== true) {
+            $this->log->error(sprintf(
+                'Could not open zip file "%s", error: %d',
+                $updateFile,
+                $resource
+            ));
+
+            return false;
+        }
+
+        $upgradeScript = null;
+
+        try {
+            for ($i = 0; $i < $zip->numFiles; $i++) {
+                $fileStats = $zip->statIndex($i);
+
+                if (!is_array($fileStats) || !isset($fileStats['name'])) {
+                    $this->log->error(sprintf(
+                        'Could not read zip entry at index %d.',
+                        $i
+                    ));
+
+                    return false;
+                }
+
+                $filename = str_replace(
+                    ['/', '\\'],
+                    Devflow::$PHP::DS,
+                    $fileStats['name']
+                );
+
+                if ($filename === '') {
+                    $this->log->error(sprintf(
+                        'Zip entry at index %d has an empty filename.',
+                        $i
+                    ));
+
+                    return false;
+                }
+
+                $foldername = str_replace(
+                    ['/', '\\'],
+                    Devflow::$PHP::DS,
+                    $this->installDir . dirname($filename)
+                );
+
+                $absoluteFilename = str_replace(
+                    ['/', '\\'],
+                    Devflow::$PHP::DS,
+                    $this->installDir . $filename
+                );
+
+                $this->log->debug(sprintf(
+                    'Updating file "%s"',
+                    $filename
+                ));
+
+                if (
+                        !is_dir($foldername)
+                        && !mkdir(
+                            $foldername,
+                            $this->dirPermissions,
+                            true
+                        )
+                        && !is_dir($foldername)
+                ) {
+                    $this->log->error(sprintf(
+                        'Directory "%s" has to be writable.',
+                        $foldername
+                    ));
+
+                    return false;
+                }
+
+                if ($filename[strlen($filename) - 1] === Devflow::$PHP::DS) {
+                    continue;
+                }
+
+                if (
+                        $zip->extractTo(
+                            $this->installDir,
+                            $fileStats['name']
+                        ) === false
+                ) {
+                    $this->log->error(sprintf(
+                        'Could not extract zip entry "%s".',
+                        $fileStats['name']
+                    ));
+
+                    return false;
+                }
+
+                if ($filename === $this->updateScriptName) {
+                    $upgradeScript = $absoluteFilename;
+                }
+            }
+        } finally {
+            $zip->close();
+        }
+
+        /*
+         * Execute the migration script only after every archive entry has been
+         * extracted successfully.
+         */
+        if ($upgradeScript !== null) {
+            $this->log->debug(sprintf(
+                'Try to include update script "%s".',
+                $upgradeScript
+            ));
+
+            require $upgradeScript;
+
+            $this->log->info(sprintf(
+                'Update script "%s" included.',
+                $upgradeScript
+            ));
+
+            if (!unlink($upgradeScript)) {
+                $this->log->warning(sprintf(
+                    'Could not delete update script "%s".',
+                    $upgradeScript
+                ));
+            }
+        }
+
+        $this->log->notice(sprintf(
+            'Update "%s" successfully installed',
+            $version
+        ));
+
+        return true;
     }
 }

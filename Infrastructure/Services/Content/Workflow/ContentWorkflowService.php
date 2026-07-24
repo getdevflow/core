@@ -610,7 +610,7 @@ final readonly class ContentWorkflowService
                 throw new \RuntimeException(trans_html('Content is not scheduled.'));
             }
 
-            if (strtotime((string) $content['content_published_gmt']) > time()) {
+            if (strtotime((string) $content['content_published']) > time()) {
                 throw new \RuntimeException(trans_html('Scheduled publish date has not passed.'));
             }
 

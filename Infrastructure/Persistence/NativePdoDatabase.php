@@ -16,9 +16,13 @@ use Qubus\Expressive\QueryBuilder;
 use ReflectionException;
 
 use function App\Shared\Helpers\is_multisite;
+use function array_combine;
 use function array_merge;
 use function Codefy\Framework\Helpers\trans_html;
+use function in_array;
 use function preg_match;
+use function property_exists;
+use function sprintf;
 
 final class NativePdoDatabase extends QueryBuilder
 {
@@ -111,8 +115,8 @@ final class NativePdoDatabase extends QueryBuilder
         $registry = Registry::getInstance();
 
         $this->siteKey = $registry->has(id: 'siteKey') ?
-        $registry->get('siteKey') :
-        null;
+            $registry->get('siteKey') :
+            null;
 
         $this->sitePrefix = $this->resolveSitePrefix($this->siteKey);
         $this->prefix = $this->sitePrefix;
@@ -157,12 +161,12 @@ final class NativePdoDatabase extends QueryBuilder
      * Sets site key.
      *
      * @param string $siteKey Site id to use.
-     * @return string Previous site id.
+     * @return string|null Previous site id.
      * @throws Exception
      * @throws ReflectionException
      * @throws TypeException
      */
-    public function setSiteKey(string $siteKey): string
+    public function setSiteKey(string $siteKey): ?string
     {
         $oldSiteKey = $this->siteKey;
 
@@ -183,6 +187,7 @@ final class NativePdoDatabase extends QueryBuilder
      *
      * @param string|null $siteKey Optional.
      * @return string Site prefix.
+     * @throws Exception
      * @throws TypeException
      */
     public function getSitePrefix(?string $siteKey = null): string
@@ -268,15 +273,20 @@ final class NativePdoDatabase extends QueryBuilder
     }
 
     /**
+     * @param string|null $siteKey
+     * @return string
+     * @throws Exception
      * @throws TypeException
      */
     private function resolveSitePrefix(?string $siteKey = null): string
     {
-        if (!is_multisite()) {
-            return $this->basePrefix;
-        }
+        $prefix = !is_multisite()
+            ? $this->basePrefix
+            : ($siteKey ?: $this->basePrefix);
 
-        return $siteKey ?: $this->basePrefix;
+        $this->assertValidPrefix($prefix);
+
+        return $prefix;
     }
 
     /**

@@ -32,15 +32,26 @@ use function Codefy\Framework\Helpers\trans;
 use function Codefy\Framework\Helpers\trans_html;
 use function file_exists;
 use function filter_var;
+use function is_string;
 use function parse_str;
+use function parse_url;
+use function preg_match;
 use function Qubus\Routing\Helpers\redirect;
 use function Qubus\Security\Helpers\__observer;
 use function Qubus\Security\Helpers\esc_html;
 use function Qubus\Support\Helpers\is_false__;
 use function Qubus\Support\Helpers\is_null__;
+use function rawurldecode;
 use function sprintf;
+use function strtolower;
 use function time;
+use function trim;
 use function unlink;
+
+use const FILTER_VALIDATE_EMAIL;
+use const PHP_URL_HOST;
+use const PHP_URL_PORT;
+use const PHP_URL_SCHEME;
 
 /**
  * @file core/Shared/Helpers/auth.php
@@ -146,6 +157,103 @@ function ae(string $perm): string
 }
 
 /**
+ * Returns a safe local redirect destination.
+ *
+ * Relative destinations must be root-relative. Absolute destinations must use
+ * HTTP(S) and match the trusted application's scheme, host, and port.
+ *
+ * @param mixed $candidate Untrusted redirect destination.
+ * @param string $fallback Trusted application-controlled fallback URL.
+ * @return string
+ */
+function cms_safe_redirect_url(mixed $candidate, string $fallback): string
+{
+    if (!is_string($candidate)) {
+        return $fallback;
+    }
+
+    $candidate = trim($candidate);
+
+    if (
+        $candidate === ''
+        || preg_match('/[\x00-\x1F\x7F]/', $candidate) === 1
+        || str_contains($candidate, '\\')
+    ) {
+        return $fallback;
+    }
+
+    /*
+     * Decode once for structural checks so encoded backslashes and an encoded
+     * scheme-relative prefix cannot bypass the local-path rules.
+     */
+    $decodedCandidate = rawurldecode($candidate);
+
+    if (
+        str_contains($decodedCandidate, '\\')
+        || str_starts_with($decodedCandidate, '//')
+    ) {
+        return $fallback;
+    }
+
+    $candidateParts = parse_url($candidate);
+
+    if ($candidateParts === false) {
+        return $fallback;
+    }
+
+    $candidateScheme = $candidateParts[PHP_URL_SCHEME] ?? null;
+    $candidateHost = $candidateParts[PHP_URL_HOST] ?? null;
+
+    /*
+     * A local destination must begin with exactly one slash. This rejects
+     * scheme-relative URLs, bare hostnames, and ambiguous relative paths.
+     */
+    if ($candidateScheme === null && $candidateHost === null) {
+        return str_starts_with($candidate, '/') && !str_starts_with($candidate, '//')
+            ? $candidate
+            : $fallback;
+    }
+
+    if (!is_string($candidateScheme) || !is_string($candidateHost)) {
+        return $fallback;
+    }
+
+    $candidateScheme = strtolower($candidateScheme);
+
+    if ($candidateScheme !== 'http' && $candidateScheme !== 'https') {
+        return $fallback;
+    }
+
+    $trustedParts = parse_url($fallback);
+
+    if ($trustedParts === false) {
+        return $fallback;
+    }
+
+    $trustedScheme = $trustedParts[PHP_URL_SCHEME] ?? null;
+    $trustedHost = $trustedParts[PHP_URL_HOST] ?? null;
+
+    if (!is_string($trustedScheme) || !is_string($trustedHost)) {
+        return $fallback;
+    }
+
+    $candidatePort = $candidateParts[PHP_URL_PORT] ?? ($candidateScheme === 'https' ? 443 : 80);
+
+    $trustedScheme = strtolower($trustedScheme);
+    $trustedPort = $trustedParts[PHP_URL_PORT] ?? ($trustedScheme === 'https' ? 443 : 80);
+
+    if (
+        $candidateScheme !== $trustedScheme
+        || strtolower($candidateHost) !== strtolower($trustedHost)
+        || $candidatePort !== $trustedPort
+    ) {
+        return $fallback;
+    }
+
+    return $candidate;
+}
+
+/**
  * Logs a user in after the login information has checked out.
  *
  * @file core/Shared/Helpers/auth.php
@@ -180,7 +288,12 @@ function cms_authenticate(string $login, string $password, string $rememberme): 
             ),
         );
 
-        return redirect($request->getHeaderLine('Referer'));
+        return redirect(
+            cms_safe_redirect_url(
+                candidate: $request->getHeaderLine('Referer'),
+                fallback: admin_url()
+            )
+        );
     }
 
     /**
@@ -195,6 +308,11 @@ function cms_authenticate(string $login, string $password, string $rememberme): 
     $redirectTo = __observer()->filter->applyFilter(
         'authenticate.redirect.to',
         $request->getParsedBody()['redirect_to'] ?? admin_url()
+    );
+
+    $redirectTo = cms_safe_redirect_url(
+        candidate: $redirectTo,
+        fallback: admin_url()
     );
 
     Devflow::$PHP->flash->success(
@@ -235,7 +353,12 @@ function cms_authenticate_user(string $login, string $password, string $remember
                     '<strong>ERROR</strong>: The username/email field is empty.',
                 ),
             );
-            return redirect($request->getHeaderLine(name: 'Referer'));
+            return redirect(
+                cms_safe_redirect_url(
+                    candidate: $request->getHeaderLine(name: 'Referer'),
+                    fallback: admin_url()
+                )
+            );
         }
 
         if ($password === '') {
@@ -244,7 +367,12 @@ function cms_authenticate_user(string $login, string $password, string $remember
                     '<strong>ERROR</strong>: The password field is empty.',
                 ),
             );
-            return redirect($request->getHeaderLine(name: 'Referer'));
+            return redirect(
+                cms_safe_redirect_url(
+                    candidate: $request->getHeaderLine(name: 'Referer'),
+                    fallback: admin_url()
+                )
+            );
         }
     }
 
@@ -255,10 +383,15 @@ function cms_authenticate_user(string $login, string $password, string $remember
             Devflow::$PHP->flash->error(
                 trans(
                     '<strong>ERROR</strong>: Invalid email address.',
-                    
+
                 ),
             );
-            return redirect($request->getHeaderLine(name: 'Referer'));
+            return redirect(
+                cms_safe_redirect_url(
+                    candidate: $request->getHeaderLine(name: 'Referer'),
+                    fallback: admin_url()
+                )
+            );
         }
     } else {
         $user = get_user_by('login', $login);
@@ -267,10 +400,15 @@ function cms_authenticate_user(string $login, string $password, string $remember
             Devflow::$PHP->flash->error(
                 trans(
                     '<strong>ERROR</strong>: Invalid username.',
-                    
+
                 ),
             );
-            return redirect($request->getHeaderLine(name: 'Referer'));
+            return redirect(
+                cms_safe_redirect_url(
+                    candidate: $request->getHeaderLine(name: 'Referer'),
+                    fallback: admin_url()
+                )
+            );
         }
     }
 
@@ -278,10 +416,15 @@ function cms_authenticate_user(string $login, string $password, string $remember
         Devflow::$PHP->flash->error(
             trans(
                 '<strong>ERROR</strong>: The password you entered is incorrect.',
-                
+
             ),
         );
-        return redirect($request->getHeaderLine(name: 'Referer'));
+        return redirect(
+            cms_safe_redirect_url(
+                candidate: $request->getHeaderLine(name: 'Referer'),
+                fallback: admin_url()
+            )
+        );
     }
 
     UserCachePsr16::update($user);
