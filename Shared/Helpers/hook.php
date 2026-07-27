@@ -26,6 +26,7 @@ use function file_exists;
 use function get_headers;
 use function implode;
 use function in_array;
+use function json_encode;
 use function ord;
 use function preg_replace_callback;
 use function Qubus\Security\Helpers\__observer;
@@ -651,83 +652,303 @@ function get_user_avatar_url(string $email): string
  * @file core/Shared/Helpers/hook.php
  * @throws Exception
  */
-function cms_upload_image()
+function cms_upload_image(): string
 {
-    $elfinder = '<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/themes/smoothness/jquery-ui.css">
-            <link href="vendor/studio-42/elfinder/css/elfinder.full.css" type="text/css" rel="stylesheet" />
-            <link href="vendor/studio-42/elfinder/css/theme.css" type="text/css" rel="stylesheet" />
-            <script src="vendor/studio-42/elfinder/js/elfinder.full.js" type="text/javascript"></script>
-            <script src="//cdnjs.cloudflare.com/ajax/libs/fancybox/2.1.7/js/jquery.fancybox.min.js" type="text/javascript"></script>
-            <script>
-                $(document).ready(function () {
+    $connectorUrl = admin_url('connector/');
 
-                    $("#remove_image").hide();
-                    $("#set_image").show();
+    $elfinder = '
+        <link
+            rel="stylesheet"
+            type="text/css"
+            href="//cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/themes/smoothness/jquery-ui.css"
+        >
+        <link
+            href="vendor/studio-42/elfinder/css/elfinder.full.css"
+            type="text/css"
+            rel="stylesheet"
+        >
+        <link
+            href="vendor/studio-42/elfinder/css/theme.css"
+            type="text/css"
+            rel="stylesheet"
+        >
+        <script
+            src="vendor/studio-42/elfinder/js/elfinder.full.js"
+            type="text/javascript"
+        ></script>
+        <script
+            src="//cdnjs.cloudflare.com/ajax/libs/fancybox/2.1.7/js/jquery.fancybox.min.js"
+            type="text/javascript"
+        ></script>
 
-                    $("#set_image").click(function (e) {
-                        var elfinder = $("#elfinder").elfinder({
-                            url: "' . admin_url('connector/') . '",
-                            resizable: false,
-                            onlyMimes: ["image"],
-                            uiOptions: {
-                                // toolbar configuration
-                                toolbar: [
-                                    ["reload"],
-                                    ["open", "download", "getfile"],
-                                    ["duplicate", "rename", "edit", "resize"],
-                                    ["quicklook", "info"],
-                                    ["search"],
-                                    ["view", "sort"]
-                                ]
-                            },
-                            getfile: {
-                                onlyURL: true,
-                                multiple: false,
-                                folders: false,
-                                oncomplete: "destroy"
-                            },
-                            handlers: {
-                                dblclick: function (event, elfinderInstance) {
-                                    fileInfo = elfinderInstance.file(event.data.file);
+        <script>
+            (function ($) {
+                "use strict";
 
-                                    if (fileInfo.mime != "directory") {
-                                        var imgURL = elfinderInstance.url(event.data.file);
-                                        $("#upload_image").val(imgURL);
+                $(function () {
+                    var $finder = $("#elfinder");
+                    var $setImage = $("#set_image");
+                    var $removeImage = $("#remove_image");
+                    var $featuredInput = $("#upload_image");
+                    var $featuredPreview = $("#elfinder_image");
 
-                                        var imgPath = "<img src=\'"+imgURL+"\' id=\"append-image\" style=\"width:260px;height:auto;background-size:contain;margin-bottom:.9em;background-repeat:no-repeat\"/>";
-                                        $("#elfinder_image").append(imgPath); //add the image to a div so you can see the selected images
+                    var finderInstance = null;
+                    var dialogOpen = false;
+                    var activeTarget = null;
+                    var activePreview = null;
+                    var isFeaturedTarget = true;
 
-                                        $("#remove_image").show();
-                                        $("#set_image").hide();
+                    $removeImage.hide();
+                    $setImage.show();
 
-                                        elfinderInstance.destroy();
-                                        return false; // stop elfinder
-                                    };
-                                },
-                                destroy: function () {
-                                    elfinder.dialog("close");
-                                }
+                    function resolveTarget()
+                    {
+                        var customTarget =
+                            window.DevflowMediaPicker
+                            && window.DevflowMediaPicker.target
+                                ? window.DevflowMediaPicker.target
+                                : null;
+
+                        if (customTarget) {
+                            activeTarget = customTarget;
+                            activePreview = null;
+                            isFeaturedTarget = false;
+
+                            return;
+                        }
+
+                        activeTarget = $featuredInput.get(0);
+                        activePreview = $featuredPreview.get(0);
+                        isFeaturedTarget = true;
+                    }
+
+                    function clearCustomTarget()
+                    {
+                        if (window.DevflowMediaPicker) {
+                            window.DevflowMediaPicker.target = null;
+                        }
+                    }
+
+                    function closeFinderDialog()
+                    {
+                        if (
+                            !dialogOpen
+                            || !$finder.dialog("instance")
+                        ) {
+                            return;
+                        }
+
+                        $finder.dialog("close");
+                    }
+
+                    function destroyFinder()
+                    {
+                        if (finderInstance) {
+                            finderInstance.destroy();
+                            finderInstance = null;
+                        }
+
+                        dialogOpen = false;
+                        clearCustomTarget();
+                    }
+
+                    function applyImage(url)
+                    {
+                        if (!activeTarget || !url) {
+                            return;
+                        }
+
+                        $(activeTarget)
+                            .val(url)
+                            .trigger("input")
+                            .trigger("change");
+
+                        if (!isFeaturedTarget) {
+                            return;
+                        }
+
+                        $featuredPreview
+                            .find("#append-image")
+                            .remove();
+
+                        $("<img>", {
+                            src: url,
+                            id: "append-image",
+                            css: {
+                                width: "260px",
+                                height: "auto",
+                                backgroundSize: "contain",
+                                marginBottom: ".9em",
+                                backgroundRepeat: "no-repeat"
                             }
-                        }).dialog({
-                            title: "filemanager",
+                        }).appendTo($featuredPreview);
+
+                        $removeImage.show();
+                        $setImage.hide();
+                    }
+
+                    function openFinder()
+                    {
+                        resolveTarget();
+
+                        if (!$finder.length) {
+                            return;
+                        }
+
+                        /*
+                         * Remove an old instance before initializing another.
+                         */
+                        if (finderInstance) {
+                            finderInstance.destroy();
+                            finderInstance = null;
+                        }
+
+                        finderInstance = $finder
+                            .elfinder({
+                                url: ' . json_encode($connectorUrl) . ',
+                                resizable: false,
+                                onlyMimes: ["image"],
+
+                                uiOptions: {
+                                    toolbar: [
+                                        ["reload"],
+                                        ["open", "download", "getfile"],
+                                        [
+                                            "duplicate",
+                                            "rename",
+                                            "edit",
+                                            "resize"
+                                        ],
+                                        ["quicklook", "info"],
+                                        ["search"],
+                                        ["view", "sort"]
+                                    ]
+                                },
+
+                                commandsOptions: {
+                                    getfile: {
+                                        onlyURL: true,
+                                        multiple: false,
+                                        folders: false
+                                    }
+                                },
+
+                                handlers: {
+                                    dblclick: function (
+                                        event,
+                                        elfinderInstance
+                                    ) {
+                                        var fileInfo =
+                                            elfinderInstance.file(
+                                                event.data.file
+                                            );
+
+                                        if (
+                                            !fileInfo
+                                            || fileInfo.mime === "directory"
+                                        ) {
+                                            return;
+                                        }
+
+                                        var imageUrl =
+                                            elfinderInstance.url(
+                                                event.data.file
+                                            );
+
+                                        applyImage(imageUrl);
+
+                                        /*
+                                         * Close the jQuery UI dialog.
+                                         * Do not destroy elFinder here.
+                                         */
+                                        closeFinderDialog();
+
+                                        event.preventDefault();
+                                        event.stopPropagation();
+
+                                        return false;
+                                    }
+                                }
+                            })
+                            .elfinder("instance");
+
+                        $finder.dialog({
+                            title: "File Manager",
                             resizable: true,
                             width: 920,
-                            height: 500
+                            height: 500,
+
+                            open: function () {
+                                dialogOpen = true;
+                            },
+
+                            close: function () {
+                                /*
+                                 * The dialog close callback owns destruction.
+                                 */
+                                destroyFinder();
+                            }
                         });
-                        $("#remove_image").click(function () {
+                    }
 
-                            $("#upload_image").val("");
-                            $("#elfinder_image").find("#append-image").remove(); //remove image from div when user clicks remove image button.
+                    $setImage
+                        .off("click.devflowFeaturedImage")
+                        .on(
+                            "click.devflowFeaturedImage",
+                            function (event) {
+                                event.preventDefault();
+                                openFinder();
+                            }
+                        );
 
-                            $("#remove_image").hide();
-                            $("#set_image").show();
+                    $removeImage
+                        .off("click.devflowFeaturedImage")
+                        .on(
+                            "click.devflowFeaturedImage",
+                            function (event) {
+                                event.preventDefault();
 
-                            return false;
-                        });
-                    });
+                                $featuredInput
+                                    .val("")
+                                    .trigger("input")
+                                    .trigger("change");
+
+                                $featuredPreview
+                                    .find("#append-image")
+                                    .remove();
+
+                                $removeImage.hide();
+                                $setImage.show();
+                            }
+                        );
+
+                    window.DevflowMediaPicker = {
+                        target: null,
+
+                        open: function (target)
+                        {
+                            if (!target) {
+                                return;
+                            }
+
+                            this.target = target;
+                            openFinder();
+                        },
+
+                        clear: function ()
+                        {
+                            this.target = null;
+                        }
+                    };
                 });
-            </script>';
-    return __observer()->filter->applyFilter('cms.upload.image', $elfinder);
+            })(jQuery);
+        </script>
+    ';
+
+    return __observer()->filter->applyFilter(
+        'cms.upload.image',
+        $elfinder
+    );
 }
 
 /**
