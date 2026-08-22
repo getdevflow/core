@@ -9,11 +9,14 @@ use Codefy\Framework\Auth\Rbac\Entity\Role;
 use Codefy\Framework\Auth\Rbac\Exception\SentinelException;
 use Codefy\Framework\Auth\Rbac\Resource\BaseStorageResource;
 use Codefy\Framework\Support\LocalStorage;
+use JsonException;
 use League\Flysystem\FilesystemException;
-
-use function json_decode;
+use League\Flysystem\FilesystemOperator;
+use Qubus\Exception\Data\TypeException;
+use RuntimeException;
 
 use const JSON_PRETTY_PRINT;
+use const JSON_THROW_ON_ERROR;
 
 final class FileResource extends BaseStorageResource
 {
@@ -22,25 +25,39 @@ final class FileResource extends BaseStorageResource
      */
     protected string $file;
 
+    private FilesystemOperator $filesystem;
+
     /**
      * @param string $file
+     * @param FilesystemOperator|null $filesystem
+     * @throws TypeException
      */
-    public function __construct(string $file)
+    public function __construct(string $file, ?FilesystemOperator $filesystem = null)
     {
         $this->file = $file;
+        $this->filesystem = $filesystem ?? LocalStorage::disk();
     }
 
     /**
      * @throws FilesystemException
      * @throws SentinelException
+     * @throws JsonException
      */
     public function load(): void
     {
         $this->clear();
 
-        if (!file_exists($this->file) || (!$data = LocalStorage::disk()->read(json_decode($this->file, true)))) {
-            $data = [];
+        if (! $this->filesystem->fileExists($this->file)) {
+            return;
         }
+
+        $decoded = json_decode($this->filesystem->read($this->file), true, 512, JSON_THROW_ON_ERROR);
+
+        if (! is_array($decoded)) {
+            throw new RuntimeException('RBAC storage must contain a JSON object.');
+        }
+
+        $data = $decoded;
 
         $this->restorePermissions($data['permissions'] ?? []);
         $this->restoreRoles($data['roles'] ?? []);
@@ -48,6 +65,7 @@ final class FileResource extends BaseStorageResource
 
     /**
      * @throws FilesystemException
+     * @throws JsonException
      */
     public function save(): void
     {
@@ -62,7 +80,9 @@ final class FileResource extends BaseStorageResource
             $data['permissions'][$permission->name] = $this->permissionToRow($permission);
         }
 
-        LocalStorage::disk()->write($this->file, json_encode(value: $data, flags: JSON_PRETTY_PRINT));
+        $json = json_encode(value: $data, flags: JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR);
+
+        $this->filesystem->write($this->file, $json);
     }
 
     protected function roleToRow(Role $role): array

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Domain\Product\Event;
 
 use App\Domain\Product\ValueObject\ProductId;
-use App\Shared\Services\DateTime;
 use Codefy\Domain\EventSourcing\AggregateChanged;
 use Codefy\Domain\EventSourcing\DomainEvent;
 use Codefy\Domain\Metadata;
@@ -26,7 +25,7 @@ final class ProductModifiedWasChanged extends AggregateChanged
         $event = self::occur(
             aggregateId: $id,
             payload: [
-                'product_modified' => (string) $modified,
+                'product_modified' => $modified->format('Y-m-d H:i:s'),
             ],
             metadata: [
                 Metadata::AGGREGATE_TYPE => 'product',
@@ -54,9 +53,7 @@ final class ProductModifiedWasChanged extends AggregateChanged
     public function productModified(): DateTimeInterface
     {
         if (!isset($this->modified)) {
-            $this->modified = QubusDateTimeImmutable::createFromInterface(
-                new DateTime($this->payload()['product_modified'])->getDateTime()
-            );
+            $this->modified = QubusDateTimeImmutable::parse($this->payload()['product_modified']);
         }
 
         return $this->modified;

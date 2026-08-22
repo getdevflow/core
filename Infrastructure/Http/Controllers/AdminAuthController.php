@@ -23,6 +23,7 @@ use ReflectionException;
 use function App\Shared\Helpers\admin_url;
 use function App\Shared\Helpers\cms_authenticate_user;
 use function App\Shared\Helpers\cms_clear_auth_cookie;
+use function App\Shared\Helpers\cms_safe_redirect_url;
 use function App\Shared\Helpers\current_user_can;
 use function App\Shared\Helpers\get_current_user_id;
 use function App\Shared\Helpers\get_option;
@@ -54,16 +55,24 @@ final class AdminAuthController extends BaseController
             /**
              * Filters where the admin should be redirected after successful login.
              */
-            $loginLink = __observer()->filter->applyFilter(
-                'admin.login.redirect',
-                admin_url()
+            $loginLink = cms_safe_redirect_url(
+                candidate: __observer()->filter->applyFilter(
+                    'admin.login.redirect',
+                    admin_url()
+                ),
+                fallback: admin_url()
             );
 
-            cms_authenticate_user(
-                login: $request->getParsedBody()['user_login'],
-                password: $request->getParsedBody()['user_pass'],
-                rememberme: $request->getParsedBody()['rememberme'] ?? 'no'
+            $input = (array) $request->getParsedBody();
+            $authentication = cms_authenticate_user(
+                login: (string) ($input['user_login'] ?? ''),
+                password: (string) ($input['user_pass'] ?? ''),
+                rememberme: (string) ($input['rememberme'] ?? 'no')
             );
+
+            if ($authentication instanceof ResponseInterface) {
+                return $authentication;
+            }
 
             /**
              * Fires after the user has logged in.
@@ -85,7 +94,12 @@ final class AdminAuthController extends BaseController
             Devflow::$PHP->flash->error(trans_html('Login exception occurred and was logged.'));
         }
 
-        return $this->redirect($request->getHeaderLine(name: 'Referer'));
+        return $this->redirect(
+            cms_safe_redirect_url(
+                candidate: $request->getHeaderLine(name: 'Referer'),
+                fallback: login_url()
+            )
+        );
     }
 
     /**
@@ -148,7 +162,9 @@ final class AdminAuthController extends BaseController
             Devflow::$PHP->flash->error(
                 message: trans_html('You are already logged out.')
             );
-            return $this->redirect($redirectLink);
+            return $this->redirect(
+                cms_safe_redirect_url(candidate: $redirectLink, fallback: login_url())
+            );
         }
 
         UserCachePsr16::clean(get_userdata(get_current_user_id()));
@@ -183,7 +199,12 @@ final class AdminAuthController extends BaseController
                     message: trans_html('Request error.')
                 );
 
-                return $this->redirect($request->getHeaderLine(name: 'Referer'));
+                return $this->redirect(
+                    cms_safe_redirect_url(
+                        candidate: $request->getHeaderLine(name: 'Referer'),
+                        fallback: login_url()
+                    )
+                );
             }
 
             if ('' !== $currentUser->id) {
@@ -223,7 +244,12 @@ final class AdminAuthController extends BaseController
             );
         }
 
-        return $this->redirect($request->getHeaderLine(name: 'Referer'));
+        return $this->redirect(
+            cms_safe_redirect_url(
+                candidate: $request->getHeaderLine(name: 'Referer'),
+                fallback: login_url()
+            )
+        );
     }
 
     /**

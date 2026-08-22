@@ -46,10 +46,13 @@ final readonly class ContentTypeService
      */
     public function findContentTypes(): array
     {
+        $contentTypes = [];
+
         try {
             /** @var ContentType[] $contentTypes */
             $contentTypes = get_all_content_types();
         } catch (UnresolvableQueryHandlerException|ReflectionException $e) {
+            logger('error', $e->getMessage());
             Devflow::$PHP->flash->error(
                 message: trans_html('Error fetching content types.')
             );

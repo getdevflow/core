@@ -23,7 +23,7 @@
     "spatie/image": "^3.7",
     "spatie/image-optimizer": "^1.7",
     "spatie/menu": "^3.2",
-    "studio-42/elfinder": "2.1.69",
+    "studio-42/elfinder": "2.1.70",
     "oomphinc/composer-installers-extender": "^2.0"
   },
   "autoload": {
@@ -49,6 +49,16 @@
       "Shared/Helpers/page.php"
     ]
   },
+  "autoload-dev": {
+    "psr-4": {
+      "Tests\\": "tests/"
+    }
+  },
+  "scripts": {
+    "test": "pest",
+    "test:unit": "pest --testsuite=Unit",
+    "security-audit": "composer audit"
+  },
   "prefer-stable": true,
   "config": {
     "allow-plugins": {
@@ -59,6 +69,8 @@
     }
   },
   "require-dev": {
-    "qubus/qubus-coding-standard": "2.1.2"
+    "league/flysystem-memory": "^3.0",
+    "pestphp/pest": "^4.3",
+    "qubus/qubus-coding-standard": "^2"
   }
 }

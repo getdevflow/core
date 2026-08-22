@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace App\Infrastructure\Services;
 
 use App\Application\Devflow;
+use App\Infrastructure\Services\Update\FilesystemUpdateTransaction;
+use App\Infrastructure\Services\Update\UpdateLock;
+use App\Shared\Services\Security\ArchivePath;
 use App\Shared\Services\SimpleCacheObjectCacheFactory;
 use Codefy\Framework\Factory\FileLoggerFactory;
 use Composer\Semver\Comparator;
@@ -15,9 +18,12 @@ use Psr\SimpleCache\CacheInterface;
 use Psr\SimpleCache\InvalidArgumentException;
 use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
+use Random\RandomException;
 use ReflectionException;
 use RuntimeException;
 use SodiumException;
+use stdClass;
+use Throwable;
 use ZipArchive;
 
 use function App\Shared\Helpers\remote_file_exists;
@@ -63,7 +69,6 @@ use function strrchr;
 use function strtolower;
 use function substr;
 use function unlink;
-
 use function usort;
 
 use const CURLOPT_CONNECTTIMEOUT;
@@ -79,6 +84,9 @@ use const SODIUM_CRYPTO_SIGN_PUBLICKEYBYTES;
 
 final class Updater
 {
+    private const int MAX_ARCHIVE_ENTRIES = 10000;
+    private const int MAX_UNCOMPRESSED_BYTES = 536870912;
+
     public ?string $latestVersion = null {
         get => $this->latestVersion;
     }
@@ -106,6 +114,12 @@ final class Updater
     private array $onEachUpdateFinishCallbacks = [];
 
     private array $onAllUpdateFinishCallbacks = [];
+
+    private $maintenanceModeHandler = null;
+
+    private $migrationTransaction = null;
+
+    private array $healthChecks = [];
 
     private bool $sslVerifyHost = true;
 
@@ -146,6 +160,10 @@ final class Updater
     public const int ERROR_DELETE_TEMP_UPDATE = 50;
 
     public const int ERROR_SIMULATE = 70;
+
+    public const int ERROR_TRANSACTION = 80;
+
+    public const int ERROR_ROLLBACK = 85;
 
     /**
      * Create new instance
@@ -339,6 +357,44 @@ final class Updater
     }
 
     /**
+     * Configure application maintenance mode around live file publication.
+     *
+     * The callback receives the desired state and update version. Returning
+     * false aborts the update. Existing applications need not configure this
+     * callback, preserving the previous updater behavior.
+     */
+    public function setMaintenanceModeHandler(callable $handler): Updater
+    {
+        $this->maintenanceModeHandler = $handler;
+
+        return $this;
+    }
+
+    /**
+     * Wrap the legacy upgrade script in an application-provided transaction.
+     *
+     * The callback receives a closure that executes the script and the update
+     * version. This remains opt-in because some database engines implicitly
+     * commit DDL statements.
+     */
+    public function setMigrationTransaction(callable $transaction): Updater
+    {
+        $this->migrationTransaction = $transaction;
+
+        return $this;
+    }
+
+    /**
+     * Add a post-migration health check. Returning false rolls files back.
+     */
+    public function addHealthCheck(callable $healthCheck): Updater
+    {
+        $this->healthChecks[] = $healthCheck;
+
+        return $this;
+    }
+
+    /**
      * Get an array of versions which will be installed.
      *
      * @return array
@@ -352,6 +408,11 @@ final class Updater
         }
 
         return [];
+    }
+
+    public function getSimulationResults(): array
+    {
+        return $this->simulationResults;
     }
 
     /**
@@ -470,12 +531,14 @@ final class Updater
 
                     break;
                 case 'json':
-                    $versions = (array) json_decode($update, false);
-                    if (!is_array($versions)) {
+                    $decodedVersions = json_decode($update);
+                    if (!$decodedVersions instanceof stdClass) {
                         $this->log->error('Unable to parse json update file!');
 
                         throw new Exception(sprintf('Could not parse update json file %s!', $this->updateFile));
                     }
+
+                    $versions = (array) $decodedVersions;
 
                     break;
                 default:
@@ -586,7 +649,7 @@ final class Updater
     {
         $curl = curl_init();
         curl_setopt($curl, CURLOPT_URL, $url);
-        curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, 2);
         curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, true);
         curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 5);
@@ -744,6 +807,7 @@ final class Updater
      *
      * @param string $updateFile
      * @return bool
+     * @throws RandomException
      */
     protected function simulateInstall(string $updateFile): bool
     {
@@ -759,12 +823,40 @@ final class Updater
             return false;
         }
 
+        if ($zip->numFiles > self::MAX_ARCHIVE_ENTRIES) {
+            $this->log->error('Update archive contains too many entries.');
+            $zip->close();
+
+            return false;
+        }
+
         $files           = [];
         $simulateSuccess = true;
+        $uncompressedBytes = 0;
 
         for ($i = 0; $i < $zip->numFiles; $i++) {
-            $fileStats        = $zip->statIndex($i);
-            $filename         = $fileStats['name'];
+            $fileStats = $zip->statIndex($i);
+
+            if (! is_array($fileStats)) {
+                $this->log->error(sprintf('Could not read zip entry at index %d.', $i));
+                $simulateSuccess = false;
+                break;
+            }
+
+            $normalized = ArchivePath::normalize($fileStats['name']);
+            $uncompressedBytes += $fileStats['size'];
+
+            if (
+                $normalized === null
+                || $this->isSymbolicLink($zip, $i)
+                || $uncompressedBytes > self::MAX_UNCOMPRESSED_BYTES
+            ) {
+                $this->log->error(sprintf('Unsafe zip entry rejected: "%s".', $fileStats['name']));
+                $simulateSuccess = false;
+                break;
+            }
+
+            $filename         = str_replace(['/', '\\'], Devflow::$PHP::DS, $normalized);
             $foldername       = $this->installDir . dirname($filename);
             $absoluteFilename = $this->installDir . $filename;
 
@@ -778,14 +870,16 @@ final class Updater
 
             // Check if parent directory is writable
             if (!is_dir($foldername)) {
-                if (!mkdir($foldername) && !is_dir($foldername)) {
-                    throw new RuntimeException(sprintf('Directory "%s" was not created', $foldername));
-                }
-                $this->log->debug(sprintf('[SIMULATE] Create directory "%s"', $foldername));
+                $this->log->debug(sprintf('[SIMULATE] Would create directory "%s"', $foldername));
                 $files[$i]['parent_folder_exists'] = false;
 
-                $parent = dirname($foldername);
-                if (!is_writable($parent)) {
+                $parent = $foldername;
+
+                while (! is_dir($parent) && dirname($parent) !== $parent) {
+                    $parent = dirname($parent);
+                }
+
+                if (! is_dir($parent) || !is_writable($parent)) {
                     $files[$i]['parent_folder_writable'] = false;
 
                     $simulateSuccess = false;
@@ -850,7 +944,7 @@ final class Updater
      * Install update.
      *
      * @param string $updateFile Path to the update file
-     * @param int|bool $simulateInstall Check for directory and file permissions instead of installing the update
+     * @param bool $simulateInstall Check for directory and file permissions instead of installing the update
      * @param string $version
      * @return int|bool
      */
@@ -911,100 +1005,133 @@ final class Updater
             return self::NO_UPDATE_AVAILABLE;
         }
 
-        foreach ($this->updates as $update) {
-            $this->log->debug(sprintf('Update to version "%s"', $update['version']));
+        if (empty($this->tempDir) || !is_dir($this->tempDir) || !is_writable($this->tempDir)) {
+            $this->log->critical(sprintf(
+                'Temporary directory "%s" does not exist or is not writeable!',
+                $this->tempDir
+            ));
 
-            // Check for temp directory
-            if (empty($this->tempDir) || !is_dir($this->tempDir) || !is_writable($this->tempDir)) {
-                $this->log->critical(sprintf(
-                    'Temporary directory "%s" does not exist or is not writeable!',
-                    $this->tempDir
-                ));
-
-                return self::ERROR_TEMP_DIR;
-            }
-
-            // Check for install directory
-            if (empty($this->installDir) || !is_dir($this->installDir) || !is_writable($this->installDir)) {
-                $this->log->critical(sprintf(
-                    'Install directory "%s" does not exist or is not writeable!',
-                    $this->installDir
-                ));
-
-                return self::ERROR_INSTALL_DIR;
-            }
-
-            $updateFile = $this->tempDir . $update['version'] . '.zip';
-
-            // Download update
-            if (!is_file($updateFile)) {
-                if (!$this->downloadUpdate($update['url'], $updateFile)) {
-                    $this->log->critical(sprintf(
-                        'Failed to download update from "%s" to "%s"!',
-                        $update['url'],
-                        $updateFile
-                    ));
-
-                    return self::ERROR_DOWNLOAD_UPDATE;
-                }
-
-                $this->log->debug(sprintf('Latest update downloaded to "%s"', $updateFile));
-            } else {
-                $this->log->info(sprintf('Latest update already downloaded to "%s"', $updateFile));
-            }
-
-            // Authenticate the package before simulation, extraction, or execution.
-            if (!$this->verifyUpdatePackage($updateFile, $update)) {
-                if (is_file($updateFile) && !unlink($updateFile)) {
-                    $this->log->warning(sprintf(
-                        'Could not delete untrusted update file "%s".',
-                        $updateFile
-                    ));
-                }
-
-                return self::ERROR_VERIFY_UPDATE;
-            }
-
-            // Install update
-            $result = $this->install($updateFile, $simulateInstall, $update['version']);
-            if ($result === true) {
-                $this->runOnEachUpdateFinishCallbacks($update['version'], $simulateInstall);
-                if ($deleteDownload) {
-                    $this->log->debug(sprintf(
-                        'Trying to delete update file "%s" after successful update',
-                        $updateFile
-                    ));
-                    if (unlink($updateFile)) {
-                        $this->log->info(sprintf('Update file "%s" deleted after successful update', $updateFile));
-                    } else {
-                        $this->log->error(sprintf(
-                            'Could not delete update file "%s" after successful update!',
-                            $updateFile
-                        ));
-
-                        return self::ERROR_DELETE_TEMP_UPDATE;
-                    }
-                }
-            } else {
-                if ($deleteDownload) {
-                    $this->log->debug(sprintf('Trying to delete update file "%s" after failed update', $updateFile));
-                    if (unlink($updateFile)) {
-                        $this->log->info(sprintf('Update file "%s" deleted after failed update', $updateFile));
-                    } else {
-                        $this->log->error(sprintf(
-                            'Could not delete update file "%s" after failed update!',
-                            $updateFile
-                        ));
-                    }
-                }
-
-                return $result;
-            }
+            return self::ERROR_TEMP_DIR;
         }
 
-        $this->runOnAllUpdateFinishCallbacks($this->getVersionsToUpdate());
+        if (empty($this->installDir) || !is_dir($this->installDir) || !is_writable($this->installDir)) {
+            $this->log->critical(sprintf(
+                'Install directory "%s" does not exist or is not writeable!',
+                $this->installDir
+            ));
 
-        return true;
+            return self::ERROR_INSTALL_DIR;
+        }
+
+        $updateLock = new UpdateLock($this->tempDir . '.devflow-update-process.lock');
+
+        if (!$updateLock->acquire()) {
+            $this->log->warning('Another Devflow update process is already running.');
+
+            return self::ERROR_TRANSACTION;
+        }
+
+        try {
+            foreach ($this->updates as $update) {
+                $this->log->debug(sprintf('Update to version "%s"', $update['version']));
+
+                // Check for temp directory
+                if (empty($this->tempDir) || !is_dir($this->tempDir) || !is_writable($this->tempDir)) {
+                    $this->log->critical(sprintf(
+                        'Temporary directory "%s" does not exist or is not writeable!',
+                        $this->tempDir
+                    ));
+
+                    return self::ERROR_TEMP_DIR;
+                }
+
+                // Check for install directory
+                if (empty($this->installDir) || !is_dir($this->installDir) || !is_writable($this->installDir)) {
+                    $this->log->critical(sprintf(
+                        'Install directory "%s" does not exist or is not writeable!',
+                        $this->installDir
+                    ));
+
+                    return self::ERROR_INSTALL_DIR;
+                }
+
+                $updateFile = $this->tempDir . $update['version'] . '.zip';
+
+                // Download update
+                if (!is_file($updateFile)) {
+                    if (!$this->downloadUpdate($update['url'], $updateFile)) {
+                        $this->log->critical(sprintf(
+                            'Failed to download update from "%s" to "%s"!',
+                            $update['url'],
+                            $updateFile
+                        ));
+
+                        return self::ERROR_DOWNLOAD_UPDATE;
+                    }
+
+                    $this->log->debug(sprintf('Latest update downloaded to "%s"', $updateFile));
+                } else {
+                    $this->log->info(sprintf('Latest update already downloaded to "%s"', $updateFile));
+                }
+
+                // Authenticate the package before simulation, extraction, or execution.
+                if (!$this->verifyUpdatePackage($updateFile, $update)) {
+                    if (is_file($updateFile) && !unlink($updateFile)) {
+                        $this->log->warning(sprintf(
+                            'Could not delete untrusted update file "%s".',
+                            $updateFile
+                        ));
+                    }
+
+                    return self::ERROR_VERIFY_UPDATE;
+                }
+
+                // Install update
+                $result = $this->install($updateFile, $simulateInstall, $update['version']);
+                if ($result === true) {
+                    $this->runOnEachUpdateFinishCallbacks($update['version'], $simulateInstall);
+                    if ($deleteDownload) {
+                        $this->log->debug(sprintf(
+                            'Trying to delete update file "%s" after successful update',
+                            $updateFile
+                        ));
+                        if (unlink($updateFile)) {
+                            $this->log->info(sprintf(
+                                'Update file "%s" deleted after successful update',
+                                $updateFile
+                            ));
+                        } else {
+                            $this->log->error(sprintf(
+                                'Could not delete update file "%s" after successful update!',
+                                $updateFile
+                            ));
+
+                            return self::ERROR_DELETE_TEMP_UPDATE;
+                        }
+                    }
+                } else {
+                    if ($deleteDownload) {
+                        $this->log->debug(sprintf('Trying to delete update file "%s" after failed update', $updateFile));
+                        if (unlink($updateFile)) {
+                            $this->log->info(sprintf('Update file "%s" deleted after failed update', $updateFile));
+                        } else {
+                            $this->log->error(sprintf(
+                                'Could not delete update file "%s" after failed update!',
+                                $updateFile
+                            ));
+                        }
+                    }
+
+                    return $result;
+                }
+            }
+
+            $this->runOnAllUpdateFinishCallbacks($this->getVersionsToUpdate());
+
+            return true;
+        } finally {
+            $updateLock->release();
+        }
     }
 
     /**
@@ -1079,10 +1206,13 @@ final class Updater
         return is_string($actualHash) && hash_equals($verified['sha256'], $actualHash);
     }
 
+    /**
+     * @throws RandomException
+     */
     private function extractAndInstall(
-            string $updateFile,
-            bool $simulateInstall,
-            string $version
+        string $updateFile,
+        bool $simulateInstall,
+        string $version
     ): int|bool {
         $this->log->notice(sprintf(
             'Trying to install update "%s"',
@@ -1107,141 +1237,114 @@ final class Updater
             return self::ERROR_SIMULATE;
         }
 
-        clearstatcache();
+        $transaction = new FilesystemUpdateTransaction(
+            installDir: $this->installDir,
+            tempDir: $this->tempDir,
+            logger: $this->log,
+            directoryPermissions: $this->dirPermissions,
+        );
+        $maintenanceModeEnabled = false;
 
-        $zip = new ZipArchive();
-        $resource = $zip->open($updateFile);
+        try {
+            $transaction->begin();
+            $paths = $transaction->stage($updateFile);
+            $normalizedUpdateScript = ArchivePath::normalize($this->updateScriptName);
 
-        if ($resource !== true) {
-            $this->log->error(sprintf(
-                'Could not open zip file "%s", error: %d',
-                $updateFile,
-                $resource
+            if ($normalizedUpdateScript === null || str_ends_with($normalizedUpdateScript, '/')) {
+                throw new RuntimeException('The configured update script name is invalid.');
+            }
+
+            $this->changeMaintenanceMode(true, $version);
+            $maintenanceModeEnabled = true;
+            $transaction->publish($paths);
+
+            if (!$transaction->verifyPublishedFiles()) {
+                throw new RuntimeException('Published update files failed their integrity check.');
+            }
+
+            if (in_array($normalizedUpdateScript, $paths, true)) {
+                $upgradeScript = $transaction->publishedPath($normalizedUpdateScript);
+                $migration = static fn (): mixed => require $upgradeScript;
+
+                $this->log->debug(sprintf('Executing update script "%s".', $normalizedUpdateScript));
+
+                if ($this->migrationTransaction !== null) {
+                    ($this->migrationTransaction)($migration, $version);
+                } else {
+                    $migration();
+                }
+
+                $this->log->info(sprintf('Update script "%s" completed.', $normalizedUpdateScript));
+            }
+
+            foreach ($this->healthChecks as $healthCheck) {
+                if ($healthCheck($this->installDir, $version) === false) {
+                    throw new RuntimeException(sprintf(
+                        'A health check failed after installing update "%s".',
+                        $version
+                    ));
+                }
+            }
+
+            if (in_array($normalizedUpdateScript, $paths, true)) {
+                $transaction->removePublishedFile($normalizedUpdateScript);
+            }
+
+            $this->changeMaintenanceMode(false, $version);
+            $maintenanceModeEnabled = false;
+            $transaction->commit();
+
+            $this->log->notice(sprintf('Update "%s" successfully installed.', $version));
+
+            return true;
+        } catch (Throwable $exception) {
+            $this->log->error(
+                sprintf('Transactional installation of update "%s" failed.', $version),
+                ['exception' => $exception]
+            );
+
+            return $transaction->rollback()
+            ? self::ERROR_TRANSACTION
+            : self::ERROR_ROLLBACK;
+        } finally {
+            if ($maintenanceModeEnabled) {
+                try {
+                    $this->changeMaintenanceMode(false, $version);
+                } catch (Throwable $exception) {
+                    $this->log->critical(
+                        'Unable to leave maintenance mode after update rollback.',
+                        ['exception' => $exception]
+                    );
+                }
+            }
+
+            $transaction->close();
+        }
+    }
+
+    private function changeMaintenanceMode(bool $enabled, string $version): void
+    {
+        if ($this->maintenanceModeHandler === null) {
+            return;
+        }
+
+        if (($this->maintenanceModeHandler)($enabled, $version) === false) {
+            throw new RuntimeException(sprintf(
+                'Unable to %s maintenance mode.',
+                $enabled ? 'enter' : 'leave'
             ));
+        }
+    }
 
+    private function isSymbolicLink(ZipArchive $zip, int $index): bool
+    {
+        $operatingSystem = 0;
+        $attributes = 0;
+
+        if (! $zip->getExternalAttributesIndex($index, $operatingSystem, $attributes)) {
             return false;
         }
 
-        $upgradeScript = null;
-
-        try {
-            for ($i = 0; $i < $zip->numFiles; $i++) {
-                $fileStats = $zip->statIndex($i);
-
-                if (!is_array($fileStats) || !isset($fileStats['name'])) {
-                    $this->log->error(sprintf(
-                        'Could not read zip entry at index %d.',
-                        $i
-                    ));
-
-                    return false;
-                }
-
-                $filename = str_replace(
-                    ['/', '\\'],
-                    Devflow::$PHP::DS,
-                    $fileStats['name']
-                );
-
-                if ($filename === '') {
-                    $this->log->error(sprintf(
-                        'Zip entry at index %d has an empty filename.',
-                        $i
-                    ));
-
-                    return false;
-                }
-
-                $foldername = str_replace(
-                    ['/', '\\'],
-                    Devflow::$PHP::DS,
-                    $this->installDir . dirname($filename)
-                );
-
-                $absoluteFilename = str_replace(
-                    ['/', '\\'],
-                    Devflow::$PHP::DS,
-                    $this->installDir . $filename
-                );
-
-                $this->log->debug(sprintf(
-                    'Updating file "%s"',
-                    $filename
-                ));
-
-                if (
-                        !is_dir($foldername)
-                        && !mkdir(
-                            $foldername,
-                            $this->dirPermissions,
-                            true
-                        )
-                        && !is_dir($foldername)
-                ) {
-                    $this->log->error(sprintf(
-                        'Directory "%s" has to be writable.',
-                        $foldername
-                    ));
-
-                    return false;
-                }
-
-                if ($filename[strlen($filename) - 1] === Devflow::$PHP::DS) {
-                    continue;
-                }
-
-                if (
-                        $zip->extractTo(
-                            $this->installDir,
-                            $fileStats['name']
-                        ) === false
-                ) {
-                    $this->log->error(sprintf(
-                        'Could not extract zip entry "%s".',
-                        $fileStats['name']
-                    ));
-
-                    return false;
-                }
-
-                if ($filename === $this->updateScriptName) {
-                    $upgradeScript = $absoluteFilename;
-                }
-            }
-        } finally {
-            $zip->close();
-        }
-
-        /*
-         * Execute the migration script only after every archive entry has been
-         * extracted successfully.
-         */
-        if ($upgradeScript !== null) {
-            $this->log->debug(sprintf(
-                'Try to include update script "%s".',
-                $upgradeScript
-            ));
-
-            require $upgradeScript;
-
-            $this->log->info(sprintf(
-                'Update script "%s" included.',
-                $upgradeScript
-            ));
-
-            if (!unlink($upgradeScript)) {
-                $this->log->warning(sprintf(
-                    'Could not delete update script "%s".',
-                    $upgradeScript
-                ));
-            }
-        }
-
-        $this->log->notice(sprintf(
-            'Update "%s" successfully installed',
-            $version
-        ));
-
-        return true;
+        return (($attributes >> 16) & 0170000) === 0120000;
     }
 }

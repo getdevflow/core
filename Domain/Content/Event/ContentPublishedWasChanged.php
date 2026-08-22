@@ -12,8 +12,6 @@ use DateTimeInterface;
 use Qubus\Exception\Data\TypeException;
 use Qubus\Support\DateTime\QubusDateTimeImmutable;
 
-use function strtotime;
-
 final class ContentPublishedWasChanged extends AggregateChanged
 {
     private ContentId $id;
@@ -27,7 +25,7 @@ final class ContentPublishedWasChanged extends AggregateChanged
         $event = self::occur(
             aggregateId: $id,
             payload: [
-                'content_published' => (string) $published,
+                'content_published' => $published->format('Y-m-d H:i:s'),
             ],
             metadata: [
                 Metadata::AGGREGATE_TYPE => 'content',
@@ -55,9 +53,7 @@ final class ContentPublishedWasChanged extends AggregateChanged
     public function contentPublished(): DateTimeInterface
     {
         if (!isset($this->published)) {
-            $this->published = QubusDateTimeImmutable::parse(
-                strtotime($this->payload()['content_published'])
-            );
+            $this->published = QubusDateTimeImmutable::parse($this->payload()['content_published']);
         }
 
         return $this->published;

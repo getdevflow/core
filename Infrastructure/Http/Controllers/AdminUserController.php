@@ -38,6 +38,7 @@ use ReflectionException;
 
 use function App\Shared\Helpers\admin_url;
 use function App\Shared\Helpers\cms_delete_site_user;
+use function App\Shared\Helpers\cms_safe_redirect_url;
 use function App\Shared\Helpers\current_user_can;
 use function App\Shared\Helpers\get_current_site_id;
 use function App\Shared\Helpers\get_current_user_id;
@@ -56,18 +57,15 @@ use function Codefy\Framework\Helpers\ask;
 use function Codefy\Framework\Helpers\config;
 use function Codefy\Framework\Helpers\logger;
 use function Codefy\Framework\Helpers\queue;
-use function Codefy\Framework\Helpers\storage_path;
 use function Codefy\Framework\Helpers\trans;
 use function Codefy\Framework\Helpers\trans_html;
 use function Codefy\Framework\Helpers\view;
-use function file_exists;
+use function hash_equals;
 use function is_string;
-use function parse_str;
 use function Qubus\Error\Helpers\is_error;
 use function Qubus\Support\Helpers\is_false__;
 use function sprintf;
 use function time;
-use function unlink;
 
 final class AdminUserController extends BaseController
 {
@@ -188,7 +186,12 @@ final class AdminUserController extends BaseController
             return $this->redirect($request->getHeaderLine(name: 'Referer'));
         }
 
-        return $this->redirect($request->getHeaderLine(name: 'Referer'));
+        return $this->redirect(
+            cms_safe_redirect_url(
+                candidate: $request->getHeaderLine(name: 'Referer'),
+                fallback: admin_url()
+            )
+        );
     }
 
     /**
@@ -458,21 +461,7 @@ final class AdminUserController extends BaseController
 
                 $cookies->setSecureCookie($switchCookie);
 
-                $vars = [];
-                parse_str($cookies->get('USERCOOKIEID'), $vars);
-
-                /**
-                 * Checks to see if the cookie exists on the server.
-                 * If it exists, we need to delete it.
-                 */
-                $file = storage_path('app/cookies/cookie.' . $vars['data']);
-                if (file_exists($file)) {
-                    unlink($file);
-                }
-                /**
-                 * Delete the old cookies.
-                 */
-                $cookies->remove('USERCOOKIEID');
+                $cookies->deleteSecureCookie('USERCOOKIEID');
             }
 
             $authCookie = [
@@ -495,7 +484,7 @@ final class AdminUserController extends BaseController
                         plaintext: get_user_value(id: $userId, field: 'token'),
                         key: Key::loadFromAsciiSafeString(config()->string(key: 'app.crypto_key'))
                     ),
-                    maxAge: (int) get_option(key: 'cookieexpire', default: 172800) + time()
+                    maxAge: (int) get_option(key: 'cookieexpire', default: 172800)
                 )
             )
             ->withHeader('Location', admin_url())
@@ -519,7 +508,12 @@ final class AdminUserController extends BaseController
             );
         }
 
-        return $this->redirect($request->getHeaderLine(name: 'Referer'));
+        return $this->redirect(
+            cms_safe_redirect_url(
+                candidate: $request->getHeaderLine(name: 'Referer'),
+                fallback: admin_url()
+            )
+        );
     }
 
     /**
@@ -547,25 +541,45 @@ final class AdminUserController extends BaseController
         try {
             $cookies = NativePhpCookies::factory();
 
-            if ($cookies->get('USERCOOKIEID') === null || $cookies->get('USERCOOKIEID') === '') {
+            if ($cookies->get('USERCOOKIEID') === '') {
                 Devflow::$PHP->flash->error(
                     message: trans_html('Cookie is not properly set for user switching.')
                 );
 
-                $this->redirect(admin_url());
+                return $this->redirect(admin_url());
             }
 
-            $vars1 = [];
-            parse_str($cookies->get('USERCOOKIEID'), $vars1);
-            /**
-             * Checks to see if the cookie exists on the server.
-             * If it exists, we need to delete it.
-             */
-            $file1 = storage_path('app/cookies/cookie' . $vars1['data']);
-            if (file_exists($file1)) {
-                unlink($file1);
+            $switchBack = $cookies->getSecureCookie('SWITCH_USERBACK');
+
+            if (
+                $switchBack === false
+                || ! isset($switchBack->id, $switchBack->token)
+                || ! is_string($switchBack->id)
+                || ! is_string($switchBack->token)
+                || $switchBack->id === ''
+                || $switchBack->token === ''
+                || $userId !== $switchBack->id
+            ) {
+                Devflow::$PHP->flash->error(
+                    message: trans_html('The original user session is invalid or has expired.')
+                );
+
+                return $this->redirect(admin_url());
             }
-            $cookies->remove('USERCOOKIEID');
+
+            $originalUserId = $switchBack->id;
+            $currentToken = get_user_value(id: $originalUserId, field: 'token');
+
+            if (! is_string($currentToken) || ! hash_equals($currentToken, $switchBack->token)) {
+                $cookies->deleteSecureCookie('SWITCH_USERBACK');
+                Devflow::$PHP->flash->error(
+                    message: trans_html('The original user session can no longer be restored.')
+                );
+
+                return $this->redirect(admin_url());
+            }
+
+            $cookies->deleteSecureCookie('USERCOOKIEID');
 
             /**
              * After the login as user cookies has been
@@ -575,24 +589,14 @@ final class AdminUserController extends BaseController
              */
             $switchCookie = [
                 'key' => 'USERCOOKIEID',
-                'id' => $userId,
-                'token' => get_user_value(id: $userId, field: 'token'),
+                'id' => $originalUserId,
+                'token' => $currentToken,
                 'remember' => 'yes',
                 'exp' => (int) get_option('cookieexpire', 172800) + time()
             ];
             $cookies->setSecureCookie($switchCookie);
 
-            $vars2 = [];
-            parse_str($cookies->get('SWITCH_USERBACK'), $vars2);
-            /**
-             * Checks to see if the cookie exists on the server.
-             * If it exists, we need to delete it.
-             */
-            $file2 = storage_path('app/cookies/cookie' . $vars2['data']);
-            if (file_exists($file2)) {
-                unlink($file2);
-            }
-            $cookies->remove('SWITCH_USERBACK');
+            $cookies->deleteSecureCookie('SWITCH_USERBACK');
             /** @var CookieFactory $cookieFactory */
             $cookieFactory = Devflow::$PHP->make(name: CookieFactory::class);
 
@@ -601,13 +605,19 @@ final class AdminUserController extends BaseController
                 setCookieCollection: $cookieFactory->make(
                     name: config()->string(key: 'auth.cookie_name', default: 'USERSESSID'),
                     value: Crypto::encrypt(
-                        plaintext: get_user_value(id: $userId, field: 'token'),
+                        plaintext: $currentToken,
                         key: Key::loadFromAsciiSafeString(config()->string(key: 'app.crypto_key'))
                     ),
-                    maxAge: (int) get_option(key: 'cookieexpire', default: 172800) + time()
+                    maxAge: (int) get_option(key: 'cookieexpire', default: 172800)
                 )
             )
-            ->withHeader('Location', $request->getHeaderLine(name: 'Referer'))
+            ->withHeader(
+                'Location',
+                cms_safe_redirect_url(
+                    candidate: $request->getHeaderLine(name: 'Referer'),
+                    fallback: admin_url()
+                )
+            )
             ->withStatus(302);
 
             Devflow::$PHP->flash->success(
@@ -628,6 +638,11 @@ final class AdminUserController extends BaseController
             );
         }
 
-        return $this->redirect($request->getHeaderLine(name: 'Referer'));
+        return $this->redirect(
+            cms_safe_redirect_url(
+                candidate: $request->getHeaderLine(name: 'Referer'),
+                fallback: admin_url()
+            )
+        );
     }
 }
