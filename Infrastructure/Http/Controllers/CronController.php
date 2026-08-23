@@ -15,12 +15,14 @@ use Qubus\EventDispatcher\ActionFilter\Action;
 use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
 use Qubus\Http\ServerRequest;
+use Qubus\Support\DateTime\QubusDateTimeImmutable;
 use ReflectionException;
 
 use function App\Shared\Helpers\get_all_sites;
 use function App\Shared\Helpers\publish_scheduled_product;
 use function App\Shared\Helpers\restore_current_site;
 use function App\Shared\Helpers\switch_to_site;
+use function App\Shared\Helpers\update_option;
 
 final class CronController extends BaseController
 {
@@ -43,6 +45,7 @@ final class CronController extends BaseController
             switch_to_site($site['key']);
             publish_scheduled_product();
             Action::getInstance()->doAction('master_cron', $site);
+            update_option('cron_last_run', QubusDateTimeImmutable::now()->format('l, F jS, Y @ H:i A'));
             restore_current_site();
         }
     }
