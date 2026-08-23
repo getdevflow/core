@@ -29,15 +29,12 @@ final class RbacServiceProvider extends CodefyServiceProvider
         $this->codefy->alias(original: StorageResource::class, alias: FileResource::class);
         $this->codefy->define(name: FileResource::class, args: [
             ':file' => 'rbac.json',
-            // Do not auto-wire FilesystemOperator here. Resolving the framework's
-            // filesystem alias while the application is still bootstrapping loads
-            // filesystem.php, whose path helpers would re-enter bootstrap.
             ':filesystem' => new Filesystem(
                 new LocalFilesystemAdapter($this->codefy->storagePath())
             ),
         ]);
-        $this->codefy->share(nameOrInstance: StorageResource::class);
 
+        $this->codefy->share(nameOrInstance: StorageResource::class);
         $this->codefy->share(nameOrInstance: Rbac::class);
 
         /** @var RbacLoader $loader */
