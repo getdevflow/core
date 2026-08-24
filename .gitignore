@@ -1,8 +1,7 @@
 .idea
+docs
 composer.lock
 vendor
-blog-article.md
-form-state.md
 .phpunit.cache
 .phpcs-cache
 CHANGELOG.md

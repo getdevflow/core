@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Http\Controllers;
 
-use App\Application\Dashboard\DashboardWidgetRegistry;
-use App\Application\Dashboard\NativeDashboardWidgets;
+use App\Infrastructure\Services\Dashboard\DashboardWidgetRegistry;
+use App\Infrastructure\Services\Dashboard\NativeDashboardWidgets;
 use App\Application\Devflow;
 use App\Infrastructure\Persistence\Repository\ExtensionRepository;
 use App\Shared\Services\ItemPoolObjectCacheFactory;

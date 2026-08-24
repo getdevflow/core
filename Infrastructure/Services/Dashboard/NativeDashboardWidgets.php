@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Application\Dashboard;
+namespace App\Infrastructure\Services\Dashboard;
 
 use App\Application\Devflow;
 use Psr\Container\ContainerExceptionInterface;

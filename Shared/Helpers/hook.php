@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Shared\Helpers;
 
-use App\Application\Dashboard\DashboardWidgetRegistry;
+use App\Infrastructure\Services\Dashboard\DashboardWidgetRegistry;
 use App\Application\Devflow;
 use App\Shared\Services\Registry;
 use Codefy\QueryBus\UnresolvableQueryHandlerException;
