@@ -114,7 +114,7 @@ final readonly class UserService
             }
 
             if (empty($userLogin)) {
-                return new UserError($userLogin->getMessage());
+                return new UserError(trans_html('A user login is required.'));
             }
 
             $arrayMerge = array_merge($extra, $validated);

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Shared\Helpers;
 
+use App\Infrastructure\Services\Dashboard\DashboardWidgetRegistry;
 use App\Application\Devflow;
 use App\Shared\Services\Registry;
 use Codefy\QueryBus\UnresolvableQueryHandlerException;
@@ -37,6 +38,26 @@ use function str_replace;
 use function str_split;
 use function strlen;
 use function substr;
+
+/**
+ * Retrieve the dashboard widget registry.
+ *
+ * Register widgets on the `dashboard_widgets_init` action so that they are
+ * available after plugins and the active theme have loaded.
+ *
+ * @example
+ * dashboard_widgets()->register('client.reports', 'Client Reports', fn (): string => '<p>...</p>')
+ *     ->description('A summary of client reporting data.')
+ *     ->icon('fa fa-chart-line')
+ *     ->column('right')
+ *     ->priority(20)
+ *     ->permission('access:admin');
+ * @throws ReflectionException
+ */
+function dashboard_widgets(): DashboardWidgetRegistry
+{
+    return DashboardWidgetRegistry::getInstance();
+}
 
 /**
  * Checks if a filter exists.

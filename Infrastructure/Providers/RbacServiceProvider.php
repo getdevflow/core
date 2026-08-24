@@ -15,6 +15,8 @@ use Codefy\Framework\Auth\Rbac\Resource\StorageResource;
 use Codefy\Framework\Auth\Repository\AuthUserRepository;
 use Codefy\Framework\Auth\Sentinel;
 use Codefy\Framework\Support\CodefyServiceProvider;
+use League\Flysystem\Filesystem;
+use League\Flysystem\Local\LocalFilesystemAdapter;
 use Qubus\Exception\Exception;
 
 final class RbacServiceProvider extends CodefyServiceProvider
@@ -26,10 +28,13 @@ final class RbacServiceProvider extends CodefyServiceProvider
     {
         $this->codefy->alias(original: StorageResource::class, alias: FileResource::class);
         $this->codefy->define(name: FileResource::class, args: [
-            ':file' => 'rbac.json'
+            ':file' => 'rbac.json',
+            ':filesystem' => new Filesystem(
+                new LocalFilesystemAdapter($this->codefy->storagePath())
+            ),
         ]);
-        $this->codefy->share(nameOrInstance: StorageResource::class);
 
+        $this->codefy->share(nameOrInstance: StorageResource::class);
         $this->codefy->share(nameOrInstance: Rbac::class);
 
         /** @var RbacLoader $loader */

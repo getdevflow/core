@@ -18,7 +18,6 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\SimpleCache\InvalidArgumentException;
 use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
-use Qubus\Exception\Http\Client\NotFoundException;
 use Qubus\Http\ServerRequest;
 use Qubus\Http\Session\SessionException;
 use ReflectionException;
@@ -27,13 +26,10 @@ use function Codefy\Framework\Helpers\app;
 use function Codefy\Framework\Helpers\config;
 use function Codefy\Framework\Helpers\gate;
 use function Codefy\Framework\Helpers\logger;
-use function Codefy\Framework\Helpers\storage_path;
 use function Codefy\Framework\Helpers\trans;
 use function Codefy\Framework\Helpers\trans_html;
-use function file_exists;
 use function filter_var;
 use function is_string;
-use function parse_str;
 use function parse_url;
 use function preg_match;
 use function Qubus\Routing\Helpers\redirect;
@@ -46,12 +42,8 @@ use function sprintf;
 use function strtolower;
 use function time;
 use function trim;
-use function unlink;
 
 use const FILTER_VALIDATE_EMAIL;
-use const PHP_URL_HOST;
-use const PHP_URL_PORT;
-use const PHP_URL_SCHEME;
 
 /**
  * @file core/Shared/Helpers/auth.php
@@ -201,8 +193,8 @@ function cms_safe_redirect_url(mixed $candidate, string $fallback): string
         return $fallback;
     }
 
-    $candidateScheme = $candidateParts[PHP_URL_SCHEME] ?? null;
-    $candidateHost = $candidateParts[PHP_URL_HOST] ?? null;
+    $candidateScheme = $candidateParts['scheme'] ?? null;
+    $candidateHost = $candidateParts['host'] ?? null;
 
     /*
      * A local destination must begin with exactly one slash. This rejects
@@ -230,17 +222,17 @@ function cms_safe_redirect_url(mixed $candidate, string $fallback): string
         return $fallback;
     }
 
-    $trustedScheme = $trustedParts[PHP_URL_SCHEME] ?? null;
-    $trustedHost = $trustedParts[PHP_URL_HOST] ?? null;
+    $trustedScheme = $trustedParts['scheme'] ?? null;
+    $trustedHost = $trustedParts['host'] ?? null;
 
     if (!is_string($trustedScheme) || !is_string($trustedHost)) {
         return $fallback;
     }
 
-    $candidatePort = $candidateParts[PHP_URL_PORT] ?? ($candidateScheme === 'https' ? 443 : 80);
+    $candidatePort = $candidateParts['port'] ?? ($candidateScheme === 'https' ? 443 : 80);
 
     $trustedScheme = strtolower($trustedScheme);
-    $trustedPort = $trustedParts[PHP_URL_PORT] ?? ($trustedScheme === 'https' ? 443 : 80);
+    $trustedPort = $trustedParts['port'] ?? ($trustedScheme === 'https' ? 443 : 80);
 
     if (
         $candidateScheme !== $trustedScheme
@@ -512,49 +504,11 @@ function cms_clear_auth_cookie(): void
      */
     __observer()->action->doAction('clear_auth_cookie');
 
-    $vars1 = [];
-    parse_str($cookies->get('USERCOOKIEID'), $vars1);
-    /**
-     * Checks to see if the cookie exists on the server.
-     * If it exists, we need to delete it.
-     */
-    $file1 = storage_path(path: 'app/cookies/cookie.' . $vars1['data']);
-    try {
-        if (file_exists($file1)) {
-            unlink($file1);
-        }
-    } catch (NotFoundException $e) {
-        logger(
-            'error',
-            sprintf(
-                'FILESTATE[%s]: File not found: %s',
-                $e->getCode(),
-                $e->getMessage()
-            )
-        );
-    }
+    $cookies->deleteSecureCookie('USERCOOKIEID');
 
     if (isset($_COOKIE['SWITCH_USERBACK'])) {
-        $vars2 = [];
-        parse_str($cookies->get('SWITCH_USERBACK'), $vars2);
-        /**
-         * Checks to see if the cookie exists on the server.
-         * If it exists, we need to delete it.
-         */
-        $file2 = storage_path(path: 'app/cookies/cookie.' . $vars2['data']);
-        if (file_exists($file2)) {
-            @unlink($file2);
-        }
-
-        $cookies->remove(key: 'SWITCH_USERBACK');
+        $cookies->deleteSecureCookie('SWITCH_USERBACK');
     }
-
-    /**
-     * After the cookie is removed from the server,
-     * we know need to remove it from the browser and
-     * redirect the user to the login page.
-     */
-    $cookies->remove(key: 'USERCOOKIEID');
 }
 
 /**

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Shared\Http;
 
+use LogicException;
 use Qubus\Http\Session\PhpSession;
 use Qubus\Http\Session\SessionException;
 
@@ -36,7 +37,7 @@ final class FormState
             unset($input[$key]);
         }
 
-        $this->session->set(self::OLD_INPUT_KEY, $input);
+        $this->writeSession(self::OLD_INPUT_KEY, $input);
         $this->oldInput = $input;
     }
 
@@ -46,7 +47,7 @@ final class FormState
      */
     public function flashErrors(array $errors): void
     {
-        $this->session->set(self::FORM_ERRORS_KEY, $errors);
+        $this->writeSession(self::FORM_ERRORS_KEY, $errors);
         $this->errors = $errors;
     }
 
@@ -144,5 +145,16 @@ final class FormState
         }
 
         return $data;
+    }
+
+    private function writeSession(string $key, array $value): void
+    {
+        $setter = [$this->session, 'set'];
+
+        if (! is_callable($setter)) {
+            throw new LogicException('The configured PHP session does not support writes.');
+        }
+
+        $setter($key, $value);
     }
 }

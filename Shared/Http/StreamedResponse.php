@@ -18,7 +18,7 @@ class StreamedResponse extends Response
      */
     public function __construct(?callable $callback = null, int $status = 200, array $headers = [])
     {
-        parent::__construct(null, $status, $headers);
+        parent::__construct('php://temp', $status, $headers);
 
         if (null !== $callback) {
             $this->setCallback($callback);
@@ -30,7 +30,7 @@ class StreamedResponse extends Response
     /**
      * Sets the PHP callback associated with this Response.
      *
-     * @return $this
+     * @return static
      */
     public function setCallback(callable $callback): static
     {
@@ -45,7 +45,7 @@ class StreamedResponse extends Response
             return null;
         }
 
-        return ($this->callback)(...);
+        return $this->callback;
     }
 
     /**
@@ -53,7 +53,7 @@ class StreamedResponse extends Response
      *
      * @param positive-int|null $statusCode The status code to use, override the statusCode property if set and not null
      *
-     * @return $this
+     * @return static
      */
     public function sendHeaders(?int $statusCode = null): static
     {
@@ -61,11 +61,15 @@ class StreamedResponse extends Response
             return $this;
         }
 
+        $statusCode ??= $this->getStatusCode();
+
         if ($statusCode < 100 || $statusCode >= 200) {
             $this->headersSent = true;
         }
 
-        return parent::withStatus($statusCode);
+        return $statusCode === $this->getStatusCode()
+        ? $this
+        : parent::withStatus($statusCode);
     }
 
     /**
@@ -100,8 +104,6 @@ class StreamedResponse extends Response
         if (null !== $content) {
             throw new LogicException('The content cannot be set on a StreamedResponse instance.');
         }
-
-        $this->streamed = true;
 
         return $this;
     }

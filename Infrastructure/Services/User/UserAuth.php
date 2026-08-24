@@ -14,6 +14,8 @@ use Codefy\Framework\Http\Middleware\Auth\UserCookieDecryptMiddleware;
 use Codefy\Framework\Http\RequestContext;
 use Psr\Http\Message\ServerRequestInterface;
 
+use ReflectionException;
+
 use function App\Shared\Helpers\get_user_by;
 use function Codefy\Framework\Helpers\logger;
 use function Qubus\Support\Helpers\is_false__;
@@ -31,7 +33,7 @@ final class UserAuth implements Gate
     {
         if (
                 $this->getRequest()->getHeaderLine(
-                        UserAuthorizationMiddleware::HEADER_HTTP_STATUS_CODE
+                    UserAuthorizationMiddleware::HEADER_HTTP_STATUS_CODE
                 ) === 'not_authorized'
         ) {
             return false;
@@ -49,7 +51,7 @@ final class UserAuth implements Gate
     /**
      * @inheritDoc
      */
-    public function current(): bool|null|object
+    public function current(): ?object
     {
         $token = $this->getToken();
 
@@ -64,13 +66,14 @@ final class UserAuth implements Gate
      * Whether user is authenticated.
      *
      * @return bool
+     * @throws ReflectionException
      */
     private function hasAuthenticatedUser(): bool
     {
-        return $this->getToken() !== null;
+        return $this->current() !== null;
     }
 
-    private function resolveUserByToken(string $token): object|bool|null
+    private function resolveUserByToken(string $token): ?object
     {
         try {
             /** @var User $user */
@@ -94,12 +97,11 @@ final class UserAuth implements Gate
     {
         $user = $this->current();
 
-        if ($user === false) {
+        if (!is_object($user)) {
             return [];
         }
 
         $roles = [];
-        // @phpstan-ignore property.nonObject
         foreach ((array)$user->role as $roleName) {
             if ($role = $this->rbac->getRole($roleName)) {
                 $roles[$roleName] = $role;
@@ -111,18 +113,20 @@ final class UserAuth implements Gate
 
     /**
      * @inheritDoc
+     * @throws ReflectionException
      */
     public function guest(): bool
     {
-        return $this->getToken() === null;
+        return !$this->isLoggedIn();
     }
 
     /**
      * @inheritDoc
+     * @throws ReflectionException
      */
     public function isLoggedIn(): bool
     {
-        return $this->getToken() !== null;
+        return $this->current() !== null;
     }
 
     /**
@@ -132,7 +136,9 @@ final class UserAuth implements Gate
     {
         $request = $this->getRequest();
 
-        return $request->getAttribute(UserCookieDecryptMiddleware::USER_COOKIE);
+        $token = $request->getAttribute(UserCookieDecryptMiddleware::USER_COOKIE);
+
+        return is_string($token) && $token !== '' ? $token : null;
     }
 
     /**

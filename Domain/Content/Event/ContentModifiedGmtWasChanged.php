@@ -12,8 +12,6 @@ use DateTimeInterface;
 use Qubus\Exception\Data\TypeException;
 use Qubus\Support\DateTime\QubusDateTimeImmutable;
 
-use function strtotime;
-
 final class ContentModifiedGmtWasChanged extends AggregateChanged
 {
     private ContentId $id;
@@ -27,7 +25,7 @@ final class ContentModifiedGmtWasChanged extends AggregateChanged
         $event = self::occur(
             aggregateId: $id,
             payload: [
-                'content_modified_gmt' => (string) $modifiedGmt
+                'content_modified_gmt' => $modifiedGmt->format('Y-m-d H:i:s')
             ],
             metadata: [
                 Metadata::AGGREGATE_TYPE => 'content',
@@ -56,7 +54,7 @@ final class ContentModifiedGmtWasChanged extends AggregateChanged
     {
         if (!isset($this->modifiedGmt)) {
             $this->modifiedGmt = QubusDateTimeImmutable::parse(
-                strtotime($this->payload()['content_modified_gmt']),
+                $this->payload()['content_modified_gmt'],
                 'GMT'
             );
         }

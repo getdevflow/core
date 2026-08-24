@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Shared\Services;
 
 use App\Application\Devflow;
+use InvalidArgumentException;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
+use Qubus\Exception\Data\TypeException;
 use ReflectionException;
 use Spatie\Image\Exceptions\CouldNotLoadImage;
 
@@ -28,6 +30,10 @@ final class Image
      */
     public static function resize(int $width, int $height, int $target): string
     {
+        if ($width <= 0 || $height <= 0 || $target <= 0) {
+            throw new InvalidArgumentException('Image dimensions and target size must be greater than zero.');
+        }
+
         // takes the larger size of the width and height and applies the formula.
         // Your function is designed to work with any image in any size.
         if ($width > $height) {
@@ -70,13 +76,14 @@ final class Image
      *      @type bool $image_greyscale Converts image to greyscale.
      *      @type int $image_sharpen Sharpens the image.
      *      @type array $image_watermark Adds a watermark to image.
-     * @return bool|Image
+     * @return bool
      * @throws ContainerExceptionInterface
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
      * @throws CouldNotLoadImage
+     * @throws TypeException
      */
-    public function manipulate(array $params = []): false|\Spatie\Image\Image
+    public function manipulate(array $params = []): bool
     {
         $defaults = [
             'image_source' => null,

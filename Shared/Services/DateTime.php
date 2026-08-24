@@ -5,15 +5,16 @@ declare(strict_types=1);
 namespace App\Shared\Services;
 
 use Carbon\CarbonImmutable;
+use DateInvalidTimeZoneException;
 use DateTimeInterface;
 use DateTimeZone;
 use Qubus\Support\DateTime\QubusDateTimeImmutable;
 
 class DateTime
 {
-    private ?DateTimeInterface $dateTime = null;
+    private CarbonImmutable $dateTime;
     private string $locale = 'en';
-    private ?DateTimeZone $timezone = null;
+    private DateTimeZone $timezone;
 
     /**
      * Returns new Datetime object.
@@ -21,10 +22,16 @@ class DateTime
      * @param string|null $time
      * @param string|DateTimeZone|null $timezone
      * @param string|null $locale
+     * @throws DateInvalidTimeZoneException
      */
     public function __construct(?string $time = null, string|DateTimeZone|null $timezone = null, ?string $locale = null)
     {
-        $this->dateTime = QubusDateTimeImmutable::parse($time);
+        $this->timezone = $timezone instanceof DateTimeZone
+        ? $timezone
+        : new DateTimeZone($timezone ?? date_default_timezone_get());
+        $this->locale = $locale ?? 'en';
+        $this->dateTime = QubusDateTimeImmutable::parse($time ?? 'now', $this->timezone)
+            ->locale($this->locale);
     }
 
     public function getDateTime(): DateTimeInterface
@@ -37,10 +44,17 @@ class DateTime
      *
      * @param DateTimeZone|string $timezone
      * @return CarbonImmutable|false
+     * @throws DateInvalidTimeZoneException
      */
     public function setTimezone(DateTimeZone|string $timezone): false|CarbonImmutable
     {
-        return $this->dateTime->setTimezone($timezone);
+        $this->timezone = $timezone instanceof DateTimeZone
+        ? $timezone
+        : new DateTimeZone($timezone);
+
+        $this->dateTime = $this->dateTime->setTimezone($this->timezone);
+
+        return $this->dateTime;
     }
 
     /**
@@ -133,25 +147,19 @@ class DateTime
      */
     public function gmtdate(string $date = 'now', string $format = 'Y-m-d H:i:s'): string
     {
-        if ($date === 'now') {
-            $string = (string) $this->dateTime->now(new \DateTimeZone('GMT'))->format($format);
-        } else {
-            $string = str_replace(['AM', 'PM'], '', $date);
-            $string = (string) $this->dateTime->parse(strtotime($string), new \DateTimeZone('GMT'))->format($format);
-        }
-        return $string;
+        $value = $date === 'now' ? 'now' : str_replace(['AM', 'PM'], '', $date);
+
+        return QubusDateTimeImmutable::parse($value, new DateTimeZone('GMT'))->format($format);
     }
 
     /**
      * Returns the date in localized format.
      *
-     * @return object Returns current localized datetime.
+     * @return CarbonImmutable Returns current localized datetime.
      */
-    public function locale(): object
+    public function locale(): CarbonImmutable
     {
-        $timestamp = $this->dateTime;
-        $timestamp->setLocale($this->locale);
-        return $timestamp;
+        return $this->dateTime->locale($this->locale);
     }
 
     /**
@@ -180,10 +188,12 @@ class DateTime
             return strtotime($date);
         }
         if ($translate) {
-            return $this->locale()->parse($date)->format($format);
-        } else {
-            return $this->dateTime->parse($date)->format($format);
+            return QubusDateTimeImmutable::parse($date, $this->timezone)
+                ->locale($this->locale)
+                ->format($format);
         }
+
+        return QubusDateTimeImmutable::parse($date, $this->timezone)->format($format);
     }
 
     /**
@@ -204,13 +214,15 @@ class DateTime
     public function current(string $type, bool $gmt = false): int|string
     {
         if ('timestamp' === $type || 'U' === $type) {
-            return $gmt ? time() : time() + (int) ($this->locale()->offsetHours * (int) DateTime::hourInSeconds());
+            $now = QubusDateTimeImmutable::now($gmt ? new DateTimeZone('GMT') : $this->timezone);
+
+            return $gmt ? $now->getTimestamp() : $now->getTimestamp() + $now->offset;
         }
         if ('db' === $type) {
             $type = 'Y-m-d H:i:s';
         }
-        $timezone = $gmt ? new \DateTimeZone('GMT') : $this->timezone;
-        $datetime = $this->dateTime->now($timezone);
+        $timezone = $gmt ? new DateTimeZone('GMT') : $this->timezone;
+        $datetime = QubusDateTimeImmutable::now($timezone)->locale($this->locale);
 
         return $datetime->format($type);
     }
@@ -224,6 +236,8 @@ class DateTime
      */
     public function timestampToDate(string $format, int $timestamp): string
     {
-        return (string) $this->locale()->createFromTimestamp($timestamp)->format($format);
+        return QubusDateTimeImmutable::createFromTimestamp($timestamp, $this->timezone)
+            ->locale($this->locale)
+            ->format($format);
     }
 }

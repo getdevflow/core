@@ -145,7 +145,7 @@ class QueryBusProductRepository implements ProductQueryRepository
 
             if ($sanitizeStatus !== 'all') {
                 $where .= $this->dfdb->prepare(
-                    " AND WHERE product_status = ?",
+                    " AND product_status = ?",
                     [
                         $sanitizeStatus
                     ]

@@ -13,9 +13,12 @@ use function Qubus\Security\Helpers\esc_html;
 use function trim;
 
 use const PREG_SET_ORDER;
+use const PREG_UNMATCHED_AS_NULL;
 
 class ShortcodeRegistry
 {
+    private const int MAX_RENDER_PASSES = 50;
+
     /** @var Shortcode[] $shortcodes */
     protected array $shortcodes = [];
 
@@ -44,9 +47,12 @@ class ShortcodeRegistry
         // Recursively render nested shortcodes
         $previous = null;
 
-        while ($previous !== $content) {
+        $passes = 0;
+
+        while ($previous !== $content && $passes < self::MAX_RENDER_PASSES) {
             $previous = $content;
             $content = $this->renderShortcodes($content);
+            $passes++;
         }
 
         return $content;
@@ -54,16 +60,16 @@ class ShortcodeRegistry
 
     protected function renderShortcodes(string $content): string
     {
-        $pattern = '/\[
-            ([a-zA-Z0-9_]+)               # [1] tag name
-            ([^\]\/]*?)                   # [2] attributes (non-greedy, not including / or ])
-            (\/)?                         # [3] self-closing marker (optional "/")
+        $pattern = '~\[
+            ([a-zA-Z0-9_-]+)              # [1] tag name
+            ([^\]\/]*?)                   # [2] attributes
+            (\/)?                         # [3] optional self-closing marker
         \](?:
-            (.*?)                         # [4] content (optional, for enclosing)
-            \[\/\1\]                      # closing tag
-        )?/sx';
+            (.*?)                         # [4] optional enclosed content
+            \[/\1\]                       # closing tag
+        )?~sx';
 
-        return preg_replace_callback($pattern, function ($matches) {
+        $rendered = preg_replace_callback($pattern, function ($matches) {
             $tag = $matches[1];
             $attrString = trim($matches[2]);
             $isSelfClosing = isset($matches[3]) && $matches[3] === '/';
@@ -98,14 +104,22 @@ class ShortcodeRegistry
 
             return $matches[0]; // Unknown shortcode, return as-is
         }, $content);
+
+        return $rendered ?? $content;
     }
 
     protected function parseAttributes(string $text): array
     {
         $attrs = [];
-        preg_match_all('/(\w+)\s*=\s*"([^"]*)"/', $text, $matches, PREG_SET_ORDER);
+        preg_match_all(
+            '/([A-Za-z_][\w-]*)\s*=\s*(?:"([^"]*)"|\'([^\']*)\'|([^\s"\']+))/',
+            $text,
+            $matches,
+            PREG_SET_ORDER | PREG_UNMATCHED_AS_NULL
+        );
+
         foreach ($matches as $match) {
-            $attrs[$match[1]] = $match[2];
+            $attrs[$match[1]] = $match[2] ?? $match[3] ?? $match[4] ?? '';
         }
         return $attrs;
     }

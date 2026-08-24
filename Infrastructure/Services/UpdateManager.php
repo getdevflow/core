@@ -17,16 +17,13 @@ use RuntimeException;
 use Throwable;
 
 use function App\Shared\Helpers\updater_server_url;
-use function array_map;
 use function Codefy\Framework\Helpers\base_path;
 use function Codefy\Framework\Helpers\logger;
 use function Codefy\Framework\Helpers\trans_html;
 use function date;
-use function escapeshellarg;
 use function fclose;
 use function file_exists;
 use function file_get_contents;
-use function implode;
 use function is_array;
 use function is_resource;
 use function json_decode;
@@ -110,7 +107,7 @@ final class UpdateManager
     {
         $updater = new Updater();
 
-        $publicKey = UpdateSigningKey::PUBLIC_KEY;
+        $publicKey = UpdateSigningKey::get();
 
         if ($publicKey === '') {
             throw new RuntimeException(
@@ -140,7 +137,7 @@ final class UpdateManager
     public function packageUpdates(string $type): array
     {
         $installed = $this->installedPackagesByType($type);
-        $outdated = $this->composerJson('composer show --outdated --direct --format=json');
+        $outdated = $this->composerJson(['composer', 'show', '--outdated', '--direct', '--format=json']);
 
         $updates = [];
 
@@ -178,7 +175,10 @@ final class UpdateManager
             throw new RuntimeException(sprintf(trans_html('Package is not an installed %s type.'), $expectedType));
         }
 
-        return $this->composerRun('composer update ' . escapeshellarg($package) . ' --with-dependencies');
+        return $this->composerRun(
+            ['composer', 'update', $package, '--with-dependencies', '--no-interaction'],
+            300
+        );
     }
 
     /**
@@ -198,12 +198,12 @@ final class UpdateManager
             ];
         }
 
-        $packages = array_map(
-            static fn (array $package): string => escapeshellarg($package['name']),
-            $updates
-        );
+        $packages = array_column($updates, 'name');
 
-        return $this->composerRun('composer update ' . implode(' ', $packages) . ' --with-dependencies');
+        return $this->composerRun(
+            ['composer', 'update', ...$packages, '--with-dependencies', '--no-interaction'],
+            300
+        );
     }
 
     /**
@@ -240,12 +240,12 @@ final class UpdateManager
     }
 
     /**
-     * @param string $command
+     * @param list<string> $command
      * @return array
      * @throws Exception
      * @throws JsonException
      */
-    private function composerJson(string $command): array
+    private function composerJson(array $command): array
     {
         $result = $this->composerRun($command);
 
@@ -257,12 +257,12 @@ final class UpdateManager
     }
 
     /**
-     * @param string $command
+     * @param list<string> $command
      * @param int $timeout
      * @return array
      * @throws Exception
      */
-    private function composerRun(string $command, int $timeout = 3): array
+    private function composerRun(array $command, int $timeout = 3): array
     {
         $descriptor = [
             1 => ['pipe', 'w'],
@@ -283,6 +283,8 @@ final class UpdateManager
 
         $output = '';
 
+        $exitCode = null;
+
         while (true) {
             $status = proc_get_status($process);
 
@@ -290,6 +292,7 @@ final class UpdateManager
             $output .= stream_get_contents($pipes[2]);
 
             if (!$status['running']) {
+                $exitCode = $status['exitcode'];
                 break;
             }
 
@@ -316,7 +319,8 @@ final class UpdateManager
             fclose($pipe);
         }
 
-        $code = proc_close($process);
+        $closeCode = proc_close($process);
+        $code = $exitCode >= 0 ? $exitCode : $closeCode;
 
         return [
             'success' => $code === 0,
