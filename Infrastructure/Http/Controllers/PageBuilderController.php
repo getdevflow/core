@@ -81,7 +81,12 @@ final class PageBuilderController extends BaseController
         $hasPageReturned = $builder->handlePublicRequest();
 
         if (get_option(key: 'maintenance_mode') === 1) {
-            return view(template: 'framework::maintenance');
+            return view(template: 'framework::maintenance')
+                ->withStatus(503)
+                ->withHeader('Retry-After', config()->string('cms.maintenance_mode_attrs.retry_after', '3600'))
+                ->withHeader('Cache-Control', config()->string('cms.maintenance_mode_attrs.cache_control', 'no-cache, no-store, must-revalidate'))
+                ->withHeader('Pragma', config()->string('cms.maintenance_mode_attrs.pragma', 'no-cache'))
+                ->withHeader('Expires', config()->string('cms.maintenance_mode_attrs.expires', '0'));
         }
 
         if (empty(get_theme()) || Devflow::$PHP->configContainer->boolean(key: 'vihzhuo.enable') === false) {
@@ -93,7 +98,7 @@ final class PageBuilderController extends BaseController
         }
 
         if (is_null__($hasPageReturned)) {
-            return view(template: 'framework::error/404');
+            return view(template: 'framework::error/404')->withStatus(404);
         }
 
         // @phpstan-ignore argument.type
