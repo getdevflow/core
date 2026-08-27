@@ -922,11 +922,7 @@ function is_super_admin(?string $userId = null): bool
 {
     $userId ??= get_current_user_id();
 
-    if(in_array($userId, get_super_admins())) {
-        return true;
-    }
-
-    return false;
+    return in_array($userId, get_super_admins());
 }
 
 /**
