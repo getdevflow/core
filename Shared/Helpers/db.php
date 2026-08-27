@@ -915,21 +915,18 @@ function get_super_admins(): array
  *
  * @param string|null $userId
  * @return bool
- * @throws ContainerExceptionInterface
- * @throws Exception
- * @throws InvalidArgumentException
- * @throws NotFoundExceptionInterface
  * @throws ReflectionException
+ * @throws Exception
  */
 function is_super_admin(?string $userId = null): bool
 {
-
     $userId ??= get_current_user_id();
 
-    $role = get_user_attribute($userId, 'role');
+    if(in_array($userId, get_super_admins())) {
+        return true;
+    }
 
-
-    return $role === 'super';
+    return false;
 }
 
 /**
