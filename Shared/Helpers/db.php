@@ -882,6 +882,12 @@ function unassigned_sites(string $userId): void
  */
 function get_super_admins(): array
 {
+    static $superAdmins = null;
+
+    if ($superAdmins !== null) {
+        return $superAdmins;
+    }
+
     $dfdb = dfdb();
     $results = $dfdb->getResults(
         query: "SELECT user_id, user_attribute"
@@ -893,15 +899,15 @@ function get_super_admins(): array
         return [];
     }
 
-    $supers = [];
+    $superAdmins = [];
     foreach($results as $row) {
         $json = json_decode($row['user_attribute'], true);
         if($json['role'] === 'super') {
-            $supers[] = esc_html($row['user_id']);
+            $superAdmins[] = esc_html($row['user_id']);
         }
     }
 
-    return $supers;
+    return $superAdmins;
 }
 
 /**
@@ -909,21 +915,21 @@ function get_super_admins(): array
  *
  * @param string|null $userId
  * @return bool
- * @throws ReflectionException
+ * @throws ContainerExceptionInterface
  * @throws Exception
+ * @throws InvalidArgumentException
+ * @throws NotFoundExceptionInterface
+ * @throws ReflectionException
  */
 function is_super_admin(?string $userId = null): bool
 {
 
-    if(is_null($userId)) {
-        $userId = get_current_user_id();
-    }
+    $userId ??= get_current_user_id();
 
-    if(in_array($userId, get_super_admins())) {
-        return true;
-    }
+    $role = get_user_attribute($userId, 'role');
 
-    return false;
+
+    return $role === 'super';
 }
 
 /**
