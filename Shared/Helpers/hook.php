@@ -220,7 +220,7 @@ function cms_encode_email(string $string): string
     // override encoding function with the 'encode_email_method' filter
     $method = __observer()->filter->applyFilter(
         'encode.email.method',
-            __NAMESPACE__ . '\\cms_encode_email_str'
+        __NAMESPACE__ . '\\cms_encode_email_str'
     );
 
     if (!is_callable($method)) {
@@ -231,8 +231,8 @@ function cms_encode_email(string $string): string
 
     // override regex pattern with the 'encode_email_regexp' filter
     $regexp = __observer()->filter->applyFilter(
-            'encode.email.regexp',
-            <<<'REGEX'
+        'encode.email.regexp',
+        <<<'REGEX'
 {
     (?:mailto:)?
     (?:
@@ -300,8 +300,8 @@ function cms_encode_email_str(string $string): string
         }
 
         $chars[$key] = $r < 45
-            ? '&#x' . dechex($ord) . ';'
-            : '&#' . $ord . ';';
+        ? '&#x' . dechex($ord) . ';'
+        : '&#' . $ord . ';';
     }
 
     return implode('', $chars);
@@ -528,7 +528,10 @@ function cms_optimized_image_upload(string $image): ?string
  * Loads javascript for backend dashboard.
  *
  * @file core/Shared/Helpers/hook.php
+ * @throws ContainerExceptionInterface
  * @throws Exception
+ * @throws NotFoundExceptionInterface
+ * @throws ReflectionException
  */
 function admin_dashboard_js(): void
 {
@@ -602,7 +605,8 @@ function cms_charset(?string $charset = null): mixed
 function get_auth_screen_logo(): string
 {
     $locations = [];
-    $siteKey = Registry::getInstance()->has('siteKey') ? site_directory_key(Registry::getInstance()->get('siteKey')) : '';
+    $siteKey = Registry::getInstance()->has('siteKey')
+    ? site_directory_key(Registry::getInstance()->get('siteKey')) : '';
     /**
      * First, check to see if a custom logo exists for a specific site.
      * @var string $locations['site'] Custom logo for a specific site.
@@ -628,9 +632,11 @@ function get_auth_screen_logo(): string
         'path' => public_path('static/assets/img/auth/auth-logo.png'),
         'relative' => site_url('static/assets/img/auth/auth-logo.png'),
     ];
+    $authLogo = $locations['native']['relative'];
     foreach ($locations as $location) {
         if (file_exists($location['path'])) {
             $authLogo = $location['relative'];
+            break;
         }
     }
     /**
@@ -639,7 +645,7 @@ function get_auth_screen_logo(): string
      * @var string $logo The auth logo.
      */
     $logo = __observer()->filter->applyFilter('auth.logo', $authLogo);
-    return '<a href="'.site_url().'"><img src="' . $logo . '" alt="auth-logo" title="auth-logo"></a>';
+    return '<a href="' . site_url() . '"><img src="' . $logo . '" alt="auth-logo" title="auth-logo"></a>';
 }
 
 /**
@@ -1042,7 +1048,9 @@ function cms_dev_mode(): void
 {
     if (config(key: 'app.env') === 'development') {
         echo '<div class="alert dismissable alert-danger center sticky">' . trans_html(
-            string: 'Your system is currently in dev mode. Please remember to set your system to prod mode after testing. When prod mode is set, this warning message will disappear.',
+            string: 'Your system is currently in dev mode. '
+                . 'Please remember to set your system to prod mode after testing. '
+                . 'When prod mode is set, this warning message will disappear.',
         ) . '</div>';
     }
 }
@@ -1062,9 +1070,9 @@ function advisory_alert_message(): void
         $audit = security_audit_result();
 
         $html = '<div class="alert dismissable alert-danger center sticky">';
-            $html .= '<strong>' . trans_html('Composer security advisories found.') . '</strong>';
-            $html .= sprintf(trans_html('%s advisories were detected.'), esc_html((string) $audit->advisoryCount));
-            $html .= trans_html('Visit the Updates screen for details.');
+        $html .= '<strong>' . trans_html('Composer security advisories found.') . '</strong>';
+        $html .= sprintf(trans_html('%s advisories were detected.'), esc_html((string) $audit->advisoryCount));
+        $html .= trans_html('Visit the Updates screen for details.');
         $html .= '</div>';
 
         echo $html;

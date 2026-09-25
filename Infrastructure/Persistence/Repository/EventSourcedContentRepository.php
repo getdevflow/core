@@ -8,12 +8,16 @@ use App\Domain\Content\Repository\ContentAggregateRepository;
 use App\Domain\Content\Services\ContentProjection;
 use App\Infrastructure\Persistence\Trait\EventSourcedRepositoryAware;
 use Codefy\Domain\EventSourcing\TransactionalEventStore;
+use Qubus\Expressive\Database;
 
 class EventSourcedContentRepository implements ContentAggregateRepository
 {
     use EventSourcedRepositoryAware;
 
-    public function __construct(protected TransactionalEventStore $eventStore, protected ContentProjection $projection)
-    {
+    public function __construct(
+        protected TransactionalEventStore $eventStore,
+        protected ContentProjection $projection,
+        protected Database $dfdb
+    ) {
     }
 }

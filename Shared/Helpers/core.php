@@ -950,6 +950,10 @@ function cms_render_css(
     bool|string $minify = false,
     ?string $slug = null
 ): string {
+    if (!in_array($config, ['default', 'plugin', 'theme'], true)) {
+        throw new \InvalidArgumentException('Unknown asset configuration.');
+    }
+
     if ($config === 'default') {
         $options = [
             'public_dir' => remove_trailing_slash(public_path()),
@@ -998,6 +1002,10 @@ function cms_render_js(
     bool|string $minify = false,
     ?string $slug = null
 ): string {
+    if (!in_array($config, ['default', 'plugin', 'theme'], true)) {
+        throw new \InvalidArgumentException('Unknown asset configuration.');
+    }
+
     if ($config === 'default') {
         $options = [
             'public_dir' => remove_trailing_slash(public_path()),
@@ -1052,8 +1060,8 @@ function cms_register_asset(
     string $location = 'default'
 ): void {
     $queue = Registry::getInstance()->has('cms.asset.queue')
-        ? Registry::getInstance()->get('cms.asset.queue')
-        : [
+    ? Registry::getInstance()->get('cms.asset.queue')
+    : [
             'css' => [],
             'js' => [
                 'head' => [],
@@ -1097,8 +1105,8 @@ function cms_register_asset(
 function cms_print_registered_assets(string $type, string $location = 'default'): void
 {
     $queue = Registry::getInstance()->has('cms.asset.queue')
-        ? Registry::getInstance()->get('cms.asset.queue')
-        : [
+    ? Registry::getInstance()->get('cms.asset.queue')
+    : [
             'css' => [],
             'js' => [
                 'head' => [],
@@ -1592,7 +1600,8 @@ function show_update_message(): void
                     $alert = '<div class="alert alert-dismissible show alert-info center" role="alert">';
                     $alert .= sprintf(
                         trans(
-                            'Devflow release %s is available for download or upgrade. Before upgrading, make sure to backup your system.',
+                            'Devflow release %s is available for download or upgrade. '
+                            . 'Before upgrading, make sure to backup your system.',
                         ),
                         $update->latestVersion
                     );
@@ -1692,6 +1701,9 @@ function has_form_error(string $key): bool
     return form_state()->hasError($key);
 }
 
+/**
+ * @throws Exception
+ */
 function field_error(string $key): string
 {
     $error = form_error($key);

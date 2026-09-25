@@ -24,10 +24,12 @@ use Qubus\Http\Factories\JsonResponseFactory;
 use Qubus\Http\ServerRequest;
 use Qubus\Routing\Exceptions\NamedRouteNotFoundException;
 use Qubus\Routing\Exceptions\RouteParamFailedConstraintException;
+use Qubus\Routing\Psr7Router;
 use ReflectionException;
 use Throwable;
 
 use function App\Shared\Helpers\admin_url;
+use function App\Shared\Helpers\cms_safe_redirect_url;
 use function App\Shared\Helpers\current_user_can;
 use function App\Shared\Helpers\get_current_site_key;
 use function App\Shared\Helpers\get_current_site_id;
@@ -47,6 +49,10 @@ use function preg_filter;
 
 final class AdminDashboardController extends BaseController
 {
+    public function __construct(private readonly Psr7Router $router)
+    {
+    }
+
     /**
      * @return ResponseInterface
      * @throws ContainerExceptionInterface
@@ -200,7 +206,6 @@ final class AdminDashboardController extends BaseController
 
     /**
      * @return ResponseInterface|string
-     * @throws CommandPropertyNotFoundException
      * @throws ContainerExceptionInterface
      * @throws Exception
      * @throws InvalidArgumentException
@@ -209,7 +214,6 @@ final class AdminDashboardController extends BaseController
      * @throws ReflectionException
      * @throws RouteParamFailedConstraintException
      * @throws TypeException
-     * @throws UnresolvableQueryHandlerException
      * @throws \Exception
      */
     public function snapshot(): ResponseInterface|string
@@ -248,7 +252,7 @@ final class AdminDashboardController extends BaseController
                 message: trans_html('Access denied.')
             );
 
-            return $this->redirect($request->getHeaderLine('Referer'));
+            return $this->redirect(cms_safe_redirect_url($request->getHeaderLine('Referer'), admin_url()));
         }
 
         $globalNamespaces = ['auto_updater','useremail','userlogin','users','usertoken','sites','sitekey','siteslug'];
@@ -263,7 +267,7 @@ final class AdminDashboardController extends BaseController
 
         $namespaces = [...$siteNamespaces, ...$globalNamespaces];
 
-        if (true === SimpleCacheObjectCacheFactory::make(namespace: Devflow::db()->prefix . 'user_attribute')->clear()) {
+        if (SimpleCacheObjectCacheFactory::make(namespace: Devflow::db()->prefix . 'user_attribute')->clear()) {
             ItemPoolObjectCacheFactory::make()->clear();
 
             if (is_main_site()) {
@@ -290,7 +294,7 @@ final class AdminDashboardController extends BaseController
          */
         Action::getInstance()->doAction('flush_cache');
 
-        return $this->redirect($request->getHeaderLine(name: 'Referer'));
+        return $this->redirect(cms_safe_redirect_url($request->getHeaderLine('Referer'), admin_url()));
     }
 
     /**

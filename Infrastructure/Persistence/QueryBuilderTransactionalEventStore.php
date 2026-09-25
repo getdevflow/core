@@ -16,6 +16,7 @@ use Codefy\Domain\EventSourcing\TransactionalEventStore;
 use Codefy\Domain\EventSourcing\TransactionId;
 use Codefy\Domain\Metadata;
 use Exception as NativeException;
+use JsonException;
 use Qubus\Exception\Data\TypeException;
 use Qubus\Expressive\Database;
 use Qubus\Expressive\QueryBuilderException;
@@ -38,10 +39,13 @@ final class QueryBuilderTransactionalEventStore implements TransactionalEventSto
                     ->table(tableName: $this->dfdb->prefix . 'event_store')
                     ->set([
                         'event_id' => $event->eventId()->__toString(),
-                        'transaction_id' => $transactionId::fromString(transactionId: $transactionId->toNative()),
+                        'transaction_id' => $transactionId->toNative(),
                         'event_type' => $event->eventType(),
                         'event_classname' => get_class($event),
-                        'payload' => json_encode(value: $event->payload(), flags: JSON_PRETTY_PRINT),
+                        'payload' => json_encode(
+                            value: $event->payload(),
+                            flags: JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR
+                        ),
                         'metadata' => json_encode(value: [
                             '__aggregate_type' => $event->metaParam(name: Metadata::AGGREGATE_TYPE),
                             '__aggregate_id' => (string) $event->aggregateId(),
@@ -49,7 +53,7 @@ final class QueryBuilderTransactionalEventStore implements TransactionalEventSto
                             '__event_id' => (string) $event->eventId(),
                             '__event_type' => $event->eventType(),
                             '__recorded_at' => (string) $event->recordedAt()
-                        ], flags: JSON_PRETTY_PRINT),
+                        ], flags: JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR),
                         'aggregate_id' => $event->aggregateId()->__toString(),
                         'aggregate_type' => $event->metadata()[Metadata::AGGREGATE_TYPE],
                         'aggregate_playhead' => $event->playhead(),
@@ -64,7 +68,6 @@ final class QueryBuilderTransactionalEventStore implements TransactionalEventSto
 
     /**
      * @inheritDoc
-     * @throws TypeException
      * @throws NativeException
      */
     public function commit(DomainEvent ...$events): Transactional
@@ -80,9 +83,11 @@ final class QueryBuilderTransactionalEventStore implements TransactionalEventSto
             );
         }
 
-        foreach ($events as $event) {
-            $this->append(event: $event, transactionId: $transactionId);
-        }
+        $this->dfdb->transactional(function () use ($events, $transactionId): void {
+            foreach ($events as $event) {
+                $this->append(event: $event, transactionId: $transactionId);
+            }
+        });
 
         return new EventStoreTransaction(
             transactionId: $transactionId,
@@ -100,7 +105,8 @@ final class QueryBuilderTransactionalEventStore implements TransactionalEventSto
     {
         $query = $this->dfdb->table(tableName: $this->dfdb->prefix . 'event_store')
         ->select(columns: '*')
-        ->where(condition: 'aggregate_id', parameters: (string) $aggregateId);
+        ->where(condition: 'aggregate_id', parameters: (string) $aggregateId)
+        ->orderBy('aggregate_playhead', 'ASC');
 
         return $this->eventStream($query, $aggregateId);
     }
@@ -116,7 +122,8 @@ final class QueryBuilderTransactionalEventStore implements TransactionalEventSto
             ->select(columns: '*')
             ->where(condition: 'aggregate_id', parameters: (string) $aggregateId)
             ->and()
-            ->where(condition: 'aggregate_playhead = ?', parameters: $playhead);
+            ->where(condition: 'aggregate_playhead >= ?', parameters: $playhead)
+            ->orderBy('aggregate_playhead', 'ASC');
 
         return $this->eventStream($query, $aggregateId);
     }
@@ -127,6 +134,8 @@ final class QueryBuilderTransactionalEventStore implements TransactionalEventSto
      * @return EventStream
      * @throws TypeException
      * @throws CorruptEventStreamException
+     * @throws JsonException
+     * @throws NativeException
      */
     private function eventStream(?Database $query, AggregateId $aggregateId): EventStream
     {
@@ -135,11 +144,15 @@ final class QueryBuilderTransactionalEventStore implements TransactionalEventSto
         $eventStream = iterator_to_array(iterator: $query->find());
 
         foreach ($eventStream as $event) {
-            $metadata = json_decode(json: $event->metadata, associative: true);
+            $metadata = json_decode(json: $event->metadata, associative: true, flags: JSON_THROW_ON_ERROR);
+
+            if (!is_subclass_of($event->event_classname, DomainEvent::class)) {
+                throw new NativeException('Invalid domain event class in event store.');
+            }
 
             $stream[] = $event->event_classname::fromArray([
                 'aggregateId' => $aggregateId::fromString($event->aggregate_id),
-                'payload' => json_decode(json: $event->payload, associative: true),
+                'payload' => json_decode(json: $event->payload, associative: true, flags: JSON_THROW_ON_ERROR),
                 'metadata' => [
                     Metadata::AGGREGATE_TYPE => $metadata['__aggregate_type'],
                     Metadata::AGGREGATE_ID => $aggregateId::fromString($metadata['__aggregate_id']),

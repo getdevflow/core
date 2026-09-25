@@ -26,6 +26,7 @@ use Qubus\ValueObjects\StringLiteral\StringLiteral;
 use ReflectionException;
 
 use function App\Shared\Helpers\admin_url;
+use function App\Shared\Helpers\cms_safe_redirect_url;
 use function App\Shared\Helpers\cms_unique_site_slug;
 use function App\Shared\Helpers\current_user_can;
 use function App\Shared\Helpers\get_current_site_key;
@@ -83,7 +84,7 @@ final class AdminOptionsController extends BaseController
                 Devflow::$PHP->flash->notice(200),
             );
         }
-        return $this->redirect($request->getHeaderLine('Referer'));
+        return $this->redirect(cms_safe_redirect_url($request->getHeaderLine('Referer'), admin_url()));
     }
 
     /**
@@ -180,7 +181,7 @@ final class AdminOptionsController extends BaseController
             );
         }
 
-        return $this->redirect($request->getHeaderLine('Referer'));
+        return $this->redirect(cms_safe_redirect_url($request->getHeaderLine('Referer'), admin_url()));
     }
 
     /**

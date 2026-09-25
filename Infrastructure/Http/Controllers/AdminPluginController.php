@@ -22,6 +22,7 @@ use ReflectionException;
 
 use function App\Shared\Helpers\activate_plugin;
 use function App\Shared\Helpers\admin_url;
+use function App\Shared\Helpers\cms_safe_redirect_url;
 use function App\Shared\Helpers\current_user_can;
 use function App\Shared\Helpers\deactivate_plugin;
 use function App\Shared\Helpers\is_main_site;
@@ -77,7 +78,7 @@ final class AdminPluginController extends BaseController
             Devflow::$PHP->flash->error(
                 message: trans_html('Access denied.')
             );
-            return $this->redirect($request->getHeaderLine('Referer'));
+            return $this->redirect(cms_safe_redirect_url($request->getHeaderLine('Referer'), admin_url()));
         }
 
         try {
@@ -91,7 +92,7 @@ final class AdminPluginController extends BaseController
             );
         }
 
-        return $this->redirect($request->getHeaderLine('Referer'));
+        return $this->redirect(cms_safe_redirect_url($request->getHeaderLine('Referer'), admin_url()));
     }
 
     /**
@@ -109,7 +110,7 @@ final class AdminPluginController extends BaseController
         if (false === current_user_can(perm: 'deactivate:plugins')) {
             Devflow::$PHP->flash->error(message: trans_html('Access denied.'));
 
-            return $this->redirect($request->getHeaderLine('Referer'));
+            return $this->redirect(cms_safe_redirect_url($request->getHeaderLine('Referer'), admin_url()));
         }
 
         try {
@@ -124,7 +125,7 @@ final class AdminPluginController extends BaseController
             );
         }
 
-        return $this->redirect($request->getHeaderLine('Referer'));
+        return $this->redirect(cms_safe_redirect_url($request->getHeaderLine('Referer'), admin_url()));
     }
 
     /**

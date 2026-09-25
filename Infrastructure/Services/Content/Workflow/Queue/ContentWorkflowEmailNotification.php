@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Infrastructure\Services\Content\Workflow\Queue;
 
 use App\Application\Devflow;
-use Codefy\Framework\Queue\SimpleQueue;
-use PHPMailer\PHPMailer\Exception;
+use App\Infrastructure\Services\Queue\NotificationJob;
+use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 
 use function Codefy\Framework\Helpers\env;
 use function Codefy\Framework\Helpers\logger;
@@ -14,12 +14,9 @@ use function Codefy\Framework\Helpers\resource_path;
 use function Codefy\Framework\Helpers\trans;
 use function Qubus\Security\Helpers\__observer;
 
-final class ContentWorkflowEmailNotification extends SimpleQueue
+final class ContentWorkflowEmailNotification extends NotificationJob
 {
-    public string $name = 'Content Workflow Notification' {
-        get => $this->name;
-        set(string $value) => $this->name = $value;
-    }
+    public string $name = 'Content Workflow Notification';
 
     public string $schedule = '* * * * *';
 
@@ -37,9 +34,10 @@ final class ContentWorkflowEmailNotification extends SimpleQueue
      *     action_label:string
      * } $data
      */
-    public function __construct(protected array $data)
-    {
-    }
+    protected const array FIELDS = [
+        'email', 'user', 'sitename', 'notification_type', 'notification_title',
+        'notification_message', 'action_url', 'action_label',
+    ];
 
     /**
      * @return bool
@@ -48,12 +46,12 @@ final class ContentWorkflowEmailNotification extends SimpleQueue
     public function handle(): bool
     {
         $mailer = Devflow::$PHP->mailer;
-        $sender = __observer()->filter->applyFilter('system.sender.email', env(key: 'MAILER_USERNAME'));
+        $sender = __observer()->filter->applyFilter('system.sender.email', env(key: 'MAILER_FROM_EMAIL'));
 
         try {
 
             $mailer
-                ->withSmtp()
+                ->withTransport()
                 ->withFrom(address: $sender, name: $this->data['sitename'])
                 ->withTo(address: $this->data['email'])
                 ->withSubject(
@@ -82,7 +80,7 @@ final class ContentWorkflowEmailNotification extends SimpleQueue
                 ->send();
 
             return true;
-        } catch (Exception $e) {
+        } catch (TransportExceptionInterface $e) {
             logger(level: 'error', message: $e->getMessage());
         }
 

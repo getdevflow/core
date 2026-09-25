@@ -199,6 +199,10 @@ final class WebsiteManagerController extends BaseController
      */
     public function destroy(ServerRequest $request, int $pageId): ResponseInterface
     {
+        if ($request->getMethod() !== 'POST') {
+            return new \Qubus\Http\Response(status: 405, headers: ['Allow' => 'POST']);
+        }
+
         if (false === current_user_can(perm: 'vihzhuo:manage')) {
             Devflow::$PHP->flash->error(message: trans_html('Access denied.'));
             return $this->redirect(admin_url());

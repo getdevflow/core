@@ -15,15 +15,16 @@ use App\Infrastructure\Services\NativePhpCookies;
 use App\Infrastructure\Services\Queue\ResetPasswordNotification;
 use App\Infrastructure\Services\User\Pipes\CastUserAttributesToInt;
 use App\Infrastructure\Services\User\UserService;
+use App\Infrastructure\Services\User\PasswordRecovery;
 use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
 use Codefy\CommandBus\Exceptions\UnresolvableCommandHandlerException;
 use Codefy\Framework\Http\BaseController;
 use Codefy\Framework\Pipeline\Pipeline;
 use Codefy\QueryBus\UnresolvableQueryHandlerException;
-use Defuse\Crypto\Crypto;
+use App\Infrastructure\Services\AuthenticationCookie;
 use Defuse\Crypto\Exception\EnvironmentIsBrokenException;
-use Defuse\Crypto\Key;
 use Exception;
+use JsonException;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -34,6 +35,7 @@ use Qubus\Http\Cookies\Factory\CookieFactory;
 use Qubus\Http\Response;
 use Qubus\Http\ServerRequest;
 use Qubus\Http\Session\SessionException;
+use Random\RandomException;
 use ReflectionException;
 
 use function App\Shared\Helpers\admin_url;
@@ -51,7 +53,6 @@ use function App\Shared\Helpers\is_multisite;
 use function App\Shared\Helpers\is_user_logged_in;
 use function App\Shared\Helpers\login_url;
 use function App\Shared\Helpers\remove_user_from_site;
-use function App\Shared\Helpers\reset_password;
 use function App\Shared\Helpers\site_url;
 use function Codefy\Framework\Helpers\ask;
 use function Codefy\Framework\Helpers\config;
@@ -82,6 +83,10 @@ final class AdminUserController extends BaseController
      */
     public function userCreate(ServerRequest $request, UserService $service): ResponseInterface
     {
+        if ($request->getMethod() !== 'POST') {
+            return new Response(status: 405, headers: ['Allow' => 'POST']);
+        }
+
         $id = $service->createUser(
             StoreUserValidator::make(
                 $request
@@ -94,7 +99,7 @@ final class AdminUserController extends BaseController
             Devflow::$PHP->flash->error(
                 message: $id->getMessage(),
             );
-            return $this->redirect($request->getHeaderLine(name: 'Referer'));
+            return $this->redirect(cms_safe_redirect_url($request->getHeaderLine('Referer'), admin_url()));
         }
 
         return $this->redirect(admin_url(sprintf("user/%s/", $id)));
@@ -164,15 +169,17 @@ final class AdminUserController extends BaseController
      * @param ServerRequest $request
      * @param UserService $service
      * @return ResponseInterface
-     * @throws ContainerExceptionInterface
      * @throws InvalidArgumentException
-     * @throws NotFoundExceptionInterface
      * @throws ReflectionException
      * @throws TypeException
      * @throws \Qubus\Exception\Exception
      */
     public function userChange(ServerRequest $request, UserService $service): ResponseInterface
     {
+        if ($request->getMethod() !== 'POST') {
+            return new Response(status: 405, headers: ['Allow' => 'POST']);
+        }
+
         $id = $service->updateUser(
             UpdateUserValidator::make(
                 $request
@@ -183,7 +190,7 @@ final class AdminUserController extends BaseController
             Devflow::$PHP->flash->error(
                 message: $id->getMessage()
             );
-            return $this->redirect($request->getHeaderLine(name: 'Referer'));
+            return $this->redirect(cms_safe_redirect_url($request->getHeaderLine('Referer'), admin_url()));
         }
 
         return $this->redirect(
@@ -242,6 +249,10 @@ final class AdminUserController extends BaseController
      */
     public function userDelete(ServerRequest $request): ResponseInterface
     {
+        if ($request->getMethod() !== 'POST') {
+            return new Response(status: 405, headers: ['Allow' => 'POST']);
+        }
+
         if (false === current_user_can(perm: 'delete:users')) {
             Devflow::$PHP->flash->error(
                 message: trans_html('Access denied.')
@@ -288,7 +299,7 @@ final class AdminUserController extends BaseController
             );
         }
 
-        return $this->redirect($request->getHeaderLine(name: 'Referer'));
+        return $this->redirect(cms_safe_redirect_url($request->getHeaderLine('Referer'), admin_url()));
     }
 
     /**
@@ -305,10 +316,8 @@ final class AdminUserController extends BaseController
      */
     public function userLookup(ServerRequest $request): false|string
     {
-        if (!is_user_logged_in()) {
-            Devflow::$PHP->flash->error(
-                message: trans_html('Access denied.')
-            );
+        if (!current_user_can(perm: 'manage:users')) {
+            return false;
         }
 
         $user = ask(new FindUserByIdQuery(['id' => UserId::fromNative($request->getParsedBody()['id'])]));
@@ -323,55 +332,47 @@ final class AdminUserController extends BaseController
     /**
      * @param ServerRequest $request
      * @param string $userId
+     * @param PasswordRecovery $recovery
      * @return ResponseInterface
      * @throws ContainerExceptionInterface
      * @throws InvalidArgumentException
      * @throws NotFoundExceptionInterface
      * @throws ReflectionException
      * @throws TypeException
+     * @throws JsonException
      * @throws \Qubus\Exception\Exception
+     * @throws RandomException
      */
-    public function userResetPassword(ServerRequest $request, string $userId): ResponseInterface
-    {
+    public function userResetPassword(
+        ServerRequest $request,
+        string $userId,
+        PasswordRecovery $recovery
+    ): ResponseInterface {
         if (false === current_user_can(perm: 'update:users') || false === current_user_can(perm: 'reset:password')) {
             Devflow::$PHP->flash->error(
                 message: trans_html('Access denied.')
             );
-            return $this->redirect($request->getHeaderLine(name: 'Referer'));
+            return $this->redirect(cms_safe_redirect_url($request->getHeaderLine('Referer'), admin_url()));
         }
 
+        if ($request->getMethod() !== 'POST') {
+            return new Response(status: 405, headers: ['Allow' => 'POST']);
+        }
         try {
             $user = get_user_by(field: 'id', value: $userId);
-            if (is_false__($user)) {
+            $data = $user ? $recovery->request($user->email) : null;
+            if ($data !== null) {
+                queue(new ResetPasswordNotification([
+                    'login' => $data['login'],
+                    'sitename' => (string) get_option('sitename'),
+                    'email' => $data['email'],
+                    'url' => site_url(config()->string('auth.password_reset_route', 'admin/password/reset/'))
+                        . '?' . http_build_query(['user_id' => $data['id'], 'token' => $data['token']]),
+                ]))->createItem();
+                Devflow::$PHP->flash->success(trans_html('A password recovery link has been queued.'));
+            } else {
                 Devflow::$PHP->flash->error(trans_html('User not found.'));
             }
-
-            $password = reset_password($userId);
-            if (is_string($password) && $password !== '') {
-                Devflow::$PHP->flash->success(
-                    sprintf(
-                        trans('Password successfully updated for <strong>%s</strong>.'),
-                        get_name($userId)
-                    ),
-                );
-                UserCachePsr16::clean($user);
-                queue(
-                    new ResetPasswordNotification([
-                        'login' => $user->login,
-                        'pass' => $password,
-                        'sitename' => (string) get_option(key: 'sitename'),
-                        'email' => $user->email,
-                        'url' => sprintf(site_url('admin/%s/'), config()->string(key: 'auth.login_route')),
-                    ])
-                )
-                ->createItem();
-            }
-
-            Devflow::$PHP->flash->success(
-                trans_html(
-                    "The password reset email has been queued for sending.",
-                )
-            );
         } catch (
             NotFoundExceptionInterface |
             ContainerExceptionInterface |
@@ -386,7 +387,7 @@ final class AdminUserController extends BaseController
                 trans_html('Reset password exception occurred and was logged.')
             );
         }
-        return $this->redirect($request->getHeaderLine(name: 'Referer'));
+        return $this->redirect(cms_safe_redirect_url($request->getHeaderLine('Referer'), admin_url()));
     }
 
     /**
@@ -440,6 +441,10 @@ final class AdminUserController extends BaseController
      */
     public function userSwitchTo(ServerRequest $request, string $userId, Response $response): ResponseInterface
     {
+        if ($request->getMethod() !== 'POST') {
+            return new Response(status: 405, headers: ['Allow' => 'POST']);
+        }
+
         if (false === current_user_can(perm: 'switch:user')) {
             Devflow::$PHP->flash->error(
                 message: trans_html('Access denied.')
@@ -480,9 +485,9 @@ final class AdminUserController extends BaseController
                 response: $response,
                 setCookieCollection: $cookieFactory->make(
                     name: config()->string(key: 'auth.cookie_name', default: 'USERSESSID'),
-                    value: Crypto::encrypt(
-                        plaintext: get_user_value(id: $userId, field: 'token'),
-                        key: Key::loadFromAsciiSafeString(config()->string(key: 'app.crypto_key'))
+                    value: new AuthenticationCookie(config())->encode(
+                        token: get_user_value(id: $userId, field: 'token'),
+                        lifetime: (int) get_option(key: 'cookieexpire', default: 172800)
                     ),
                     maxAge: (int) get_option(key: 'cookieexpire', default: 172800)
                 )
@@ -530,6 +535,10 @@ final class AdminUserController extends BaseController
      */
     public function userSwitchBack(ServerRequest $request, string $userId, Response $response): ResponseInterface
     {
+        if ($request->getMethod() !== 'POST') {
+            return new Response(status: 405, headers: ['Allow' => 'POST']);
+        }
+
         if (!is_user_logged_in()) {
             Devflow::$PHP->flash->error(
                 message: trans_html('Access denied.')
@@ -604,9 +613,9 @@ final class AdminUserController extends BaseController
                 response: $response,
                 setCookieCollection: $cookieFactory->make(
                     name: config()->string(key: 'auth.cookie_name', default: 'USERSESSID'),
-                    value: Crypto::encrypt(
-                        plaintext: $currentToken,
-                        key: Key::loadFromAsciiSafeString(config()->string(key: 'app.crypto_key'))
+                    value: new AuthenticationCookie(config())->encode(
+                        token: $currentToken,
+                        lifetime: (int) get_option(key: 'cookieexpire', default: 172800)
                     ),
                     maxAge: (int) get_option(key: 'cookieexpire', default: 172800)
                 )

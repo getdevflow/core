@@ -16,10 +16,10 @@ class CastUserAttributesToInt
      */
     public function handle(ServerRequestInterface $request, Closure $next): mixed
     {
-        $body = $request->getParsedBody();
-        $adminLayout = (int) $body['adminLayout'];
-        $adminSideBar = (int) $body['adminSidebar'];
-        $adminSkin = (int) $body['adminSkin'];
+        $body = (array) $request->getParsedBody();
+        $adminLayout = (int) ($body['adminLayout'] ?? 0);
+        $adminSideBar = (int) ($body['adminSidebar'] ?? 0);
+        $adminSkin = (int) ($body['adminSkin'] ?? 0);
 
         $attribute = array_merge($body, [
             'adminLayout' => $adminLayout,

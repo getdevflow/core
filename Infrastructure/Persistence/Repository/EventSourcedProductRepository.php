@@ -8,12 +8,16 @@ use App\Domain\Product\Repository\ProductAggregateRepository;
 use App\Domain\Product\Service\ProductProjection;
 use App\Infrastructure\Persistence\Trait\EventSourcedRepositoryAware;
 use Codefy\Domain\EventSourcing\TransactionalEventStore;
+use Qubus\Expressive\Database;
 
 class EventSourcedProductRepository implements ProductAggregateRepository
 {
     use EventSourcedRepositoryAware;
 
-    public function __construct(protected TransactionalEventStore $eventStore, protected ProductProjection $projection)
-    {
+    public function __construct(
+        protected TransactionalEventStore $eventStore,
+        protected ProductProjection $projection,
+        protected Database $dfdb
+    ) {
     }
 }

@@ -142,8 +142,7 @@ function nav_links(?string $type = null): array
     $navLinks = collect(phpb_pages())
         ->where(key: 'show_in_nav', operator: '=', value: 'yes')
         ->sort(function ($item1, $item2) {
-            //@phpstan-ignore offsetAccess.nonOffsetAccessible
-            return $item1['nav_position'] <=> $item2['nav_position']; //@phpstan-ignore offsetAccess.nonOffsetAccessible
+            return $item1['nav_position'] <=> $item2['nav_position'];
         });
 
     if (!is_null__($type)) {

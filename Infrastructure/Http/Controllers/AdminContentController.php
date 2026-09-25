@@ -37,6 +37,7 @@ use Qubus\Http\ServerRequest;
 use ReflectionException;
 
 use function App\Shared\Helpers\admin_url;
+use function App\Shared\Helpers\cms_safe_redirect_url;
 use function App\Shared\Helpers\cms_enqueue_css;
 use function App\Shared\Helpers\cms_enqueue_js;
 use function App\Shared\Helpers\current_user_can;
@@ -208,8 +209,8 @@ final class AdminContentController extends BaseController
         $attribute = get_content_attribute($contentId, 'workflow', []);
 
         $workflowData = is_array($attribute ?? null)
-            ? $attribute
-            : [];
+        ? $attribute
+        : [];
 
         return view(
             template: 'framework::backend/admin/content/view',
@@ -293,7 +294,7 @@ final class AdminContentController extends BaseController
             )
         );
 
-        return $this->redirect($request->getHeaderLine(name: 'Referer'));
+        return $this->redirect(cms_safe_redirect_url($request->getHeaderLine('Referer'), admin_url()));
     }
 
     /**

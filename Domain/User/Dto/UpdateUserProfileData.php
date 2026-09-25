@@ -10,6 +10,7 @@ use App\Shared\ValueObject\ArrayLiteral;
 use Codefy\Framework\Dto\DataTransformer;
 use Codefy\Framework\Validation\DataValidator;
 use DateTimeInterface;
+use Exception;
 use Qubus\Support\DateTime\QubusDateTimeImmutable;
 use Qubus\ValueObjects\StringLiteral\StringLiteral;
 use Qubus\ValueObjects\Web\EmailAddress;
@@ -43,6 +44,7 @@ final readonly class UpdateUserProfileData implements DataTransformer
      * @param DataValidator $data
      * @return DataTransformer
      * @throws \Qubus\Exception\Data\TypeException
+     * @throws Exception
      */
     public static function fromValidatedData(DataValidator $data): DataTransformer
     {
@@ -55,17 +57,17 @@ final readonly class UpdateUserProfileData implements DataTransformer
             lname: new StringLiteral($data->string(key: 'lname')),
             email: new EmailAddress($data->string(key: 'email')),
             login: new Username($data->string(key: 'login')),
-            url: new StringLiteral($data->string(key: 'url')),
-            bio: new StringLiteral($data->string(key: 'bio')),
+            url: new StringLiteral($data->string(key: 'url', default: '')),
+            bio: new StringLiteral($data->string(key: 'bio', default: '')),
             status: new StringLiteral($data->string(key: 'status')),
             role: new StringLiteral($data->string(key: 'role')),
-            timezone: new StringLiteral($data->string(key: 'timezone')),
-            dateFormat: new StringLiteral($data->string(key: 'date_format')),
-            timeFormat: new StringLiteral($data->string(key: 'time_format')),
-            adminLayout: new StringLiteral($data->string(key: 'adminLayout')),
-            adminSidebar: new StringLiteral($data->string(key: 'adminSidebar')),
-            adminSkin: new StringLiteral($data->string(key: 'adminSkin')),
-            locale: new StringLiteral($data->string(key: 'locale')),
+            timezone: new StringLiteral($data->string(key: 'timezone', default: '')),
+            dateFormat: new StringLiteral($data->string(key: 'date_format', default: '')),
+            timeFormat: new StringLiteral($data->string(key: 'time_format', default: '')),
+            adminLayout: new StringLiteral((string) $data->value('adminLayout', 0)),
+            adminSidebar: new StringLiteral((string) $data->value('adminSidebar', 0)),
+            adminSkin: new StringLiteral((string) $data->value('adminSkin', 0)),
+            locale: new StringLiteral($data->string(key: 'locale', default: '')),
             modified: $modified,
             attribute: new ArrayLiteral($data->array(key: 'user_field', default: [])),
         );

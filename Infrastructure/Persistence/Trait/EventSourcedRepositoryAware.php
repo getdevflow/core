@@ -8,6 +8,7 @@ use Codefy\Domain\Aggregate\AggregateId;
 use Codefy\Domain\Aggregate\RecordsEvents;
 use Codefy\Domain\EventSourcing\CorruptEventStreamException;
 use Codefy\Traits\IdentityMapAware;
+use Exception;
 
 trait EventSourcedRepositoryAware
 {
@@ -19,7 +20,10 @@ trait EventSourcedRepositoryAware
      */
     public function loadAggregateRoot(AggregateId $aggregateId): RecordsEvents
     {
-        $this->retrieveFromIdentityMap($aggregateId);
+        $cached = $this->retrieveFromIdentityMap($aggregateId);
+        if ($cached !== null) {
+            return $cached;
+        }
 
         $aggregateRootClassName = $aggregateId->aggregateClassName();
 
@@ -33,18 +37,20 @@ trait EventSourcedRepositoryAware
         return $eventSourcedAggregate;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     * @throws Exception
+     */
     public function saveAggregateRoot(RecordsEvents $aggregate): void
     {
         $events = iterator_to_array($aggregate->getRecordedEvents());
 
-        $transaction = $this->eventStore->commit(...$events);
+        $this->dfdb->transactional(function () use ($events): void {
+            $transaction = $this->eventStore->commit(...$events);
+            $this->projection->project(...$transaction->committedEvents);
+        });
 
         $aggregate->clearRecordedEvents();
-
-        $committedEvents = $transaction->committedEvents;
-
-        $this->projection->project(...$committedEvents);
 
         $this->removeFromIdentityMap($aggregate);
     }

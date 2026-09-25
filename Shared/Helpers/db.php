@@ -35,6 +35,7 @@ use Qubus\Support\Collection\ArrayCollection;
 use Qubus\Support\Collection\Collection;
 use Qubus\Support\DateTime\QubusDateTimeImmutable;
 use Qubus\Support\Inflector;
+use Random\RandomException;
 use ReflectionException;
 use Throwable;
 
@@ -94,7 +95,7 @@ function get_option(string $key, mixed $default = ''): mixed
 {
     static $option;
 
-    if(is_null__($option)) {
+    if (is_null__($option)) {
         $option = option();
     }
 
@@ -114,7 +115,7 @@ function update_option(string $key, mixed $value): bool
 {
     static $option;
 
-    if(is_null__($option)) {
+    if (is_null__($option)) {
         $option = option();
     }
 
@@ -130,7 +131,7 @@ function delete_option(string $key): bool
 {
     static $option;
 
-    if(is_null__($option)) {
+    if (is_null__($option)) {
         $option = option();
     }
 
@@ -296,6 +297,7 @@ function cms_slugify(string $title, string $table): string
  * @return object[]
  * @throws ReflectionException
  * @throws UnresolvableQueryHandlerException
+ * @throws TypeException
  */
 function tinymce_link_list(): array
 {
@@ -573,6 +575,7 @@ function if_content_type_exists(string $contentType): bool
 function reassign_content(string $userId, string $assignId): bool
 {
     $dfdb = dfdb();
+    $count = 0;
 
     try {
         $count = $dfdb->getVar(
@@ -793,6 +796,7 @@ function populate_options_cache(): bool
  * @throws CommandPropertyNotFoundException
  * @throws ReflectionException
  * @throws UnresolvableQueryHandlerException
+ * @throws TypeException
  */
 function collection(?string $value = null): Collection
 {
@@ -814,6 +818,8 @@ function collection(?string $value = null): Collection
  * @access private
  * @param int $length
  * @return string
+ * @throws TypeException
+ * @throws RandomException
  */
 function generate_site_key(int $length = 6): string
 {
@@ -864,12 +870,13 @@ function has_site_user_record(string $siteId, string $userId): bool
  * @file core/Shared/Helpers/db.php
  * @throws ReflectionException
  * @throws UnresolvableQueryHandlerException
+ * @throws TypeException
  */
 function unassigned_sites(string $userId): void
 {
-    foreach(get_all_sites() as $site) {
-        if(!has_site_user_record($site['id'], $userId)) {
-            echo '<option value="'.$site['id'].'">'.$site['name'].'</option>' . "\n";
+    foreach (get_all_sites() as $site) {
+        if (!has_site_user_record($site['id'], $userId)) {
+            echo '<option value="' . $site['id'] . '">' . $site['name'] . '</option>' . "\n";
         }
     }
 }
@@ -895,14 +902,14 @@ function get_super_admins(): array
         output: Database::ARRAY_A
     );
 
-    if(is_false__($results)) {
+    if (is_false__($results)) {
         return [];
     }
 
     $superAdmins = [];
-    foreach($results as $row) {
+    foreach ($results as $row) {
         $json = json_decode($row['user_attribute'], true);
-        if($json['role'] === 'super') {
+        if ($json['role'] === 'super') {
             $superAdmins[] = esc_html($row['user_id']);
         }
     }
@@ -972,7 +979,7 @@ function get_global_option(
 
     $value = $option->option_value;
 
-    if ($value===null) {
+    if ($value === null) {
         return $default;
     }
 
@@ -1031,7 +1038,7 @@ function create_global_option(
         ->insert([
             'option_key' => $key,
             'option_value' => $encoded,
-            'autoload' => $autoload ? 1:0,
+            'autoload' => $autoload ? 1 : 0,
         ]);
 
     global_option_cache()->set(
@@ -1079,7 +1086,7 @@ function update_global_option(
             ->where('option_key', $key)
             ->update([
                 'option_value' => $encoded,
-                'autoload' => $autoload ? 1:0,
+                'autoload' => $autoload ? 1 : 0,
             ]);
     } else {
         $dfdb
@@ -1087,7 +1094,7 @@ function update_global_option(
             ->insert([
                 'option_key' => $key,
                 'option_value' => $encoded,
-                'autoload' => $autoload ? 1:0,
+                'autoload' => $autoload ? 1 : 0,
             ]);
     }
 

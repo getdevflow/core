@@ -60,7 +60,7 @@ class StoreContentValidator extends HttpInputValidator implements HasDto
     {
         $statuses = implode(separator: ',', array: array_keys(content_status_capabilities()));
 
-        if('NULL' === $this->all()['parent']) {
+        if ('NULL' === ($this->all()['parent'] ?? 'NULL')) {
             $parent = 'nullable|string';
         } else {
             $parent = 'required|ulid';
@@ -81,6 +81,9 @@ class StoreContentValidator extends HttpInputValidator implements HasDto
             'content_field' => 'nullable|array',
             'status' => 'required|string|in:' . $statuses,
             'published' => 'required|string',
+            'publishedGmt' => 'required|string',
+            'created' => 'required|string',
+            'createdGmt' => 'required|string',
         ];
     }
 }

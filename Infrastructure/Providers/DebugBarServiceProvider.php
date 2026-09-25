@@ -12,14 +12,18 @@ use DebugBar\DataCollector\PDO\PDOCollector;
 use DebugBar\DataCollector\PDO\TraceablePDO;
 use DebugBar\DebugBar;
 use DebugBar\StandardDebugBar;
+use Qubus\Exception\Data\TypeException;
 use Qubus\Routing\Route\Route;
 use Qubus\Routing\Route\RouteAttributes;
 
 final class DebugBarServiceProvider extends CodefyServiceProvider
 {
+    /**
+     * @throws TypeException
+     */
     public function register(): void
     {
-        if($this->codefy->isRunningInConsole()) {
+        if ($this->codefy->isRunningInConsole() || !$this->codefy->configContainer->boolean('app.debug', false)) {
             return;
         }
 
@@ -34,7 +38,10 @@ final class DebugBarServiceProvider extends CodefyServiceProvider
 
             $debugbar = new StandardDebugBar();
             $debugbar->addCollector(new PdoCollector($pdo));
-            $debugbar->addCollector(new RouteCollector($routeName ?: 'No Name', $route->getActionName()));
+            $debugbar->addCollector(new RouteCollector(
+                $routeName ?: 'No Name',
+                $route?->getActionName() ?? 'Unmatched route'
+            ));
             $debugbar->addCollector(new CodefyCollector());
 
             return $debugbar;

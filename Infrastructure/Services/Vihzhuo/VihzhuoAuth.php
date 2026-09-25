@@ -11,31 +11,52 @@ use Psr\SimpleCache\InvalidArgumentException;
 use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
 use ReflectionException;
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
+use Qubus\Http\Factories\EmptyResponseFactory;
+use Qubus\Http\Response;
 use Vihzhuo\Contracts\AuthContract;
 
 use function App\Shared\Helpers\current_user_can;
+use function App\Shared\Helpers\cms_clear_auth_cookie;
+use function App\Shared\Helpers\login_url;
 use function App\Shared\Helpers\is_user_logged_in;
-use function Codefy\Framework\Helpers\config;
-use function Codefy\Framework\Helpers\site_url;
 use function phpb_redirect;
 
 class VihzhuoAuth implements AuthContract
 {
     /**
      * @inheritDoc
+     * @param ServerRequestInterface $request
+     * @param string|null $action
+     * @return ResponseInterface|null
+     * @throws ContainerExceptionInterface
+     * @throws Exception
+     * @throws InvalidArgumentException
+     * @throws NotFoundExceptionInterface
+     * @throws ReflectionException
+     * @throws TypeException
      */
-    public function handleRequest(?string $action = null): void
+    public function handleRequest(ServerRequestInterface $request, ?string $action = null): ?ResponseInterface
     {
+        if ($action === 'logout') {
+            if ($request->getMethod() !== 'POST') {
+                return new Response(status: 405, headers: ['Allow' => 'POST']);
+            }
+            cms_clear_auth_cookie();
+            return phpb_redirect(url: login_url());
+        }
+
         if (phpb_in_module('auth')) {
             if ($this->isAuthenticated()) {
-                phpb_redirect(url: phpb_url(module: 'website_manager'));
+                return phpb_redirect(url: phpb_url(module: 'website_manager'));
             } else {
                 Devflow::$PHP->flash->error(message: 'Access denied');
-                phpb_redirect(url: site_url(path: 'login'));
+                return phpb_redirect(url: login_url());
             }
-        } elseif ($action === 'logout') {
-            phpb_redirect(url: site_url(path: 'logout'));
         }
+
+        return null;
     }
 
     /**
@@ -62,23 +83,21 @@ class VihzhuoAuth implements AuthContract
      * @throws Exception
      * @throws ReflectionException
      */
-    public function requireAuth(): void
+    public function requireAuth(): ?ResponseInterface
     {
         if (!$this->isAuthenticated()) {
-            phpb_redirect(
-                url: site_url(
-                    path: config()->string(key: 'auth.login_route')
-                )
-            );
-            exit();
+            return phpb_redirect(url: login_url());
+
         }
+
+        return null;
     }
 
     /**
      * @inheritDoc
      */
-    public function renderLoginForm(): void
+    public function renderLoginForm(): ResponseInterface
     {
-        return ;
+        return EmptyResponseFactory::create();
     }
 }
