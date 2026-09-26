@@ -8,6 +8,7 @@ use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
 use Codefy\CommandBus\Exceptions\UnresolvableCommandHandlerException;
 use Codefy\Framework\Http\BaseController;
 use Codefy\QueryBus\UnresolvableQueryHandlerException;
+use DateInvalidTimeZoneException;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Psr\SimpleCache\InvalidArgumentException;
@@ -38,6 +39,7 @@ final class CronController extends BaseController
      * @throws TypeException
      * @throws UnresolvableCommandHandlerException
      * @throws UnresolvableQueryHandlerException
+     * @throws DateInvalidTimeZoneException
      */
     public function master(ServerRequest $request): void
     {
