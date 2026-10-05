@@ -16,6 +16,7 @@ final class DevflowPageBuilder extends Vihzhuo
                 'auth' => [\Vihzhuo\Modules\Auth\Auth::class, VihzhuoAuth::class],
                 'website_manager' => [\Vihzhuo\Modules\WebsiteManager\WebsiteManager::class, WebsiteManager::class],
                 'pagebuilder' => [\Vihzhuo\Modules\GrapesJS\PageBuilder::class, PageEditor::class],
+                'theme' => [\Vihzhuo\Theme::class, VihzhuoTheme::class],
                 ] as $section => [$upstream, $adapter]
             ) {
                 if (!isset($config[$section]['class']) || $config[$section]['class'] === $upstream) {
