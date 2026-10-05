@@ -9,6 +9,7 @@ use App\Infrastructure\Persistence\Cache\ContentCachePsr16;
 use App\Infrastructure\Persistence\Cache\ProductCachePsr16;
 use App\Infrastructure\Services\Content\Event\ContentUpdated;
 use App\Infrastructure\Services\Product\Event\ProductUpdated;
+use App\Infrastructure\Services\Vihzhuo\PageCacheInvalidator;
 use App\Shared\Services\Parsecode;
 use Codefy\Framework\Support\CodefyServiceProvider;
 use Psr\Container\ContainerExceptionInterface;
@@ -90,6 +91,7 @@ final class CmsHelperServiceProvider extends CodefyServiceProvider
         );
         __observer()->action->addAction('enqueue_cms_editor', 'App\Shared\Helpers\cms_editor', 5);
         __observer()->action->addAction('flush_cache', 'App\Shared\Helpers\populate_options_cache', 5);
+        __observer()->action->addAction('flush_cache', [PageCacheInvalidator::class, 'clear']);
         __observer()->filter->addFilter('the.body', [Parsecode::getInstance(), 'autop']);
         __observer()->filter->addFilter('the.body', [Parsecode::getInstance(), 'unAutop']);
         __observer()->filter->addFilter('the.body', [Parsecode::getInstance(), 'doParsecode'], 12);

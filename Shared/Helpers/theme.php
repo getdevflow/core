@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Shared\Helpers;
 
 use JsonException;
+use App\Infrastructure\Services\Theme;
+use App\Infrastructure\Services\Vihzhuo\PageCacheInvalidator;
 use Qubus\Expressive\Database;
 use App\Infrastructure\Services\Options;
 use App\Shared\Services\Items;
@@ -21,6 +23,7 @@ use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
 use Qubus\View\Renderer;
 use ReflectionException;
+use RuntimeException;
 
 use function basename;
 use function class_exists;
@@ -30,6 +33,8 @@ use function Codefy\Framework\Helpers\public_path;
 use function count;
 use function dirname;
 use function glob;
+use function get_parent_class;
+use function is_subclass_of;
 use function is_string;
 use function ltrim;
 use function phpb_pages;
@@ -65,6 +70,23 @@ function get_theme(): string
      * @param string $theme Current theme's directory name.
      */
     return __observer()->filter->applyFilter('theme', $siteTheme);
+}
+
+/**
+ * Resolve Devflow's child-theme declaration (the theme class's extends clause).
+ * This also resolves ancestors that are installed but have never been activated.
+ *
+ * @return class-string<Theme>|null
+ */
+function get_parent_theme(string $themeClass): ?string
+{
+    if (!is_subclass_of($themeClass, Theme::class)) {
+        throw new RuntimeException(sprintf('Invalid Devflow theme class: %s', $themeClass));
+    }
+
+    $parent = get_parent_class($themeClass);
+
+    return $parent !== false && is_subclass_of($parent, Theme::class) ? $parent : null;
 }
 
 /**
@@ -382,7 +404,9 @@ function theme_info(string $themesDir = ''): array
 function activate_theme(string $theme): void
 {
     try {
-        update_option(key: 'site_theme', value: $theme);
+        if (update_option(key: 'site_theme', value: $theme)) {
+            PageCacheInvalidator::clear();
+        }
     } catch (PDOException | \Exception $ex) {
         logger(
             level: 'error',
@@ -406,7 +430,9 @@ function activate_theme(string $theme): void
 function deactivate_theme(): void
 {
     try {
-        delete_option(key: 'site_theme');
+        if (delete_option(key: 'site_theme')) {
+            PageCacheInvalidator::clear();
+        }
     } catch (PDOException | \Exception $ex) {
         logger(
             level: 'error',
