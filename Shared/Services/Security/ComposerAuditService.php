@@ -220,7 +220,6 @@ final class ComposerAuditService
      * @param ComposerAuditResult $result
      * @return void
      * @throws \JsonException
-     * @throws \PHPMailer\PHPMailer\Exception
      * @throws \Psr\Container\ContainerExceptionInterface
      * @throws \Psr\Container\NotFoundExceptionInterface
      * @throws \Psr\SimpleCache\InvalidArgumentException

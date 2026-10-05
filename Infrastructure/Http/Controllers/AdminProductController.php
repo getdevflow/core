@@ -35,6 +35,7 @@ use Qubus\Http\Session\SessionException;
 use ReflectionException;
 
 use function App\Shared\Helpers\admin_url;
+use function App\Shared\Helpers\cms_safe_redirect_url;
 use function App\Shared\Helpers\current_user_can;
 use function App\Shared\Helpers\get_product_by_id;
 use function Codefy\Framework\Helpers\logger;
@@ -247,7 +248,7 @@ final class AdminProductController extends BaseController
             )
         );
 
-        return $this->redirect($request->getHeaderLine(name: 'Referer'));
+        return $this->redirect(cms_safe_redirect_url($request->getHeaderLine('Referer'), admin_url()));
     }
 
     /**

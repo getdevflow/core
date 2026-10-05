@@ -79,14 +79,16 @@ final readonly class UpdateContentData implements DataTransformer
             sidebar: new IntegerNumber(value: $data->value(value: 'sidebar') ?? 0),
             showInMenu: new IntegerNumber(value: $data->value(value: 'showInMenu') ?? 0),
             showInSearch: new IntegerNumber(value: $data->value(value: 'showInSearch') ?? 0),
-            featuredImage: new StringLiteral(value: $data->string(key: 'featuredImage')),
+            featuredImage: new StringLiteral(value: $data->string(key: 'featuredImage', default: '')),
             attribute: new ArrayLiteral(data: $data->array(key: 'content_field', default: [])),
             status: new StringLiteral(value: $data->string(key: 'status')),
             published: $contentPublished,
             publishedGmt: $contentPublishedGmt,
             modified: $contentModified,
             modifiedGmt: $contentModifiedGmt,
-            parent: 'NULL' !== $data->string(key: 'parent') ? ContentId::fromString(contentId: $data->string(key: 'parent')) : null,
+            parent: 'NULL' !== $data->string(key: 'parent', default: 'NULL')
+                ? ContentId::fromString(contentId: $data->string(key: 'parent', default: 'NULL'))
+                : null,
         );
     }
 }

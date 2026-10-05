@@ -13,8 +13,6 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\SimpleCache\InvalidArgumentException;
 use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
-use Qubus\Http\Factories\EmptyResponseFactory;
-use Qubus\Http\Factories\HtmlResponseFactory;
 use Qubus\Http\ServerRequest;
 use ReflectionException;
 
@@ -32,31 +30,36 @@ final class PageBuilderController extends BaseController
     /**
      * @throws \Exception
      */
-    public function assets(): void
+    public function assets(ServerRequest $request): ResponseInterface
     {
+        \Vihzhuo\Core\HttpContext::setRequest($request);
         $builder = $this->builder();
-        $builder->handlePageBuilderAssetRequest();
+        return $builder->handlePageBuilderAssetRequest();
     }
 
     /**
      * @throws TypeException
+     * @throws \Exception
      */
-    public function uploads(): void
+    public function uploads(ServerRequest $request): ResponseInterface
     {
+        \Vihzhuo\Core\HttpContext::setRequest($request);
         $builder = $this->builder();
-        $builder->handleUploadedFileRequest();
+        return $builder->handleUploadedFileRequest();
     }
 
     /**
+     * @param ServerRequest $request
      * @return ResponseInterface
-     * @throws TypeException
      * @throws ContainerExceptionInterface
-     * @throws NotFoundExceptionInterface
-     * @throws InvalidArgumentException
      * @throws Exception
+     * @throws InvalidArgumentException
+     * @throws NotFoundExceptionInterface
      * @throws ReflectionException
+     * @throws TypeException
+     * @throws \Exception
      */
-    public function websiteManager(): ResponseInterface
+    public function websiteManager(ServerRequest $request): ResponseInterface
     {
         if (false === current_user_can(perm: 'vihzhuo:manage')) {
             Devflow::$PHP->flash->error(
@@ -67,9 +70,7 @@ final class PageBuilderController extends BaseController
         }
 
         $builder = $this->builder();
-        $builder->handleRequest();
-
-        return EmptyResponseFactory::create(200);
+        return $builder->handleRequest($request);
     }
 
     /**
@@ -77,14 +78,14 @@ final class PageBuilderController extends BaseController
      */
     public function any(ServerRequest $request): ResponseInterface
     {
-        $builder = $this->builder();
-        $hasPageReturned = $builder->handlePublicRequest();
-
         if (get_option(key: 'maintenance_mode') === 1) {
             return view(template: 'framework::maintenance')
                 ->withStatus(503)
                 ->withHeader('Retry-After', config()->string('cms.maintenance_mode_attrs.retry_after', '3600'))
-                ->withHeader('Cache-Control', config()->string('cms.maintenance_mode_attrs.cache_control', 'no-cache, no-store, must-revalidate'))
+                ->withHeader('Cache-Control', config()->string(
+                    'cms.maintenance_mode_attrs.cache_control',
+                    'no-cache, no-store, must-revalidate'
+                ))
                 ->withHeader('Pragma', config()->string('cms.maintenance_mode_attrs.pragma', 'no-cache'))
                 ->withHeader('Expires', config()->string('cms.maintenance_mode_attrs.expires', '0'));
         }
@@ -92,6 +93,8 @@ final class PageBuilderController extends BaseController
         if (empty(get_theme()) || Devflow::$PHP->configContainer->boolean(key: 'vihzhuo.enable') === false) {
             return $this->redirect(admin_url());
         }
+
+        $hasPageReturned = $this->builder()->handlePublicRequest($request);
 
         if ($request->getUri()->getPath() === '/' && ! $hasPageReturned) {
             return view(template: 'framework::welcome', data: ['title' => trans_html('Page Builder Welcome Page')]);
@@ -101,8 +104,7 @@ final class PageBuilderController extends BaseController
             return view(template: 'framework::error/404')->withStatus(404);
         }
 
-        // @phpstan-ignore argument.type
-        return HtmlResponseFactory::create($hasPageReturned);
+        return $hasPageReturned;
     }
 
     /**

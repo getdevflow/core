@@ -18,6 +18,8 @@ use App\Domain\User\ValueObject\UserToken;
 use App\Infrastructure\Persistence\Cache\UserCachePsr16;
 use App\Infrastructure\Services\Queue\EmailChangeNotification;
 use App\Shared\Services\SimpleCacheObjectCacheFactory;
+use DateInvalidTimeZoneException;
+use JsonException;
 use Qubus\Expressive\Database;
 use App\Infrastructure\Services\AttributesFactory;
 use App\Infrastructure\Services\NativePhpCookies;
@@ -40,6 +42,7 @@ use Qubus\Exception\Exception;
 use Qubus\Support\DateTime\QubusDateTimeImmutable;
 use Qubus\ValueObjects\StringLiteral\StringLiteral;
 use Qubus\ValueObjects\Web\EmailAddress;
+use Random\RandomException;
 use ReflectionException;
 
 use function array_map;
@@ -70,6 +73,7 @@ use function strtolower;
  * @return mixed
  * @throws ReflectionException
  * @throws UnresolvableQueryHandlerException
+ * @throws TypeException
  */
 function get_all_users(): mixed
 {
@@ -555,6 +559,7 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
     }
 
     $defaults = [
+        'mname' => '',
         'url' => '',
         'bio' => '',
         'timezone' => config()->string('app.timezone'),
@@ -865,7 +870,8 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
 
     $userAdminSidebar = '0';
 
-    $attribute['admin.sidebar'] = isset($userdata['adminSidebar']) ? (int) $userdata['adminSidebar'] : $userAdminSidebar;
+    $attribute['admin.sidebar'] = isset($userdata['adminSidebar'])
+    ? (int) $userdata['adminSidebar'] : $userAdminSidebar;
 
     $userAdminSkin = 'skin-red';
 
@@ -1066,7 +1072,9 @@ function cms_insert_user(array|ServerRequestInterface|User $userdata): string|Er
  * @throws ContainerExceptionInterface
  * @throws Exception
  * @throws InvalidArgumentException
+ * @throws JsonException
  * @throws NotFoundExceptionInterface
+ * @throws RandomException
  * @throws ReflectionException
  * @throws TypeException
  */
@@ -1174,17 +1182,18 @@ function cms_update_user(array|ServerRequestInterface|User $userdata): string|Us
 }
 
 /**
- * Email sent to user with changed/updated email.
+ * Email sent to a user with changed/updated email.
  *
  * @file core/Shared/Helpers/user.php
  * @param object|array $user Original user array.
  * @param array $userdata Updated user array.
  * @return bool True on success, false on failure or Exception.
- * @throws ContainerExceptionInterface
  * @throws Exception
  * @throws InvalidArgumentException
- * @throws NotFoundExceptionInterface
  * @throws ReflectionException
+ * @throws TypeException
+ * @throws JsonException
+ * @throws RandomException
  */
 function send_email_change_email(object|array $user, array $userdata): bool
 {
@@ -1318,6 +1327,7 @@ function blacklisted_usernames(): array
  * @throws ReflectionException
  * @throws TypeException
  * @throws UnresolvableCommandHandlerException
+ * @throws RandomException
  */
 function reset_password(string $userId): bool|string
 {
@@ -1486,6 +1496,7 @@ function get_user_datetime_format(): string
  * @throws InvalidArgumentException
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
+ * @throws DateInvalidTimeZoneException
  */
 function get_user_datetime(string $string, string $format = 'Y-m-d H:i:s'): string
 {

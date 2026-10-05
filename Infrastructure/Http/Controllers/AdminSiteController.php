@@ -24,6 +24,7 @@ use ReflectionException;
 
 use function App\Shared\Helpers\add_user_to_site;
 use function App\Shared\Helpers\admin_url;
+use function App\Shared\Helpers\cms_safe_redirect_url;
 use function App\Shared\Helpers\cms_delete_site;
 use function App\Shared\Helpers\cms_delete_site_user;
 use function App\Shared\Helpers\cms_insert_site;
@@ -97,7 +98,7 @@ final class AdminSiteController extends BaseController
             );
         }
 
-        return $this->redirect($request->getHeaderLine('Referer'));
+        return $this->redirect(cms_safe_redirect_url($request->getHeaderLine('Referer'), admin_url()));
     }
 
     /**
@@ -186,7 +187,7 @@ final class AdminSiteController extends BaseController
                 Devflow::$PHP->flash->error(
                     message: $id->getMessage()
                 );
-                return $this->redirect($request->getHeaderLine('Referer'));
+                return $this->redirect(cms_safe_redirect_url($request->getHeaderLine('Referer'), admin_url()));
             }
 
             Devflow::$PHP->flash->success(Devflow::$PHP->flash->notice(num: 200));
@@ -206,7 +207,7 @@ final class AdminSiteController extends BaseController
             );
         }
 
-        return $this->redirect($request->getHeaderLine('Referer'));
+        return $this->redirect(cms_safe_redirect_url($request->getHeaderLine('Referer'), admin_url()));
     }
 
     /**
@@ -297,13 +298,13 @@ final class AdminSiteController extends BaseController
             return $this->redirect(admin_url());
         }
 
-        if(!is_main_site(get_current_site_id())) {
+        if (!is_main_site(get_current_site_id())) {
             Devflow::$PHP->flash->error(
                 message: trans_html('The action is not allowed.')
             );
             return $this->redirect(admin_url());
         }
-        
+
         $results = get_all_users();
         $users = sort_list($results, 'lname', 'ASC', true);
 
@@ -343,23 +344,27 @@ final class AdminSiteController extends BaseController
             );
             return $this->redirect(admin_url());
         }
-        if('null' === $request->get('site_id')) {
+        if ('null' === $request->get('site_id')) {
             Devflow::$PHP->flash->error(
                 message: trans_html('You cannot submit an empty site id.')
             );
-            return $this->redirect($request->getHeaderLine('Referer'));
+            return $this->redirect(cms_safe_redirect_url($request->getHeaderLine('Referer'), admin_url()));
         }
-        if('null' === $request->get('user_role')) {
+        if ('null' === $request->get('user_role')) {
             Devflow::$PHP->flash->error(
                 message: trans_html('You cannot submit an empty user role.')
             );
-            return $this->redirect($request->getHeaderLine('Referer'));
+            return $this->redirect(cms_safe_redirect_url($request->getHeaderLine('Referer'), admin_url()));
         }
 
         AttributesFactory::user()->createIfMissing($request->get('site_id'), $request->get('user_id'));
 
-        $addUserToSite = add_user_to_site($request->get('user_id'), $request->get('site_id'), $request->get('user_role'));
-        if(is_false__($addUserToSite)) {
+        $addUserToSite = add_user_to_site(
+            $request->get('user_id'),
+            $request->get('site_id'),
+            $request->get('user_role')
+        );
+        if (is_false__($addUserToSite)) {
             Devflow::$PHP->flash->error(
                 message: trans_html('An error occurred.')
             );
@@ -367,8 +372,7 @@ final class AdminSiteController extends BaseController
             Devflow::$PHP->flash->success(Devflow::$PHP->flash->notice(num: 201));
         }
 
-        return $this->redirect($request->getHeaderLine('Referer'));
-
+        return $this->redirect(cms_safe_redirect_url($request->getHeaderLine('Referer'), admin_url()));
     }
 
     /**

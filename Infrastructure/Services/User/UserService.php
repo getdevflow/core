@@ -29,7 +29,6 @@ use function App\Shared\Helpers\get_user_by;
 use function App\Shared\Helpers\get_users_by_site_key;
 use function App\Shared\Helpers\site_url;
 use function App\Shared\Helpers\sort_list;
-use function array_merge;
 use function Codefy\Framework\Helpers\abort;
 use function Codefy\Framework\Helpers\logger;
 use function Codefy\Framework\Helpers\queue;
@@ -103,37 +102,22 @@ final readonly class UserService
             /** @var User $user */
             $user = get_user_by(field: 'email', value: $validated['email']);
 
-            if (is_false__($user)) {
-                $update = false;
-                $userLogin = $validated['login'];
-                $extra = ['pass' => $validated['pass']];
-            } else {
-                $update = true;
-                $userLogin = $user->login;
-                $extra = ['pass' => $validated['pass'], 'login' => $userLogin];
+            if (!is_false__($user)) {
+                return new UserError(trans_html('This email address is already registered.'));
             }
-
-            if (empty($userLogin)) {
-                return new UserError(trans_html('A user login is required.'));
-            }
-
-            $arrayMerge = array_merge($extra, $validated);
-            if ($update) {
-                $userId = cms_update_user($arrayMerge);
-            } else {
-                $userId = cms_insert_user($arrayMerge);
-            }
+            // Account creation must never turn into an update through a submitted identity.
+            unset($validated['id']);
+            $userId = cms_insert_user($validated);
 
             if (is_error($userId)) {
                 return new UserError($userId->getMessage());
             }
 
-            if ((int) $validated['sendemail'] === 1) {
+            if ((int) ($validated['sendemail'] ?? 0) === 1) {
                 queue(
                     new NewAccountNotification([
                         'login' => (string) $validated['login'],
                         'email' => (string) $validated['email'],
-                        'pass' => (string) $validated['pass'],
                         'url' => sprintf(
                             site_url('admin/%s/'),
                             Devflow::$PHP->configContainer->string(key: 'auth.login_route')
@@ -216,7 +200,16 @@ final readonly class UserService
     public function updateProfile(UpdateUserProfileValidator $data): Error|string
     {
         try {
-            $userId = cms_update_user($data->validated());
+            $profile = $data->validated();
+            if (isset($profile['date_format'])) {
+                $profile['dateFormat'] = $profile['date_format'];
+                unset($profile['date_format']);
+            }
+            if (isset($profile['time_format'])) {
+                $profile['timeFormat'] = $profile['time_format'];
+                unset($profile['time_format']);
+            }
+            $userId = cms_update_user($profile);
 
             if (is_error($userId)) {
                 return new UserError($userId->getMessage());

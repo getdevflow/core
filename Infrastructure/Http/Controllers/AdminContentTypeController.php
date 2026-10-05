@@ -23,6 +23,7 @@ use Qubus\Http\ServerRequest;
 use ReflectionException;
 
 use function App\Shared\Helpers\admin_url;
+use function App\Shared\Helpers\cms_safe_redirect_url;
 use function App\Shared\Helpers\current_user_can;
 use function App\Shared\Helpers\get_content_type_by;
 use function Codefy\Framework\Helpers\abort;
@@ -36,6 +37,7 @@ final class AdminContentTypeController extends BaseController
      * @param ServerRequest $request
      * @param ContentTypeService $service
      * @return ResponseInterface
+     * @throws Exception
      */
     public function contentTypeCreate(ServerRequest $request, ContentTypeService $service): ResponseInterface
     {
@@ -45,7 +47,7 @@ final class AdminContentTypeController extends BaseController
             )
         );
 
-        return $this->redirect($request->getHeaderLine(name: 'Referer'));
+        return $this->redirect(cms_safe_redirect_url($request->getHeaderLine('Referer'), admin_url()));
     }
 
     /**
@@ -87,6 +89,7 @@ final class AdminContentTypeController extends BaseController
      * @return ResponseInterface
      * @throws ContainerExceptionInterface
      * @throws NotFoundExceptionInterface
+     * @throws Exception
      */
     public function contentTypeChange(ServerRequest $request, ContentTypeService $service): ResponseInterface
     {
@@ -96,7 +99,7 @@ final class AdminContentTypeController extends BaseController
             )
         );
 
-        return $this->redirect($request->getHeaderLine(name: 'Referer'));
+        return $this->redirect(cms_safe_redirect_url($request->getHeaderLine('Referer'), admin_url()));
     }
 
     /**
@@ -156,8 +159,11 @@ final class AdminContentTypeController extends BaseController
      * @return ResponseInterface
      * @throws Exception
      */
-    public function contentTypeDelete(ServerRequest $request, ContentTypeService $service, string $contentTypeId): ResponseInterface
-    {
+    public function contentTypeDelete(
+        ServerRequest $request,
+        ContentTypeService $service,
+        string $contentTypeId
+    ): ResponseInterface {
         $request = $request->withParsedBody(['id' => $contentTypeId]);
 
         $service->deleteContentType(

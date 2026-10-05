@@ -16,16 +16,13 @@ class MiddlewareServiceProvider extends CodefyServiceProvider
      */
     public function register(): void
     {
-        $middlewares = $this->codefy->configContainer->array(key: 'app.middlewares');
-        $middlewares = array_merge(
-            $middlewares,
+        $middlewares = array_replace(
             [
                 'current.site' => CurrentSiteMiddleware::class,
                 'archived.site' => ArchivedSiteMiddleware::class,
-            ]
+            ],
+            $this->codefy->configContainer->array('app.middlewares', [])
         );
-        foreach ($middlewares as $key => $value) {
-            $this->codefy->alias(original: $key, alias: $value);
-        }
+        $this->codefy->configContainer->setConfigKey('app', ['middlewares' => $middlewares]);
     }
 }

@@ -62,7 +62,7 @@ class StoreProductValidator extends HttpInputValidator implements HasDto
             'body' => 'string',
             'author' => 'required|ulid',
             'sku' => 'required|string',
-            'price' => 'required',
+            'price' => 'required|integer|min:0',
             'purchaseUrl' => 'nullable|string',
             'showInMenu' => 'int',
             'showInSearch' => 'int',
@@ -70,6 +70,10 @@ class StoreProductValidator extends HttpInputValidator implements HasDto
             'product_field' => 'nullable|array',
             'status' => 'required|string|in:' . $statuses,
             'published' => 'required|string',
+            'publishedGmt' => 'required|string',
+            'created' => 'required|string',
+            'createdGmt' => 'required|string',
+            'currency' => 'required|string|regex:/^[A-Z]{3}$/',
         ];
     }
 }

@@ -34,13 +34,11 @@ use DateInvalidTimeZoneException;
 use PDOException;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
-use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\SimpleCache\InvalidArgumentException;
 use Qubus\Error\Error;
 use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
-use Qubus\Http\Factories\JsonResponseFactory;
 use Qubus\Http\Session\SessionException;
 use Qubus\Support\DateTime\QubusDateTimeImmutable;
 use Qubus\Support\DateTime\QubusDateTimeZone;
@@ -58,7 +56,6 @@ use function Codefy\Framework\Helpers\public_path;
 use function Codefy\Framework\Helpers\resource_path;
 use function Codefy\Framework\Helpers\trans;
 use function Codefy\Framework\Helpers\trans_html;
-use function Codefy\Framework\Helpers\view;
 use function crc32;
 use function date;
 use function file_get_contents;
@@ -80,6 +77,7 @@ use function strtotime;
  * @file core/Shared/Helpers/site.php
  * @throws ReflectionException
  * @throws UnresolvableQueryHandlerException
+ * @throws TypeException
  */
 function get_all_sites(): mixed
 {
@@ -161,7 +159,7 @@ function if_site_exists(string $siteDomain, string $sitePath): bool
 }
 
 /**
- * Create the needed directories when a new site is created.
+ * Create the necessary directories when a new site is created.
  *
  * @access private
  *
@@ -793,9 +791,9 @@ function cms_insert_site(array|ServerRequestInterface|Site $sitedata): Error|str
                 'owner' => UserId::fromString($site->owner),
                 'status' => new StringLiteral($site->status),
                 'modified' => QubusDateTimeImmutable::createFromDate(
-                    date('Y', strtotime($site->modified)),
-                    date('m', strtotime($site->modified)),
-                    date('d', strtotime($site->modified)),
+                    (int) date('Y', strtotime($site->modified)),
+                    (int) date('m', strtotime($site->modified)),
+                    (int) date('d', strtotime($site->modified)),
                     new QubusDateTimeZone(get_option(key: 'site_timezone'))
                 ),
             ]);
@@ -829,9 +827,9 @@ function cms_insert_site(array|ServerRequestInterface|Site $sitedata): Error|str
                 'owner' => UserId::fromString($site->owner),
                 'status' => new StringLiteral($site->status),
                 'registered' => QubusDateTimeImmutable::createFromDate(
-                    date('Y', strtotime($site->registered)),
-                    date('m', strtotime($site->registered)),
-                    date('d', strtotime($site->registered)),
+                    (int) date('Y', strtotime($site->registered)),
+                    (int) date('m', strtotime($site->registered)),
+                    (int) date('d', strtotime($site->registered)),
                     new QubusDateTimeZone(get_option(key: 'site_timezone'))
                 ),
             ]);
@@ -858,7 +856,7 @@ function cms_insert_site(array|ServerRequestInterface|Site $sitedata): Error|str
 
     /** @var Site $site */
     $site = get_site_by('id', $siteId->toNative());
-    /** Create user attribute if missing. */
+    /** Create a user attribute if missing. */
     AttributesFactory::user()->createIfMissing($site->id, $site->owner);
 
     if ($update) {

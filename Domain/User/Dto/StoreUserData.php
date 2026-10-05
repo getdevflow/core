@@ -39,7 +39,8 @@ final readonly class StoreUserData implements DataTransformer
     public static function fromValidatedData(DataValidator $data): DataTransformer
     {
         $registered = QubusDateTimeImmutable::now();
-        $userId = empty($data->string(key: 'id')) ? new UserId() : UserId::fromString($data->string(key: 'id'));
+        $userId = empty($data->string(key: 'id', default: ''))
+        ? new UserId() : UserId::fromString($data->string(key: 'id', default: ''));
 
         return new self(
             id: $userId,

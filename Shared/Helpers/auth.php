@@ -7,6 +7,7 @@ namespace App\Shared\Helpers;
 use App\Application\Devflow;
 use App\Domain\User\Model\User;
 use App\Infrastructure\Persistence\Cache\UserCachePsr16;
+use JsonException;
 use Qubus\EventDispatcher\ActionFilter\Filter;
 use Qubus\Expressive\Database;
 use App\Infrastructure\Services\NativePhpCookies;
@@ -20,12 +21,12 @@ use Qubus\Exception\Data\TypeException;
 use Qubus\Exception\Exception;
 use Qubus\Http\ServerRequest;
 use Qubus\Http\Session\SessionException;
+use Random\RandomException;
 use ReflectionException;
 
 use function Codefy\Framework\Helpers\app;
 use function Codefy\Framework\Helpers\config;
 use function Codefy\Framework\Helpers\gate;
-use function Codefy\Framework\Helpers\logger;
 use function Codefy\Framework\Helpers\trans;
 use function Codefy\Framework\Helpers\trans_html;
 use function filter_var;
@@ -92,7 +93,7 @@ function current_user_can(string $perm, array $ruleParams = []): bool
         return false;
     }
 
-    if(is_super_admin($currentUser->id)) {
+    if (is_super_admin($currentUser->id)) {
         return true;
     }
 
@@ -202,8 +203,8 @@ function cms_safe_redirect_url(mixed $candidate, string $fallback): string
      */
     if ($candidateScheme === null && $candidateHost === null) {
         return str_starts_with($candidate, '/') && !str_starts_with($candidate, '//')
-            ? $candidate
-            : $fallback;
+        ? $candidate
+        : $fallback;
     }
 
     if (!is_string($candidateScheme) || !is_string($candidateHost)) {
@@ -375,7 +376,6 @@ function cms_authenticate_user(string $login, string $password, string $remember
             Devflow::$PHP->flash->error(
                 trans(
                     '<strong>ERROR</strong>: Invalid email address.',
-
                 ),
             );
             return redirect(
@@ -392,7 +392,6 @@ function cms_authenticate_user(string $login, string $password, string $remember
             Devflow::$PHP->flash->error(
                 trans(
                     '<strong>ERROR</strong>: Invalid username.',
-
                 ),
             );
             return redirect(
@@ -408,7 +407,6 @@ function cms_authenticate_user(string $login, string $password, string $remember
         Devflow::$PHP->flash->error(
             trans(
                 '<strong>ERROR</strong>: The password you entered is incorrect.',
-
             ),
         );
         return redirect(
@@ -417,6 +415,22 @@ function cms_authenticate_user(string $login, string $password, string $remember
                 fallback: admin_url()
             )
         );
+    }
+
+    if (Password::needsRehash($user->pass)) {
+        $newHash = Password::hash($password);
+        $database = Devflow::db();
+        $database->table($database->basePrefix . 'user')
+            ->set(['user_pass' => $newHash])
+            ->where('user_id = ?', $user->id)
+            ->and()->where('user_pass = ?', $user->pass)
+            ->update();
+        UserCachePsr16::clean($user);
+        // Reload after the conditional update to honor a concurrent password change.
+        $user = get_user_by('id', $user->id);
+        if (!$user || !Password::verify($password, $user->pass)) {
+            return redirect(login_url());
+        }
     }
 
     UserCachePsr16::update($user);
@@ -441,6 +455,9 @@ function cms_authenticate_user(string $login, string $password, string $remember
  * @throws Exception
  * @throws InvalidArgumentException
  * @throws ReflectionException
+ * @throws TypeException
+ * @throws JsonException
+ * @throws RandomException
  */
 function cms_set_auth_cookie(array $user, string $rememberme = ''): void
 {
@@ -505,6 +522,7 @@ function cms_clear_auth_cookie(): void
     __observer()->action->doAction('clear_auth_cookie');
 
     $cookies->deleteSecureCookie('USERCOOKIEID');
+    $cookies->remove(config()->string('auth.cookie_name', 'USERSESSID'));
 
     if (isset($_COOKIE['SWITCH_USERBACK'])) {
         $cookies->deleteSecureCookie('SWITCH_USERBACK');
@@ -528,7 +546,6 @@ function login_form_show_message(): void
  * @file core/Shared/Helpers/auth.php
  * @param string $key COOKIE key.
  * @return false|array|object Cookie data or false.
- * @throws TypeException
  */
 function get_secure_cookie_data(string $key): false|array|object
 {
@@ -557,8 +574,8 @@ function get_system_roles(?string $active = null): void
 
     foreach ($roles as $role => $permission) {
         echo '<option value="' . esc_html($role) . '"' . selected($active, esc_html($role), false) . '>' .
-            esc_html($role) .
-            '</option>';
+        esc_html($role) .
+        '</option>';
     }
 }
 

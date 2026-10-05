@@ -39,8 +39,8 @@ final class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
-        $schedule->command(command: 'extension:cache:warm')->hourly();
-        $schedule->command(command: 'content:publish-scheduled')->everyMinute();
+        $schedule->command(command: 'extension:cache:warm')->hourly()->onlyOneInstance();
+        $schedule->command(command: 'content:publish-scheduled')->everyMinute()->onlyOneInstance();
         Action::getInstance()->doAction('scheduler', $schedule);
     }
 

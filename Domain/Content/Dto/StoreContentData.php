@@ -10,6 +10,7 @@ use App\Shared\Services\DateTime;
 use App\Shared\ValueObject\ArrayLiteral;
 use Codefy\Framework\Dto\DataTransformer;
 use Codefy\Framework\Validation\DataValidator;
+use DateInvalidTimeZoneException;
 use DateTimeInterface;
 use Qubus\Exception\Data\TypeException;
 use Qubus\ValueObjects\Number\IntegerNumber;
@@ -42,6 +43,7 @@ final readonly class StoreContentData implements DataTransformer
      * @param DataValidator $data
      * @return DataTransformer
      * @throws TypeException
+     * @throws DateInvalidTimeZoneException
      */
     public static function fromValidatedData(DataValidator $data): DataTransformer
     {
@@ -68,17 +70,19 @@ final readonly class StoreContentData implements DataTransformer
             body: new StringLiteral(value: $data->string(key: 'body', default: '')),
             author: UserId::fromString(userId: $data->string(key: 'author')),
             type: new StringLiteral(value: $data->string(key: 'type')),
-            sidebar: new IntegerNumber(value: $data->integer(key: 'sidebar')),
-            showInMenu: new IntegerNumber(value: $data->integer(key: 'showInMenu')),
-            showInSearch: new IntegerNumber(value: $data->integer(key: 'showInSearch')),
-            featuredImage: new StringLiteral(value: $data->string(key: 'featuredImage')),
+            sidebar: new IntegerNumber(value: $data->integer(key: 'sidebar', default: 0)),
+            showInMenu: new IntegerNumber(value: $data->integer(key: 'showInMenu', default: 0)),
+            showInSearch: new IntegerNumber(value: $data->integer(key: 'showInSearch', default: 0)),
+            featuredImage: new StringLiteral(value: $data->string(key: 'featuredImage', default: '')),
             attribute: new ArrayLiteral(data: $data->array(key: 'content_field', default: [])),
             status: new StringLiteral(value: $data->string(key: 'status')),
             created: $contentCreated,
             createdGmt: $contentCreatedGmt,
             published: $contentPublished,
             publishedGmt: $contentPublishedGmt,
-            parent: 'NULL' !== $data->string(key: 'parent') ? ContentId::fromString(contentId: $data->string(key: 'parent')) : null,
+            parent: 'NULL' !== $data->string(key: 'parent', default: 'NULL')
+                ? ContentId::fromString(contentId: $data->string(key: 'parent', default: 'NULL'))
+                : null,
         );
     }
 }

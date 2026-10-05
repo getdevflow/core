@@ -27,7 +27,7 @@ final readonly class FeaturedImageData implements DataTransformer
     {
         return new self(
             id: ContentId::fromString($data->string(key: 'id')),
-            featuredImage: new StringLiteral(value: $data->string(key: 'featuredImage')),
+            featuredImage: new StringLiteral(value: $data->string(key: 'featuredImage', default: '')),
         );
     }
 }

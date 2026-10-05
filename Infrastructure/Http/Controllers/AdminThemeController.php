@@ -23,6 +23,7 @@ use ReflectionException;
 
 use function App\Shared\Helpers\activate_theme;
 use function App\Shared\Helpers\admin_url;
+use function App\Shared\Helpers\cms_safe_redirect_url;
 use function App\Shared\Helpers\cms_enqueue_css;
 use function App\Shared\Helpers\cms_enqueue_js;
 use function App\Shared\Helpers\current_user_can;
@@ -105,7 +106,7 @@ final class AdminThemeController extends BaseController
                 message: trans_html('Access denied.')
             );
 
-            return $this->redirect($request->getHeaderLine('Referer'));
+            return $this->redirect(cms_safe_redirect_url($request->getHeaderLine('Referer'), admin_url()));
         }
 
         try {
@@ -121,7 +122,7 @@ final class AdminThemeController extends BaseController
 
         Action::getInstance()->doAction('activated_theme');
 
-        return $this->redirect($request->getHeaderLine('Referer'));
+        return $this->redirect(cms_safe_redirect_url($request->getHeaderLine('Referer'), admin_url()));
     }
 
     /**
@@ -141,7 +142,7 @@ final class AdminThemeController extends BaseController
                 message: trans_html('Access denied.')
             );
 
-            return $this->redirect($request->getHeaderLine('Referer'));
+            return $this->redirect(cms_safe_redirect_url($request->getHeaderLine('Referer'), admin_url()));
         }
 
         if (
@@ -168,7 +169,7 @@ final class AdminThemeController extends BaseController
 
         Action::getInstance()->doAction('deactivated_theme');
 
-        return $this->redirect($request->getHeaderLine('Referer'));
+        return $this->redirect(cms_safe_redirect_url($request->getHeaderLine('Referer'), admin_url()));
     }
 
     /**

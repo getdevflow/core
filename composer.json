@@ -2,7 +2,11 @@
   "name": "getdevflow/core",
   "description": "Core component for Devflow CMS.",
   "type": "devflow-core",
-  "keywords": ["devflow","devflow-core","core"],
+  "keywords": [
+    "devflow",
+    "devflow-core",
+    "core"
+  ],
   "license": "GPL-2.0-only",
   "authors": [
     {
@@ -13,12 +17,12 @@
   "require": {
     "php": ">=8.4",
     "barryvdh/elfinder-flysystem-driver": "^0.5.0",
-    "codefyphp/codefy": "3.3.1",
+    "codefyphp/codefy": "^4",
     "composer/semver": "^3.4",
     "erusev/parsedown": "^1.7",
     "forxer/gravatar": "^5.0",
-    "nomadicjosh/vihzhuo": "^1",
-    "qubus/form": "^2",
+    "nomadicjosh/vihzhuo": "^2",
+    "qubus/form": "^3",
     "qubus/nosql": "^4",
     "spatie/image": "^3.7",
     "spatie/image-optimizer": "^1.7",
@@ -57,7 +61,9 @@
   "scripts": {
     "test": "pest",
     "test:unit": "pest --testsuite=Unit",
-    "security-audit": "composer audit"
+    "security-audit": "composer audit",
+    "cs-check": "phpcs",
+    "analyse": "phpstan analyse --level=0 --no-progress Application Domain Infrastructure Shared"
   },
   "prefer-stable": true,
   "config": {
@@ -70,7 +76,6 @@
   },
   "require-dev": {
     "league/flysystem-memory": "^3.0",
-    "pestphp/pest": "^4.3",
     "qubus/qubus-coding-standard": "^2"
   }
 }

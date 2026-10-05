@@ -11,7 +11,6 @@ use Qubus\Config\ConfigContainer;
 use Qubus\Exception\Exception;
 use Qubus\Expressive\Connection;
 use Qubus\Http\Session\SessionEntity;
-use Qubus\Support\DateTime\QubusDateTimeImmutable;
 
 use function sprintf;
 
@@ -57,11 +56,18 @@ class AuthenticationRepository implements AuthUserRepository
         $passwordHash = ($result->{$fields['password']} ?? '');
 
         if (Password::verify(password: $password ?? '', hash: $passwordHash)) {
-            $this->passwordRehash($table, $fields['identity'], $credential, $passwordHash, $password);
+            $this->passwordRehash(
+                $table,
+                $fields['identity'],
+                $fields['password'],
+                $credential,
+                $passwordHash,
+                $password ?? ''
+            );
 
             $user = new UserSession();
             $user
-                ->withToken($result->user_token);
+                ->withToken($result->{$fields['token']});
 
             return $user;
         }
@@ -78,8 +84,9 @@ class AuthenticationRepository implements AuthUserRepository
         /** @var string $table */
         $table = $this->config->getConfigKey('auth.pdo.table');
         $sql = sprintf(
-            "SELECT * FROM %s WHERE user_token = :token",
+            "SELECT * FROM %s WHERE %s = :token",
             $table,
+            $this->config->getConfigKey('auth.pdo.fields.token'),
         );
 
         $stmt = $this->connection->pdo->prepare($sql);
@@ -96,6 +103,7 @@ class AuthenticationRepository implements AuthUserRepository
     /**
      * @param string $table
      * @param string $identity
+     * @param string $passwordField
      * @param string $credential
      * @param string $hash
      * @param string $password
@@ -105,6 +113,7 @@ class AuthenticationRepository implements AuthUserRepository
     private function passwordRehash(
         string $table,
         string $identity,
+        string $passwordField,
         string $credential,
         string $hash,
         string $password
@@ -113,14 +122,16 @@ class AuthenticationRepository implements AuthUserRepository
             $newHash = Password::hash($password);
 
             $sql = sprintf(
-                "UPDATE %s SET user_pass = :password, user_modified = :modified WHERE %s = :identity",
+                "UPDATE %s SET %s = :password WHERE %s = :identity AND %s = :old_hash",
                 $table,
-                $identity
+                $passwordField,
+                $identity,
+                $passwordField
             );
             $stmt = $this->connection->pdo->prepare($sql);
             $data = [
                 'password' => $newHash,
-                'modified' => QubusDateTimeImmutable::now(),
+                'old_hash' => $hash,
                 'identity' => $credential,
             ];
             $stmt->execute($data);

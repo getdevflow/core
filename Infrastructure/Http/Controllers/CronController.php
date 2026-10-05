@@ -8,6 +8,7 @@ use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
 use Codefy\CommandBus\Exceptions\UnresolvableCommandHandlerException;
 use Codefy\Framework\Http\BaseController;
 use Codefy\QueryBus\UnresolvableQueryHandlerException;
+use DateInvalidTimeZoneException;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Psr\SimpleCache\InvalidArgumentException;
@@ -38,15 +39,19 @@ final class CronController extends BaseController
      * @throws TypeException
      * @throws UnresolvableCommandHandlerException
      * @throws UnresolvableQueryHandlerException
+     * @throws DateInvalidTimeZoneException
      */
     public function master(ServerRequest $request): void
     {
         foreach (get_all_sites() as $site) {
             switch_to_site($site['key']);
-            publish_scheduled_product();
-            Action::getInstance()->doAction('master_cron', $site);
-            update_option('cron_last_run', QubusDateTimeImmutable::now()->format('l, F jS, Y @ H:i A'));
-            restore_current_site();
+            try {
+                publish_scheduled_product();
+                Action::getInstance()->doAction('master_cron', $site);
+                update_option('cron_last_run', QubusDateTimeImmutable::now()->format('l, F jS, Y @ H:i A'));
+            } finally {
+                restore_current_site();
+            }
         }
     }
 }

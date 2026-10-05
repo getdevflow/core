@@ -26,6 +26,7 @@ use Codefy\CommandBus\Exceptions\CommandCouldNotBeHandledException;
 use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
 use Codefy\CommandBus\Exceptions\UnresolvableCommandHandlerException;
 use Codefy\QueryBus\UnresolvableQueryHandlerException;
+use DateInvalidTimeZoneException;
 use PDOException;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
@@ -65,6 +66,7 @@ use function str_replace;
  *
  * @return array
  * @throws ReflectionException
+ * @throws TypeException
  * @throws UnresolvableQueryHandlerException
  */
 function get_products(): array
@@ -84,6 +86,7 @@ function get_products(): array
  * @throws CommandPropertyNotFoundException
  * @throws ReflectionException
  * @throws UnresolvableQueryHandlerException
+ * @throws TypeException
  */
 function get_all_products_with_filters(
     ?string $productSku = null,
@@ -384,6 +387,7 @@ function product_status_label(string $status): string
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  * @throws TypeException
+ * @throws Exception
  */
 function get_product_attribute(string $productId, string $key, mixed $default = null): mixed
 {
@@ -404,6 +408,7 @@ function get_product_attribute(string $productId, string $key, mixed $default = 
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  * @throws TypeException
+ * @throws Exception
  */
 function update_product_attribute(
     string $productId,
@@ -425,6 +430,7 @@ function update_product_attribute(
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  * @throws TypeException
+ * @throws Exception
  */
 function add_product_attribute(string $productId, string $key, mixed $value): AttributeBag
 {
@@ -442,6 +448,7 @@ function add_product_attribute(string $productId, string $key, mixed $value): At
  * @throws NotFoundExceptionInterface
  * @throws ReflectionException
  * @throws TypeException
+ * @throws Exception
  */
 function delete_product_attribute(string $productId, string $key): AttributeBag
 {
@@ -1365,20 +1372,20 @@ function cms_unique_product_slug(
  * @file core/Shared/Helpers/product.php
  * @param array|ServerRequestInterface|Product $productdata An array of data that is used for insert or update.
  *
- *      @type string $title The product's title.
- *      @type string $body The product's body.
- *      @type string $slug The product's slug.
- *      @type string $author The product's author.
- *      @type string $sku The product's parent.
- *      @type string $price The product's price.
- *      @type string $currency The product's currency.
- *      @type string $purchaseUrl The product's purchase url.
- *      @type string $showInMenu Whether to show product in menu.
- *      @type string $showInSearch Whether to show product in search.
- *      @type string $relativeUrl The product's relative url.
- *      @type string $featuredImage THe product's featured image.
- *      @type string $status THe product's status.
- *      @type string $published Timestamp describing the moment when the product
+ * @type string $title The product's title.
+ * @type string $body The product's body.
+ * @type string $slug The product's slug.
+ * @type string $author The product's author.
+ * @type string $sku The product's parent.
+ * @type string $price The product's price.
+ * @type string $currency The product's currency.
+ * @type string $purchaseUrl The product's purchase url.
+ * @type string $showInMenu Whether to show product in menu.
+ * @type string $showInSearch Whether to show product in search.
+ * @type string $relativeUrl The product's relative url.
+ * @type string $featuredImage THe product's featured image.
+ * @type string $status THe product's status.
+ * @type string $published Timestamp describing the moment when the product
  *                              was published. Defaults to Y-m-d h:i A.
  * @return Error|string|null The newly created product's product_id or throws an error or returns null
  *                           if the product could not be created or updated.
@@ -1392,6 +1399,7 @@ function cms_unique_product_slug(
  * @throws UnresolvableQueryHandlerException
  * @throws ContainerExceptionInterface
  * @throws NotFoundExceptionInterface
+ * @throws DateInvalidTimeZoneException
  */
 function cms_insert_product(array|ServerRequestInterface|Product $productdata): Error|string|null
 {
@@ -1997,6 +2005,7 @@ function cms_insert_product(array|ServerRequestInterface|Product $productdata): 
  * @throws TypeException
  * @throws UnresolvableCommandHandlerException
  * @throws UnresolvableQueryHandlerException
+ * @throws DateInvalidTimeZoneException
  */
 function cms_update_product(array|ServerRequestInterface|Product $productdata): string|Error
 {
@@ -2196,6 +2205,7 @@ function currency_option(?string $active = null): void
  * @throws TypeException
  * @throws UnresolvableCommandHandlerException
  * @throws UnresolvableQueryHandlerException
+ * @throws DateInvalidTimeZoneException
  */
 function publish_scheduled_product(): void
 {
@@ -2224,7 +2234,7 @@ function publish_scheduled_product(): void
                 new ProductUpdated(
                     product: $product,
                     actorId: get_current_user_id(),
-                    context: [__CLASS__, __METHOD__],
+                    context: [__FUNCTION__, __METHOD__],
                 )
             );
         }

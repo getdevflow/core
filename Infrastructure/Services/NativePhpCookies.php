@@ -244,7 +244,7 @@ final class NativePhpCookies
             return false;
         }
 
-        if ((int) $parts['exp'] < time()) {
+        if ((int) $parts['exp'] <= time()) {
             $this->deleteServerRecord($parts['data']);
 
             return false;

@@ -48,10 +48,8 @@ class StoreUserValidator extends HttpInputValidator implements HasDto
         $roles = implode(separator: ',', array: array_values(get_system_roles()));
         $statuses = 'A,I,S,B';
 
-        $login = 'required|string|min:' . config()->integer(key: 'auth.username_min_length');
-        if (!isset($this->all()['login'])) {
-            $login = 'nullable|string';
-        }
+        $login = 'required|string|min:' . config()->integer(key: 'auth.username_min_length')
+        . '|max:60|regex:/^\\w{3,60}$/';
 
         $id = 'required|ulid';
         if (!isset($this->all()['id'])) {
