@@ -38,6 +38,7 @@ use function Codefy\Framework\Helpers\logger;
 use function Codefy\Framework\Helpers\trans_html;
 use function Codefy\Framework\Helpers\view;
 use function Qubus\Support\Helpers\is_false__;
+use function Qubus\Security\Helpers\esc_url;
 use function sprintf;
 
 final class AdminOptionsController extends BaseController
@@ -114,7 +115,7 @@ final class AdminOptionsController extends BaseController
             $options = [
                 'sitename', 'site_description', 'charset', 'admin_email', 'site_locale',
                 'cookieexpire', 'cookiepath', 'site_timezone', 'api_key', 'content_per_page',
-                'charset', 'date_format', 'time_format', 'maintenance_mode',
+                'charset', 'date_format', 'time_format', 'maintenance_mode', 'site_logo',
             ];
 
             foreach ($options as $optionName) {
@@ -123,6 +124,15 @@ final class AdminOptionsController extends BaseController
                 }
 
                 $value = $request->getParsedBody()[$optionName];
+                if ($optionName === 'site_logo') {
+                    if (!is_string($value)) {
+                        continue;
+                    }
+                    $value = trim($value);
+                    if ($value !== '' && esc_url($value) === '') {
+                        continue;
+                    }
+                }
                 update_option($optionName, $value);
             }
 
