@@ -4,5 +4,4 @@ composer.lock
 vendor
 .phpunit.cache
 .phpcs-cache
-CHANGELOG.md
 UPGRADE-3.0.md

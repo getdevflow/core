@@ -10,4 +10,5 @@ tests           export-ignore
 LICENSE.md      export-ignore
 phpcs.xml       export-ignore
 phpunit.xml     export-ignore
+CHANGELOG.md    export-ignore
 README.md       export-ignore
