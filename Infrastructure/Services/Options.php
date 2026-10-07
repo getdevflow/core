@@ -24,6 +24,7 @@ use function App\Shared\Helpers\maybe_unserialize;
 use function Codefy\Framework\Helpers\logger;
 use function md5;
 use function Qubus\Security\Helpers\purify_html;
+use function Qubus\Security\Helpers\esc_url;
 use function Qubus\Support\Helpers\is_null__;
 use function sprintf;
 
@@ -171,7 +172,13 @@ final class Options
             return false;
         }
 
-        if (!empty($result)) {
+        if ($optionKey === 'site_logo') {
+            // A logo is URL data, not HTML. Purifying it can alter paths and query parameters.
+            $value = is_string($result) ? trim($result) : '';
+            if ($value !== '' && esc_url($value) === '') {
+                $value = '';
+            }
+        } elseif (!empty($result)) {
             $value = purify_html($result);
         } else {
             $value = purify_html($default);
