@@ -17,7 +17,7 @@ final class MasterCronCommand extends ConsoleCommand
         $this->setDescription('Publishes scheduled products and runs each site cron hook.');
     }
 
-    protected function handle(): int
+    public function handle(): int
     {
         $this->codefy->make(CronController::class)->master(new ServerRequest());
 
