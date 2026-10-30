@@ -39,7 +39,7 @@ final class PublishScheduledContentCommand extends ConsoleCommand
      * @throws \Qubus\Exception\Exception
      * @throws \ReflectionException
      */
-    protected function handle(): int
+    public function handle(): int
     {
         foreach (get_all_sites() as $site) {
             try {
