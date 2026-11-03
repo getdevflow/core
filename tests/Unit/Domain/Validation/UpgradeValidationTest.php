@@ -34,7 +34,7 @@ class ProfileInputForTest extends UpdateUserProfileValidator
     }
 }
 
-it('retains normalized dates and currency through validation into DTOs', function (): void {
+it('retains normalized dates and currency through validation into DTOs', function (bool $withOffset): void {
     $input = [
         'id' => (string) new UserId(), 'author' => (string) new UserId(),
         'title' => 'Example title', 'slug' => 'example-title', 'status' => 'draft',
@@ -43,6 +43,10 @@ it('retains normalized dates and currency through validation into DTOs', functio
         'currency' => 'USD', 'sku' => 'EXAMPLE', 'price' => '1200', 'parent' => 'NULL', 'type' => 'post',
         'untrusted' => 'discard me',
     ];
+    if ($withOffset) {
+        $input['published'] .= '-07:00';
+        $input['created'] .= '-07:00';
+    }
     $request = new ServerRequest()->withParsedBody($input);
     $product = AuthorizedProductInput::make($request);
     $product->setValidator(ValidationFactory::make($input, $product->rules()));
@@ -51,13 +55,22 @@ it('retains normalized dates and currency through validation into DTOs', functio
         ->and($product->validated()['currency'])->toBe('USD')
         ->and($dto->createdGmt->format('Y-m-d H:i:s'))->toBe($input['createdGmt']);
 
+    if ($withOffset) {
+        expect($dto->created->getTimestamp())->toBe($dto->createdGmt->getTimestamp())
+            ->and($dto->published->getTimestamp())->toBe($dto->publishedGmt->getTimestamp());
+    }
+
     $content = AuthorizedContentInput::make($request);
     $content->setValidator(ValidationFactory::make($input, $content->rules()));
     $dto = StoreContentData::fromValidatedData($content);
     expect($content->validated())->not->toHaveKey('untrusted')
         ->and($dto->publishedGmt->format('Y-m-d H:i:s'))->toBe($input['publishedGmt'])
         ->and($dto->parent)->toBeNull();
-});
+    if ($withOffset) {
+        expect($dto->created->getTimestamp())->toBe($dto->createdGmt->getTimestamp())
+            ->and($dto->published->getTimestamp())->toBe($dto->publishedGmt->getTimestamp());
+    }
+})->with([false, true]);
 
 it('overrides submitted profile identities and privilege fields before validation', function (): void {
     $user = new ReflectionClass(User::class)->newInstanceWithoutConstructor();

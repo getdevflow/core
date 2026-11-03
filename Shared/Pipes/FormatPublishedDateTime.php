@@ -6,6 +6,7 @@ namespace App\Shared\Pipes;
 
 use App\Shared\Services\DateTime;
 use Closure;
+use DateInvalidTimeZoneException;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -24,6 +25,7 @@ class FormatPublishedDateTime
      * @throws ContainerExceptionInterface
      * @throws InvalidArgumentException
      * @throws Exception
+     * @throws DateInvalidTimeZoneException
      */
     public function handle(ServerRequestInterface $request, Closure $next): mixed
     {
@@ -33,9 +35,11 @@ class FormatPublishedDateTime
             replace: '',
             subject: $body['published']
         );
-        $published = new DateTime($transformPublished, get_user_timezone())->format();
-        $publishedGmt = new DateTime($published)->gmtdate();
+        $publishedDate = new DateTime($transformPublished, get_user_timezone());
+        $published = $publishedDate->format('Y-m-d H:i:sP');
+        $publishedGmt = $publishedDate->gmtdate();
 
+        // Carry the local offset through validation and DTO parsing.
         $dateTime = array_merge($body, [
             'published' => $published,
             'publishedGmt' => $publishedGmt,

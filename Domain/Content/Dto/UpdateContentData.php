@@ -58,16 +58,16 @@ final readonly class UpdateContentData implements DataTransformer
     public static function fromValidatedData(DataValidator $data): DataTransformer
     {
         $contentPublished = new DateTime(
-            time: $data->string(key: 'published')
+            time: $data->string(key: 'published'),
         )->getDateTime();
 
         $contentPublishedGmt = new DateTime(
             time: $data->string(key: 'publishedGmt'),
+            timezone: 'GMT',
         )->getDateTime();
 
-        $contentModified = new DateTime(QubusDateTimeImmutable::now(get_user_timezone())->toDateTimeString())
-            ->getDateTime();
-        $contentModifiedGmt = new DateTime(QubusDateTimeImmutable::now('GMT')->toDateTimeString())->getDateTime();
+        $contentModified = QubusDateTimeImmutable::now(get_user_timezone());
+        $contentModifiedGmt = $contentModified->setTimezone('GMT');
 
         return new self(
             id: ContentId::fromString($data->string(key: 'id')),
