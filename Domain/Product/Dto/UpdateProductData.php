@@ -10,6 +10,7 @@ use App\Shared\Services\DateTime;
 use App\Shared\ValueObject\ArrayLiteral;
 use Codefy\Framework\Dto\DataTransformer;
 use Codefy\Framework\Validation\DataValidator;
+use DateInvalidTimeZoneException;
 use DateTimeInterface;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
@@ -58,20 +59,22 @@ final readonly class UpdateProductData implements DataTransformer
      * @throws InvalidArgumentException
      * @throws Exception
      * @throws ReflectionException
+     * @throws DateInvalidTimeZoneException
+     * @throws \Exception
      */
     public static function fromValidatedData(DataValidator $data): DataTransformer
     {
         $productPublished = new DateTime(
-            time: $data->string(key: 'published')
+            time: $data->string(key: 'published'),
         )->getDateTime();
 
         $productPublishedGmt = new DateTime(
             time: $data->string(key: 'publishedGmt'),
+            timezone: 'GMT',
         )->getDateTime();
 
-        $productModified = new DateTime(QubusDateTimeImmutable::now(get_user_timezone())->toDateTimeString())
-            ->getDateTime();
-        $productModifiedGmt = new DateTime(QubusDateTimeImmutable::now('GMT')->toDateTimeString())->getDateTime();
+        $productModified = QubusDateTimeImmutable::now(get_user_timezone());
+        $productModifiedGmt = $productModified->setTimezone('GMT');
 
         $currencyCode = $data->string(key: 'currency');
 

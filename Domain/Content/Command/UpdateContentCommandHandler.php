@@ -12,7 +12,6 @@ use Codefy\Domain\Aggregate\AggregateNotFoundException;
 use Exception;
 
 use function Qubus\Support\Helpers\is_null__;
-use function Qubus\Support\Helpers\now;
 
 class UpdateContentCommandHandler implements CommandHandler
 {
@@ -46,10 +45,8 @@ class UpdateContentCommandHandler implements CommandHandler
         $content->changeContentFeaturedImage($command->featuredImage);
         $content->changeContentStatus($command->status);
         $content->changeContentAttribute($command->attribute);
-        if ($command->published->format('Y-m-d H:i') !== $content->contentPublished()->format('Y-m-d H:i')) {
-            $content->changeContentPublished($command->published);
-            $content->changeContentPublishedGmt($command->publishedGmt);
-        }
+        $content->changeContentPublished($command->published);
+        $content->changeContentPublishedGmt($command->publishedGmt);
         if ($content->hasRecordedEvents()) {
             $content->changeContentModified($command->modified);
             $content->changeContentModifiedGmt($command->modifiedGmt);

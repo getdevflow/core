@@ -28,6 +28,7 @@ use App\Shared\ValueObject\ArrayLiteral;
 use Codefy\CommandBus\Exceptions\CommandPropertyNotFoundException;
 use Codefy\CommandBus\Exceptions\UnresolvableCommandHandlerException;
 use Codefy\QueryBus\UnresolvableQueryHandlerException;
+use DateInvalidTimeZoneException;
 use Deprecated;
 use PDOException;
 use Psr\Container\ContainerExceptionInterface;
@@ -1719,19 +1720,19 @@ function cms_unique_content_slug(
  * @internal Should only be used for rest API's.
  * @param array|ServerRequestInterface|Content $contentdata An array of data that is used for insert or update.
  *
- *      @type string $title The content's title.
- *      @type string $body The content's body.
- *      @type string $slug The content's slug.
- *      @type string $author The content's author.
- *      @type string $type The content's contenttype.
- *      @type string $parent The content's parent.
- *      @type string $sidebar The content's sidebar.
- *      @type string $showInMenu Whether to show content in menu.
- *      @type string $showInSearch Whether to show content in search.
- *      @type string $relativeUrl The content's relative url.
- *      @type string $featuredImage THe content's featured image.
- *      @type string $status THe content's status.
- *      @type string $published Timestamp describing the moment when the content
+ * @type string $title The content's title.
+ * @type string $body The content's body.
+ * @type string $slug The content's slug.
+ * @type string $author The content's author.
+ * @type string $type The content's contenttype.
+ * @type string $parent The content's parent.
+ * @type string $sidebar The content's sidebar.
+ * @type string $showInMenu Whether to show content in menu.
+ * @type string $showInSearch Whether to show content in search.
+ * @type string $relativeUrl The content's relative url.
+ * @type string $featuredImage THe content's featured image.
+ * @type string $status THe content's status.
+ * @type string $published Timestamp describing the moment when the content
  *                              was published. Defaults to Y-m-d h:i A.
  * @return Error|string|null The newly created content's content_id or throws an error or returns null
  *                     if the content could not be created or updated.
@@ -1743,6 +1744,7 @@ function cms_unique_content_slug(
  * @throws UnresolvableCommandHandlerException
  * @throws ContainerExceptionInterface
  * @throws NotFoundExceptionInterface
+ * @throws DateInvalidTimeZoneException
  */
 function cms_insert_content(array|ServerRequestInterface|Content $contentdata): Error|string|null
 {
@@ -2034,7 +2036,8 @@ function cms_insert_content(array|ServerRequestInterface|Content $contentdata): 
     if (!$update) {
         if (empty($contentdata['published']) || php_like('%0000-00-00 00:00', $contentdata['published'])) {
             $contentPublished = new DateTime('now', get_user_timezone())->getDateTime();
-            $contentPublishedGmt = new DateTime('now', 'GMT')->getDateTime();
+            $contentPublishedGmt = \DateTimeImmutable::createFromInterface($contentPublished)
+                ->setTimezone(new \DateTimeZone('GMT'));
             $contentCreated = $contentPublished;
             $contentCreatedGmt = $contentPublishedGmt;
         } else {
@@ -2043,9 +2046,11 @@ function cms_insert_content(array|ServerRequestInterface|Content $contentdata): 
                 get_user_timezone()
             )->getDateTime();
             $contentPublishedGmt = new DateTime(
-                $contentdata['publishedGmt'] ?? 'now',
+                $contentdata['publishedGmt'] ?? $contentPublished->format('c'),
                 'GMT'
             )->getDateTime();
+            $contentPublishedGmt = \DateTimeImmutable::createFromInterface($contentPublishedGmt)
+                ->setTimezone(new \DateTimeZone('GMT'));
             $contentCreated = $contentPublished;
             $contentCreatedGmt = $contentPublishedGmt;
         }
@@ -2055,14 +2060,15 @@ function cms_insert_content(array|ServerRequestInterface|Content $contentdata): 
             get_user_timezone()
         )->getDateTime();
         $contentPublishedGmt = new DateTime(
-            $contentdata['publishedGmt'] ?? str_replace(['AM', 'PM'], '', $contentdata['published']),
+            $contentdata['publishedGmt'] ?? $contentPublished->format('c'),
             'GMT'
         )->getDateTime();
+        $contentPublishedGmt = \DateTimeImmutable::createFromInterface($contentPublishedGmt)
+            ->setTimezone(new \DateTimeZone('GMT'));
         $contentCreated = $contentPublished;
         $contentCreatedGmt = $contentPublishedGmt;
-        $contentModified = new DateTime(QubusDateTimeImmutable::now(get_user_timezone())->toDateTimeString())
-                ->getDateTime();
-        $contentModifiedGmt = new DateTime(QubusDateTimeImmutable::now('GMT')->toDateTimeString())->getDateTime();
+        $contentModified = QubusDateTimeImmutable::now(get_user_timezone());
+        $contentModifiedGmt = $contentModified->setTimezone('GMT');
     }
 
     if (
@@ -2385,8 +2391,8 @@ function cms_delete_content(string $contentId): Content|bool
             try {
                 command(
                     new RemoveContentParentCommand([
-                        'id' => ContentId::fromString($contentId),
-                        'parent' => ContentId::fromString($children['content_id']),
+                        'id' => ContentId::fromString($children['content_id']),
+                        'parent' => ContentId::fromString($contentId),
                     ])
                 );
 

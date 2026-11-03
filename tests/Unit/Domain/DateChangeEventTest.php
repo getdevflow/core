@@ -38,6 +38,23 @@ it('serializes portable date interfaces and rehydrates them', function (
 
     expect($rehydratedDate->format('Y-m-d H:i:s'))->toBe('2024-04-05 12:30:45')
         ->and($rehydratedDate->getTimezone()->getName())->toBe($expectedTimezone);
+
+    $originalTimezone = date_default_timezone_get();
+    try {
+        foreach (['2026-11-01T01:30:42-07:00', '2026-11-01T01:30:42-08:00'] as $value) {
+            $source = new DateTimeImmutable($value);
+            $fresh = $eventClass::withData($identity, $source);
+            date_default_timezone_set('Asia/Tokyo');
+            $replayed = $eventClass::fromArray([
+                'aggregateId' => $identity,
+                'payload' => $fresh->payload(),
+            ]);
+            expect($replayed->{$accessor}()->getTimestamp())->toBe($source->getTimestamp());
+        }
+    } finally {
+        date_default_timezone_set($originalTimezone);
+    }
+
 })->with([
     [ContentModifiedWasChanged::class, 'content_modified', 'contentModified', 'content', 'UTC'],
     [ContentModifiedGmtWasChanged::class, 'content_modified_gmt', 'contentModifiedGmt', 'content', 'GMT'],

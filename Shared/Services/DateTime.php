@@ -141,12 +141,16 @@ class DateTime
     /**
      * Format a GMT/UTC date/time
      *
-     * @param string $date      Date to be formatted. Default is `now`.
+     * @param string|null $date Date to parse as GMT. Null converts the instance's date.
      * @param string $format    Format of the date. Default is `Y-m-d H:i:s`.
      * @return string Formatted date string.
      */
-    public function gmtdate(string $date = 'now', string $format = 'Y-m-d H:i:s'): string
+    public function gmtdate(?string $date = null, string $format = 'Y-m-d H:i:s'): string
     {
+        if ($date === null) {
+            return $this->dateTime->setTimezone(new DateTimeZone('GMT'))->format($format);
+        }
+
         $value = $date === 'now' ? 'now' : str_replace(['AM', 'PM'], '', $date);
 
         return QubusDateTimeImmutable::parse($value, new DateTimeZone('GMT'))->format($format);

@@ -1713,7 +1713,8 @@ function cms_insert_product(array|ServerRequestInterface|Product $productdata): 
     if (!$update) {
         if (empty($productdata['published']) || php_like('%0000-00-00 00:00', $productdata['published'])) {
             $productPublished = new DateTime('now', get_user_timezone())->getDateTime();
-            $productPublishedGmt = new DateTime('now', 'GMT')->getDateTime();
+            $productPublishedGmt = \DateTimeImmutable::createFromInterface($productPublished)
+                ->setTimezone(new \DateTimeZone('GMT'));
             $productCreated = $productPublished;
             $productCreatedGmt = $productPublishedGmt;
         } else {
@@ -1721,7 +1722,12 @@ function cms_insert_product(array|ServerRequestInterface|Product $productdata): 
                 str_replace(['AM', 'PM'], '', $productdata['published']),
                 get_user_timezone()
             )->getDateTime();
-            $productPublishedGmt = new DateTime($productdata['publishedGmt'] ?? 'now', 'GMT')->getDateTime();
+            $productPublishedGmt = new DateTime(
+                $productdata['publishedGmt'] ?? $productPublished->format('c'),
+                'GMT'
+            )->getDateTime();
+            $productPublishedGmt = \DateTimeImmutable::createFromInterface($productPublishedGmt)
+                ->setTimezone(new \DateTimeZone('GMT'));
             $productCreated = $productPublished;
             $productCreatedGmt = $productPublishedGmt;
         }
@@ -1731,14 +1737,15 @@ function cms_insert_product(array|ServerRequestInterface|Product $productdata): 
             get_user_timezone()
         )->getDateTime();
         $productPublishedGmt = new DateTime(
-            $productdata['publishedGmt'] ?? str_replace(['AM', 'PM'], '', $productdata['published']),
+            $productdata['publishedGmt'] ?? $productPublished->format('c'),
             'GMT'
         )->getDateTime();
+        $productPublishedGmt = \DateTimeImmutable::createFromInterface($productPublishedGmt)
+            ->setTimezone(new \DateTimeZone('GMT'));
         $productCreated = $productPublished;
         $productCreatedGmt = $productPublishedGmt;
-        $productModified = new DateTime(QubusDateTimeImmutable::now(get_user_timezone())->toDateTimeString())
-                ->getDateTime();
-        $productModifiedGmt = new DateTime(QubusDateTimeImmutable::now('GMT')->toDateTimeString())->getDateTime();
+        $productModified = QubusDateTimeImmutable::now(get_user_timezone());
+        $productModifiedGmt = $productModified->setTimezone('GMT');
     }
 
     if (

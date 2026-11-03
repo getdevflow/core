@@ -10,7 +10,9 @@ use App\Shared\Services\DateTime;
 use App\Shared\ValueObject\ArrayLiteral;
 use Codefy\Framework\Dto\DataTransformer;
 use Codefy\Framework\Validation\DataValidator;
+use DateInvalidTimeZoneException;
 use DateTimeInterface;
+use Exception;
 use Qubus\Exception\Data\TypeException;
 use Qubus\ValueObjects\Money\Currency;
 use Qubus\ValueObjects\Money\CurrencyCode;
@@ -45,23 +47,27 @@ final readonly class StoreProductData implements DataTransformer
      * @param DataValidator $data
      * @return DataTransformer
      * @throws TypeException
+     * @throws DateInvalidTimeZoneException
+     * @throws Exception
      */
     public static function fromValidatedData(DataValidator $data): DataTransformer
     {
         $productPublished = new DateTime(
-            time: $data->string(key: 'published')
+            time: $data->string(key: 'published'),
         )->getDateTime();
 
         $productPublishedGmt = new DateTime(
             time: $data->string(key: 'publishedGmt'),
+            timezone: 'GMT',
         )->getDateTime();
 
         $productCreated = new DateTime(
-            time: $data->string(key: 'created')
+            time: $data->string(key: 'created'),
         )->getDateTime();
 
         $productCreatedGmt = new DateTime(
             time: $data->string(key: 'createdGmt'),
+            timezone: 'GMT',
         )->getDateTime();
 
         $currencyCode = $data->string(key: 'currency');

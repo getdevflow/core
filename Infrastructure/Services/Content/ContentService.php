@@ -270,8 +270,8 @@ final readonly class ContentService
                 try {
                     command(
                         new RemoveContentParentCommand([
-                            'id' => ContentId::fromString($contentId),
-                            'parent' => ContentId::fromString($child->id),
+                            'id' => ContentId::fromString($child->id),
+                            'parent' => ContentId::fromString($contentId),
                         ])
                     );
 

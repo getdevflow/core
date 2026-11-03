@@ -26,3 +26,12 @@ it('provides exact duration constants', function (): void {
         ->and(DateTime::dayInSeconds())->toBe(86400)
         ->and(DateTime::weekInSeconds())->toBe(604800);
 });
+
+
+it('converts the stored instant to GMT while retaining seconds and the local value', function (): void {
+    $date = new DateTime('2026-01-15 09:20:37', 'America/Los_Angeles');
+
+    expect($date->gmtdate())->toBe('2026-01-15 17:20:37')
+        ->and($date->format())->toBe('2026-01-15 09:20:37')
+        ->and($date->gmtdate('2026-01-15 12:34:56'))->toBe('2026-01-15 12:34:56');
+});

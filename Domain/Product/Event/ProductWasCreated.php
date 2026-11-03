@@ -6,15 +6,14 @@ namespace App\Domain\Product\Event;
 
 use App\Domain\Product\ValueObject\ProductId;
 use App\Domain\User\ValueObject\UserId;
-use App\Shared\Services\DateTime;
 use App\Shared\ValueObject\ArrayLiteral;
+use App\Shared\Services\EventDateTime;
 use Codefy\Domain\Aggregate\AggregateId;
 use Codefy\Domain\EventSourcing\AggregateChanged;
 use Codefy\Domain\EventSourcing\DomainEvent;
 use Codefy\Domain\Metadata;
 use DateTimeInterface;
 use Qubus\Exception\Data\TypeException;
-use Qubus\Support\DateTime\QubusDateTimeImmutable;
 use Qubus\ValueObjects\Money\Money;
 use Qubus\ValueObjects\Number\IntegerNumber;
 use Qubus\ValueObjects\StringLiteral\StringLiteral;
@@ -93,10 +92,10 @@ final class ProductWasCreated extends AggregateChanged
                 'product_show_in_search' => $showInSearch->toNative(),
                 'product_featured_image' => $featuredImage->toNative(),
                 'product_status' => $status->toNative(),
-                'product_created' => $created->format('Y-m-d H:i:s'),
-                'product_created_gmt' => $createdGmt->format('Y-m-d H:i:s'),
-                'product_published' => $published->format('Y-m-d H:i:s'),
-                'product_published_gmt' => $publishedGmt->format('Y-m-d H:i:s'),
+                ...EventDateTime::payload('product_created', $created),
+                ...EventDateTime::payload('product_created_gmt', $createdGmt),
+                ...EventDateTime::payload('product_published', $published),
+                ...EventDateTime::payload('product_published_gmt', $publishedGmt),
             ],
             metadata: [
                 Metadata::AGGREGATE_TYPE => 'product',
@@ -253,9 +252,7 @@ final class ProductWasCreated extends AggregateChanged
     public function productCreated(): DateTimeInterface
     {
         if (!isset($this->created)) {
-            $this->created = QubusDateTimeImmutable::createFromInterface(
-                new DateTime($this->payload()['product_created'])->getDateTime()
-            );
+            $this->created = EventDateTime::parse($this->payload(), 'product_created');
         }
 
         return $this->created;
@@ -264,9 +261,7 @@ final class ProductWasCreated extends AggregateChanged
     public function productCreatedGmt(): DateTimeInterface
     {
         if (!isset($this->createdGmt)) {
-            $this->createdGmt = QubusDateTimeImmutable::createFromInterface(
-                new DateTime($this->payload()['product_created_gmt'])->getDateTime()
-            );
+            $this->createdGmt = EventDateTime::parse($this->payload(), 'product_created_gmt');
         }
 
         return $this->createdGmt;
@@ -275,9 +270,7 @@ final class ProductWasCreated extends AggregateChanged
     public function productPublished(): DateTimeInterface
     {
         if (!isset($this->published)) {
-            $this->published = QubusDateTimeImmutable::createFromInterface(
-                new DateTime($this->payload()['product_published'])->getDateTime()
-            );
+            $this->published = EventDateTime::parse($this->payload(), 'product_published');
         }
 
         return $this->published;
@@ -286,9 +279,7 @@ final class ProductWasCreated extends AggregateChanged
     public function productPublishedGmt(): DateTimeInterface
     {
         if (!isset($this->publishedGmt)) {
-            $this->publishedGmt = QubusDateTimeImmutable::createFromInterface(
-                new DateTime($this->payload()['product_published_gmt'])->getDateTime()
-            );
+            $this->publishedGmt = EventDateTime::parse($this->payload(), 'product_published_gmt');
         }
 
         return $this->publishedGmt;

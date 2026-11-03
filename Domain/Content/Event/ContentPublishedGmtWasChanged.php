@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace App\Domain\Content\Event;
 
 use App\Domain\Content\ValueObject\ContentId;
+use App\Shared\Services\EventDateTime;
 use Codefy\Domain\EventSourcing\AggregateChanged;
 use Codefy\Domain\EventSourcing\DomainEvent;
 use Codefy\Domain\Metadata;
 use DateTimeInterface;
 use Qubus\Exception\Data\TypeException;
-use Qubus\Support\DateTime\QubusDateTimeImmutable;
 
 final class ContentPublishedGmtWasChanged extends AggregateChanged
 {
@@ -25,7 +25,7 @@ final class ContentPublishedGmtWasChanged extends AggregateChanged
         $event = self::occur(
             aggregateId: $id,
             payload: [
-                'content_published_gmt' => $publishedGmt->format('Y-m-d H:i:s')
+                ...EventDateTime::payload('content_published_gmt', $publishedGmt)
             ],
             metadata: [
                 Metadata::AGGREGATE_TYPE => 'content',
@@ -53,10 +53,7 @@ final class ContentPublishedGmtWasChanged extends AggregateChanged
     public function contentPublishedGmt(): DateTimeInterface
     {
         if (!isset($this->publishedGmt)) {
-            $this->publishedGmt = QubusDateTimeImmutable::parse(
-                $this->payload()['content_published_gmt'],
-                'GMT'
-            );
+            $this->publishedGmt = EventDateTime::parse($this->payload(), 'content_published_gmt');
         }
 
         return $this->publishedGmt;

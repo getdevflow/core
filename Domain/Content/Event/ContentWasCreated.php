@@ -6,15 +6,14 @@ namespace App\Domain\Content\Event;
 
 use App\Domain\Content\ValueObject\ContentId;
 use App\Domain\User\ValueObject\UserId;
-use App\Shared\Services\DateTime;
 use App\Shared\ValueObject\ArrayLiteral;
+use App\Shared\Services\EventDateTime;
 use Codefy\Domain\Aggregate\AggregateId;
 use Codefy\Domain\EventSourcing\AggregateChanged;
 use Codefy\Domain\EventSourcing\DomainEvent;
 use Codefy\Domain\Metadata;
 use DateTimeInterface;
 use Qubus\Exception\Data\TypeException;
-use Qubus\Support\DateTime\QubusDateTimeImmutable;
 use Qubus\ValueObjects\Number\IntegerNumber;
 use Qubus\ValueObjects\StringLiteral\StringLiteral;
 
@@ -91,10 +90,10 @@ class ContentWasCreated extends AggregateChanged
                 'content_show_in_search' => $showInSearch->toNative(),
                 'content_featured_image' => $featuredImage->toNative(),
                 'content_status' => $status->toNative(),
-                'content_created' => $created->format('Y-m-d H:i:s'),
-                'content_created_gmt' => $createdGmt->format('Y-m-d H:i:s'),
-                'content_published' => $published->format('Y-m-d H:i:s'),
-                'content_published_gmt' => $publishedGmt->format('Y-m-d H:i:s'),
+                ...EventDateTime::payload('content_created', $created),
+                ...EventDateTime::payload('content_created_gmt', $createdGmt),
+                ...EventDateTime::payload('content_published', $published),
+                ...EventDateTime::payload('content_published_gmt', $publishedGmt),
             ],
             metadata: [
                 Metadata::AGGREGATE_TYPE => 'content',
@@ -253,9 +252,7 @@ class ContentWasCreated extends AggregateChanged
     public function contentCreated(): DateTimeInterface
     {
         if (!isset($this->created)) {
-            $this->created = QubusDateTimeImmutable::createFromInterface(
-                new DateTime($this->payload()['content_created'])->getDateTime()
-            );
+            $this->created = EventDateTime::parse($this->payload(), 'content_created');
         }
 
         return $this->created;
@@ -264,9 +261,7 @@ class ContentWasCreated extends AggregateChanged
     public function contentCreatedGmt(): DateTimeInterface
     {
         if (!isset($this->createdGmt)) {
-            $this->createdGmt = QubusDateTimeImmutable::createFromInterface(
-                new DateTime($this->payload()['content_created_gmt'])->getDateTime()
-            );
+            $this->createdGmt = EventDateTime::parse($this->payload(), 'content_created_gmt');
         }
 
         return $this->createdGmt;
@@ -275,9 +270,7 @@ class ContentWasCreated extends AggregateChanged
     public function contentPublished(): DateTimeInterface
     {
         if (!isset($this->published)) {
-            $this->published = QubusDateTimeImmutable::createFromInterface(
-                new DateTime($this->payload()['content_published'])->getDateTime()
-            );
+            $this->published = EventDateTime::parse($this->payload(), 'content_published');
         }
 
         return $this->published;
@@ -286,9 +279,7 @@ class ContentWasCreated extends AggregateChanged
     public function contentPublishedGmt(): DateTimeInterface
     {
         if (!isset($this->publishedGmt)) {
-            $this->publishedGmt = QubusDateTimeImmutable::createFromInterface(
-                new DateTime($this->payload()['content_published_gmt'])->getDateTime()
-            );
+            $this->publishedGmt = EventDateTime::parse($this->payload(), 'content_published_gmt');
         }
 
         return $this->publishedGmt;

@@ -6,12 +6,12 @@ namespace App\Shared\Pipes;
 
 use App\Shared\Services\DateTime;
 use Closure;
+use DateInvalidTimeZoneException;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\SimpleCache\InvalidArgumentException;
 use Qubus\Exception\Exception;
-use Qubus\Support\DateTime\QubusDateTimeImmutable;
 use ReflectionException;
 
 use function App\Shared\Helpers\get_user_timezone;
@@ -25,6 +25,7 @@ class FormatModifiedDateTime
      * @throws ContainerExceptionInterface
      * @throws InvalidArgumentException
      * @throws Exception
+     * @throws DateInvalidTimeZoneException
      */
     public function handle(ServerRequestInterface $request, Closure $next): mixed
     {
@@ -34,12 +35,15 @@ class FormatModifiedDateTime
             replace: '',
             subject: $body['published']
         );
-        $published = new DateTime($transformPublished, get_user_timezone())->format();
-        $publishedGmt = new DateTime($published)->gmtdate();
+        $publishedDate = new DateTime($transformPublished, get_user_timezone());
+        $published = $publishedDate->format('Y-m-d H:i:sP');
+        $publishedGmt = $publishedDate->gmtdate();
 
-        $modified = new DateTime(QubusDateTimeImmutable::now(get_user_timezone())->toDateTimeString())->format();
-        $modifiedGmt = new DateTime($modified)->gmtdate();
+        $modifiedDate = new DateTime('now', get_user_timezone());
+        $modified = $modifiedDate->format('Y-m-d H:i:sP');
+        $modifiedGmt = $modifiedDate->gmtdate();
 
+        // Carry the local offset through validation and DTO parsing.
         $dateTime = array_merge($body, [
             'published' => $published,
             'publishedGmt' => $publishedGmt,

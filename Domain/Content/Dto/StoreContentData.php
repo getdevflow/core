@@ -48,19 +48,21 @@ final readonly class StoreContentData implements DataTransformer
     public static function fromValidatedData(DataValidator $data): DataTransformer
     {
         $contentPublished = new DateTime(
-            time: $data->string(key: 'published')
+            time: $data->string(key: 'published'),
         )->getDateTime();
 
         $contentPublishedGmt = new DateTime(
             time: $data->string(key: 'publishedGmt'),
+            timezone: 'GMT',
         )->getDateTime();
 
         $contentCreated = new DateTime(
-            time: $data->string(key: 'created')
+            time: $data->string(key: 'created'),
         )->getDateTime();
 
         $contentCreatedGmt = new DateTime(
             time: $data->string(key: 'createdGmt'),
+            timezone: 'GMT',
         )->getDateTime();
 
         return new self(
